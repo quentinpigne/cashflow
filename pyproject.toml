@@ -4,6 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
-    "fastapi[standard]>=0.115.14",
-]
+dependencies = ["frontend", "backend"]
+
+[tool.uv.sources]
+frontend = { workspace = true }
+backend = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/frontend", "packages/backend"]
