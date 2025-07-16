@@ -5,6 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from app.core.config import settings
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -57,6 +59,22 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # url_tokens = {
+    #     "DB_USER": os.getenv("DB_USER", ""),
+    #     "DB_PASS": os.getenv("DB_PASS", ""),
+    #     "DB_HOST": os.getenv("DB_HOST", ""),
+    #     "DB_NAME": os.getenv("DB_NAME", "")
+    # }
+
+    # url = config.get_main_option("sqlalchemy.url")
+
+    # url = re.sub(r"\${(.+?)}", lambda m: url_tokens[m.group(1)], url)
+
+    # connectable = create_engine(url)
+
+    if settings.DATABASE_URL is not None:
+        config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -64,9 +82,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
