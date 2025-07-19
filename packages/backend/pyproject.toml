@@ -9,3 +9,6 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.41",
 ]
+
+[tool.uv]
+package = false
