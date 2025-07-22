@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -16,8 +16,8 @@ class Account(Base):
     iban = Column(String(34), nullable=False)
     bic = Column(String(11), nullable=False)
     currency = Column(String(3), nullable=False, default="EUR")
-    initial_balance = Column(Integer, nullable=False, default=0)
-    current_balance = Column(Integer, nullable=False, default=0)
+    initial_balance = Column(Float, nullable=False, default=0)
+    current_balance = Column(Float, nullable=False, default=0)
     bank_id = Column(Integer, ForeignKey("bank.id"), nullable=False)
     account_type_id = Column(Integer, ForeignKey("account_type.id"), nullable=False)
 

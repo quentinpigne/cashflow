@@ -14,7 +14,7 @@ class AccountBase(BaseModel):
     iban: str
     bic: str
     currency: str
-    initial_balance: int
+    initial_balance: float
 
 
 class AccountCreate(AccountBase):
@@ -31,7 +31,7 @@ class Account(AccountBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    current_balance: int
+    current_balance: float
     bank: Bank
     account_type: AccountType
     transactions: list[Transaction] = []
