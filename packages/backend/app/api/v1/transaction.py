@@ -1,10 +1,12 @@
-from typing import List, Optional
+import json
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.schemas.transaction import Transaction, TransactionCreate, TransactionUpdate
+from app.schemas.importer import ImportConfig
 from app.services.transaction import (
     get_transactions_by_account_id,
     get_transactions,
@@ -12,6 +14,7 @@ from app.services.transaction import (
     create_transaction,
     update_transaction,
     delete_transaction,
+    import_transactions,
 )
 
 router = APIRouter()
@@ -77,3 +80,26 @@ def del_transaction(
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return transaction
+
+
+@router.post("/import", response_model=List[Transaction])
+def import_data(
+    account_id: int,
+    config: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+    db: Session = Depends(get_db),
+):
+    try:
+        config_dict = json.loads(config)
+        import_config = ImportConfig(**config_dict)
+
+        return import_transactions(
+            db,
+            account_id,
+            file,
+            import_config,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error importing file: {str(e)}")
