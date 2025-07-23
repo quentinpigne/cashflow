@@ -11,7 +11,6 @@ class Transaction(Base):
     bank_label = Column(String(50), nullable=False)
     custom_label = Column(String(50), nullable=True)
     comment = Column(String(200), nullable=True)
-    type = Column(String(50), nullable=False)
     amount = Column(Float, nullable=False)
     date = Column(Date, nullable=False)
     account_id = Column(Integer, ForeignKey("account.id"), nullable=False)

@@ -6,7 +6,6 @@ Create Date: 2025-07-09 15:40:58.917273
 
 """
 
-from datetime import date
 from typing import Sequence, Union
 
 from alembic import op
@@ -148,7 +147,6 @@ def upgrade() -> None:
         sa.Column("bank_label", sa.String(50), nullable=False),
         sa.Column("custom_label", sa.String(50), nullable=True),
         sa.Column("comment", sa.String(200), nullable=True),
-        sa.Column("type", sa.String(50), nullable=False),
         sa.Column("amount", sa.Float, nullable=False),
         sa.Column("date", sa.Date, nullable=False),
         sa.Column(

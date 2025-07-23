@@ -8,7 +8,6 @@ class TransactionBase(BaseModel):
     bank_label: str
     custom_label: Optional[str] = None
     comment: Optional[str] = None
-    type: str
     amount: float
     date: date
     account_id: int
