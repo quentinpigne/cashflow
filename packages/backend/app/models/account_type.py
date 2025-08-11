@@ -1,13 +1,18 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
+from typing import TYPE_CHECKING
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models import Account
 
 
 class AccountType(Base):
     __tablename__ = "account_type"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50), index=True)
 
-    accounts = relationship("Account", back_populates="account_type")
+    accounts: Mapped["Account"] = relationship(back_populates="account_type")

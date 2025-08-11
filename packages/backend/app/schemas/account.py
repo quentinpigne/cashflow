@@ -7,7 +7,7 @@ from app.schemas.transaction import Transaction
 
 class AccountBase(BaseModel):
     name: str
-    description: str
+    description: str | None
     agency_code: str
     account_number: str
     rib_key: str

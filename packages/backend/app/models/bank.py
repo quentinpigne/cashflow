@@ -1,14 +1,19 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
+from typing import TYPE_CHECKING
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.account import Account
 
 
 class Bank(Base):
     __tablename__ = "bank"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-    bank_code = Column(String(5))
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50))
+    bank_code: Mapped[str | None] = mapped_column(String(5))
 
-    accounts = relationship("Account", back_populates="bank")
+    accounts: Mapped[list["Account"]] = relationship(back_populates="bank")
