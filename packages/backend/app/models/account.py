@@ -31,5 +31,5 @@ class Account(Base):
     bank: Mapped["Bank"] = relationship(back_populates="accounts")
     account_type: Mapped["AccountType"] = relationship(back_populates="accounts")
     transactions: Mapped[list["Transaction"]] = relationship(
-        back_populates="account", lazy="select", order_by="desc(Transaction.date)"
+        back_populates="account", lazy="noload", order_by="desc(Transaction.date)"
     )
