@@ -13,6 +13,7 @@ from app.services.transaction import TransactionService
 from app.repositories.bank import BankRepository
 from app.repositories.account import AccountRepository
 from app.repositories.category import CategoryRepository
+from app.repositories.transaction import TransactionRepository
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -59,10 +60,23 @@ def get_category_service(
     return CategoryService(category_repository)
 
 
-def get_transaction_service(
+def get_transaction_repository(
     db: Annotated[Session, Depends(get_db)],
+) -> TransactionRepository:
+    return TransactionRepository(db)
+
+
+def get_transaction_service(
+    account_repository: Annotated[
+        AccountRepository,
+        Depends(get_account_repository),
+    ],
+    transaction_repository: Annotated[
+        TransactionRepository,
+        Depends(get_transaction_repository),
+    ],
 ) -> TransactionService:
-    return TransactionService(db)
+    return TransactionService(account_repository, transaction_repository)
 
 
 AccountServiceDep = Annotated[AccountService, Depends(get_account_service)]
