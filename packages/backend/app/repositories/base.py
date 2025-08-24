@@ -11,18 +11,23 @@ class BaseRepository(Generic[T]):
         self.db = db
         self.model_class = model_class
 
-    def get_all(self) -> list[T]:
-        return self.db.scalars(select(self.model_class)).all()
+    def get_all(self, offset: int | None = None, limit: int | None = None) -> list[T]:
+        return self.db.scalars(
+            select(self.model_class).offset(offset).limit(limit)
+        ).all()
 
     def get_by_id(self, entity_id: int) -> T | None:
         return self.db.execute(
             select(self.model_class).where(self.model_class.id == entity_id)
         ).scalar()
 
-    def save(self, entity: T) -> T:
+    def save(self, entity: T, commit: bool = True) -> T:
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        if commit:
+            self.db.commit()
+            self.db.refresh(entity)
+        else:
+            self.db.flush()
         return entity
 
     def delete_by_id(self, entity_id: int) -> T | None:
@@ -31,3 +36,8 @@ class BaseRepository(Generic[T]):
             self.db.delete(entity)
             self.db.commit()
         return entity
+
+    def delete(self, entity: T, commit: bool = True) -> T:
+        self.db.delete(entity)
+        if commit:
+            self.db.commit()
