@@ -11,6 +11,12 @@ class CategoryRepository(BaseRepository[Category]):
 
     def get_all(self, type: str | None) -> list[Category]:
         query = select(Category).where(
-            Category.parent_id.is_not(None), Category.type == type if type else None
+            *filter(
+                lambda x: x is not None,
+                [
+                    Category.parent_id.is_not(None),
+                    Category.type == type if type else None,
+                ],
+            )
         )
         return self.db.scalars(query).all()
