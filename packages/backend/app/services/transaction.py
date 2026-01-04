@@ -1,8 +1,8 @@
 import io
 import pandas as pd
 
-from datetime import datetime
 from typing import List, Optional
+from datetime import datetime, date
 
 from fastapi import UploadFile
 
@@ -28,19 +28,34 @@ class TransactionService:
             self.transaction_repository.get_by_id(transaction_id)
         )
 
-    def get_transactions(self, skip: int = 0, limit: int = 100) -> List[Transaction]:
+    def get_transactions(
+        self,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[Transaction]:
         return [
             Transaction.model_validate(transaction)
-            for transaction in self.transaction_repository.get_all(skip, limit)
+            for transaction in self.transaction_repository.get_all(
+                start_date, end_date, skip, limit
+            )
         ]
 
     def get_transactions_by_account_id(
-        self, account_id: int, skip: int = 0, limit: int = 100
+        self,
+        account_id: int,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        skip: int = 0,
+        limit: int = 100,
     ) -> List[Transaction]:
         return [
             Transaction.model_validate(transaction)
             for transaction in self.transaction_repository.get_by_account_id(
                 account_id,
+                start_date,
+                end_date,
                 skip,
                 limit,
             )

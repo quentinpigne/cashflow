@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
@@ -14,14 +15,22 @@ router = APIRouter()
 def read_transactions(
     transaction_service: TransactionServiceDep,
     account_id: Optional[int] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
     skip: int = 0,
     limit: int = 100,
 ):
     if account_id:
         return transaction_service.get_transactions_by_account_id(
-            account_id=account_id, skip=skip, limit=limit
+            account_id=account_id,
+            start_date=start_date,
+            end_date=end_date,
+            skip=skip,
+            limit=limit,
         )
-    return transaction_service.get_transactions(skip=skip, limit=limit)
+    return transaction_service.get_transactions(
+        start_date=start_date, end_date=end_date, skip=skip, limit=limit
+    )
 
 
 @router.get("/{transaction_id}", response_model=Transaction)
