@@ -10,6 +10,7 @@ from app.models.account import Account as AccountModel
 from app.repositories.account import AccountRepository
 from app.schemas.importer import ColumnMapping, ImportConfig
 from app.repositories.transaction import TransactionRepository
+from app.utils.pdf_importer import PdfImporter, LclPdfImporter
 from app.models.transaction import Transaction as TransactionModel
 from app.schemas.transaction import Transaction, TransactionCreate, TransactionUpdate
 
@@ -163,6 +164,14 @@ class TransactionService:
                 delimiter=config.delimiter,
                 skiprows=config.rows_to_skip,
             )
+        elif file_extension == "pdf":
+            pdf_importer: PdfImporter = None
+            match config.bank.casefold():
+                case "lcl":
+                    pdf_importer = LclPdfImporter(content)
+                case _:
+                    raise ValueError("Unsupported bank")
+            df = pdf_importer.import_transactions_from_pdf()
         else:
             raise ValueError("Unsupported file type")
 

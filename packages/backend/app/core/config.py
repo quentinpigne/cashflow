@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     PROJECT_VERSION: str
     DATABASE_URL: str
+    MISTRAL_APIKEY: str
 
 
 settings = Settings()

@@ -9,6 +9,7 @@ class ColumnMapping(BaseModel):
 
 
 class ImportConfig(BaseModel):
+    bank: Optional[str] = None
     delimiter: Optional[str] = None
     sheet_name: Optional[str] = None
     rows_to_skip: Optional[List[int]] = None
