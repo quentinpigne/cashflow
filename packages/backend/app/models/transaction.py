@@ -16,9 +16,9 @@ class Transaction(Base):
     __tablename__ = "transaction"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    bank_label: Mapped[str] = mapped_column(String(50))
-    custom_label: Mapped[str | None] = mapped_column(String(50))
-    comment: Mapped[str | None] = mapped_column(String(200))
+    bank_label: Mapped[str] = mapped_column(String(250))
+    custom_label: Mapped[str | None] = mapped_column(String(250))
+    comment: Mapped[str | None] = mapped_column(String(250))
     amount: Mapped[float] = mapped_column()
     date: Mapped[datetime.datetime] = mapped_column()
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"))

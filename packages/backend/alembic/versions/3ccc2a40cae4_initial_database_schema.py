@@ -144,9 +144,9 @@ def upgrade() -> None:
     transaction_table = op.create_table(
         "transaction",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("bank_label", sa.String(50), nullable=False),
-        sa.Column("custom_label", sa.String(50), nullable=True),
-        sa.Column("comment", sa.String(200), nullable=True),
+        sa.Column("bank_label", sa.String(250), nullable=False),
+        sa.Column("custom_label", sa.String(250), nullable=True),
+        sa.Column("comment", sa.String(250), nullable=True),
         sa.Column("amount", sa.Float, nullable=False),
         sa.Column("date", sa.Date, nullable=False),
         sa.Column(
