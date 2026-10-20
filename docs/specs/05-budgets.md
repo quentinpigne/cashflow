@@ -175,7 +175,7 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 | BUD-06 | V1 | Projets : création, rattachement des ventilations (y compris en masse et par règle), vue projet |
 | BUD-07 | V1 | Objectifs d'épargne par compte cible |
 | BUD-08 | V1 | Alertes visuelles et centre de notifications intégré |
-| BUD-09 | V2 | Notifications push sur le téléphone (ntfy ou Web Push), via un second adaptateur `Notifier` |
+| BUD-09 | V2 | Notifications push sur le téléphone (ntfy ou Web Push), via un second canal de notification |
 | BUD-10 | V1 | Assistant de création initiale : propose des montants à partir de la moyenne des 3 à 6 derniers mois par catégorie |
 | BUD-11 | V2 | Ventilation prévue d'un projet par catégorie (prévu par catégorie au sein du projet) |
 | BUD-12 | V2 | Alerte prévisionnelle : le rythme de dépense projette un dépassement en fin de période |

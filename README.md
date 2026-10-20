@@ -15,12 +15,12 @@ des comptes.
 
 ## Stack
 
-- **Backend** : Rust (axum, sqlx + SQLite), organisé en workspace `crates/{core,app,infra,server}`.
+- **Backend** : Rust (axum, sqlx + SQLite), organisé en deux crates : `domain` (calculs purs) et `server`.
 - **Frontend** : Angular et Angular Material, dans `web/`.
 - **Déploiement** : un seul binaire qui sert l'API et la SPA, une image Docker sur un serveur personnel,
   en HTTP sur le réseau local pour la V1.
 
-Le détail est dans [docs/architecture.md](docs/architecture.md) et dans les ADR 0009, 0015 à 0020.
+Le détail est dans [docs/architecture.md](docs/architecture.md) et dans les ADR 0009, 0013 et 0015 à 0018.
 
 ## Documentation
 

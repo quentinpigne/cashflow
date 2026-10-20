@@ -15,7 +15,7 @@ a été consignée (ADR, spec).
 |---|---|---|---|
 | Q4 | Quelles autres banques que LCL, et quels formats d'export proposent-elles ? | Recenser avant la phase 2 | spec 03, roadmap |
 | Q11 | Chiffrement de la base au repos | Chiffrement du disque du serveur (ADR-0015) ; SQLCipher non retenu pour l'instant | ADR-0015 |
-| Q15 | HTTPS local : domaine personnel avec challenge DNS, ou autorité de certification interne ? | Sans objet en V1 (HTTP simple). À trancher au passage au HTTPS servi par axum | ADR-0020 |
+| Q15 | HTTPS local : domaine personnel avec challenge DNS, ou autorité de certification interne ? | Sans objet en V1 (HTTP simple). À trancher au passage au HTTPS servi par axum | ADR-0015 |
 
 ## Pour plus tard (après la V1)
 
@@ -38,7 +38,7 @@ a été consignée (ADR, spec).
 | Q13 | Arrondi des intérêts | Cumul exact, arrondi annuel ; option par compte pour arrondir chaque quinzaine | spec 06, R-EPA-6 |
 | Q12 | Seuil d'« ancienneté » d'une valorisation | 90 jours | spec 01, R-CPT-6 |
 | — | Langue de la documentation | Français ; identifiants de code en anglais | README, glossaire |
-| Q1 | Stack technique | Rust (axum, sqlx/SQLite) + SPA Angular / Angular Material | ADR-0009, ADR-0019 |
+| Q1 | Stack technique | Rust (axum, sqlx/SQLite) + SPA Angular / Angular Material | ADR-0009 |
 | Q3 | Mode d'utilisation | Ordinateur et téléphone, serveur auto-hébergé, réseau local uniquement, notifications dans l'application | ADR-0015 |
 | Q18 | REST ou GraphQL | REST + OpenAPI confirmé (un seul client, agrégats calculés côté serveur, upload de fichiers, erreurs typées) | ADR-0016 |
 | Q17 | Base de données et accès | SQLite (fichier unique) + sqlx, sans ORM ; PostgreSQL, MariaDB et SeaORM écartés | ADR-0017 |

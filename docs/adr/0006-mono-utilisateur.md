@@ -32,9 +32,10 @@ Option 3.
   Les sessions référencent un `user_id`. Les modalités d'authentification sont dans ADR-0015.
 - Les données métier n'ont **pas** de propriétaire en V1 : pas de colonne `owner_id`, aucun filtre par
   utilisateur.
-- **Tout accès aux données passe par les repositories** (ADR-0013). Aucun cas d'usage n'exécute de
-  requête en dehors d'eux, ce qui permettra d'ajouter le filtrage par membre à un seul endroit.
-- Les cas d'usage reçoivent un **contexte d'appel** (`RequestContext`, qui contient l'utilisateur
+- **Tout accès aux données passe par le module `db`** (ADR-0013). Aucun service ni aucune route
+  n'exécute de requête en dehors de lui, ce qui permettra d'ajouter le filtrage par membre à un seul
+  endroit.
+- Les services reçoivent un **contexte d'appel** (`RequestContext`, qui contient l'utilisateur
   courant), même s'ils ne s'en servent pas encore.
 
 **Modèle cible esquissé (non implémenté, à confirmer avant les travaux) :**

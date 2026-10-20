@@ -25,7 +25,7 @@ Le propriétaire du projet tient à pouvoir **copier et déplacer** ses données
    finissent en SQL brut **non vérifié**. ❌ Risque que les entités ORM se diffusent dans le métier.
    ❌ Version majeure récente, mal connue des modèles d'IA. ❌ Une couche de plus.
 2. **sqlx** — ✅ SQL **vérifié à la compilation** contre le schéma, y compris les agrégats complexes.
-   ✅ Les adaptateurs construisent directement les types du domaine. ✅ Migrations en SQL brut, avec
+   ✅ Le module `db` construit directement les types du domaine. ✅ Migrations en SQL brut, avec
    accès complet aux fonctionnalités du moteur. ✅ Mature et bien connu. ❌ CRUD plus verbeux. ❌ Filtres
    optionnels moins confortables.
 
@@ -49,9 +49,9 @@ Précautions obligatoires :
 2. **Connexion** : `journal_mode = WAL`, `foreign_keys = ON`, `synchronous = NORMAL`,
    `busy_timeout = 5000`. Une seule connexion en écriture. SQLite **embarqué** (`libsqlite3-sys` en
    version intégrée) pour garantir une version ≥ 3.37, requise pour `STRICT`.
-3. **Invariant Σ ventilations** : garanti par le cœur, **et** contrôlé à la fin de chaque unité de travail
-   qui touche des transactions, en production comme en test. Une requête de contrôle limitée aux
-   transactions modifiées annule l'unité de travail en cas d'écart.
+3. **Invariant Σ ventilations** : garanti par le domaine, **et** contrôlé avant la validation de chaque
+   transaction SQLite qui touche des transactions, en production comme en test. Une requête de contrôle
+   limitée aux transactions modifiées annule la transaction SQLite en cas d'écart.
 4. **Migrations qui recréent une table** (modification impossible avec `ALTER TABLE`) : on applique la
    procédure officielle de SQLite. Désactivation de `foreign_keys` **hors transaction**, puis
    création de la nouvelle table, copie, suppression de l'ancienne, renommage, `PRAGMA foreign_key_check`,

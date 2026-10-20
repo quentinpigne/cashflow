@@ -4,45 +4,49 @@ Statut : **Revue** — principes indépendants de la stack, projection sur Rust 
 
 ## Vue d'ensemble
 
-Monolithe modulaire, architecture hexagonale (ADR-0013). Une seule base SQLite à fichier unique.
-Une seule API (REST + OpenAPI, ADR-0016) consommée par une SPA Angular servie par le même binaire.
+Monolithe en couches, autour d'un **cœur de calcul pur** (ADR-0013). Une seule base SQLite à fichier
+unique. Une seule API (REST + OpenAPI, ADR-0016) consommée par une SPA Angular servie par le même binaire.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Adaptateurs entrants : API REST (SPA web), sous-commandes CLI (export,   │
-│                        sauvegarde, migrations)                           │
+│ api : routes REST (axum, DTO, OpenAPI) · sous-commandes CLI (export,     │
+│       sauvegarde, migrations)                                            │
 └───────────────┬─────────────────────────────────────────────────────────┘
                 │ appelle
 ┌───────────────▼─────────────────────────────────────────────────────────┐
-│ Cas d'usage (application)                                                │
+│ services : un par cas d'usage                                            │
 │  CreateTransaction · SplitTransaction · LinkTransfer · StartImport       │
 │  ReviewImportLine · CommitImport · RevertImport · AddCheckpoint          │
 │  Reconcile · Unlock · ComputeInterest · RunProjection · ExportAll …      │
-│  → une transaction de base de données par cas d'usage                    │
+│  → une transaction SQLite par service : charger, calculer, écrire        │
 └───────┬───────────────────────────────────────────────┬─────────────────┘
-        │ utilise                                        │ via des ports
+        │ calcule avec                                   │ lit et écrit avec
 ┌───────▼──────────────────────────────┐   ┌─────────────▼───────────────┐
-│ Cœur métier (pur, sans I/O)           │   │ Ports (interfaces)          │
-│  Types : Money, Rate, Ids, Date       │   │  Repositories (par agrégat) │
-│  Entités + invariants                 │   │  StatementReader            │
-│  Moteurs :                            │   │  PdfTextExtractor · OCR     │
-│   · BalanceEngine (soldes à date)     │   │  Clock                      │
-│   · SplitAllocator (% → montants)     │   │  Notifier (alertes budget)  │
-│   · Normalizer (montants, dates)      │   │  FileStore (fichiers source)│
-│   · Fingerprinter                     │   └─────────────┬───────────────┘
-│   · Matcher (correspondances)         │                 │ implémentés par
-│   · RuleEngine (catégorisation)       │   ┌─────────────▼───────────────┐
-│   · ReconciliationEngine (écarts)     │   │ Adaptateurs sortants        │
-│   · InterestEngine (quinzaines…)      │   │  SQLite · lecteurs CSV/XLSX/│
-│   · PerformanceEngine (TRI, TWR)      │   │  OFX/PDF-LCL · OCR (opt-in) │
-│   · ProjectionEngine                  │   │  · horloge · disque · notif.│
-│   · RecurrenceExpander                │   └─────────────────────────────┘
+│ domain (pur, sans I/O)                │   │ db : requêtes sqlx (SQLite) │
+│  Types : Money, Rate, Ids, Date       │   ├─────────────────────────────┤
+│  Entités + invariants                 │   │ readers : lecteurs de       │
+│  Moteurs :                            │   │  relevés CSV/XLSX/OFX/PDF   │
+│   · BalanceEngine (soldes à date)     │   │  (trait StatementReader),   │
+│   · SplitAllocator (% → montants)     │   │  OCR optionnel (ADR-0007)   │
+│   · Normalizer (montants, dates)      │   ├─────────────────────────────┤
+│   · Fingerprinter                     │   │ files : fichiers source,    │
+│   · Matcher (correspondances)         │   │  sauvegardes                │
+│   · RuleEngine (catégorisation)       │   └─────────────────────────────┘
+│   · ReconciliationEngine (écarts)     │
+│   · InterestEngine (quinzaines…)      │
+│   · PerformanceEngine (TRI, TWR)      │
+│   · ProjectionEngine                  │
+│   · RecurrenceExpander                │
 │   · BudgetEngine · AlertEvaluator     │
 │   · Indicators (tableau de bord)      │
 └───────────────────────────────────────┘
 ```
 
-## Modules du cœur (contextes)
+Le domaine ne connaît ni la base, ni les fichiers, ni l'horloge : la date du jour lui est passée en
+paramètre. Les traits sont réservés aux endroits où plusieurs implémentations existent vraiment
+(lecteurs de relevés, OCR).
+
+## Modules du domaine (contextes)
 
 | Module | Contenu | Spec |
 |---|---|---|
@@ -58,8 +62,8 @@ Une seule API (REST + OpenAPI, ADR-0016) consommée par une SPA Angular servie p
 
 Dépendances autorisées : `shared` ← tous ; `ledger` ← `import`, `reconciliation`, `budgeting`,
 `savings`, `projection`, `reporting` ; `accounts` ← tous sauf `shared`. Pas de cycle. `import` ne
-dépend pas de `reconciliation` : la création des points de contrôle à la validation passe par le cas
-d'usage `CommitImport`.
+dépend pas de `reconciliation` : la création des points de contrôle à la validation passe par le
+service `CommitImport`.
 
 ## Flux clés
 
@@ -67,10 +71,10 @@ d'usage `CommitImport`.
 
 ```
 StartImport(fichier, compte, profil)
-  → StatementReader.read(fichier, profil)     [adaptateur : CSV/XLSX/OFX/PDF]
-  → Normalizer → Fingerprinter                 [cœur]
-  → Matcher(lignes, transactions candidates)   [cœur ; candidats chargés par le cas d'usage]
-  → RuleEngine(lignes, règles)                 [cœur]
+  → StatementReader.read(fichier, profil)     [readers : CSV/XLSX/OFX/PDF]
+  → Normalizer → Fingerprinter                 [domain]
+  → Matcher(lignes, transactions candidates)   [domain ; candidats chargés par le service]
+  → RuleEngine(lignes, règles)                 [domain]
   → persistance ImportBatch + ImportLine (REVIEWING)
 ReviewImportLine(...)                          → mise à jour d'une décision
 CommitImport(batch)                            → 1 transaction BDD : transactions, pointages,
@@ -80,13 +84,12 @@ CommitImport(batch)                            → 1 transaction BDD : transacti
 ### Solde et rapprochement (spec 04)
 
 `BalanceEngine` reçoit le solde d'ouverture et les montants datés, et produit le solde à une date ou
-une série. Les agrégats SQL (Σ par compte jusqu'à D) sont une optimisation de l'adaptateur de
-persistance : ils doivent produire exactement le même résultat que le moteur, ce que vérifie un test
-de cohérence.
+une série. Les agrégats SQL (Σ par compte jusqu'à D) sont une optimisation du module `db` : ils
+doivent produire exactement le même résultat que le moteur, ce que vérifie un test de cohérence.
 
 ## Gestion des erreurs
 
-- Les violations de règles métier sont des **erreurs typées** du cœur (ex. `SplitSumMismatch`,
+- Les violations de règles métier sont des **erreurs typées** du domaine (ex. `SplitSumMismatch`,
   `TransactionLocked{checkpoint_id}`, `AccountClosed`), jamais des chaînes ni des exceptions génériques.
   L'interface les traduit en messages ; chacune cite la règle `R-*` concernée.
 - Les erreurs de lecture de fichier sont des **données** (champ `errors` de `ImportLine`), pas des
@@ -96,10 +99,10 @@ de cohérence.
 
 | Niveau | Cible | Outils |
 |---|---|---|
-| Unitaire | Moteurs du cœur, règle par règle (`R-*`) | `cargo test` ; Vitest (`ng test`) pour `money.ts` et la logique d'interface |
+| Unitaire | Moteurs du domaine, règle par règle (`R-*`) | `cargo test` ; Vitest (`ng test`) pour `money.ts` et la logique d'interface |
 | Propriétés | Invariants : Σ ventilations, solde = ouverture + Σ, réimport idempotent, patrimoine invariant par virement, annulation d'import = état initial | `proptest` |
 | Golden files | Lecteurs de fichiers : `fixtures/<banque>/<cas>.csv` → `expected.json` | `insta`, fichiers **anonymisés** uniquement |
-| Intégration | Cas d'usage avec une SQLite réelle (fichier temporaire ou mémoire) | — |
+| Intégration | Services avec une SQLite réelle (en mémoire), sans mocks | — |
 | Aller-retour | Export JSON → import → export identique | — |
 | Bout en bout | Parcours critiques : importer, revoir, valider, rapprocher | Playwright |
 
@@ -111,7 +114,7 @@ Les cas de référence chiffrés des specs (intérêts, TRI, ventilations, indic
 - Aucune donnée réelle ni aucun secret dans le dépôt (cf. CLAUDE.md). `.gitignore` initial : base de
   données, fichiers importés, `.env*` sauf `.env.example`.
 - Accès : réseau local uniquement, mot de passe unique et session par cookie (ADR-0015). HTTP simple en
-  V1, HTTPS servi par axum plus tard (ADR-0020).
+  V1, HTTPS servi par axum plus tard (ADR-0015).
 - Chiffrement au repos : chiffrement du disque du serveur (ADR-0015).
 - Journalisation : jamais de libellé, de montant ou d'IBAN dans les logs au niveau INFO.
 - OCR : ADR-0007.
@@ -126,7 +129,7 @@ Les cas de référence chiffrés des specs (intérêts, TRI, ventilations, indic
 
 ## Projection sur la stack
 
-Stack : ADR-0009 (Rust), ADR-0019 (Angular). Déploiement : ADR-0015, ADR-0018, ADR-0020. API : ADR-0016.
+Stack : ADR-0009 (Rust + Angular). Architecture : ADR-0013. Déploiement : ADR-0015, ADR-0018. API : ADR-0016.
 
 ### Organisation du dépôt
 
@@ -134,21 +137,23 @@ Stack : ADR-0009 (Rust), ADR-0019 (Angular). Déploiement : ADR-0015, ADR-0018, 
 cashflow/
 ├── Cargo.toml                 ← workspace Rust
 ├── crates/
-│   ├── core/                  ← cœur métier pur (ADR-0013)
+│   ├── domain/                ← cœur de calcul pur (ADR-0013)
 │   │   └── src/{shared,accounts,ledger,import,reconciliation,
 │   │            budgeting,savings,projection,reporting}.rs + dossiers homonymes
-│   ├── app/                   ← cas d'usage + définitions des ports (traits)
-│   ├── infra/                 ← adaptateurs : sqlx/SQLite, lecteurs CSV/XLSX/OFX/PDF, OCR, Notifier
-│   │   ├── migrations/        ← migrations sqlx (immuables une fois publiées)
-│   │   └── seed/              ← données initiales (JSON), sans donnée personnelle
-│   └── server/                ← axum, DTO, OpenAPI (utoipa), auth, fichiers statiques,
-│                                 binaire `cashflow` et ses sous-commandes
+│   └── server/                ← binaire `cashflow` et ses sous-commandes
+│       ├── src/api.rs + api/       ← routes axum, DTO, OpenAPI (utoipa), auth, fichiers statiques
+│       ├── src/services.rs + services/  ← un service par cas d'usage
+│       ├── src/db.rs + db/         ← requêtes sqlx
+│       ├── src/readers.rs + readers/   ← lecteurs CSV/XLSX/OFX/PDF, OCR
+│       ├── migrations/        ← migrations sqlx (immuables une fois publiées)
+│       └── seed/              ← données initiales (JSON), sans donnée personnelle
 ├── web/                       ← SPA Angular (Angular CLI)
 │   └── src/app/api/           ← client généré depuis openapi.json (jamais édité à la main)
 ├── openapi.json               ← contrat d'API versionné (ADR-0016)
-├── fixtures/                  ← fichiers d'import anonymisés + résultats attendus (golden)
+├── .sqlx/                     ← cache des requêtes sqlx, pour compiler sans base (ADR-0017)
+├── fixtures/                  ← fichiers d'import anonymisés + résultats attendus (golden), données de démonstration
 ├── deploy/                    ← Dockerfile, compose.yaml, guide d'installation
-├── docs/                    ← conception : docs transverses, specs/, adr/
+├── docs/                      ← conception : docs transverses, specs/, adr/
 ├── README.md · CLAUDE.md
 ```
 
@@ -157,7 +162,7 @@ cashflow/
 - Édition **2024** pour tous les crates (`edition = "2024"` dans `[workspace.package]`).
 - Modules en **fichiers homonymes**, sans `mod.rs` :
   ```
-  crates/core/src/
+  crates/domain/src/
   ├── lib.rs
   ├── ledger.rs            ← déclare `pub mod split; pub mod transfer; …`
   └── ledger/
@@ -174,37 +179,34 @@ cashflow/
   unwrap_used = "deny"        # autorisés dans les tests (allow-unwrap-in-tests / allow-expect-in-tests
   expect_used = "deny"        # dans clippy.toml) et par un #[allow] ciblé au démarrage du binaire
   ```
-  Les flottants sont interdits dans `core` par `disallowed-types`, dans `crates/core/clippy.toml`. Ce
+  Les flottants sont interdits dans `domain` par `disallowed-types`, dans `crates/domain/clippy.toml`. Ce
   fichier remplace celui de la racine pour ce crate (clippy ne fusionne pas les deux) : il doit donc
   reprendre aussi les options `allow-*-in-tests`.
 
 ### Dépendances entre crates
 
 ```
-server ──► app ──► core
-   │        ▲
-   └──► infra ┘   (infra implémente les ports définis dans app ; server assemble le tout)
+server ──► domain
 ```
 
-- `core` ne dépend d'aucun crate d'I/O (ni `tokio`, ni `sqlx`, ni `axum`, ni `reqwest`). Ses dépendances
+- `domain` ne dépend d'aucun crate d'I/O (ni `tokio`, ni `sqlx`, ni `axum`, ni `reqwest`). Ses dépendances
   autorisées : `rust_decimal`, `chrono`, `uuid`, `serde`, `thiserror`. Les flottants y sont interdits
-  par clippy (`disallowed-types`).
-- `app` définit les ports sous forme de traits (`AccountRepository`, `StatementReader`, `Clock`,
-  `Notifier`…) et les cas d'usage, génériques sur ces traits. Chaque cas d'usage s'exécute dans une
-  **unité de travail** (`UnitOfWork`), qui correspond à une transaction SQLite.
-- `infra` et `server` sont les seuls crates à connaître `sqlx`, respectivement `axum`.
+  par clippy (`disallowed-types`). La frontière de crate fait respecter la pureté par le compilateur.
+- Dans `server`, les dépendances entre modules vont dans un seul sens : `api` → `services` → `db` /
+  `readers`. Les routes n'exécutent pas de requête ; les services ne contiennent pas de calcul métier.
+- Chaque service s'exécute dans **une transaction SQLite**, ouverte et validée par le service.
 
 ### Correspondance des modules
 
-| Module du cœur | Moteurs (dans `core`) | Adaptateurs (`infra`) | Routes (`server`, `/api/v1`) |
+| Module du domaine | Moteurs (`domain`) | Accès aux données et fichiers (`server`) | Routes (`server`, `/api/v1`) |
 |---|---|---|---|
-| `accounts` | — | `SqliteAccountRepository` | `/institutions`, `/accounts`, `/accounts/{id}/valuations` |
-| `ledger` | `BalanceEngine`, `SplitAllocator`, `RecurrenceExpander` | `SqliteLedgerRepository` | `/transactions`, `/categories`, `/transfers`, `/recurring-rules` |
-| `import` | `Normalizer`, `Fingerprinter`, `Matcher`, `RuleEngine` | `CsvReader`, `XlsxReader`, `OfxReader`, `LclPdfReader`, `MistralOcr` | `/import-profiles`, `/imports`, `/imports/{id}/lines`, `/rules` |
-| `reconciliation` | `ReconciliationEngine` | `SqliteCheckpointRepository` | `/accounts/{id}/checkpoints` |
-| `budgeting` | `BudgetEngine`, `AlertEvaluator` | `SqliteBudgetRepository`, `DbNotifier` | `/budget/lines`, `/budget/months/{yyyy-mm}`, `/projects`, `/notifications` |
-| `savings` | `InterestEngine`, `PerformanceEngine` | `SqliteRateRepository` | `/rate-schedules`, `/accounts/{id}/interest`, `/accounts/{id}/performance` |
-| `projection` | `ProjectionEngine` | `SqliteScenarioRepository` | `/scenarios`, `/projections` |
+| `accounts` | — | `db::accounts` | `/institutions`, `/accounts`, `/accounts/{id}/valuations` |
+| `ledger` | `BalanceEngine`, `SplitAllocator`, `RecurrenceExpander` | `db::ledger` | `/transactions`, `/categories`, `/transfers`, `/recurring-rules` |
+| `import` | `Normalizer`, `Fingerprinter`, `Matcher`, `RuleEngine` | `db::import` ; `readers::{csv, xlsx, ofx, lcl_pdf, ocr}` | `/import-profiles`, `/imports`, `/imports/{id}/lines`, `/rules` |
+| `reconciliation` | `ReconciliationEngine` | `db::checkpoints` | `/accounts/{id}/checkpoints` |
+| `budgeting` | `BudgetEngine`, `AlertEvaluator` | `db::budget`, `db::notifications` | `/budget/lines`, `/budget/months/{yyyy-mm}`, `/projects`, `/notifications` |
+| `savings` | `InterestEngine`, `PerformanceEngine` | `db::rates` | `/rate-schedules`, `/accounts/{id}/interest`, `/accounts/{id}/performance` |
+| `projection` | `ProjectionEngine` | `db::scenarios` | `/scenarios`, `/projections` |
 | `reporting` | `Indicators` | — | `/dashboard`, `/reports/*` |
 | — | — | export JSON | `/export` (et sous-commande `cashflow export`) |
 
@@ -215,8 +217,8 @@ Décision et précautions : ADR-0017.
 - SQLite embarqué (≥ 3.37), tables `STRICT`, `journal_mode = WAL`, `foreign_keys = ON`,
   `synchronous = NORMAL`, `busy_timeout = 5000` ; une seule connexion en écriture.
 - Types physiques : cf. `modele-de-donnees.md` § « Correspondance physique SQLite ».
-- L'invariant Σ ventilations est garanti par le cœur **et** contrôlé en fin d'unité de travail, en
-  production comme en test.
+- L'invariant Σ ventilations est garanti par le domaine **et** contrôlé avant la validation de chaque
+  transaction SQLite qui touche des transactions, en production comme en test.
 - Migrations : fichiers SQL `sqlx migrate`, transactionnels. Les migrations qui recréent une table
   suivent la procédure de l'ADR-0017 (point 4).
 - Tests d'intégration : une base SQLite en mémoire (ou un fichier temporaire) par test, migrations
@@ -231,8 +233,8 @@ Décision et précautions : ADR-0017.
   restent simplement utilisables sur mobile.
 - Montants : module `money.ts` (analyse d'une saisie « 1 234,56 » en centimes, formatage
   `Intl.NumberFormat('fr-FR')`) et pipe d'affichage, testés, sans arithmétique flottante.
-- Stack et conventions : ADR-0019 (Angular, Angular Material, signals, un dossier par feature).
-- Pas de PWA en V1 : elle suppose HTTPS (ADR-0020).
+- Stack et conventions : ADR-0009 (Angular, Angular Material, signals, un dossier par feature).
+- Pas de PWA en V1 : elle suppose HTTPS (ADR-0015).
 
 ### Commandes
 

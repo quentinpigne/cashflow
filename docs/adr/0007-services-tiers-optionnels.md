@@ -15,7 +15,7 @@ titulaire, et l'appel au service nécessite une clé d'API, donc un secret à pr
 - Toute fonctionnalité qui envoie des données à un service tiers est **désactivée par défaut**,
   activée explicitement dans les réglages, et l'interface indique, au moment de l'action, que le
   document va être envoyé à tel fournisseur.
-- L'OCR est derrière un **port** (`DocumentTextExtractor`) : le fournisseur est interchangeable, y
+- L'OCR est derrière un **trait** (`DocumentTextExtractor`) : le fournisseur est interchangeable, y
   compris par une solution locale (Tesseract, modèle local) si elle devient suffisante.
 - Les formats qui ne nécessitent aucun tiers (CSV, XLSX, OFX) sont prioritaires (spec 03).
 - Pour les PDF, l'**extraction locale du texte** (texte et position de chaque élément, dans un PDF
@@ -29,6 +29,6 @@ titulaire, et l'appel au service nécessite une clé d'API, donc un secret à pr
 - L'application est pleinement utilisable sans aucun service tiers.
 - Le parseur LCL (V1) fonctionne sans OCR sur les relevés numériques téléchargés depuis l'espace client.
   Ce point est à vérifier sur un vrai relevé en phase 2. L'OCR n'est requis que pour un relevé scanné.
-- Port supplémentaire `PdfTextExtractor` (local) à côté de `DocumentTextExtractor` (OCR). Bibliothèques
+- Trait supplémentaire `PdfTextExtractor` (local) à côté de `DocumentTextExtractor` (OCR). Bibliothèques
   Rust à évaluer : `pdfium-render` (fiable, mais embarque la bibliothèque PDFium) ou `lopdf` (pur Rust,
   plus bas niveau).
