@@ -1,6 +1,6 @@
 # Architecture cible
 
-Statut : **Revue** — principes indépendants de la stack, projection sur Rust + Angular en fin de document.
+Statut : **Validée** (2026-10-20) — principes indépendants de la stack, projection sur Rust + Angular en fin de document.
 
 ## Vue d'ensemble
 

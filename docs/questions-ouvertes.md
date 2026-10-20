@@ -7,7 +7,7 @@ a été consignée (ADR, spec).
 
 | # | Question | Où | Impact |
 |---|---|---|---|
-| — | *Aucune.* Les ADR `Proposé` restent à relire (cf. roadmap, phase 0). | — | — |
+| — | *Aucune.* | — | — |
 
 ## À trancher avant la phase concernée
 

@@ -1,6 +1,6 @@
 # Vision produit
 
-Statut : **Revue**
+Statut : **Validée** (2026-10-20)
 
 ## Le problème
 

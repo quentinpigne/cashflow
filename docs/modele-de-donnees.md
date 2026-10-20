@@ -1,6 +1,6 @@
 # Modèle de données
 
-Statut : **Revue**
+Statut : **Validée** (2026-10-20)
 
 Modèle **logique**. Sa traduction physique (SQLite, cf. `architecture.md` § SQLite) suit ADR-0009. Ce document est la source de vérité du schéma.
 Les règles métier détaillées sont dans les specs ; ici ne figurent que les contraintes structurelles.

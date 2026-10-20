@@ -2,11 +2,11 @@
 
 Consignes pour Claude Code sur le projet Cashflow (gestion de finances personnelles).
 
-## Phase actuelle : conception
+## Phase actuelle : implémentation de la V1
 
-Le dépôt ne contient que de la documentation. La stack est décidée (ADR-0009), mais on n'écrit pas de
-code applicatif tant que l'utilisateur ne l'a pas demandé explicitement (fin de la phase 0 de
-`docs/roadmap.md`).
+La conception est terminée et validée (phase 0, 2026-10-20). On implémente la V1, phase par phase
+(phases 1 à 6 de `docs/roadmap.md`). Les ADR ne se modifient plus sur le fond : un changement de
+décision passe par un nouvel ADR (cf. « Règles de rédaction »).
 
 Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demander) :
 `docs/questions-ouvertes.md`.

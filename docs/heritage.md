@@ -1,6 +1,6 @@
 # Héritage de la première version
 
-Statut : **Revue**
+Statut : **Validée** (2026-10-20)
 
 Ce qui mérite d'être repris de la première version (FastAPI + Streamlit, dépôt
 `github.com/quentinpigne/cashflow`), et ce qui ne doit pas l'être. Ce document permet de se

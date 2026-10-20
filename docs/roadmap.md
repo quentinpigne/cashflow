@@ -1,6 +1,6 @@
 # Roadmap
 
-Statut : **Revue**
+Statut : **Validée** (2026-10-20)
 
 Ordre de réalisation proposé. Chaque phase livre quelque chose d'**utilisable** et repose sur la
 précédente. Les identifiants renvoient aux features des specs.
@@ -12,6 +12,9 @@ précédente. Les identifiants renvoient aux features des specs.
 - [x] Point dédié sur les budgets — spec 05, ADR-0014 (2026-10-20)
 - [x] Passer les specs de `Revue` à `Validée` — 2026-10-20
 - [x] Compléter « Projection sur la stack » dans `architecture.md` et les commandes dans `CLAUDE.md`
+- [x] Environnements, livraison et CI — ADR-0018 ; interface Angular, HTTP en V1, architecture en couches — ADR-0009, ADR-0013, ADR-0015 (2026-10-20)
+- [x] Écrans de la phase 1 — `ecrans.md` (2026-10-20)
+- [x] Passer les documents transverses à `Validée` (2026-10-20)
 
 ## Phase 1 — Socle : registre exact (MVP)
 
