@@ -2326,6 +2326,15 @@
             "schema": {
               "$ref": "#/components/schemas/CategoryKind"
             }
+          },
+          {
+            "name": "exclude_projects",
+            "in": "query",
+            "description": "Retire les ventilations rattachées à un projet (TDB-07) ; incluses par défaut.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

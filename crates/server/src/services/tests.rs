@@ -363,7 +363,7 @@ async fn tdb_02_category_report_and_tdb_03_evolution() {
     transactions::create(&db, &tx(checking, "2026-03-06", -500, Some(market))).await.unwrap();
     transactions::create(&db, &tx(checking, "2026-03-07", 200_000, Some(salary))).await.unwrap();
 
-    let query = reports::CategoryReportQuery { month: Some("2026-03".into()), kind: None };
+    let query = reports::CategoryReportQuery { month: Some("2026-03".into()), kind: None, exclude_projects: None };
     let report = reports::categories(&db, &query, d(TODAY)).await.unwrap();
     assert!(report.current_month);
     let line = report.lines.iter().find(|l| l.category_id == Some(food)).unwrap();

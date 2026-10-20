@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, c.kind AS \"category_kind?\", a.currency,\n                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n                      AS \"is_transfer!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
+  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id IS NOT NULL AS \"has_project!: bool\",\n                  c.kind AS \"category_kind?\", a.currency,\n                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n                      AS \"is_transfer!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -37,8 +37,14 @@
         }
       },
       {
-        "name": "category_kind?",
+        "name": "has_project!: bool",
         "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "category_kind?",
+        "ordinal": 4,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -49,7 +55,7 @@
       },
       {
         "name": "currency",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,7 +66,7 @@
       },
       {
         "name": "is_transfer!: bool",
-        "ordinal": 5,
+        "ordinal": 6,
         "type_info": "Integer",
         "origin": "Expression"
       }
@@ -72,10 +78,11 @@
       false,
       false,
       true,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "5dc6efabb5c4e9b5baabb06cf523cb9ae4e0b1ae33b4fffa71d7bf6e98e84c21"
+  "hash": "96d1487a2a205925a8251ff3d4908954ea3f2a2ba83587cfbbabbb080057ebc6"
 }

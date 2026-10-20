@@ -10,6 +10,7 @@ use super::budgets::{
     self, AlertLevel, AmountChange, AmountScope, AttachInput, BudgetLineInput, MonthBudgetView, MonthInput, MonthQuery,
     ProjectInput,
 };
+use super::reports;
 use super::tests::{TODAY, account, category, d, domain_error, setup, split, tx};
 use super::transactions::{self, TransactionInput, TransactionUpdateInput};
 use super::transfers::{self, TransferInput};
@@ -206,6 +207,20 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
     };
     transactions::update(&db, dinner, &update).await.unwrap();
     assert!(budgets::delete_project(&db, project.id).await.is_err());
+
+    // L'analyse par catégorie compte la dépense du projet, sauf si on l'exclut (R-BUD-21, TDB-07).
+    let report = |exclude| reports::CategoryReportQuery {
+        month: Some("2026-03".into()),
+        kind: None,
+        exclude_projects: Some(exclude),
+    };
+    let restaurants_total = |r: &reports::CategoryReport| {
+        r.lines.iter().find(|l| l.category_id == Some(restaurants)).map_or(0, |l| l.amount_minor)
+    };
+    let with = reports::categories(&db, &report(false), d(TODAY)).await.unwrap();
+    assert_eq!(restaurants_total(&with), 8_000);
+    let without = reports::categories(&db, &report(true), d(TODAY)).await.unwrap();
+    assert_eq!(restaurants_total(&without), 0);
 }
 
 #[tokio::test]

@@ -23,6 +23,8 @@ pub struct CategoryReportQuery {
     pub month: Option<String>,
     /// `EXPENSE` par défaut.
     pub kind: Option<CategoryKind>,
+    /// Retire les ventilations rattachées à un projet (TDB-07) ; incluses par défaut.
+    pub exclude_projects: Option<bool>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -110,6 +112,7 @@ pub async fn categories(db: &Db, query: &CategoryReportQuery, today: Date) -> Ap
     let facts: Vec<CategorizedFact<CategoryId>> = db::transactions::categorized_facts(&db.read, earliest, period.to)
         .await?
         .into_iter()
+        .filter(|f| !(query.exclude_projects.unwrap_or(false) && f.has_project))
         .map(|f| CategorizedFact {
             date: f.date,
             amount: f.amount,

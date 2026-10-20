@@ -596,6 +596,7 @@ pub struct CategorizedFactRow {
     pub date: Date,
     pub amount: Money,
     pub category_id: Option<CategoryId>,
+    pub has_project: bool,
     pub category_kind: Option<CategoryKind>,
     pub is_transfer: bool,
     pub currency: String,
@@ -607,7 +608,8 @@ pub async fn categorized_facts(
     to: Date,
 ) -> anyhow::Result<Vec<CategorizedFactRow>> {
     let rows = sqlx::query!(
-        r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, c.kind AS "category_kind?", a.currency,
+        r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, s.project_id IS NOT NULL AS "has_project!: bool",
+                  c.kind AS "category_kind?", a.currency,
                   EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
                       AS "is_transfer!: bool"
            FROM split s
@@ -626,6 +628,7 @@ pub async fn categorized_facts(
                 date: r.date,
                 amount: Money::from_minor(r.amount),
                 category_id: opt_id_from_db(r.category_id.as_deref())?,
+                has_project: r.has_project,
                 category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
                 is_transfer: r.is_transfer,
                 currency: r.currency,

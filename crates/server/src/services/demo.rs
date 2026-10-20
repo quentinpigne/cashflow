@@ -13,7 +13,9 @@ use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId};
 use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
-use super::{accounts, auth, categories, imports, institutions, reconciliation, rules, seed, transactions, transfers};
+use super::{
+    accounts, auth, budgets, categories, imports, institutions, reconciliation, rules, seed, transactions, transfers,
+};
 use crate::db::Db;
 
 /// Mot de passe du compte de démonstration.
@@ -239,6 +241,12 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
             };
             transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
         }
+        // L'assurance auto, payée une fois par an : suivie par une ligne annuelle (BUD-05).
+        if month.month() == 3
+            && let Some(d) = day(14)
+        {
+            spend(db, checking, d, -68_000, "ASSURANCE AUTO ECHEANCE", c.get("Assurances", "Auto")).await?;
+        }
         // Remboursement de santé : vient en déduction des dépenses (R-TRX-13).
         if month.month() % 3 == 0
             && let Some(d) = day(22)
@@ -376,6 +384,8 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     };
     imports::save_profile(db, None, &profile).await.map_err(|e| anyhow::anyhow!("{e}"))?;
 
+    budget(db, &c, start, today, livret_a, life, checking).await?;
+
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
     for (offset, amount, label) in
         [(1, -2_390, "CB AMAZON MARKETPLACE"), (2, -1_450, "CB BOULANGERIE"), (4, -6_800, "CB DECATHLON")]
@@ -385,6 +395,97 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
             spend(db, checking, date, amount, label, None).await?;
         }
     }
+    Ok(())
+}
+
+/// Un budget complet (spec 05) : lignes mensuelles, une ligne annuelle, deux objectifs d'épargne et un projet.
+async fn budget(
+    db: &Db,
+    c: &Categories,
+    start: Date,
+    today: Date,
+    livret_a: AccountId,
+    life: AccountId,
+    checking: AccountId,
+) -> anyhow::Result<()> {
+    use cashflow_domain::budgeting::{BudgetKind, Month, Periodicity};
+    let from = Month::of(start).to_string();
+    let line = |kind, category: Option<CategoryId>, amount_minor, rollover| budgets::BudgetLineInput {
+        kind,
+        category_id: category,
+        target_account_id: None,
+        periodicity: Periodicity::Monthly,
+        year_start_month: 1,
+        amount_minor,
+        rollover,
+        from: from.clone(),
+        alert_thresholds: None,
+    };
+    let mut lines = vec![
+        line(BudgetKind::Income, c.get("Salaires", ""), 285_000, false),
+        line(BudgetKind::Expense, c.get("Logement", "Loyer"), 89_000, false),
+        line(BudgetKind::Expense, c.get("Logement", "Gaz, électricité, eau"), 9_000, false),
+        line(BudgetKind::Expense, c.get("Alimentation & restauration", "Supermarché / épicerie"), 32_000, true),
+        line(BudgetKind::Expense, c.get("Alimentation & restauration", "Restaurants"), 8_000, false),
+        line(BudgetKind::Expense, c.get("Auto & transports", ""), 8_000, false),
+        line(BudgetKind::Expense, c.get("Abonnements", ""), 5_000, false),
+        line(BudgetKind::Expense, c.get("Prêts", ""), 72_000, false),
+        budgets::BudgetLineInput {
+            periodicity: Periodicity::Yearly,
+            ..line(BudgetKind::Expense, c.get("Assurances", "Auto"), 72_000, false)
+        },
+    ];
+    for (account, amount) in [(livret_a, 20_000), (life, 15_000)] {
+        lines.push(budgets::BudgetLineInput {
+            target_account_id: Some(account),
+            ..line(BudgetKind::Savings, None, amount, false)
+        });
+    }
+    for input in lines.iter().filter(|l| l.category_id.is_some() || l.target_account_id.is_some()) {
+        budgets::create_line(db, input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+
+    // Un week-end récent, suivi comme projet et retiré des lignes du mois (R-BUD-21).
+    let (Some(departure), Some(back)) = (today.checked_sub_days(Days::new(20)), today.checked_sub_days(Days::new(17)))
+    else {
+        return Ok(());
+    };
+    if departure < start {
+        return Ok(());
+    }
+    let project = budgets::ProjectInput {
+        name: "Week-end à Lyon".into(),
+        start_date: departure,
+        end_date: Some(back),
+        amount_minor: 60_000,
+        exclude_from_period_budgets: true,
+        active: true,
+        alert_thresholds: None,
+        note: None,
+    };
+    let project = budgets::save_project(db, None, &project).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    for (date, amount, label, category) in [
+        (departure, -9_800, "SNCF CONNECT", c.get("Voyages", "Transport")),
+        (departure, -24_000, "HOTEL LYON PRESQU ILE", c.get("Voyages", "Hébergement")),
+        (back, -6_400, "BOUCHON LYONNAIS", c.get("Alimentation & restauration", "Restaurants")),
+    ] {
+        let input = TransactionInput {
+            account_id: checking,
+            date,
+            amount_minor: amount,
+            label: label.into(),
+            note: None,
+            category_id: None,
+            splits: Some(vec![SplitInput {
+                amount_minor: amount,
+                category_id: category,
+                note: None,
+                project_id: Some(project.id),
+            }]),
+        };
+        transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    budgets::evaluate_alerts(db, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(())
 }
 
@@ -407,6 +508,9 @@ mod tests {
         assert!(dashboard.uncategorized.total >= 3);
         assert!(dashboard.month.income_minor >= 0);
         // Les virements ne changent pas le patrimoine : il ne dépend que des flux catégorisés et non catégorisés.
+        let budget = budgets::month(&db, &budgets::MonthQuery { month: None }, today).await.unwrap();
+        assert!(budget.lines.len() >= 10);
+        assert_eq!(budgets::projects(&db).await.unwrap()[0].actual_minor, 40_200);
         assert!(load(&db, today).await.is_err(), "le jeu ne se charge que dans une base vide");
     }
 }
