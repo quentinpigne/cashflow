@@ -6,8 +6,8 @@
 
 ## Contexte
 
-L'ADR-0015 décrit l'empaquetage (une image Docker, un binaire qui sert l'API et l'interface), le HTTPS
-par Caddy, l'authentification et les sauvegardes. Il ne dit pas combien d'environnements existent, comment
+L'ADR-0015 décrit l'empaquetage (une image Docker, un binaire qui sert l'API et l'interface),
+l'authentification et les sauvegardes. Il ne dit pas combien d'environnements existent, comment
 une version arrive sur le serveur, ni ce que vérifie l'intégration continue.
 
 Contraintes :

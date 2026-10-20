@@ -1,11 +1,11 @@
 # Architecture cible
 
-Statut : **Revue** — principes indépendants de la stack, projection sur Rust + React en fin de document.
+Statut : **Revue** — principes indépendants de la stack, projection sur Rust + Angular en fin de document.
 
 ## Vue d'ensemble
 
 Monolithe modulaire, architecture hexagonale (ADR-0013). Une seule base SQLite à fichier unique.
-Une seule API (REST + OpenAPI, ADR-0016) consommée par une SPA React servie par le même binaire.
+Une seule API (REST + OpenAPI, ADR-0016) consommée par une SPA Angular servie par le même binaire.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -96,7 +96,7 @@ de cohérence.
 
 | Niveau | Cible | Outils |
 |---|---|---|
-| Unitaire | Moteurs du cœur, règle par règle (`R-*`) | `cargo test` ; Vitest pour `money.ts` et la logique d'interface |
+| Unitaire | Moteurs du cœur, règle par règle (`R-*`) | `cargo test` ; Vitest (`ng test`) pour `money.ts` et la logique d'interface |
 | Propriétés | Invariants : Σ ventilations, solde = ouverture + Σ, réimport idempotent, patrimoine invariant par virement, annulation d'import = état initial | `proptest` |
 | Golden files | Lecteurs de fichiers : `fixtures/<banque>/<cas>.csv` → `expected.json` | `insta`, fichiers **anonymisés** uniquement |
 | Intégration | Cas d'usage avec une SQLite réelle (fichier temporaire ou mémoire) | — |
@@ -110,7 +110,8 @@ Les cas de référence chiffrés des specs (intérêts, TRI, ventilations, indic
 
 - Aucune donnée réelle ni aucun secret dans le dépôt (cf. CLAUDE.md). `.gitignore` initial : base de
   données, fichiers importés, `.env*` sauf `.env.example`.
-- Accès : réseau local uniquement, HTTPS via Caddy, mot de passe unique et session par cookie (ADR-0015).
+- Accès : réseau local uniquement, mot de passe unique et session par cookie (ADR-0015). HTTP simple en
+  V1, HTTPS servi par axum plus tard (ADR-0020).
 - Chiffrement au repos : chiffrement du disque du serveur (ADR-0015).
 - Journalisation : jamais de libellé, de montant ou d'IBAN dans les logs au niveau INFO.
 - OCR : ADR-0007.
@@ -125,7 +126,7 @@ Les cas de référence chiffrés des specs (intérêts, TRI, ventilations, indic
 
 ## Projection sur la stack
 
-Stack : ADR-0009 (Rust + React/TypeScript). Déploiement : ADR-0015. API : ADR-0016.
+Stack : ADR-0009 (Rust), ADR-0019 (Angular). Déploiement : ADR-0015, ADR-0018, ADR-0020. API : ADR-0016.
 
 ### Organisation du dépôt
 
@@ -142,11 +143,11 @@ cashflow/
 │   │   └── seed/              ← données initiales (JSON), sans donnée personnelle
 │   └── server/                ← axum, DTO, OpenAPI (utoipa), auth, fichiers statiques,
 │                                 binaire `cashflow` et ses sous-commandes
-├── web/                       ← SPA React + TypeScript (Vite)
-│   └── src/api/generated/     ← client généré depuis openapi.json (jamais édité à la main)
+├── web/                       ← SPA Angular (Angular CLI)
+│   └── src/app/api/           ← client généré depuis openapi.json (jamais édité à la main)
 ├── openapi.json               ← contrat d'API versionné (ADR-0016)
 ├── fixtures/                  ← fichiers d'import anonymisés + résultats attendus (golden)
-├── deploy/                    ← Dockerfile, compose.yaml, Caddyfile (2 modes TLS), guide d'installation
+├── deploy/                    ← Dockerfile, compose.yaml, guide d'installation
 ├── docs/                    ← conception : docs transverses, specs/, adr/
 ├── justfile                   ← commandes du projet
 ├── README.md · CLAUDE.md
@@ -230,19 +231,21 @@ Décision et précautions : ADR-0017.
   dépense, catégorisation). L'**import et la revue d'import** sont conçus pour l'ordinateur, et
   restent simplement utilisables sur mobile.
 - Montants : module `money.ts` (analyse d'une saisie « 1 234,56 » en centimes, formatage
-  `Intl.NumberFormat('fr-FR')`), testé, sans arithmétique flottante.
+  `Intl.NumberFormat('fr-FR')`) et pipe d'affichage, testés, sans arithmétique flottante.
+- Stack et conventions : ADR-0019 (Angular, Angular Material, signals, un dossier par feature).
+- Pas de PWA en V1 : elle suppose HTTPS (ADR-0020).
 
 ### Commandes (`justfile`)
 
 | Commande | Effet |
 |---|---|
-| `just dev` | Serveur Rust (rechargement automatique) + Vite en parallèle |
-| `just test` | `cargo test --workspace` + `vitest run` |
-| `just lint` | `cargo fmt --check`, `cargo clippy -- -D warnings`, `tsc --noEmit`, `biome check` |
+| `just dev` | Sur le Mac : serveur Rust (rechargement automatique) + `ng serve`, base de démonstration (ADR-0018) |
+| `just test` | `cargo test --workspace` + `ng test` |
+| `just lint` | `cargo fmt --check`, `cargo clippy -- -D warnings`, `ng lint`, `prettier --check` |
 | `just openapi` | Régénère `openapi.json` puis le client TypeScript |
 | `just db-prepare` | `cargo sqlx prepare` (requêtes hors ligne pour la CI) |
 | `just e2e` | Tests Playwright sur une instance de test |
-| `just docker` | Construit l'image multi-architecture |
+| `just deploy` | Sur le serveur : récupère la version, sauvegarde la base, reconstruit et relance (ADR-0018) |
 
 ### Intégration continue
 

@@ -24,13 +24,15 @@ retenu et ses conséquences. Il sert à comprendre plus tard *pourquoi* le proje
 | [0006](0006-mono-utilisateur.md) | Mono-utilisateur en V1, multi-membres du foyer à terme | Accepté |
 | [0007](0007-services-tiers-optionnels.md) | Services tiers (OCR) explicites et optionnels | Accepté |
 | [0008](0008-export-ouvert.md) | Export complet dans un format ouvert | Accepté |
-| [0009](0009-choix-de-la-stack.md) | Choix de la stack technique : Rust (axum, sqlx/SQLite) + React/TypeScript | Accepté |
+| [0009](0009-choix-de-la-stack.md) | Choix de la stack technique : Rust (axum, sqlx/SQLite) + React/TypeScript | Accepté, front remplacé par 0019 |
 | [0010](0010-epargne-variable-par-valorisations.md) | Épargne variable suivie par valorisations | Accepté |
 | [0011](0011-identifiants-uuidv7.md) | Identifiants UUIDv7 | Accepté |
 | [0012](0012-dates-calendaires.md) | Dates calendaires sans fuseau | Accepté |
 | [0013](0013-coeur-metier-pur.md) | Cœur métier pur, isolé des entrées/sorties | Accepté |
 | [0014](0014-modele-de-budget.md) | Modèle de budget : lignes par catégorie, projets et objectifs d'épargne | Accepté |
-| [0015](0015-deploiement-auto-heberge.md) | Déploiement auto-hébergé sur le réseau local | Accepté |
+| [0015](0015-deploiement-auto-heberge.md) | Déploiement auto-hébergé sur le réseau local | Accepté, HTTPS remplacé par 0020 |
 | [0016](0016-contrat-api-openapi.md) | Une API REST unique, décrite en OpenAPI, avec un client généré | Accepté |
 | [0017](0017-sqlite-et-sqlx.md) | Base SQLite, accès par sqlx sans ORM | Accepté |
 | [0018](0018-environnements-livraison-et-ci.md) | Environnements, livraison et intégration continue | Proposé |
+| [0019](0019-front-angular.md) | Interface en Angular avec Angular Material | Accepté |
+| [0020](0020-http-en-v1.md) | HTTP simple en V1, HTTPS par axum ensuite | Accepté |

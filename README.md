@@ -16,10 +16,11 @@ des comptes.
 ## Stack
 
 - **Backend** : Rust (axum, sqlx + SQLite), organisé en workspace `crates/{core,app,infra,server}`.
-- **Frontend** : React + TypeScript (Vite, TanStack, Tailwind + shadcn/ui), dans `web/`.
-- **Déploiement** : un seul binaire qui sert l'API et la SPA, une image Docker, Caddy en HTTPS.
+- **Frontend** : Angular et Angular Material, dans `web/`.
+- **Déploiement** : un seul binaire qui sert l'API et la SPA, une image Docker sur un serveur personnel,
+  en HTTP sur le réseau local pour la V1.
 
-Le détail est dans [docs/architecture.md](docs/architecture.md) et dans les ADR 0009, 0015, 0016 et 0017.
+Le détail est dans [docs/architecture.md](docs/architecture.md) et dans les ADR 0009, 0015 à 0020.
 
 ## Documentation
 
@@ -40,6 +41,6 @@ Ces commandes seront disponibles une fois le squelette du projet créé :
 |---|---|
 | `just dev` | Lancer le serveur et l'interface en développement |
 | `just test` | Lancer tous les tests (Rust et TypeScript) |
-| `just lint` | Vérifier format, clippy, tsc et biome |
+| `just lint` | Vérifier format, clippy, lint Angular et Prettier |
 | `just openapi` | Régénérer `openapi.json` et le client TypeScript |
 | `just db-prepare` | Mettre à jour le cache de requêtes `.sqlx/` |

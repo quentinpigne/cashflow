@@ -45,18 +45,20 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
 7. **Aucun secret ni aucune donnée bancaire réelle dans le dépôt** (IBAN, relevés, clés d'API).
    Les fixtures de test sont anonymisées.
 
-## Stack (ADR-0009, ADR-0015, ADR-0016)
+## Stack (ADR-0009, ADR-0015, ADR-0016, ADR-0018 à ADR-0020)
 
 - Backend Rust : workspace `crates/{core,app,infra,server}`, axum, sqlx + SQLite (sans ORM, ADR-0017), rust_decimal, chrono, uuid v7.
-- Frontend : `web/`, React + TypeScript strict, Vite, TanStack Query/Router/Table, Tailwind + shadcn/ui.
-- Déploiement : binaire unique servant API et SPA, image Docker `linux/amd64`, Caddy en HTTPS sur le réseau local.
+- Frontend (ADR-0019) : `web/`, Angular (standalone, signals, sans zone.js), Angular Material, Reactive Forms
+  typés, ECharts. Pas de NgRx.
+- Déploiement : binaire unique servant API et SPA, image Docker `linux/amd64`, HTTP simple sur le réseau local
+  en V1 (ADR-0020). Un seul environnement, la production ; développement sur le Mac sans Docker (ADR-0018).
 - Détails et organisation : `docs/architecture.md` § « Projection sur la stack ».
 
 ## Commandes (une fois le squelette créé)
 
 - `just dev` : serveur et interface en développement
 - `just test` : tous les tests (Rust + TypeScript)
-- `just lint` : fmt, clippy `-D warnings`, tsc, biome. **Doit passer avant tout commit.**
+- `just lint` : fmt, clippy `-D warnings`, `ng lint`, Prettier. **Doit passer avant tout commit.**
 - `just openapi` : régénère `openapi.json` et le client TS. **À lancer après toute modification d'API.**
 - `just db-prepare` : met à jour `.sqlx/`. **À lancer après toute modification de requête SQL.**
 
@@ -73,7 +75,7 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
   (non vérifié) seulement si c'est inévitable, et couvert par un test d'intégration. Tables `STRICT`
   avec les `CHECK` du modèle de données. Une migration qui recrée une table suit la procédure de
   l'ADR-0017.
-- Côté TS : ne jamais écrire à la main un type d'API (utiliser `web/src/api/generated/`), ne jamais faire
+- Côté TS : ne jamais écrire à la main un type ou un service d'API (utiliser le client généré dans `web/src/app/api/`), ne jamais faire
   d'arithmétique sur des montants hors de `money.ts`.
 
 ## Quand l'implémentation commencera

@@ -1,6 +1,6 @@
 # ADR-0009 — Choix de la stack technique
 
-- **Statut** : Accepté
+- **Statut** : Accepté ; partie « Frontend » remplacée par ADR-0019
 - **Date** : 2026-10-20
 - **Concerne** : architecture, roadmap, CLAUDE.md ; complété par ADR-0015 (déploiement), ADR-0016 (contrat d'API) et ADR-0017 (base de données)
 

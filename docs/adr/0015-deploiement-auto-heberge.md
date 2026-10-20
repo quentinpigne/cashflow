@@ -1,6 +1,6 @@
 # ADR-0015 — Déploiement auto-hébergé sur le réseau local
 
-- **Statut** : Accepté
+- **Statut** : Accepté ; partie « HTTPS sur le réseau local » remplacée par ADR-0020
 - **Date** : 2026-10-20
 - **Concerne** : architecture, ADR-0006, ADR-0008, ADR-0009
 
