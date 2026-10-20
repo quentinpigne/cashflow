@@ -9,9 +9,8 @@ la machine sans action volontaire.
 
 ## Statut
 
-La conception est terminée (phase 0) et aucune ligne de code n'est encore écrite.
-La prochaine étape est la phase 1 de la [roadmap](docs/roadmap.md) : un registre exact
-des comptes.
+La conception est validée et l'implémentation de la V1 est en cours, phase par phase
+([roadmap](docs/roadmap.md)). La phase 1 (registre exact des comptes) est en place.
 
 ## Stack
 
@@ -33,8 +32,15 @@ Toute la conception se trouve dans [`docs/`](docs/README.md) :
 
 Les consignes pour Claude Code sont dans [CLAUDE.md](CLAUDE.md).
 
+## Démarrer
+
+- **Développement (Mac)** : `cargo run -p cashflow-server -- demo` crée une base de démonstration fictive
+  (mot de passe `demo-cashflow`), puis `cargo run -p cashflow-server -- serve` et, dans `web/`,
+  `npm install && npm start`. L'interface est sur `http://localhost:4200`.
+- **Serveur** : `deploy/deploy.sh`, cf. [deploy/README.md](deploy/README.md).
+
 ## Commandes
 
-Le projet n'utilise pas d'outil de commandes : les commandes `cargo` et `npm` (tests, lint,
-génération du client d'API, déploiement) sont listées dans
-[docs/architecture.md](docs/architecture.md), § « Commandes ».
+Le projet n'utilise pas d'outil de commandes : les commandes `cargo` et `npm` (tests, lint, génération du
+client d'API, tests de bout en bout) sont listées dans [docs/architecture.md](docs/architecture.md),
+§ « Commandes ».

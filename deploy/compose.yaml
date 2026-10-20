@@ -1,0 +1,24 @@
+# Environnement unique de Cashflow, sur le serveur (ADR-0015, ADR-0018).
+# Déploiement : deploy/deploy.sh (cf. deploy/README.md).
+name: cashflow
+
+services:
+  cashflow:
+    # Chaque image est étiquetée par son commit, pour pouvoir revenir à la précédente.
+    image: cashflow:${CASHFLOW_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    # HTTP sur le réseau local en V1 (ADR-0015) : rien n'est exposé sur Internet.
+    ports:
+      - ${CASHFLOW_PORT:-3000}:3000
+    environment:
+      TZ: ${TZ:-Europe/Paris}
+      RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      - data:/data
+
+volumes:
+  # Tout l'état : cashflow.db, backups/, imports/ (ADR-0015).
+  data:

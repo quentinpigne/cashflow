@@ -1,0 +1,13 @@
+# Seules les sources nécessaires au build partent vers le moteur Docker.
+.git
+target
+data
+docs
+**/node_modules
+web/dist
+web/test-results
+web/playwright-report
+*.db
+*.db-*
+.env
+.env.*

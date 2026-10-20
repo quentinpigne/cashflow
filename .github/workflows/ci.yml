@@ -1,0 +1,103 @@
+# Intégration continue (ADR-0018) : tous les contrôles sont bloquants. La CI ne déploie pas.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  # Les requêtes sqlx sont vérifiées à partir du cache .sqlx/ versionné (ADR-0017).
+  SQLX_OFFLINE: 'true'
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, tests, contrats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: openapi.json est à jour
+        run: |
+          cargo run -q -p cashflow-server -- openapi > /tmp/openapi.json
+          diff -u openapi.json /tmp/openapi.json
+      - name: .sqlx/ est à jour
+        run: |
+          export DATABASE_URL=sqlite:target/sqlx/schema.db
+          mkdir -p target/sqlx
+          sqlx database setup --source crates/server/migrations
+          SQLX_OFFLINE=false cargo sqlx prepare --workspace --check
+
+  web:
+    name: Interface (lint, format, tests, build, client généré)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx ng lint
+      - run: npm run format:check
+      - run: npx ng test --watch=false
+      - run: npx ng build
+      - name: Le client généré est à jour
+        run: |
+          npm run openapi
+          git diff --exit-code -- src/app/api
+
+  e2e:
+    name: Bout en bout (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npx ng build
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npx playwright test
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: web/test-results
+
+  docker:
+    name: Image Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: false
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

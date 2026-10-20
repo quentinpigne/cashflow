@@ -241,20 +241,22 @@ Décision et précautions : ADR-0017.
 
 ### Commandes
 
-Pas d'outil de commandes pour l'instant (ADR-0018) : les commandes `cargo` se lancent à la racine,
-les commandes `npm` dans `web/`.
+Pas d'outil de commandes (ADR-0018) : les commandes `cargo` se lancent à la racine, les commandes `npm` /
+`npx` dans `web/`.
 
 | Tâche | Commandes |
 |---|---|
-| Lancer en développement (Mac) | `cargo run -p cashflow-server -- serve` sur la base de démonstration, et `npm start` (`ng serve`, qui relaie `/api` vers le serveur) |
-| Tests | `cargo test --workspace` ; `npm test` |
-| Lint | `cargo fmt --check` ; `cargo clippy --workspace --all-targets -- -D warnings` ; `npm run lint` ; `npx prettier --check .` |
+| Base de développement (Mac) | `cargo run -p cashflow-server -- demo` : base `data/` remplie du jeu de démonstration (mot de passe `demo-cashflow`) |
+| Lancer en développement | `cargo run -p cashflow-server -- serve` (API sur le port 3000) et `npm start` (`ng serve`, qui relaie `/api` vers le serveur) |
+| Tests | `cargo test --workspace` ; `npx ng test --watch=false` |
+| Lint et format | `cargo fmt --check` ; `cargo clippy --workspace --all-targets -- -D warnings` ; `npx ng lint` ; `npm run format:check` |
 | Contrat d'API | `cargo run -p cashflow-server -- openapi > openapi.json`, puis `npm run openapi` (client généré) |
-| Requêtes sqlx | `cargo sqlx prepare --workspace` (requêtes hors ligne pour la CI, cf. `.sqlx/`) |
-| Bout en bout | `npx playwright test` |
-| Déploiement (serveur) | `git pull`, sauvegarde de la base, `docker compose up -d --build` — procédure dans `deploy/` (ADR-0018) |
+| Requêtes sqlx | `cargo sqlx prepare --workspace` (cache `.sqlx/`, cf. `.env.example` pour la base de schéma) |
+| Bout en bout | `npx ng build` puis `npm run e2e` (Playwright lance le serveur sur un jeu de démonstration à date figée) |
+| Déploiement (serveur) | `deploy/deploy.sh` — procédure et retour arrière dans `deploy/README.md` (ADR-0018) |
 
 ### Intégration continue
 
-GitHub Actions (ou équivalent) : `lint`, `test`, vérification qu'`openapi.json`, le client généré et
-`.sqlx/` sont à jour, build de l'image Docker. Tous ces contrôles sont bloquants.
+GitHub Actions (`.github/workflows/ci.yml`) : lint et tests Rust et TypeScript, vérification
+qu'`openapi.json`, le client généré et `.sqlx/` sont à jour, tests de bout en bout Playwright, build de
+l'image Docker. Tous ces contrôles sont bloquants ; la CI ne déploie pas (ADR-0018).

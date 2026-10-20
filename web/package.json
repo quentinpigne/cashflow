@@ -14,7 +14,6 @@
     "format:check": "prettier --check src e2e"
   },
   "private": true,
-  "packageManager": "npm@12.0.2",
   "dependencies": {
     "@angular/cdk": "^22.2.3",
     "@angular/common": "^22.1.0",

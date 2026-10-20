@@ -23,3 +23,6 @@ fixtures/**/raw/
 
 # Build
 /target/
+
+# Journal local des déploiements (deploy/deploy.sh)
+/deploy/deployments.log
