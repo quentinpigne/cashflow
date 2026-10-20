@@ -1,0 +1,41 @@
+{
+  "_comment": "Historique des taux réglementés (R-EPA-11, R-EPA-12) : complété à chaque démarrage, jamais codé en dur. Taux annuels en millionièmes (1,7 % = 17000). À tenir à jour à chaque révision (1er février, 1er août).",
+  "schedules": [
+    {
+      "name": "Livret A (réglementé)",
+      "periods": [
+        { "effective_from": "2020-02-01", "annual_rate_ppm": 5000 },
+        { "effective_from": "2022-02-01", "annual_rate_ppm": 10000 },
+        { "effective_from": "2022-08-01", "annual_rate_ppm": 20000 },
+        { "effective_from": "2023-02-01", "annual_rate_ppm": 30000 },
+        { "effective_from": "2025-02-01", "annual_rate_ppm": 24000 },
+        { "effective_from": "2025-08-01", "annual_rate_ppm": 17000 }
+      ]
+    },
+    {
+      "name": "LDDS (réglementé)",
+      "periods": [
+        { "effective_from": "2020-02-01", "annual_rate_ppm": 5000 },
+        { "effective_from": "2022-02-01", "annual_rate_ppm": 10000 },
+        { "effective_from": "2022-08-01", "annual_rate_ppm": 20000 },
+        { "effective_from": "2023-02-01", "annual_rate_ppm": 30000 },
+        { "effective_from": "2025-02-01", "annual_rate_ppm": 24000 },
+        { "effective_from": "2025-08-01", "annual_rate_ppm": 17000 }
+      ]
+    },
+    {
+      "name": "LEP (réglementé)",
+      "periods": [
+        { "effective_from": "2020-02-01", "annual_rate_ppm": 10000 },
+        { "effective_from": "2022-02-01", "annual_rate_ppm": 22000 },
+        { "effective_from": "2022-08-01", "annual_rate_ppm": 46000 },
+        { "effective_from": "2023-02-01", "annual_rate_ppm": 61000 },
+        { "effective_from": "2023-08-01", "annual_rate_ppm": 60000 },
+        { "effective_from": "2024-02-01", "annual_rate_ppm": 50000 },
+        { "effective_from": "2024-08-01", "annual_rate_ppm": 40000 },
+        { "effective_from": "2025-02-01", "annual_rate_ppm": 35000 },
+        { "effective_from": "2025-08-01", "annual_rate_ppm": 27000 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE split SET category_id = ?, updated_at = ?\n             WHERE category_id = ? OR category_id IN (SELECT id FROM category WHERE parent_id = ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "a75a07d867da6553559e4e7ce32f5fcc78b4e80ad58749a34a6b0546bcdf295b"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO ledger_transaction (id, account_id, date, bank_date, value_date, amount, bank_label, label, note,\n                                         clearing_status, origin, recurring_rule_id, fingerprint, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 15
+    },
+    "nullable": []
+  },
+  "hash": "095cc79738467418b4bee3b74c5a899ccb685db49b0b15cb4125d6ec9c7de3dc"
+}

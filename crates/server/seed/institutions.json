@@ -1,0 +1,22 @@
+{
+  "_comment": "Référentiel initial des établissements (CPT-02, heritage.md). Codes banque repris seulement quand ils sont sûrs ; Crédit du Nord (absorbé par la Société Générale) et Orange Bank (repris) sont écartés.",
+  "institutions": [
+    { "name": "BNP Paribas", "bank_code": "30004" },
+    { "name": "Société Générale", "bank_code": "30003" },
+    { "name": "Crédit Agricole" },
+    { "name": "Crédit Mutuel" },
+    { "name": "CIC" },
+    { "name": "CIC - Épargne Salariale" },
+    { "name": "La Banque Postale", "bank_code": "20041" },
+    { "name": "LCL", "bank_code": "30002" },
+    { "name": "HSBC France" },
+    { "name": "Boursorama Banque", "bank_code": "40618" },
+    { "name": "Fortuneo" },
+    { "name": "ING" },
+    { "name": "Monabanq" },
+    { "name": "Hello bank!" },
+    { "name": "BforBank" },
+    { "name": "N26" },
+    { "name": "Revolut" }
+  ]
+}

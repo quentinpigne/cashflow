@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.amount AS \"amount!\", (SELECT coalesce(sum(s.amount), 0) FROM split s WHERE s.transaction_id = t.id) AS \"total!: i64\"\n               FROM ledger_transaction t WHERE t.id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "amount!",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "total!: i64",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "6cb89d739c5033e2e23f38c4cb61ac847c76fa46aad89fcccc7fb9a0ab010641"
+}

@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, bank_code, bic, archived AS \"archived: bool\" FROM institution WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "institution",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "institution",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "bank_code",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "institution",
+            "name": "bank_code"
+          }
+        }
+      },
+      {
+        "name": "bic",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "institution",
+            "name": "bic"
+          }
+        }
+      },
+      {
+        "name": "archived: bool",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "institution",
+            "name": "archived"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "775725f5f18693e371bf810cc12e8103519fd005133324aec292e4ccde23e9b5"
+}

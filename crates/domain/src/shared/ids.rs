@@ -3,6 +3,7 @@
 macro_rules! define_id {
     ($($(#[$doc:meta])* $name:ident),* $(,)?) => {$(
         $(#[$doc])*
+        #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema), schema(value_type = String, format = Uuid))]
         #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
         #[serde(transparent)]
         pub struct $name(uuid::Uuid);

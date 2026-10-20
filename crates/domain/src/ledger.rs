@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::shared::{DomainError, Money};
 
 /// État de pointage d'une transaction (R-TRX-5).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ClearingStatus {
@@ -19,6 +20,7 @@ pub enum ClearingStatus {
 }
 
 /// Origine d'une transaction.
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum TransactionOrigin {

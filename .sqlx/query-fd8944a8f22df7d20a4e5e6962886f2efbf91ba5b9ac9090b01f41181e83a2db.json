@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT parent_id IS NULL AS \"root!: bool\" FROM category WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "root!: bool",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fd8944a8f22df7d20a4e5e6962886f2efbf91ba5b9ac9090b01f41181e83a2db"
+}

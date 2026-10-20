@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO rate_schedule (id, name, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "af0ebf8513bb7b86963396b979ea541128c1e6564425263eb514dbcf7305065c"
+}

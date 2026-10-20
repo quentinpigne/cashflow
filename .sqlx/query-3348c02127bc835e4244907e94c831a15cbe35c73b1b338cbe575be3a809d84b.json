@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO fixed_savings_terms (account_id, rate_schedule_id, interest_method, capitalization, deposit_cap,\n                                          maturity_date, interest_category_id, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "3348c02127bc835e4244907e94c831a15cbe35c73b1b338cbe575be3a809d84b"
+}

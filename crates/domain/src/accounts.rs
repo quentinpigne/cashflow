@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::shared::{Date, DomainError, Money};
 
 /// Famille d'un compte : fixe son comportement dans l'application (spec 01).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AccountFamily {
@@ -29,6 +30,7 @@ impl AccountFamily {
 macro_rules! account_kinds {
     ($($kind:ident => $family:ident),* $(,)?) => {
         /// Nature d'un compte. La famille en découle (R-CPT-1).
+        #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
         #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
         pub enum AccountKind { $($kind),* }
@@ -113,6 +115,7 @@ impl AccountKind {
 }
 
 /// Méthode de calcul des intérêts (spec 06).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum InterestMethod {
@@ -122,6 +125,7 @@ pub enum InterestMethod {
 }
 
 /// Rythme de capitalisation des intérêts (spec 06).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Capitalization {

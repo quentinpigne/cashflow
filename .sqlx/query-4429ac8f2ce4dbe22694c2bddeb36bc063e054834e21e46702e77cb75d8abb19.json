@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM fixed_savings_terms WHERE account_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "4429ac8f2ce4dbe22694c2bddeb36bc063e054834e21e46702e77cb75d8abb19"
+}

@@ -1,0 +1,42 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT min(date) AS \"min_date: Date\", min(balance_date) AS \"min_balance: Date\",\n                  max(date) AS \"max_date: Date\", max(balance_date) AS \"max_balance: Date\"\n           FROM ledger_transaction WHERE account_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "min_date: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "name": "min_balance: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "name": "max_date: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "name": "max_balance: Date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "80877907514464c5848717fcc2ca1a92cbb5d2978edda87cde99b310cb823e17"
+}

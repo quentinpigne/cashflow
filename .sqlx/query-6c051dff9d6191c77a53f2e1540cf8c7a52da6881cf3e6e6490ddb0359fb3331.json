@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM category WHERE parent_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6c051dff9d6191c77a53f2e1540cf8c7a52da6881cf3e6e6490ddb0359fb3331"
+}

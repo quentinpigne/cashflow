@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO transfer (id, outflow_transaction_id, inflow_transaction_id, note, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "0b7cf2f0cbefeabe9fef4f3d740ee02834af00da9045a92228dc6d18847cced4"
+}

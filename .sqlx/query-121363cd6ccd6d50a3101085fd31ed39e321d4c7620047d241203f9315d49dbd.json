@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE budget_line SET category_id = ?1, updated_at = ?2\n         WHERE category_id = ?3 OR (?4 AND category_id IN (SELECT id FROM category WHERE parent_id = ?3))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "121363cd6ccd6d50a3101085fd31ed39e321d4c7620047d241203f9315d49dbd"
+}

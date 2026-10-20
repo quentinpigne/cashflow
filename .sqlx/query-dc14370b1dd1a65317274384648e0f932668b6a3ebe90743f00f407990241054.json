@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT (SELECT count(*) FROM ledger_transaction WHERE account_id = ?1)\n              + (SELECT count(*) FROM valuation WHERE account_id = ?1)",
+  "describe": {
+    "columns": [
+      {
+        "name": "(SELECT count(*) FROM ledger_transaction WHERE account_id = ?1)\n              + (SELECT count(*) FROM valuation WHERE account_id = ?1)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "dc14370b1dd1a65317274384648e0f932668b6a3ebe90743f00f407990241054"
+}

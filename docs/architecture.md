@@ -190,8 +190,10 @@ server ──► domain
 ```
 
 - `domain` ne dépend d'aucun crate d'I/O (ni `tokio`, ni `sqlx`, ni `axum`, ni `reqwest`). Ses dépendances
-  autorisées : `rust_decimal`, `chrono`, `uuid`, `serde`, `thiserror`. Les flottants y sont interdits
-  par clippy (`disallowed-types`). La frontière de crate fait respecter la pureté par le compilateur.
+  autorisées : `rust_decimal`, `chrono`, `uuid`, `serde`, `thiserror`, et `utoipa` derrière la feature
+  optionnelle `openapi` (dérivation des schémas des types exposés par l'API, sans I/O). Les flottants y
+  sont interdits par clippy (`disallowed-types`). La frontière de crate fait respecter la pureté par le
+  compilateur.
 - Dans `server`, les dépendances entre modules vont dans un seul sens : `api` → `services` → `db` /
   `readers`. Les routes n'exécutent pas de requête ; les services ne contiennent pas de calcul métier.
 - Chaque service s'exécute dans **une transaction SQLite**, ouverte et validée par le service.

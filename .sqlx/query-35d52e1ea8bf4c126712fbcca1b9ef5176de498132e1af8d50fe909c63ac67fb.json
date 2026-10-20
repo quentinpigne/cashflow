@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM rate_schedule WHERE id = ? AND NOT EXISTS\n               (SELECT 1 FROM fixed_savings_terms WHERE rate_schedule_id = rate_schedule.id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "35d52e1ea8bf4c126712fbcca1b9ef5176de498132e1af8d50fe909c63ac67fb"
+}

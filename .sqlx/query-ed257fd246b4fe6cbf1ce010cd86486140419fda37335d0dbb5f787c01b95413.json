@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE ledger_transaction SET account_id = ?, date = ?, bank_date = ?, value_date = ?, amount = ?, label = ?,\n                                       note = ?, clearing_status = ?, updated_at = ?\n         WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "ed257fd246b4fe6cbf1ce010cd86486140419fda37335d0dbb5f787c01b95413"
+}

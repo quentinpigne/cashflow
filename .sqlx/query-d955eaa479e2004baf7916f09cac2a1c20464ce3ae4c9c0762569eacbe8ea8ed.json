@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE fixed_savings_terms SET interest_category_id = ?1, updated_at = ?2\n         WHERE interest_category_id = ?3\n            OR (?4 AND interest_category_id IN (SELECT id FROM category WHERE parent_id = ?3))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "d955eaa479e2004baf7916f09cac2a1c20464ce3ae4c9c0762569eacbe8ea8ed"
+}

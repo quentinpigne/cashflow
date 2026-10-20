@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM split WHERE transaction_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "327e4729a61a9b3e74ef2d02f49c7be341c7d002476fdb9df94f42d7c4f730ab"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE category SET parent_id = ?, updated_at = ? WHERE parent_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "662e7a6d921396996a800858ae67f86b341fef0997965d65da5fb577b59ae27c"
+}

@@ -1,0 +1,117 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS \"archived: bool\", c.display_order, c.color, c.icon,\n                  (SELECT count(*) FROM split s WHERE s.category_id = c.id) AS \"usage!: i64\"\n           FROM category c ORDER BY c.display_order, c.name COLLATE NOCASE",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "parent_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "parent_id"
+          }
+        }
+      },
+      {
+        "name": "archived: bool",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "archived"
+          }
+        }
+      },
+      {
+        "name": "display_order",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "display_order"
+          }
+        }
+      },
+      {
+        "name": "color",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "color"
+          }
+        }
+      },
+      {
+        "name": "icon",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "icon"
+          }
+        }
+      },
+      {
+        "name": "usage!: i64",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "d34daa53e2e8e668cbc36432391730cb66fc46bea0d4d9f20638a81c7d1277c3"
+}

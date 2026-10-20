@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO institution (id, name, bank_code, bic, archived, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "8fe94a053acf58f9f4ec54f2877601b6218ad71a616a7a0fb9e5e8af051eaef8"
+}

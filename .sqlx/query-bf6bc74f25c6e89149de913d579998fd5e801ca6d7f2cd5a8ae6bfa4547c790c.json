@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT account_id, date AS \"date: Date\", value FROM valuation ORDER BY account_id, date",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "valuation",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "date: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "valuation",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "value",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "valuation",
+            "name": "value"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bf6bc74f25c6e89149de913d579998fd5e801ca6d7f2cd5a8ae6bfa4547c790c"
+}

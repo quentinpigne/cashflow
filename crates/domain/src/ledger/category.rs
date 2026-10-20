@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::shared::DomainError;
 
 /// Nature d'une catégorie. Elle ne contraint pas le signe des ventilations (R-TRX-13).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum CategoryKind {

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id FROM fixed_savings_terms t JOIN rate_schedule s ON s.id = t.rate_schedule_id\n           WHERE t.account_id = ? AND s.shared = 0",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rate_schedule",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "73c676ecdf038db8a9b4c9df5cecfdad82ef82a8826e372f902739487173b442"
+}

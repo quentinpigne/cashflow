@@ -1,0 +1,206 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, kind, institution_id, currency,\n                  opening_date AS \"opening_date: Date\", opening_balance, iban, account_number,\n                  closed_on AS \"closed_on: Date\",\n                  include_in_net_worth AS \"include_in_net_worth: bool\",\n                  include_in_emergency_fund AS \"include_in_emergency_fund: bool\",\n                  include_in_budget AS \"include_in_budget: bool\",\n                  display_order, color, notes\n           FROM account WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "institution_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "institution_id"
+          }
+        }
+      },
+      {
+        "name": "currency",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "name": "opening_date: Date",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "opening_date"
+          }
+        }
+      },
+      {
+        "name": "opening_balance",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "opening_balance"
+          }
+        }
+      },
+      {
+        "name": "iban",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "iban"
+          }
+        }
+      },
+      {
+        "name": "account_number",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "account_number"
+          }
+        }
+      },
+      {
+        "name": "closed_on: Date",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "closed_on"
+          }
+        }
+      },
+      {
+        "name": "include_in_net_worth: bool",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "include_in_net_worth"
+          }
+        }
+      },
+      {
+        "name": "include_in_emergency_fund: bool",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "include_in_emergency_fund"
+          }
+        }
+      },
+      {
+        "name": "include_in_budget: bool",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "include_in_budget"
+          }
+        }
+      },
+      {
+        "name": "display_order",
+        "ordinal": 13,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "display_order"
+          }
+        }
+      },
+      {
+        "name": "color",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "color"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 15,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "notes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "e52517a360bdf24e105c4d8ce8f188cc3dc2cbb4a1b7c25c6db4cef6f4645b19"
+}

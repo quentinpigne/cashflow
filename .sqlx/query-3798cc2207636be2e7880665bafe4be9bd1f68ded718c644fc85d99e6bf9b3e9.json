@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE split SET category_id = ?, updated_at = ? WHERE category_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "3798cc2207636be2e7880665bafe4be9bd1f68ded718c644fc85d99e6bf9b3e9"
+}

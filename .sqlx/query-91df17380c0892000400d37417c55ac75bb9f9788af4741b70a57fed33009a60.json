@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE institution SET name = ?, bank_code = ?, bic = ?, archived = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "91df17380c0892000400d37417c55ac75bb9f9788af4741b70a57fed33009a60"
+}

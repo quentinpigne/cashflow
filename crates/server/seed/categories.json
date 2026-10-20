@@ -1,0 +1,26 @@
+{
+  "_comment": "Catégories par défaut, proposées au premier lancement (R-TRX-23, heritage.md). Parents référencés par nom.",
+  "expense": [
+    { "name": "Logement", "children": ["Loyer", "Gaz, électricité, eau", "Décoration", "Extérieur et jardin", "Autres"] },
+    { "name": "Alimentation & restauration", "children": ["Supermarché / épicerie", "Restaurants", "Cafés / bars", "Fast food", "Autres"] },
+    { "name": "Achats & shopping", "children": ["Vêtements / chaussures", "Autres"] },
+    { "name": "Auto & transports", "children": ["Carburant", "Péage", "Entretien", "Transports en commun", "Autres"] },
+    { "name": "Abonnements", "children": ["Internet", "Téléphone", "Autres"] },
+    { "name": "Santé", "children": ["Médecin", "Pharmacie", "Autres"] },
+    { "name": "Loisirs", "children": ["Sorties", "Sport", "Culture", "Autres"] },
+    { "name": "Voyages", "children": ["Transport", "Hébergement", "Autres"] },
+    { "name": "Impôts et taxes", "children": ["Impôt sur le revenu", "Taxe foncière", "Autres"] },
+    { "name": "Assurances", "children": ["Habitation", "Auto", "Autres"] },
+    { "name": "Enfants", "children": [] },
+    { "name": "Animaux", "children": [] },
+    { "name": "Dons", "children": [] },
+    { "name": "Frais bancaires", "children": [] },
+    { "name": "Prêts", "children": [] }
+  ],
+  "income": [
+    { "name": "Salaires", "children": [] },
+    { "name": "Allocations et pensions", "children": [] },
+    { "name": "Intérêts", "children": [] },
+    { "name": "Autres revenus", "children": [] }
+  ]
+}

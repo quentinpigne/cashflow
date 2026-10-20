@@ -14,7 +14,13 @@ chrono = { version = "0.4.45", features = ["serde"] }
 rust_decimal = "1.43.0"
 serde = { version = "1.0.229", features = ["derive"] }
 thiserror = "2.0.21"
+utoipa = { version = "6.0.0", optional = true, features = ["uuid"] }
 uuid = { version = "1.26.1", features = ["v7", "serde"] }
+
+[features]
+# Dérive les schémas OpenAPI des types exposés par l'API (ADR-0016). Aucune I/O.
+openapi = ["dep:utoipa"]
 
 [dev-dependencies]
 proptest = "1.12.0"
+

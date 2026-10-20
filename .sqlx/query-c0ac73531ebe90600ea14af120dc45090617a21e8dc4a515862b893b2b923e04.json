@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT account_id AS \"account_id!\", balance_date AS \"balance_date!: Date\", amount AS \"amount!\" FROM ledger_transaction\n           ORDER BY account_id, balance_date, id",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "balance_date!: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "balance_date"
+          }
+        }
+      },
+      {
+        "name": "amount!",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c0ac73531ebe90600ea14af120dc45090617a21e8dc4a515862b893b2b923e04"
+}

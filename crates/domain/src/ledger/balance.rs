@@ -14,6 +14,37 @@ pub fn balance_at(opening_balance: Money, movements: &[DatedAmount], at: Date) -
     opening_balance + movements.iter().filter(|m| m.balance_date <= at).map(|m| m.amount).sum::<Money>()
 }
 
+/// Valorisation constatée d'un compte d'épargne variable ou d'un prêt (spec 01, CPT-06).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Valuation {
+    pub date: Date,
+    pub value: Money,
+}
+
+/// Valeur d'un compte à la fin de la journée `at` (R-CPT-6) : dernière valorisation à date ≤ `at`, plus
+/// les flux nets enregistrés après elle (exclue) jusqu'à `at` (inclus). Sans valorisation : ouverture + flux.
+///
+/// Renvoie aussi la date de la valorisation retenue, pour signaler une valeur « estimée ».
+pub fn value_at(
+    opening_balance: Money,
+    valuations: &[Valuation],
+    movements: &[DatedAmount],
+    at: Date,
+) -> (Money, Option<Date>) {
+    let last = valuations.iter().filter(|v| v.date <= at).max_by_key(|v| v.date);
+    match last {
+        Some(valuation) => {
+            let flows: Money = movements
+                .iter()
+                .filter(|m| m.balance_date > valuation.date && m.balance_date <= at)
+                .map(|m| m.amount)
+                .sum();
+            (valuation.value + flows, Some(valuation.date))
+        }
+        None => (balance_at(opening_balance, movements, at), None),
+    }
+}
+
 /// Solde après chaque opération, dans l'ordre fourni (TRX-02).
 ///
 /// L'appelant trie les mouvements par date de solde, puis par ordre de création.
@@ -59,6 +90,32 @@ mod tests {
         assert_eq!(
             running_balances(Money::from_minor(10_000), &movements),
             vec![Money::from_minor(9_000), Money::from_minor(9_500)]
+        );
+    }
+
+    #[test]
+    fn r_cpt_6_value_is_last_valuation_plus_later_flows() {
+        let valuations = [
+            Valuation { date: d("2026-01-31"), value: Money::from_minor(1_000_000) },
+            Valuation { date: d("2026-02-28"), value: Money::from_minor(1_020_000) },
+        ];
+        let movements = [mv("2026-02-15", 50_000), mv("2026-03-05", 30_000), mv("2026-03-20", -10_000)];
+        assert_eq!(
+            value_at(Money::ZERO, &valuations, &movements, d("2026-03-10")),
+            (Money::from_minor(1_050_000), Some(d("2026-02-28")))
+        );
+        assert_eq!(
+            value_at(Money::ZERO, &valuations, &movements, d("2026-02-20")),
+            (Money::from_minor(1_050_000), Some(d("2026-01-31")))
+        );
+    }
+
+    #[test]
+    fn r_cpt_6_without_valuation_falls_back_to_opening_plus_flows() {
+        let movements = [mv("2026-02-15", 50_000)];
+        assert_eq!(
+            value_at(Money::from_minor(-15_000_000), &[], &movements, d("2026-03-01")),
+            (Money::from_minor(-14_950_000), None)
         );
     }
 
