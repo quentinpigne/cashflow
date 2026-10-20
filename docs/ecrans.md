@@ -1,6 +1,6 @@
 # Écrans — phase 1
 
-Statut : **Brouillon**
+Statut : **Validée** (2026-10-20)
 
 Navigation et écrans de la phase 1 de la [roadmap](roadmap.md) (registre exact). Les règles métier
 restent dans les specs : ce document décrit **ce qu'on voit et ce qu'on peut faire**, écran par écran,
@@ -89,8 +89,9 @@ Blocs, de haut en bas :
    `[mat-autocomplete]`, sans ouvrir la transaction.
 4. **Comptes** : liste groupée par famille avec le solde de chaque compte, comme
    [E2](#e2--comptes-cpt-01-cpt-03) mais sans les comptes clôturés. Un toucher ouvre le compte.
-5. **Alertes** : transactions `PENDING` de plus de 10 jours (R-TDB-10). Les écarts de rapprochement
-   arrivent en phase 2.
+5. **Alertes** : transactions `PENDING` de plus de 10 jours et écarts de rapprochement (R-TDB-10).
+   **Bloc absent en phase 1** : toutes les transactions y sont saisies à la main et restent `PENDING`,
+   l'alerte se déclencherait partout. Il apparaît en phase 2, avec le pointage par import.
 
 Sur ordinateur, les blocs se répartissent sur deux colonnes : patrimoine et mois en cours à gauche,
 comptes à droite, « à catégoriser » et alertes en dessous.
@@ -139,14 +140,16 @@ Passifs), avec le total de chaque groupe. Ordre dans un groupe : `display_order`
 
 **En-tête** :
 - nom, nature, établissement, IBAN masqué (R-CPT-8 ; un bouton l'affiche en clair) ;
-- **solde total** et **solde pointé** (CPT-03) ;
+- **solde total** et **solde pointé** (CPT-03). En phase 1, seul le solde total est affiché : sans
+  pointage, le solde pointé ne voudrait rien dire. Il apparaît en phase 2 ;
 - « Solde au… » : un sélecteur de date affiche le solde à une date passée ;
 - menu `⋮` : Modifier, Clôturer (CPT-04), Supprimer (seulement si le compte est vide, R-CPT-7).
 
 **Transactions** (TRX-02), les plus récentes en haut :
 - colonnes : date, libellé, catégorie (ou « Ventilée » s'il y a plusieurs ventilations, ou « Virement
   vers / depuis <compte> »), montant, **solde après opération** ;
-- `PENDING` en italique avec une pastille « en attente » ; `RECONCILED` avec un cadenas ;
+- `PENDING` en italique avec une pastille « en attente » ; `RECONCILED` avec un cadenas. Comme le solde
+  pointé, ces marques n'apparaissent qu'en phase 2 ;
 - **filtres** : période, catégorie, statut, montant (min, max), texte (libellé et note). Sur mobile, ils
   sont dans un panneau qui s'ouvre depuis une icône ; les filtres actifs apparaissent en puces
   `[mat-chip]` sous l'en-tête ;
@@ -160,7 +163,7 @@ Passifs), avec le total de chaque groupe. Ordre dans un groupe : `display_order`
 │ ← Compte courant      ⋮  │
 │ LCL · FR76 •••• •••4 21  │
 │ Solde       2 090,12 €   │
-│ Pointé      2 135,12 €   │
+│ Pointé      2 135,12 €   │  ← phase 2
 │ [Solde au… 📅]           │
 ├──────────────────────────┤
 │ 🔍 Filtres  [Mars ×]     │
@@ -172,7 +175,7 @@ Passifs), avec le total de chaque groupe. Ordre dans un groupe : `display_order`
 │ Virement → Livret A      │
 │                  -200,00 │
 │                 2 210,12 │
-│ ┆ en attente ┆           │
+│ ┆ en attente ┆ ← phase 2 │
 └──────────────────────────┘
 ```
 
@@ -190,6 +193,10 @@ Formulaire `[mat-dialog]` sur ordinateur, plein écran sur mobile.
 5. **Options**, section repliée, préremplies selon la nature : compter dans le patrimoine, dans
    l'épargne de précaution (R-CPT-13), dans les budgets (R-CPT-11). Devise (EUR par défaut, non
    modifiable après création). Note.
+
+Compte d'épargne à taux fixe (Livret A, LDDS…) : ses conditions d'épargne (R-CPT-9) sont créées
+**préremplies** selon la nature, sans être affichées en phase 1. Leur écran (CPT-05) arrive avec
+l'épargne (phase 5), qui les exploite pour calculer les intérêts.
 
 **Clôturer** (CPT-04) : dialogue qui demande la date de clôture. Si le solde à cette date n'est pas nul,
 il l'affiche et demande une confirmation explicite (R-CPT-5).
@@ -284,15 +291,3 @@ Liste d'entrées, chacune ouvrant sa page :
   source » arrivera avec l'import (phase 2).
 - **Sécurité** : « Se déconnecter de tous les appareils » (ADR-0015), avec confirmation.
 - **À propos** : version de l'application, date de la dernière sauvegarde automatique.
-
-## Points à valider
-
-1. **Comptes d'épargne à taux fixe en phase 1.** Créer un Livret A exige des conditions d'épargne
-   (R-CPT-9), mais leur écran (CPT-05) est prévu en V1. Proposition : en phase 1, les conditions sont
-   créées préremplies et ne sont pas affichées ; les intérêts (phase 5) les exploiteront.
-2. **Pointage manuel.** En phase 1, toutes les transactions sont saisies à la main et restent
-   `PENDING` : le « solde pointé » vaut donc le solde d'ouverture, et l'alerte « `PENDING` de plus de
-   10 jours » se déclenche sur tout. Proposition : avancer le pointage manuel (RAP-07, une case à
-   cocher par transaction dans E3) en phase 1, ou masquer solde pointé et alerte jusqu'à la phase 2.
-3. **Accueil sur ordinateur** : deux colonnes comme décrit, ou une seule colonne centrée comme sur
-   mobile ?
