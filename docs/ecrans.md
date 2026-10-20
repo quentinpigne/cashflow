@@ -291,3 +291,103 @@ Liste d'entrées, chacune ouvrant sa page :
   source » arrivera avec l'import (phase 2).
 - **Sécurité** : « Se déconnecter de tous les appareils » (ADR-0015), avec confirmation.
 - **À propos** : version de l'application, date de la dernière sauvegarde automatique.
+
+---
+
+# Écrans — phases 2 et 3
+
+Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+
+Ce qui change dans les écrans de la phase 1 :
+- **E1 Accueil** : le bloc **Alertes** apparaît (écart de rapprochement, transactions en attente depuis
+  plus de 10 jours, R-TDB-10), avec un lien vers le compte concerné.
+- **E3 Détail d'un compte** : le **solde pointé** et les marques de statut apparaissent (« en attente »
+  en italique, cadenas pour une transaction rapprochée) ; filtre par statut ; case de pointage manuel
+  sur chaque transaction en attente (RAP-07) ; panneau **Rapprochement** (E13) ; action « Importer un
+  relevé » dans le menu.
+- **E7 Détail d'une transaction** : statut affiché ; « Pointer » / « Dépointer » ; « Créer une règle à
+  partir de celle-ci » (R-IMP-20).
+
+## Navigation
+
+| Entrée | Mobile (barre du bas) | Ordinateur (menu latéral) |
+|---|---|---|
+| Accueil, Comptes | ✓ | ✓ |
+| Transactions (E14) | ✓ | ✓ |
+| Analyses (E15) | ✓ | ✓ |
+| Import (E10, E12) | depuis un compte ou les réglages | ✓ |
+| Réglages | ✓ | ✓ |
+
+## E10 — Import : assistant (IMP-01, IMP-02)
+
+Conçu pour l'ordinateur, utilisable sur mobile. Étapes `[mat-stepper]` :
+1. **Fichier** : dépôt du fichier, compte, profil existant ou « nouveau profil ». Si le même fichier a
+   déjà été validé dans ce compte, un avertissement (R-IMP-7), non bloquant.
+2. **Colonnes** (nouveau profil, CSV/XLSX) : encodage et séparateur détectés et modifiables, feuille
+   (XLSX), ligne des en-têtes, lignes à ignorer ; association des colonnes (date et format, libellé(s),
+   montant unique ou débit/crédit, séparateurs) ; filtres de lignes ; cellules des soldes. Les 20
+   premières lignes brutes sont affichées, et **l'aperçu normalisé se met à jour en direct** avec les
+   erreurs par ligne. L'OFX saute cette étape.
+3. **Profil** : nom du profil à enregistrer (facultatif), puis « Lancer la revue ».
+
+## E11 — Import : revue (IMP-04, IMP-05, R-IMP-18)
+
+- En-tête : compte, fichier, période ; **contrôle du relevé** (`fin − début − Σ lignes`) en vert si nul,
+  en rouge sinon (R-IMP-18) ; compteurs à créer / à pointer / ignorées / en erreur.
+- Tableau des lignes : date, libellé bancaire, montant, **décision** (Créer / Pointer / Ignorer), et selon
+  la décision : catégorie (ou ventilation) et libellé de la transaction à créer, ou la transaction
+  pointée avec son score ; doublons grisés ; lignes en erreur avec leurs erreurs, non importables.
+- Proposition de virement (R-IMP-14) : « Virement vers Livret A ? Accepter ».
+- Filtres : toutes, à créer, à pointer, doublons, erreurs, non catégorisées. Sélection multiple : décision
+  ou catégorie en masse.
+- Pied : « Annuler l'import » (supprime le lot, R-IMP-1) et « Valider » ; après validation, résumé et,
+  pour chaque point de contrôle à écart nul, **« Rapprocher au <date> »** (R-RAP-11).
+
+## E12 — Import : historique (IMP-06, IMP-07)
+
+Liste des lots : date, compte, fichier, période, statut, nombre de transactions créées et pointées.
+Actions : reprendre la revue (lot en revue), **annuler un lot validé** (R-IMP-17, avec confirmation),
+télécharger ou supprimer le fichier source (R-IMP-21).
+
+## E13 — Rapprochement d'un compte (RAP-01 à RAP-06)
+
+Panneau de la fiche compte (E3), pour les comptes de liquidités et d'épargne à taux fixe (R-RAP-10) :
+- liste des points de contrôle : date, solde annoncé, solde calculé, **écart**, état (rapproché ✓,
+  écart figé, à rapprocher) ;
+- « Ajouter un point de contrôle » : date et solde lu sur la banque ;
+- sur un point à écart nul : « Rapprocher » → dialogue qui liste les transactions encore en attente et les
+  points dont l'écart sera figé (R-RAP-4, R-RAP-5) ;
+- sur un point en écart : « Chercher l'écart » → pistes (R-RAP-9) : transactions en attente, montant
+  égal à l'écart, paire de transactions, erreur de signe ;
+- sur un point rapproché : « Déverrouiller » avec confirmation (R-RAP-6).
+
+## E14 — Transactions (TRX-08, TRX-06)
+
+Toutes les transactions, tous comptes confondus, avec les filtres d'E3 plus le compte et « à
+catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Catégoriser » (TRX-06). Pas de
+solde après opération : il n'a de sens que par compte.
+
+## E15 — Analyses (TDB-02, TDB-03)
+
+Deux onglets :
+- **Par catégorie** : mois choisi (par défaut le mois en cours, « mois en cours »), dépenses ou revenus ;
+  graphique en barres horizontales par catégorie, et tableau : montant, mois précédent (à la même date
+  pour le mois en cours, R-TDB-13), moyenne 12 mois ; une catégorie se déplie en sous-catégories ; un
+  clic ouvre E14 filtré sur la catégorie et le mois.
+- **Évolution** : 12 ou 24 mois ; barres revenus / dépenses et courbe d'épargne ; taux d'épargne du mois
+  et glissant sur 12 mois.
+
+Graphiques : ECharts (ADR-0009).
+
+## E16 — Règles de catégorisation (IMP-08)
+
+Dans les réglages. Liste par priorité (glisser-déposer), avec nombre d'utilisations, actif / inactif.
+Formulaire : conditions (libellé contient / commence par / égal / motif avec `*`, montant, sens,
+comptes), actions (libellé, catégorie ou ventilation en %, virement vers un compte, note),
+« arrêter ici ». « Aperçu » liste les transactions existantes non catégorisées concernées, qu'on peut
+cocher et catégoriser d'un coup (R-IMP-19).
+
+## E17 — Profils d'import (IMP-02)
+
+Dans les réglages : liste des profils (nom, format, compte par défaut), renommer, supprimer, modifier
+les réglages (mêmes champs que l'étape 2 de l'assistant).
