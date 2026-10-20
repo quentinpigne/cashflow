@@ -82,6 +82,24 @@ pub enum DomainError {
     #[error("un point de contrôle est rapproché : le solde d'ouverture ne peut plus changer")]
     OpeningBalanceLocked,
 
+    // ----- Budgets (spec 05)
+    #[error("mois attendu au format AAAA-MM")]
+    InvalidMonth,
+    #[error("le montant prévu doit être positif")]
+    BudgetAmountNotPositive,
+    #[error("la fin de validité précède le début")]
+    BudgetPeriodInverted,
+    #[error(
+        "ligne de budget incohérente : une catégorie pour une dépense ou un revenu, un compte d'épargne pour un objectif"
+    )]
+    InvalidBudgetLine,
+    #[error("une ligne de revenu n'a pas de report")]
+    IncomeRollover,
+    #[error("cette catégorie a déjà une ligne en vigueur sur cette période")]
+    BudgetLineOverlap,
+    #[error("on ne rattache de nouvelles ventilations qu'à un projet en cours")]
+    ProjectClosed,
+
     // ----- Import (spec 03)
     #[error("une règle doit avoir au moins une condition")]
     RuleWithoutCondition,
@@ -125,6 +143,13 @@ impl DomainError {
             PeriodReconciled { .. } => "PERIOD_RECONCILED",
             NoCheckpointForFamily => "NO_CHECKPOINT_FOR_FAMILY",
             OpeningBalanceLocked => "OPENING_BALANCE_LOCKED",
+            InvalidMonth => "INVALID_MONTH",
+            BudgetAmountNotPositive => "BUDGET_AMOUNT_NOT_POSITIVE",
+            BudgetPeriodInverted => "BUDGET_PERIOD_INVERTED",
+            InvalidBudgetLine => "INVALID_BUDGET_LINE",
+            IncomeRollover => "INCOME_ROLLOVER",
+            BudgetLineOverlap => "BUDGET_LINE_OVERLAP",
+            ProjectClosed => "PROJECT_CLOSED",
             RuleWithoutCondition => "RULE_WITHOUT_CONDITION",
         }
     }
@@ -156,6 +181,11 @@ impl DomainError {
             PeriodReconciled { .. } => "R-RAP-7",
             NoCheckpointForFamily => "R-RAP-10",
             OpeningBalanceLocked => "R-RAP-8",
+            InvalidMonth | BudgetPeriodInverted => return None,
+            BudgetAmountNotPositive | InvalidBudgetLine => "R-BUD-10",
+            IncomeRollover => "R-BUD-19",
+            BudgetLineOverlap => "R-BUD-11",
+            ProjectClosed => "R-BUD-24",
             RuleWithoutCondition => "R-IMP-12",
         })
     }
