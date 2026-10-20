@@ -1,0 +1,9 @@
+# Remplace le clippy.toml de la racine pour ce crate : clippy ne fusionne pas les deux.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+
+# Jamais de flottant dans le domaine (ADR-0001).
+disallowed-types = [
+    { path = "f32", reason = "pas de flottant dans le domaine : utiliser Money, Rate ou rust_decimal (ADR-0001)" },
+    { path = "f64", reason = "pas de flottant dans le domaine : utiliser Money, Rate ou rust_decimal (ADR-0001)" },
+]
