@@ -33,3 +33,4 @@ retenu et ses conséquences. Il sert à comprendre plus tard *pourquoi* le proje
 | [0015](0015-deploiement-auto-heberge.md) | Déploiement auto-hébergé sur le réseau local | Accepté |
 | [0016](0016-contrat-api-openapi.md) | Une API REST unique, décrite en OpenAPI, avec un client généré | Accepté |
 | [0017](0017-sqlite-et-sqlx.md) | Base SQLite, accès par sqlx sans ORM | Accepté |
+| [0018](0018-environnements-livraison-et-ci.md) | Environnements, livraison et intégration continue | Proposé |
