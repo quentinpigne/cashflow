@@ -1,0 +1,18 @@
+# Données personnelles : jamais versionnées
+*.db
+*.sqlite
+*.sqlite3
+imports/
+exports/
+backups/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Fixtures : seuls les fichiers anonymisés sont autorisés (fixtures/**/anonymized/)
+fixtures/**/raw/
+
+# Build
+/target/
