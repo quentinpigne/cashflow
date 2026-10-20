@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT dedupe_key AS \"k!\" FROM notification WHERE dedupe_key IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "k!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "notification",
+            "name": "dedupe_key"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "d0af830a26b5d889c7056123f56fa526c34a85d0f68fa86a44acf480325f45ae"
+}

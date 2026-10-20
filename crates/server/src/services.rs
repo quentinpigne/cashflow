@@ -4,6 +4,7 @@
 pub mod accounts;
 pub mod auth;
 pub mod backup;
+pub mod budgets;
 pub mod categories;
 pub mod dashboard;
 pub mod demo;
@@ -51,6 +52,8 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
     Ok(value.to_owned())
 }
 
+#[cfg(test)]
+mod budget_tests;
 #[cfg(test)]
 mod import_tests;
 #[cfg(test)]

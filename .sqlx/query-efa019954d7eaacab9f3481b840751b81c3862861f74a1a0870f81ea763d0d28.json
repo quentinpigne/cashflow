@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT side.date AS \"date!: Date\", side.account_id AS \"account_id!\", side.amount AS \"amount!: i64\"\n           FROM transfer tr\n           JOIN ledger_transaction t_in ON t_in.id = tr.inflow_transaction_id\n           JOIN ledger_transaction t_out ON t_out.id = tr.outflow_transaction_id\n           JOIN account a_in ON a_in.id = t_in.account_id\n           JOIN account a_out ON a_out.id = t_out.account_id\n           JOIN (SELECT id, date, account_id, amount FROM ledger_transaction) side\n             ON (side.id = t_in.id AND a_out.include_in_budget = 1)\n             OR (side.id = t_out.id AND a_in.include_in_budget = 1)\n           WHERE side.date BETWEEN ? AND ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "account_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "amount!: i64",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "efa019954d7eaacab9f3481b840751b81c3862861f74a1a0870f81ea763d0d28"
+}

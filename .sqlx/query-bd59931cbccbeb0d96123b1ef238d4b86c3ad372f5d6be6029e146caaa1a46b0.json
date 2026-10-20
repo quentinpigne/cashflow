@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT budget_line_id, period, amount FROM budget_override ORDER BY period",
+  "describe": {
+    "columns": [
+      {
+        "name": "budget_line_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_override",
+            "name": "budget_line_id"
+          }
+        }
+      },
+      {
+        "name": "period",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_override",
+            "name": "period"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budget_override",
+            "name": "amount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bd59931cbccbeb0d96123b1ef238d4b86c3ad372f5d6be6029e146caaa1a46b0"
+}

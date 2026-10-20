@@ -175,6 +175,9 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
         }
         let mut tx = db.write.begin().await?;
         let t = db::transactions::find(&mut *tx, *transaction).await?.ok_or(AppError::NotFound("transaction"))?;
+        if let Some(project) = rule.actions.set_project {
+            super::budgets::check_active(&mut tx, project).await?;
+        }
         let label = rule.actions.set_label.clone().unwrap_or_else(|| t.label.clone());
         let note = rule.actions.set_note.clone().or_else(|| t.note.clone());
         let update = TransactionUpdate {
@@ -200,10 +203,14 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
                     amount,
                     category_id: s.category_id,
                     note: None,
-                    project_id: None,
+                    project_id: rule.actions.set_project,
                 })
                 .collect();
             db::transactions::replace_splits(&mut tx, t.id, &splits).await?;
+        } else if let Some(project) = rule.actions.set_project {
+            for split in db::transactions::splits_of(&mut *tx, t.id).await? {
+                db::budgets::set_split_project(&mut *tx, split.id, Some(project)).await?;
+            }
         }
         db::rules::add_hit(&mut *tx, id).await?;
         check_split_sums(&mut tx, &[t.id]).await?;

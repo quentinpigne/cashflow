@@ -124,9 +124,7 @@ impl<L, C, A> LineVersion<L, C, A> {
 
     /// Premier mois de l'année budgétaire qui contient `month` (R-BUD-15).
     pub fn budget_year_start(&self, month: Month) -> Month {
-        let start = self.year_start_month.clamp(1, 12);
-        let year = if month.month >= start { month.year } else { month.year - 1 };
-        Month { year, month: start }
+        budget_year_start(self.year_start_month, month)
     }
 
     /// Mois de l'année budgétaire qui contient `month`.
@@ -139,6 +137,13 @@ impl<L, C, A> LineVersion<L, C, A> {
         }
         months
     }
+}
+
+/// Premier mois de l'année budgétaire commençant au mois `start` qui contient `month` (R-BUD-15).
+pub fn budget_year_start(start: u32, month: Month) -> Month {
+    let start = start.clamp(1, 12);
+    let year = if month.month >= start { month.year } else { month.year - 1 };
+    Month { year, month: start }
 }
 
 /// Surcharge d'une ligne pour un mois, ou pour l'année budgétaire qui commence ce mois-là (R-BUD-51).
@@ -288,18 +293,56 @@ pub struct BudgetData<'a, L, C, A, P> {
     pub parents: &'a HashMap<C, C>,
 }
 
-impl<L, C, A, P> BudgetData<'_, L, C, A, P>
+impl<'a, L, C, A, P> BudgetData<'a, L, C, A, P>
+where
+    L: Copy + Eq + Hash,
+    C: Copy + Eq + Hash,
+    A: Copy + Eq + Hash,
+{
+    /// Range chaque ventilation et chaque virement d'épargne dans sa ligne, une fois pour toutes.
+    pub fn build(self) -> Budget<'a, L, C, A, P> {
+        let mut actuals: HashMap<(Month, L), Money> = HashMap::new();
+        let mut in_force: HashMap<Month, Vec<&LineVersion<L, C, A>>> = HashMap::new();
+        for split in self.splits {
+            let month = Month::of(split.date);
+            let lines =
+                in_force.entry(month).or_insert_with(|| self.lines.iter().filter(|l| l.in_force(month)).collect());
+            if let Destination::Line(id) = destination(split, lines, self.parents)
+                && let Some(line) = lines.iter().find(|l| l.id == id)
+            {
+                *actuals.entry((month, id)).or_insert(Money::ZERO) += signed(line.kind, split.amount);
+            }
+        }
+        for movement in self.moves {
+            let month = Month::of(movement.date);
+            for line in self.lines.iter().filter(|l| {
+                l.kind == BudgetKind::Savings && l.target_account == Some(movement.account) && l.in_force(month)
+            }) {
+                *actuals.entry((month, line.id)).or_insert(Money::ZERO) += movement.amount;
+            }
+        }
+        Budget { data: self, actuals }
+    }
+}
+
+/// Le budget calculé : les réels de chaque ligne, mois par mois.
+pub struct Budget<'a, L, C, A, P> {
+    data: BudgetData<'a, L, C, A, P>,
+    actuals: HashMap<(Month, L), Money>,
+}
+
+impl<L, C, A, P> Budget<'_, L, C, A, P>
 where
     L: Copy + Eq + Hash,
     C: Copy + Eq + Hash,
     A: Copy + Eq + Hash,
 {
     fn in_force(&self, month: Month) -> Vec<&LineVersion<L, C, A>> {
-        self.lines.iter().filter(|l| l.in_force(month)).collect()
+        self.data.lines.iter().filter(|l| l.in_force(month)).collect()
     }
 
     fn override_for(&self, line: L, period: Month) -> Option<Money> {
-        self.overrides.iter().find(|o| o.line == line && o.period == period).map(|o| o.amount)
+        self.data.overrides.iter().find(|o| o.line == line && o.period == period).map(|o| o.amount)
     }
 
     /// Montant prévu d'une période : le mois pour une ligne mensuelle, l'année pour une ligne annuelle.
@@ -313,24 +356,7 @@ where
 
     /// Réel d'une ligne sur des mois donnés (R-BUD-13, R-BUD-31).
     fn actual(&self, line: &LineVersion<L, C, A>, months: &[Month]) -> Money {
-        if line.kind == BudgetKind::Savings {
-            return self
-                .moves
-                .iter()
-                .filter(|m| Some(m.account) == line.target_account && months.iter().any(|month| month.contains(m.date)))
-                .map(|m| m.amount)
-                .sum();
-        }
-        let mut total = Money::ZERO;
-        for month in months {
-            let lines = self.in_force(*month);
-            for split in self.splits.iter().filter(|s| month.contains(s.date)) {
-                if destination(split, &lines, self.parents) == Destination::Line(line.id) {
-                    total += signed(line.kind, split.amount);
-                }
-            }
-        }
-        total
+        months.iter().filter_map(|m| self.actuals.get(&(*m, line.id))).copied().sum()
     }
 
     /// État d'une ligne pour le mois `month` (R-BUD-15 à R-BUD-17, R-BUD-31).
@@ -398,8 +424,8 @@ where
         let mut uncategorized_out = Money::ZERO;
         let mut uncategorized_in = Money::ZERO;
         let mut excluded_projects = Money::ZERO;
-        for split in self.splits.iter().filter(|s| month.contains(s.date)) {
-            match destination(split, &in_force, self.parents) {
+        for split in self.data.splits.iter().filter(|s| month.contains(s.date)) {
+            match destination(split, &in_force, self.data.parents) {
                 Destination::OffBudget if split.amount.is_negative() => {
                     *off_budget.entry(split.category).or_insert(Money::ZERO) += -split.amount;
                 }
@@ -586,7 +612,7 @@ mod tests {
         let lines = [line(10, ALIMENTATION, 80_000, "2027-01"), line(20, RESTAURANTS, 15_000, "2027-01")];
         let parents = HashMap::from([(RESTAURANTS, ALIMENTATION), (SUPERMARCHE, ALIMENTATION)]);
         let splits = [spend("2027-03-05", -6_000, SUPERMARCHE), spend("2027-03-06", -4_000, RESTAURANTS)];
-        let data = BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents };
+        let data = BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents }.build();
         let month = data.month(m("2027-03"));
         let actual = |id| month.lines.iter().find(|l| l.line == id).unwrap().actual;
         assert_eq!(actual(10), eur(6_000));
@@ -606,7 +632,8 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
-        };
+        }
+        .build();
         let march = data.line_month(&supermarket, m("2027-03"));
         assert_eq!(march.carried, eur(1_000));
         assert_eq!(march.available, eur(61_000));
@@ -625,7 +652,8 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
-        };
+        }
+        .build();
         let march = data.line_month(&insurance, m("2027-03"));
         assert_eq!(march.planned, eur(7_500));
         assert_eq!(march.actual, eur(87_000));
@@ -662,7 +690,8 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
-        };
+        }
+        .build();
         let month = data.month(m("2027-03"));
         assert_eq!(month.lines[0].actual, Money::ZERO);
         assert_eq!(month.excluded_projects, eur(8_000));
@@ -695,7 +724,8 @@ mod tests {
             splits: &[],
             moves: &moves,
             parents: &parents,
-        };
+        }
+        .build();
         assert_eq!(data.line_month(&goal, m("2027-03")).actual, eur(20_000));
         check_line(&goal).unwrap();
     }
@@ -711,7 +741,8 @@ mod tests {
             splits: &[],
             moves: &[],
             parents: &parents,
-        };
+        }
+        .build();
         assert_eq!(data.line_month(&gifts, m("2027-12")).planned, eur(30_000));
         assert_eq!(data.line_month(&gifts, m("2027-11")).planned, eur(5_000));
         let mut closed = gifts.clone();
@@ -732,13 +763,15 @@ mod tests {
             uncategorized,
         ];
         let parents = HashMap::new();
+        let lines = [salary, food];
         let data = BudgetData::<u32, u32, u32, u32> {
-            lines: &[salary, food],
+            lines: &lines,
             overrides: &[],
             splits: &splits,
             moves: &[],
             parents: &parents,
-        };
+        }
+        .build();
         let month = data.month(m("2027-03"));
         assert_eq!(month.to_budget, eur(260_000));
         assert_eq!(month.off_budget.get(&Some(42)), Some(&eur(3_780)));

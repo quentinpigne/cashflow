@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO budget_override (id, budget_line_id, period, amount, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?5)\n         ON CONFLICT (budget_line_id, period) DO UPDATE SET amount = excluded.amount, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "3e856ce13cae860ab2bc80af9539e2b928fff7f022d831585cf59eaa8557427e"
+}

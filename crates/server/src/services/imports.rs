@@ -15,7 +15,7 @@ use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::transfer::{self, TransferLeg};
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
 use cashflow_domain::shared::ids::{
-    AccountId, CategorizationRuleId, CategoryId, ImportBatchId, ImportLineId, ImportProfileId, TransactionId,
+    AccountId, CategorizationRuleId, CategoryId, ImportBatchId, ImportLineId, ImportProfileId, ProjectId, TransactionId,
 };
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
@@ -152,6 +152,9 @@ struct Review {
     proposal: Option<TransferProposal>,
     #[serde(default)]
     rules: Vec<CategorizationRuleId>,
+    /// Projet proposé par une règle (`set_project`, BUD-06).
+    #[serde(default)]
+    project: Option<ProjectId>,
     #[serde(default)]
     learned: bool,
     /// État de la transaction pointée avant validation, pour l'annulation (R-IMP-17).
@@ -530,6 +533,7 @@ impl Suggester {
             label: suggestion.label.clone(),
             note: suggestion.note.clone(),
             rules: suggestion.rules.clone(),
+            project: suggestion.project,
             ..Default::default()
         };
         if let Some(to) = suggestion.transfer_to {
@@ -986,6 +990,9 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
         db::imports::fingerprints_of(&mut *tx, account.id).await?.into_iter().map(|(p, _)| p).collect();
     let mut result = CommitResult { created: 0, matched: 0, skipped: 0, transfers: 0, checkpoints: Vec::new() };
     let mut touched = Vec::new();
+    // Un projet proposé par une règle n'est rattaché que s'il est encore en cours (R-BUD-24).
+    let active_projects: HashSet<ProjectId> =
+        db::budgets::projects(&mut *tx).await?.into_iter().filter(|p| p.active).map(|p| p.id).collect();
 
     for line in lines.iter() {
         let (Some(date), Some(amount), Some(bank_label)) = (line.date, line.amount, line.bank_label.as_deref()) else {
@@ -1032,6 +1039,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                 period(&account).check(date)?;
                 lock.check(date)?;
                 let transfer_to = review.transfer_to;
+                let project = review.project.filter(|p| transfer_to.is_none() && active_projects.contains(p));
                 let splits: Vec<DraftSplit> = match (&review.splits, transfer_to) {
                     (_, Some(_)) | (None, None) => {
                         vec![DraftSplit { category_id: None, amount_minor: amount.minor(), note: None }]
@@ -1064,7 +1072,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                         amount: Money::from_minor(s.amount_minor),
                         category_id: s.category_id,
                         note: s.note.as_deref(),
-                        project_id: None,
+                        project_id: project,
                     })
                     .collect();
                 super::transactions::insert_validated(&mut tx, &new, &new_splits).await?;

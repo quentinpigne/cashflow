@@ -294,17 +294,19 @@ pub(crate) fn period(account: &AccountRow) -> AccountPeriod {
     AccountPeriod { opening: account.opening_date, closed_on: account.closed_on }
 }
 
-/// Vérifie les catégories et projets cités par des ventilations.
-async fn check_references(conn: &mut SqliteConnection, splits: &[SplitInput]) -> AppResult<()> {
+/// Vérifie les catégories et projets cités par des ventilations. Un projet clos garde les ventilations
+/// qui y sont déjà rattachées (`kept`), mais n'en reçoit pas de nouvelles (R-BUD-24).
+async fn check_references(conn: &mut SqliteConnection, splits: &[SplitInput], kept: &[ProjectId]) -> AppResult<()> {
     for s in splits {
         if let Some(category) = s.category_id
             && db::categories::find(&mut *conn, category).await?.is_none()
         {
             return Err(AppError::NotFound("catégorie"));
         }
-        if s.project_id.is_some() {
-            // Les projets arrivent avec les budgets (phase 4).
-            return Err(AppError::invalid("PROJECTS_UNAVAILABLE", "les projets ne sont pas encore disponibles"));
+        if let Some(project) = s.project_id
+            && !kept.contains(&project)
+        {
+            super::budgets::check_active(conn, project).await?;
         }
     }
     Ok(())
@@ -345,7 +347,7 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
     let account = db::accounts::find(&mut *tx, input.account_id).await?.ok_or(AppError::NotFound("compte"))?;
     period(&account).check(input.date)?;
     reconciliation::lock(&mut tx, input.account_id).await?.check(input.date)?;
-    check_references(&mut tx, &splits).await?;
+    check_references(&mut tx, &splits, &[]).await?;
     let id = TransactionId::new();
     let note = clean(input.note.as_deref());
     let new = NewTransaction {
@@ -416,7 +418,8 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
             .collect(),
     };
     split::check_splits(amount, &amounts(&splits))?;
-    check_references(&mut tx, &splits).await?;
+    let kept: Vec<ProjectId> = existing.iter().filter_map(|s| s.project_id).collect();
+    check_references(&mut tx, &splits, &kept).await?;
 
     let mut touched = vec![id];
     if let Some(side) = &transfer {

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE budget_line SET previous_version_id = NULL WHERE previous_version_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c9870bb2d962afa70d8d8ee63c376eeba2fa1f722cddbc9ea03c26f524dd44fd"
+}

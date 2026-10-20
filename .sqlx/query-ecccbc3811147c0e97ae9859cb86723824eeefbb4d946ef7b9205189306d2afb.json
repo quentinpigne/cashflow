@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO project (id, name, start_date, end_date, amount, exclude_from_period_budgets, status, alert_thresholds,\n                              note, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)\n         ON CONFLICT (id) DO UPDATE SET name = excluded.name, start_date = excluded.start_date, end_date = excluded.end_date,\n                                        amount = excluded.amount,\n                                        exclude_from_period_budgets = excluded.exclude_from_period_budgets,\n                                        status = excluded.status, alert_thresholds = excluded.alert_thresholds,\n                                        note = excluded.note, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "ecccbc3811147c0e97ae9859cb86723824eeefbb4d946ef7b9205189306d2afb"
+}

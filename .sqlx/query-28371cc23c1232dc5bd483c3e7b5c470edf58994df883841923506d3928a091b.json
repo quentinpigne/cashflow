@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE budget_override SET budget_line_id = ? WHERE budget_line_id = ? AND period >= ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "28371cc23c1232dc5bd483c3e7b5c470edf58994df883841923506d3928a091b"
+}

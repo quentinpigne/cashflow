@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM budget_override WHERE budget_line_id = ? AND period > ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "321975d2c434484b27c8edab41be9e9d75956b869d24df6045d3bca3e059320a"
+}

@@ -1,0 +1,100 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id,\n                  coalesce(p.exclude_from_period_budgets, 0) AS \"project_excluded!: bool\",\n                  a.include_in_budget AS \"in_budget!: bool\", a.currency,\n                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n                      AS \"is_transfer!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN project p ON p.id = s.project_id\n           WHERE t.date BETWEEN ? AND ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "category_id"
+          }
+        }
+      },
+      {
+        "name": "project_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "name": "project_excluded!: bool",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "in_budget!: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "include_in_budget"
+          }
+        }
+      },
+      {
+        "name": "currency",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "name": "is_transfer!: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e686221eb32a954cda08181757c4c3bf20d5f00bc744b9645d67650acb9704c3"
+}

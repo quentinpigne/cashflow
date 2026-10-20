@@ -13,19 +13,19 @@ use super::{dashboard, seed};
 use crate::db::{self, Db};
 use crate::error::AppError;
 
-fn d(s: &str) -> Date {
+pub(super) fn d(s: &str) -> Date {
     s.parse().unwrap()
 }
 
-const TODAY: &str = "2026-03-31";
+pub(super) const TODAY: &str = "2026-03-31";
 
-async fn setup() -> (Db, tempfile::TempDir) {
+pub(super) async fn setup() -> (Db, tempfile::TempDir) {
     let (db, dir) = db::test_db().await;
     seed::run(&db).await.unwrap();
     (db, dir)
 }
 
-async fn account(db: &Db, name: &str, kind: AccountKind, opening_minor: i64) -> AccountId {
+pub(super) async fn account(db: &Db, name: &str, kind: AccountKind, opening_minor: i64) -> AccountId {
     let input = AccountInput {
         name: name.into(),
         kind,
@@ -45,7 +45,7 @@ async fn account(db: &Db, name: &str, kind: AccountKind, opening_minor: i64) -> 
     accounts::create(db, &input, d(TODAY)).await.unwrap().id
 }
 
-async fn category(db: &Db, name: &str, kind: CategoryKind, parent: Option<CategoryId>) -> CategoryId {
+pub(super) async fn category(db: &Db, name: &str, kind: CategoryKind, parent: Option<CategoryId>) -> CategoryId {
     let input = CategoryInput {
         name: name.into(),
         kind,
@@ -58,11 +58,11 @@ async fn category(db: &Db, name: &str, kind: CategoryKind, parent: Option<Catego
     categories::create(db, &input).await.unwrap()
 }
 
-fn split(amount: i64, category: Option<CategoryId>) -> SplitInput {
+pub(super) fn split(amount: i64, category: Option<CategoryId>) -> SplitInput {
     SplitInput { amount_minor: amount, category_id: category, note: None, project_id: None }
 }
 
-fn tx(account: AccountId, date: &str, amount: i64, category: Option<CategoryId>) -> TransactionInput {
+pub(super) fn tx(account: AccountId, date: &str, amount: i64, category: Option<CategoryId>) -> TransactionInput {
     TransactionInput {
         account_id: account,
         date: d(date),
@@ -78,7 +78,7 @@ async fn balance(db: &Db, account: AccountId, at: &str) -> i64 {
     accounts::get(db, account, d(at)).await.unwrap().balance_minor
 }
 
-fn domain_error(result: Result<impl std::fmt::Debug, AppError>) -> DomainError {
+pub(super) fn domain_error(result: Result<impl std::fmt::Debug, AppError>) -> DomainError {
     match result {
         Err(AppError::Domain(error)) => error,
         other => panic!("erreur métier attendue, obtenu {other:?}"),

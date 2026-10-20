@@ -640,6 +640,382 @@
         }
       }
     },
+    "/api/v1/budget": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Le budget d'un mois : prévu, réel, reste, hors budget, reste à budgéter et solde (BUD-03).",
+        "operationId": "monthBudget",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Mois, `AAAA-MM` ; le mois en cours par défaut.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthBudgetView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/lines": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Toutes les versions de lignes et leurs surcharges (R-BUD-50).",
+        "operationId": "listBudgetLines",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BudgetLineVersion"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "createBudgetLine",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetLineInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetLineVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/lines/{id}": {
+      "put": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Report et seuils d'alerte d'une version.",
+        "operationId": "updateBudgetLine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BudgetLineId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetLineVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/lines/{id}/amount": {
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Nouveau montant à partir d'un mois, ou pour ce mois seulement (R-BUD-51).",
+        "operationId": "changeBudgetAmount",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BudgetLineId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmountChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetLineVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/lines/{id}/end": {
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Supprime une ligne à partir d'un mois : elle est close au mois précédent (R-BUD-53).",
+        "operationId": "endBudgetLine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BudgetLineId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MonthInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/lines/{id}/overrides/{period}": {
+      "delete": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Supprime la surcharge d'une période (`AAAA-MM`).",
+        "operationId": "deleteBudgetOverride",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BudgetLineId"
+            }
+          },
+          {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/budget/lines/{id}/reset-rollover": {
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Remet le report à zéro à partir d'un mois (R-BUD-18).",
+        "operationId": "resetBudgetRollover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BudgetLineId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MonthInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetLineVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/suggestions": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Montants proposés d'après les derniers mois complets (BUD-10).",
+        "operationId": "budgetSuggestions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suggestions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/budget/thresholds": {
+      "put": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Seuils d'alerte globaux (R-BUD-60).",
+        "operationId": "setBudgetThresholds",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Thresholds"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thresholds"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/categories": {
       "get": {
         "tags": [
@@ -1683,6 +2059,225 @@
         }
       }
     },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Centre de notifications (BUD-08, R-BUD-62).",
+        "operationId": "listNotifications",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notifications"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/read": {
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "markNotificationsRead",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notifications"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "listProjects",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "createProject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{id}": {
+      "get": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "updateProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "budgets"
+        ],
+        "operationId": "deleteProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reconciliation/health": {
       "get": {
         "tags": [
@@ -2253,6 +2848,45 @@
             }
           },
           "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/project": {
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Rattache (ou détache) les ventilations de transactions à un projet, en masse (BUD-06).",
+        "operationId": "attachToProject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachResult"
+                }
+              }
+            }
+          },
+          "422": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2928,6 +3562,37 @@
           }
         }
       },
+      "AlertLevel": {
+        "type": "string",
+        "description": "Niveau d'alerte d'une ligne (R-BUD-61).",
+        "enum": [
+          "NONE",
+          "WARNING",
+          "OVER",
+          "REACHED",
+          "MISSED"
+        ]
+      },
+      "AmountChange": {
+        "type": "object",
+        "required": [
+          "month",
+          "amount_minor",
+          "scope"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/AmountScope"
+          }
+        }
+      },
       "AmountColumns": {
         "type": "object",
         "required": [
@@ -3024,6 +3689,14 @@
           "gt"
         ]
       },
+      "AmountScope": {
+        "type": "string",
+        "description": "Portée d'un changement de montant (R-BUD-51).",
+        "enum": [
+          "FROM_MONTH",
+          "THIS_MONTH"
+        ]
+      },
       "ApplyInput": {
         "type": "object",
         "required": [
@@ -3047,6 +3720,49 @@
         "properties": {
           "applied": {
             "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AttachInput": {
+        "type": "object",
+        "required": [
+          "transaction_ids"
+        ],
+        "properties": {
+          "project_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "Absent : détache les ventilations de leur projet."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        }
+      },
+      "AttachResult": {
+        "type": "object",
+        "required": [
+          "attached",
+          "skipped"
+        ],
+        "properties": {
+          "attached": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "description": "Virements internes, ignorés.",
             "minimum": 0
           }
         }
@@ -3212,6 +3928,341 @@
           "to_skip": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "BudgetKind": {
+        "type": "string",
+        "description": "Nature d'une ligne de budget.",
+        "enum": [
+          "EXPENSE",
+          "INCOME",
+          "SAVINGS"
+        ]
+      },
+      "BudgetLineId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "BudgetLineInput": {
+        "type": "object",
+        "required": [
+          "kind",
+          "amount_minor",
+          "from"
+        ],
+        "properties": {
+          "alert_thresholds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "Premier mois, `AAAA-MM`."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BudgetKind"
+          },
+          "periodicity": {
+            "$ref": "#/components/schemas/Periodicity"
+          },
+          "rollover": {
+            "type": "boolean"
+          },
+          "target_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year_start_month": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "BudgetLineMonth": {
+        "type": "object",
+        "description": "Une ligne de budget pour un mois (BUD-03).",
+        "required": [
+          "id",
+          "line_id",
+          "kind",
+          "periodicity",
+          "name",
+          "year_start_month",
+          "amount_minor",
+          "planned_minor",
+          "actual_minor",
+          "carried_minor",
+          "available_minor",
+          "remaining_minor",
+          "rollover",
+          "effective_from",
+          "alert"
+        ],
+        "properties": {
+          "actual_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Réel du mois ; cumul sur l'année budgétaire pour une ligne annuelle (R-BUD-15)."
+          },
+          "alert": {
+            "$ref": "#/components/schemas/AlertLevel"
+          },
+          "alert_thresholds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "description": "Seuils propres à la ligne ; absents, les seuils globaux s'appliquent."
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant de la version (mensuel ou annuel)."
+          },
+          "available_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "carried_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_from": {
+            "type": "string"
+          },
+          "effective_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/BudgetLineId",
+            "description": "Version en vigueur ce mois-ci."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BudgetKind"
+          },
+          "line_id": {
+            "$ref": "#/components/schemas/BudgetLineId",
+            "description": "Première version de la ligne : identité stable d'une version à l'autre."
+          },
+          "name": {
+            "type": "string"
+          },
+          "override_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Surcharge de ce mois (ou de cette année budgétaire), si elle existe."
+          },
+          "parent_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Catégorie parente, pour l'affichage."
+          },
+          "periodicity": {
+            "$ref": "#/components/schemas/Periodicity"
+          },
+          "planned_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Prévu du mois ; quote-part pour une ligne annuelle (R-BUD-16)."
+          },
+          "remaining_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rollover": {
+            "type": "boolean"
+          },
+          "target_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year_start_month": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "BudgetLineVersion": {
+        "type": "object",
+        "description": "Une version de ligne, pour l'historique.",
+        "required": [
+          "id",
+          "line_id",
+          "kind",
+          "periodicity",
+          "amount_minor",
+          "rollover",
+          "effective_from",
+          "overrides"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_from": {
+            "type": "string"
+          },
+          "effective_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/BudgetLineId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BudgetKind"
+          },
+          "line_id": {
+            "$ref": "#/components/schemas/BudgetLineId"
+          },
+          "overrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverrideView"
+            }
+          },
+          "periodicity": {
+            "$ref": "#/components/schemas/Periodicity"
+          },
+          "rollover": {
+            "type": "boolean"
+          },
+          "target_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "BudgetSuggestion": {
+        "type": "object",
+        "description": "Proposition de l'assistant pour une catégorie (BUD-10).",
+        "required": [
+          "category_id",
+          "kind",
+          "name",
+          "monthly_minor",
+          "suggested_minor",
+          "has_line"
+        ],
+        "properties": {
+          "category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "has_line": {
+            "type": "boolean",
+            "description": "La catégorie a déjà une ligne en vigueur."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "monthly_minor": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Montants des mois retenus, du plus ancien au plus récent."
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parent_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "suggested_minor": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -4553,6 +5604,28 @@
           }
         }
       },
+      "LineSettings": {
+        "type": "object",
+        "required": [
+          "rollover"
+        ],
+        "properties": {
+          "alert_thresholds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "rollover": {
+            "type": "boolean"
+          }
+        }
+      },
       "LoginInput": {
         "type": "object",
         "required": [
@@ -4661,6 +5734,98 @@
           }
         }
       },
+      "MonthBudgetView": {
+        "type": "object",
+        "description": "Le budget d'un mois (BUD-03).",
+        "required": [
+          "month",
+          "current_month",
+          "has_lines",
+          "lines",
+          "off_budget",
+          "off_budget_income_minor",
+          "uncategorized_out_minor",
+          "uncategorized_in_minor",
+          "excluded_projects_minor",
+          "to_budget_minor",
+          "balance_minor",
+          "income_minor",
+          "expenses_minor",
+          "savings_minor",
+          "thresholds"
+        ],
+        "properties": {
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Solde du mois, réel (R-BUD-41)."
+          },
+          "current_month": {
+            "type": "boolean"
+          },
+          "excluded_projects_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "has_lines": {
+            "type": "boolean",
+            "description": "Au moins une ligne existe, à n'importe quelle période."
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetLineMonth"
+            }
+          },
+          "month": {
+            "type": "string",
+            "description": "`AAAA-MM`."
+          },
+          "off_budget": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OffBudgetLine"
+            }
+          },
+          "off_budget_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "to_budget_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reste à budgéter, prévu (R-BUD-40)."
+          },
+          "uncategorized_in_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uncategorized_out_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "MonthFlows": {
         "type": "object",
         "required": [
@@ -4717,6 +5882,17 @@
           }
         }
       },
+      "MonthInput": {
+        "type": "object",
+        "required": [
+          "month"
+        ],
+        "properties": {
+          "month": {
+            "type": "string"
+          }
+        }
+      },
       "NetWorthView": {
         "type": "object",
         "required": [
@@ -4738,6 +5914,109 @@
             "format": "int64"
           }
         }
+      },
+      "NotificationId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "NotificationView": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "read",
+          "created_at"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/NotificationId"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "Notifications": {
+        "type": "object",
+        "required": [
+          "unread",
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationView"
+            }
+          },
+          "unread": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OffBudgetLine": {
+        "type": "object",
+        "required": [
+          "category_id",
+          "name",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "OverrideView": {
+        "type": "object",
+        "required": [
+          "period",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "period": {
+            "type": "string"
+          }
+        }
+      },
+      "Periodicity": {
+        "type": "string",
+        "enum": [
+          "MONTHLY",
+          "YEARLY"
+        ]
       },
       "PreviewLine": {
         "type": "object",
@@ -4998,9 +6277,227 @@
           }
         }
       },
+      "ProjectCategory": {
+        "type": "object",
+        "required": [
+          "name",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "ProjectId": {
         "type": "string",
         "format": "uuid"
+      },
+      "ProjectInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "start_date",
+          "amount_minor"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "alert_thresholds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "exclude_from_period_budgets": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ProjectSplit": {
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "date",
+          "label",
+          "account_name",
+          "amount_minor",
+          "out_of_range"
+        ],
+        "properties": {
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "out_of_range": {
+            "type": "boolean",
+            "description": "Date hors de [début, fin] : signalée seulement (R-BUD-23)."
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "ProjectView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "start_date",
+          "amount_minor",
+          "exclude_from_period_budgets",
+          "active",
+          "actual_minor",
+          "alert",
+          "by_category",
+          "splits"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "actual_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Réel, remboursements déduits (R-BUD-22)."
+          },
+          "alert": {
+            "$ref": "#/components/schemas/AlertLevel"
+          },
+          "alert_thresholds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "by_category": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectCategory"
+            }
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "exclude_from_period_budgets": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProjectId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectSplit"
+            }
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ReadInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NotificationId",
+                "description": "Absent : toutes les notifications."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
       },
       "ReconcilePreview": {
         "type": "object",
@@ -5351,6 +6848,28 @@
           }
         }
       },
+      "Suggestions": {
+        "type": "object",
+        "required": [
+          "months",
+          "categories"
+        ],
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BudgetSuggestion"
+            }
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Mois complets retenus, `AAAA-MM`."
+          }
+        }
+      },
       "SystemInfo": {
         "type": "object",
         "required": [
@@ -5374,6 +6893,22 @@
           },
           "version": {
             "type": "string"
+          }
+        }
+      },
+      "Thresholds": {
+        "type": "object",
+        "required": [
+          "thresholds"
+        ],
+        "properties": {
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
           }
         }
       },
@@ -5994,6 +7529,10 @@
     {
       "name": "rules",
       "description": "Règles de catégorisation (spec 03)"
+    },
+    {
+      "name": "budgets",
+      "description": "Budgets, projets et notifications (spec 05)"
     },
     {
       "name": "dashboard",

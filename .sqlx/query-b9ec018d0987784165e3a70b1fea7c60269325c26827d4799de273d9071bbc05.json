@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, kind, category_id, target_account_id, periodicity, year_start_month, amount,\n                  rollover AS \"rollover: bool\", effective_from, effective_to, alert_thresholds, previous_version_id\n           FROM budget_line ORDER BY effective_from, id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "category_id"
+          }
+        }
+      },
+      {
+        "name": "target_account_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "target_account_id"
+          }
+        }
+      },
+      {
+        "name": "periodicity",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "periodicity"
+          }
+        }
+      },
+      {
+        "name": "year_start_month",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "year_start_month"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "rollover: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "rollover"
+          }
+        }
+      },
+      {
+        "name": "effective_from",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "effective_from"
+          }
+        }
+      },
+      {
+        "name": "effective_to",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "effective_to"
+          }
+        }
+      },
+      {
+        "name": "alert_thresholds",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "alert_thresholds"
+          }
+        }
+      },
+      {
+        "name": "previous_version_id",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line",
+            "name": "previous_version_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "b9ec018d0987784165e3a70b1fea7c60269325c26827d4799de273d9071bbc05"
+}

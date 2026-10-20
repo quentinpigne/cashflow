@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT min(date) AS \"d: Date\" FROM ledger_transaction",
+  "describe": {
+    "columns": [
+      {
+        "name": "d: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "f557afbf809d2c532026a01d0b13f295e639aad3327748c5b588dfc3cca5e945"
+}
