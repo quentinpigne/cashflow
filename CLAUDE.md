@@ -56,11 +56,16 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
 
 ## Commandes (une fois le squelette créé)
 
-- `just dev` : serveur et interface en développement
-- `just test` : tous les tests (Rust + TypeScript)
-- `just lint` : fmt, clippy `-D warnings`, `ng lint`, Prettier. **Doit passer avant tout commit.**
-- `just openapi` : régénère `openapi.json` et le client TS. **À lancer après toute modification d'API.**
-- `just db-prepare` : met à jour `.sqlx/`. **À lancer après toute modification de requête SQL.**
+Pas d'outil de commandes : liste complète dans `docs/architecture.md` § « Commandes ».
+
+- Tests : `cargo test --workspace` ; `npm test` dans `web/`.
+- Lint : `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `npm run lint`,
+  `npx prettier --check .`. **Doit passer avant tout commit.**
+- Contrat d'API : `cargo run -p cashflow-server -- openapi > openapi.json` puis `npm run openapi`.
+  **À lancer après toute modification d'API.**
+- `cargo sqlx prepare --workspace` : met à jour `.sqlx/`. **À lancer après toute modification de requête SQL.**
+- Avant de présenter une modification comme terminée : les vérifications de l'ADR-0018 (tests, parcours
+  vérifié dans un navigateur sur la base de démonstration, migration essayée sur une copie).
 
 ## Règles de code
 

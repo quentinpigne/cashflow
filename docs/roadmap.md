@@ -17,7 +17,7 @@ précédente. Les identifiants renvoient aux features des specs.
 
 Objectif : saisir et consulter ses comptes avec des soldes exacts.
 
-- Squelette : workspace Cargo (`core`, `app`, `infra`, `server`), `web/` (Angular), `justfile`, CI (ADR-0018, ADR-0019)
+- Squelette : workspace Cargo (`core`, `app`, `infra`, `server`), `web/` (Angular), CI (ADR-0018, ADR-0019)
 - Authentification mono-utilisateur, `compose.yaml` en HTTP, sauvegardes automatiques (ADR-0015, ADR-0020)
 - Déploiement en une commande sur le serveur, jeu de données de démonstration (ADR-0018)
 - Chaîne OpenAPI → client TypeScript (ADR-0016)

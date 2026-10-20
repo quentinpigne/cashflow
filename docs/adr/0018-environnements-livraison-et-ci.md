@@ -1,6 +1,6 @@
 # ADR-0018 — Environnements, livraison et intégration continue
 
-- **Statut** : Proposé
+- **Statut** : Accepté
 - **Date** : 2026-10-20
 - **Concerne** : ADR-0008, ADR-0015, ADR-0017, architecture.md, roadmap.md
 
@@ -52,9 +52,9 @@ Avant de présenter une modification comme terminée, l'IA :
 - La CI **ne déploie pas** : le serveur n'est pas joignable depuis GitHub, et ne doit pas l'être.
 
 ### Livraison
-- Le déploiement se fait **sur le serveur**, par une seule commande : récupération de la version
-  (`git pull` d'un commit dont la CI est verte), sauvegarde de la base, construction de l'image,
-  redémarrage.
+- Le déploiement se fait **sur le serveur**, par une procédure courte documentée dans le guide
+  d'installation : récupération de la version (`git pull` d'un commit dont la CI est verte), sauvegarde
+  de la base, construction de l'image, redémarrage.
 - Chaque image est **étiquetée par son commit**. L'image précédente est conservée.
 - **Retour arrière** : relancer l'image précédente et, si une migration a eu lieu, restaurer la
   sauvegarde prise juste avant le déploiement.
@@ -68,6 +68,6 @@ Avant de présenter une modification comme terminée, l'IA :
   modèle ; il sert aussi aux tests de bout en bout.
 - Une sauvegarde avant chaque déploiement s'ajoute à la sauvegarde quotidienne et à celle d'avant
   migration (ADR-0015).
-- Le Mac doit disposer de la toolchain Rust et de Node ; la liste des outils et des commandes
-  (`justfile` ou équivalent) reste à fixer dans `architecture.md`.
+- Le Mac doit disposer de la toolchain Rust et de Node. Pas d'outil de commandes (`just`, `make`) pour
+  l'instant : les commandes `cargo` et `npm` sont documentées dans `architecture.md`.
 - Le serveur doit disposer de Docker et de Git.

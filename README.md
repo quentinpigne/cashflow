@@ -35,12 +35,6 @@ Les consignes pour Claude Code sont dans [CLAUDE.md](CLAUDE.md).
 
 ## Commandes
 
-Ces commandes seront disponibles une fois le squelette du projet créé :
-
-| Commande | Rôle |
-|---|---|
-| `just dev` | Lancer le serveur et l'interface en développement |
-| `just test` | Lancer tous les tests (Rust et TypeScript) |
-| `just lint` | Vérifier format, clippy, lint Angular et Prettier |
-| `just openapi` | Régénérer `openapi.json` et le client TypeScript |
-| `just db-prepare` | Mettre à jour le cache de requêtes `.sqlx/` |
+Le projet n'utilise pas d'outil de commandes : les commandes `cargo` et `npm` (tests, lint,
+génération du client d'API, déploiement) sont listées dans
+[docs/architecture.md](docs/architecture.md), § « Commandes ».

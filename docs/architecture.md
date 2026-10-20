@@ -149,7 +149,6 @@ cashflow/
 ├── fixtures/                  ← fichiers d'import anonymisés + résultats attendus (golden)
 ├── deploy/                    ← Dockerfile, compose.yaml, guide d'installation
 ├── docs/                    ← conception : docs transverses, specs/, adr/
-├── justfile                   ← commandes du projet
 ├── README.md · CLAUDE.md
 ```
 
@@ -235,17 +234,20 @@ Décision et précautions : ADR-0017.
 - Stack et conventions : ADR-0019 (Angular, Angular Material, signals, un dossier par feature).
 - Pas de PWA en V1 : elle suppose HTTPS (ADR-0020).
 
-### Commandes (`justfile`)
+### Commandes
 
-| Commande | Effet |
+Pas d'outil de commandes pour l'instant (ADR-0018) : les commandes `cargo` se lancent à la racine,
+les commandes `npm` dans `web/`.
+
+| Tâche | Commandes |
 |---|---|
-| `just dev` | Sur le Mac : serveur Rust (rechargement automatique) + `ng serve`, base de démonstration (ADR-0018) |
-| `just test` | `cargo test --workspace` + `ng test` |
-| `just lint` | `cargo fmt --check`, `cargo clippy -- -D warnings`, `ng lint`, `prettier --check` |
-| `just openapi` | Régénère `openapi.json` puis le client TypeScript |
-| `just db-prepare` | `cargo sqlx prepare` (requêtes hors ligne pour la CI) |
-| `just e2e` | Tests Playwright sur une instance de test |
-| `just deploy` | Sur le serveur : récupère la version, sauvegarde la base, reconstruit et relance (ADR-0018) |
+| Lancer en développement (Mac) | `cargo run -p cashflow-server -- serve` sur la base de démonstration, et `npm start` (`ng serve`, qui relaie `/api` vers le serveur) |
+| Tests | `cargo test --workspace` ; `npm test` |
+| Lint | `cargo fmt --check` ; `cargo clippy --workspace --all-targets -- -D warnings` ; `npm run lint` ; `npx prettier --check .` |
+| Contrat d'API | `cargo run -p cashflow-server -- openapi > openapi.json`, puis `npm run openapi` (client généré) |
+| Requêtes sqlx | `cargo sqlx prepare --workspace` (requêtes hors ligne pour la CI, cf. `.sqlx/`) |
+| Bout en bout | `npx playwright test` |
+| Déploiement (serveur) | `git pull`, sauvegarde de la base, `docker compose up -d --build` — procédure dans `deploy/` (ADR-0018) |
 
 ### Intégration continue
 
