@@ -234,6 +234,7 @@ Décision et précautions : ADR-0017.
 - Montants : module `money.ts` (analyse d'une saisie « 1 234,56 » en centimes, formatage
   `Intl.NumberFormat('fr-FR')`) et pipe d'affichage, testés, sans arithmétique flottante.
 - Stack et conventions : ADR-0009 (Angular, Angular Material, signals, un dossier par feature).
+- Navigation et écrans : [ecrans.md](ecrans.md).
 - Pas de PWA en V1 : elle suppose HTTPS (ADR-0015).
 
 ### Commandes

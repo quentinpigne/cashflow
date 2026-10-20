@@ -18,6 +18,7 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
 - `docs/glossaire.md` : vocabulaire métier FR ↔ identifiants EN. **Source de vérité des noms.**
 - `docs/modele-de-donnees.md` : entités, champs, contraintes. **Source de vérité du schéma.**
 - `docs/architecture.md` : architecture cible et sa projection sur la stack.
+- `docs/ecrans.md` : navigation et écrans, par phase. **Référence pour toute interface.**
 - `docs/specs/NN-*.md` : règles (`R-XXX-n`) et features (`XXX-nn`) par domaine.
 - `docs/adr/` : décisions d'architecture.
 

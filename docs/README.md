@@ -19,6 +19,7 @@ Il est autonome : il peut être extrait tel quel pour initialiser un nouveau dé
 | Connaître le vocabulaire métier | [glossaire.md](glossaire.md) |
 | Voir le modèle de données complet | [modele-de-donnees.md](modele-de-donnees.md) |
 | Comprendre l'architecture cible | [architecture.md](architecture.md) |
+| Voir les écrans et la navigation | [ecrans.md](ecrans.md) |
 | Connaître l'ordre de réalisation | [roadmap.md](roadmap.md) |
 | Voir ce qui reste à trancher | [questions-ouvertes.md](questions-ouvertes.md) |
 | Savoir quoi récupérer de l'ancien projet | [heritage.md](heritage.md) |
@@ -33,6 +34,7 @@ docs/
 ├── vision.md
 ├── glossaire.md
 ├── architecture.md
+├── ecrans.md
 ├── modele-de-donnees.md
 ├── roadmap.md
 ├── questions-ouvertes.md
