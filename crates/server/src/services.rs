@@ -46,3 +46,6 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
     }
     Ok(value.to_owned())
 }
+
+#[cfg(test)]
+mod tests;

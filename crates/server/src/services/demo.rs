@@ -204,7 +204,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
             .await?;
         }
         if let Some(d) = day(20) {
-            spend(db, wallet, d, -rng.between(500, 2_500), "Marché", c.get("Alimentation & restauration", "Autres"))
+            spend(db, wallet, d, -rng.between(500, 3_000), "Marché", c.get("Alimentation & restauration", "Autres"))
                 .await?;
         }
         // Une transaction ventilée par mois (spec 02, exemple de la ventilation).
@@ -263,6 +263,18 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         if let Some(d) = day(16) {
             spend(db, checking, d, -10_000, "VERSEMENT ASSURANCE VIE", None).await?;
         }
+        // Retrait au distributeur : un virement vers le compte espèces, qui l'alimente.
+        if let Some(d) = day(12) {
+            let input = transfers::TransferInput {
+                from_account_id: checking,
+                to_account_id: wallet,
+                amount_minor: 4_000,
+                date: d,
+                label: "RETRAIT DAB".into(),
+                note: None,
+            };
+            transfers::create(db, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
         month = month.checked_add_months(Months::new(1)).context("mois suivant")?;
     }
 
@@ -310,6 +322,10 @@ mod tests {
         load(&db, today).await.unwrap();
         let accounts = accounts::list(&db, today).await.unwrap();
         assert_eq!(accounts.len(), 7);
+        // Les comptes d'actif restent positifs : le jeu reste vraisemblable.
+        for account in accounts.iter().filter(|a| a.kind != AccountKind::Mortgage) {
+            assert!(account.balance_minor > 0, "{} : {}", account.name, account.balance_minor);
+        }
         let dashboard = super::super::dashboard::get(&db, today).await.unwrap();
         assert!(dashboard.uncategorized.total >= 3);
         assert!(dashboard.month.income_minor >= 0);

@@ -1,0 +1,2765 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cashflow",
+    "description": "API de gestion de finances personnelles (ADR-0016).",
+    "license": {
+      "name": "UNLICENSED",
+      "identifier": "UNLICENSED"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/accounts": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Tous les comptes, avec leur solde ou leur valeur (CPT-01, CPT-03).",
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "at",
+            "in": "query",
+            "description": "Date du solde (CPT-03) ; aujourd'hui par défaut.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Account"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Crée un compte (CPT-01). Un compte à taux déterminé reçoit ses conditions préremplies (R-CPT-9).",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "description": "Date du solde (CPT-03) ; aujourd'hui par défaut.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "accounts"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Supprime un compte sans transaction (R-CPT-7).",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/close": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Clôture un compte (CPT-04, R-CPT-5).",
+        "operationId": "close",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/iban": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "IBAN complet, affiché à la demande (R-CPT-8).",
+        "operationId": "reveal_iban",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IbanView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/reopen": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Rouvre un compte clôturé.",
+        "operationId": "reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/transactions": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Transactions d'un compte, les plus récentes d'abord, avec le solde après opération (TRX-02).",
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Date de l'opération, incluse.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "Inclut les sous-catégories (R-TRX-21).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ClearingStatus"
+            }
+          },
+          {
+            "name": "min_amount_minor",
+            "in": "query",
+            "description": "Bornes sur la valeur absolue du montant.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "max_amount_minor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "description": "Recherche dans le libellé, le libellé bancaire et la note.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "200 par défaut.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Ouvre une session : pose le cookie `cashflow_session` (HttpOnly, SameSite=Strict, 30 jours glissants).",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Session ouverte"
+          },
+          "401": {
+            "description": "Mot de passe incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Aucun mot de passe défini",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Trop de tentatives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Ferme la session courante.",
+        "operationId": "logout",
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/auth/logout-everywhere": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Se déconnecter de tous les appareils (ADR-0015).",
+        "operationId": "logout_everywhere",
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/auth/status": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "État de la session courante.",
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Arbre des catégories à deux niveaux (TRX-04).",
+        "operationId": "tree",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Category"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "categories"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Created"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/categories/reorder": {
+      "post": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Ordre d'affichage d'un niveau de l'arbre.",
+        "operationId": "reorder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/categories/{id}": {
+      "put": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Renomme, déplace, archive ou désarchive (R-TRX-20, R-TRX-22).",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Supprime une catégorie jamais utilisée (R-TRX-22).",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/categories/{id}/merge": {
+      "post": {
+        "tags": [
+          "categories"
+        ],
+        "summary": "Fusionne la catégorie dans une autre (R-TRX-22).",
+        "operationId": "merge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Accueil (TDB-01).",
+        "operationId": "get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/export": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Export complet, au format JSON (ADR-0008).",
+        "operationId": "export",
+        "responses": {
+          "200": {
+            "description": "Fichier JSON (format décrit dans docs/export.md)",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Le serveur répond (sans authentification).",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/institutions": {
+      "get": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Établissements, archivés compris (CPT-02).",
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Institution"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "institutions"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstitutionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Institution"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/institutions/{id}": {
+      "put": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Modifie ou archive un établissement (R-CPT-10).",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InstitutionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstitutionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Institution"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/splits/{id}/category": {
+      "put": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Catégorise une ventilation sur place (`ecrans.md` E1).",
+        "operationId": "categorize_split",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SplitId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategorizeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/info": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Version et dernière sauvegarde (`ecrans.md` E9, « À propos »).",
+        "operationId": "info",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Saisit une transaction, `PENDING` (TRX-01, TRX-03).",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{id}": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Modifie une transaction (R-TRX-3, R-TRX-4).",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionUpdateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "transactions"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{id}/transfer": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Marque une transaction comme virement (R-TRX-36).",
+        "operationId": "mark_as_transfer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkAsTransferInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferLinked"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{id}/transfer-candidates": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Transactions candidates pour former un virement (R-TRX-35).",
+        "operationId": "transfer_candidates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Candidate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Saisit un virement interne : les deux jambes d'un coup (TRX-05, R-TRX-33).",
+        "operationId": "create_transfer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/{id}": {
+      "delete": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Délie un virement (R-TRX-34).",
+        "operationId": "unlink_transfer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransferId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {}
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "description": "Un compte, avec sa valeur à la date demandée.",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "family",
+          "currency",
+          "opening_date",
+          "opening_balance_minor",
+          "include_in_net_worth",
+          "include_in_emergency_fund",
+          "include_in_budget",
+          "display_order",
+          "balance_minor",
+          "balance_date",
+          "has_activity"
+        ],
+        "properties": {
+          "account_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "balance_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Solde (R-CPT-4) ou valeur (R-CPT-6) à `balance_date`."
+          },
+          "closed_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "display_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "family": {
+            "$ref": "#/components/schemas/AccountFamily"
+          },
+          "has_activity": {
+            "type": "boolean",
+            "description": "Le compte a des transactions ou des valorisations : sa nature ne peut plus changer (R-CPT-1)."
+          },
+          "iban_masked": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "IBAN masqué (R-CPT-8) ; l'IBAN complet s'obtient par une route dédiée."
+          },
+          "id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "include_in_budget": {
+            "type": "boolean"
+          },
+          "include_in_emergency_fund": {
+            "type": "boolean"
+          },
+          "include_in_net_worth": {
+            "type": "boolean"
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AccountKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opening_balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "opening_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "valuation_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Date de la valorisation retenue, pour un compte d'épargne variable ou un prêt."
+          }
+        }
+      },
+      "AccountFamily": {
+        "type": "string",
+        "description": "Famille d'un compte : fixe son comportement dans l'application (spec 01).",
+        "enum": [
+          "CASH",
+          "FIXED_SAVINGS",
+          "VARIABLE_SAVINGS",
+          "LIABILITY"
+        ]
+      },
+      "AccountId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AccountInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "opening_date"
+        ],
+        "properties": {
+          "account_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Code ISO 4217, `EUR` par défaut ; non modifiable après la création."
+          },
+          "display_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "iban": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "include_in_budget": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "include_in_emergency_fund": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "include_in_net_worth": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AccountKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opening_balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "opening_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "AccountKind": {
+        "type": "string",
+        "description": "Nature d'un compte. La famille en découle (R-CPT-1).",
+        "enum": [
+          "CHECKING",
+          "CASH_WALLET",
+          "OTHER_CASH",
+          "LIVRET_A",
+          "LDDS",
+          "LEP",
+          "LIVRET_JEUNE",
+          "CEL",
+          "PEL",
+          "TERM_DEPOSIT",
+          "SAVINGS_OTHER",
+          "LIFE_INSURANCE",
+          "PEA",
+          "PEA_PME",
+          "PER",
+          "SECURITIES",
+          "EMPLOYEE_SAVINGS",
+          "CRYPTO",
+          "VARIABLE_OTHER",
+          "MORTGAGE",
+          "CONSUMER_LOAN",
+          "LOAN_OTHER"
+        ]
+      },
+      "AuthStatus": {
+        "type": "object",
+        "required": [
+          "authenticated",
+          "password_set"
+        ],
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "password_set": {
+            "type": "boolean",
+            "description": "Faux tant que `cashflow set-password` n'a pas été lancé sur le serveur."
+          }
+        }
+      },
+      "Candidate": {
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "label",
+          "amount_minor",
+          "clearing_status"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clearing_status": {
+            "$ref": "#/components/schemas/ClearingStatus"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "CategorizeInput": {
+        "type": "object",
+        "properties": {
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "archived",
+          "display_order",
+          "usage",
+          "children"
+        ],
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            },
+            "description": "Sous-catégories (une seule profondeur, R-TRX-20)."
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "usage": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Nombre de ventilations qui l'utilisent."
+          }
+        }
+      },
+      "CategoryId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "CategoryInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind"
+        ],
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "CategoryKind": {
+        "type": "string",
+        "description": "Nature d'une catégorie. Elle ne contraint pas le signe des ventilations (R-TRX-13).",
+        "enum": [
+          "INCOME",
+          "EXPENSE"
+        ]
+      },
+      "ClearingStatus": {
+        "type": "string",
+        "description": "État de pointage d'une transaction (R-TRX-5).",
+        "enum": [
+          "PENDING",
+          "CLEARED",
+          "RECONCILED"
+        ]
+      },
+      "CloseInput": {
+        "type": "object",
+        "required": [
+          "closed_on"
+        ],
+        "properties": {
+          "closed_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirmation explicite d'une clôture à solde non nul (R-CPT-5)."
+          }
+        }
+      },
+      "Created": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/CategoryId"
+          }
+        }
+      },
+      "Dashboard": {
+        "type": "object",
+        "required": [
+          "today",
+          "net_worth",
+          "previous_net_worth_minor",
+          "net_worth_variation_minor",
+          "market_effect_minor",
+          "month",
+          "previous_month",
+          "families",
+          "uncategorized"
+        ],
+        "properties": {
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyGroup"
+            }
+          },
+          "market_effect_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Part de la variation qui ne vient pas de l'épargne du mois : marchés et intérêts (R-TDB-2)."
+          },
+          "month": {
+            "$ref": "#/components/schemas/FlowsView",
+            "description": "Mois en cours, jusqu'à aujourd'hui (R-TDB-13)."
+          },
+          "net_worth": {
+            "$ref": "#/components/schemas/NetWorthView",
+            "description": "R-TDB-1."
+          },
+          "net_worth_variation_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previous_month": {
+            "$ref": "#/components/schemas/FlowsView",
+            "description": "Mois précédent, à la même date."
+          },
+          "previous_net_worth_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Patrimoine à la fin du mois précédent (R-TDB-2)."
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "uncategorized": {
+            "$ref": "#/components/schemas/UncategorizedView"
+          }
+        }
+      },
+      "FamilyGroup": {
+        "type": "object",
+        "required": [
+          "family",
+          "total_minor",
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          },
+          "family": {
+            "$ref": "#/components/schemas/AccountFamily"
+          },
+          "total_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total des comptes en euros du groupe (R-CPT-2)."
+          }
+        }
+      },
+      "FlowsView": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "income_minor",
+          "expenses_minor",
+          "savings_minor",
+          "uncategorized_in_minor",
+          "uncategorized_out_minor"
+        ],
+        "properties": {
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_rate_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Non défini si les revenus valent 0 (R-TDB-7)."
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "uncategorized_in_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uncategorized_out_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "IbanView": {
+        "type": "object",
+        "required": [
+          "iban"
+        ],
+        "properties": {
+          "iban": {
+            "type": "string"
+          }
+        }
+      },
+      "Institution": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "archived"
+        ],
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "bank_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/InstitutionId"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "InstitutionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "InstitutionInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "bank_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "LastBackup": {
+        "type": "object",
+        "required": [
+          "at",
+          "file",
+          "reason"
+        ],
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginInput": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "MarkAsTransferInput": {
+        "type": "object",
+        "required": [
+          "counterpart_account_id"
+        ],
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirme le remplacement d'une ventilation catégorisée (R-TRX-33)."
+          },
+          "counterpart_account_id": {
+            "$ref": "#/components/schemas/AccountId",
+            "description": "Compte de contrepartie, suivi dans l'application."
+          },
+          "counterpart_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId",
+                "description": "Transaction existante à lier ; sans elle, la jambe opposée est créée (R-TRX-36)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MergeInput": {
+        "type": "object",
+        "required": [
+          "target_id"
+        ],
+        "properties": {
+          "target_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          }
+        }
+      },
+      "MergeResult": {
+        "type": "object",
+        "required": [
+          "moved_splits"
+        ],
+        "properties": {
+          "moved_splits": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Nombre de ventilations réaffectées.",
+            "minimum": 0
+          }
+        }
+      },
+      "NetWorthView": {
+        "type": "object",
+        "required": [
+          "assets_minor",
+          "liabilities_minor",
+          "total_minor"
+        ],
+        "properties": {
+          "assets_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "liabilities_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "Corps d'une réponse d'erreur (`application/problem+json`).",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Code stable de l'erreur (ex. `SPLIT_SUM_MISMATCH`)."
+          },
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Champ de la requête concerné, si l'erreur en vise un."
+          },
+          "retry_after": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Pour `TOO_MANY_ATTEMPTS` : délai d'attente en secondes.",
+            "minimum": 0
+          },
+          "rule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Règle métier concernée (ex. `R-TRX-10`)."
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "Message lisible, en français."
+          },
+          "type": {
+            "type": "string",
+            "description": "Toujours `about:blank` : le champ `code` identifie l'erreur."
+          }
+        }
+      },
+      "ProjectId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ReorderInput": {
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            },
+            "description": "Catégories d'un même niveau, dans l'ordre voulu."
+          }
+        }
+      },
+      "Split": {
+        "type": "object",
+        "required": [
+          "id",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/SplitId"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "SplitId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "SplitInput": {
+        "type": "object",
+        "required": [
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "SystemInfo": {
+        "type": "object",
+        "required": [
+          "version",
+          "schema_version"
+        ],
+        "properties": {
+          "last_backup": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LastBackup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schema_version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionCreated": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "TransactionDetail": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "account_name",
+          "currency",
+          "date",
+          "balance_date",
+          "amount_minor",
+          "label",
+          "clearing_status",
+          "origin",
+          "splits",
+          "locked"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balance_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "bank_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "bank_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "clearing_status": {
+            "$ref": "#/components/schemas/ClearingStatus"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Rapprochée : montant, compte et date de solde sont verrouillés (R-TRX-3)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/TransactionOrigin"
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Split"
+            }
+          },
+          "transfer": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransferSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "TransactionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "TransactionInput": {
+        "type": "object",
+        "description": "Saisie d'une transaction (TRX-01). Sans `splits`, une ventilation unique sur `category_id`.",
+        "required": [
+          "account_id",
+          "date",
+          "amount_minor",
+          "label"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "splits": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SplitInput"
+            }
+          }
+        }
+      },
+      "TransactionListItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "date",
+          "balance_date",
+          "label",
+          "amount_minor",
+          "clearing_status",
+          "origin",
+          "splits",
+          "balance_after_minor"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balance_after_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Solde du compte après cette opération (TRX-02)."
+          },
+          "balance_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "bank_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "clearing_status": {
+            "$ref": "#/components/schemas/ClearingStatus"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/TransactionOrigin"
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Split"
+            }
+          },
+          "transfer": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransferSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TransactionOrigin": {
+        "type": "string",
+        "description": "Origine d'une transaction.",
+        "enum": [
+          "MANUAL",
+          "IMPORT",
+          "RECURRING",
+          "INTEREST"
+        ]
+      },
+      "TransactionPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionListItem"
+            },
+            "description": "Les plus récentes d'abord."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "À repasser dans `cursor` pour la page suivante ; absent à la dernière page."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Nombre total de transactions qui correspondent aux filtres.",
+            "minimum": 0
+          }
+        }
+      },
+      "TransactionUpdateInput": {
+        "type": "object",
+        "description": "Modification d'une transaction. Sans `splits`, la ventilation existante est conservée ; une\nventilation unique suit alors le nouveau montant (R-TRX-4).",
+        "required": [
+          "account_id",
+          "date",
+          "amount_minor",
+          "label"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "splits": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SplitInput"
+            }
+          }
+        }
+      },
+      "TransferCreated": {
+        "type": "object",
+        "required": [
+          "transfer_id",
+          "outflow_transaction_id",
+          "inflow_transaction_id"
+        ],
+        "properties": {
+          "inflow_transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "outflow_transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "transfer_id": {
+            "$ref": "#/components/schemas/TransferId"
+          }
+        }
+      },
+      "TransferId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "TransferInput": {
+        "type": "object",
+        "required": [
+          "from_account_id",
+          "to_account_id",
+          "amount_minor",
+          "date",
+          "label"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant transféré, positif."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "from_account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          }
+        }
+      },
+      "TransferLinked": {
+        "type": "object",
+        "required": [
+          "transfer_id"
+        ],
+        "properties": {
+          "transfer_id": {
+            "$ref": "#/components/schemas/TransferId"
+          }
+        }
+      },
+      "TransferSummary": {
+        "type": "object",
+        "description": "L'autre jambe d'un virement, vue depuis une transaction.",
+        "required": [
+          "transfer_id",
+          "counterpart_transaction_id",
+          "counterpart_account_id",
+          "counterpart_account_name",
+          "is_outflow"
+        ],
+        "properties": {
+          "counterpart_account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "counterpart_account_name": {
+            "type": "string"
+          },
+          "counterpart_transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "is_outflow": {
+            "type": "boolean",
+            "description": "Vrai pour la jambe sortante (« Virement vers… »)."
+          },
+          "transfer_id": {
+            "$ref": "#/components/schemas/TransferId"
+          }
+        }
+      },
+      "UncategorizedItem": {
+        "type": "object",
+        "required": [
+          "split_id",
+          "transaction_id",
+          "account_id",
+          "account_name",
+          "date",
+          "label",
+          "amount_minor",
+          "is_split"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_split": {
+            "type": "boolean",
+            "description": "La transaction a plusieurs ventilations."
+          },
+          "label": {
+            "type": "string"
+          },
+          "split_id": {
+            "$ref": "#/components/schemas/SplitId"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "UncategorizedView": {
+        "type": "object",
+        "required": [
+          "total",
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UncategorizedItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Session (ADR-0015)"
+    },
+    {
+      "name": "accounts",
+      "description": "Comptes (spec 01)"
+    },
+    {
+      "name": "institutions",
+      "description": "Établissements (spec 01)"
+    },
+    {
+      "name": "categories",
+      "description": "Catégories (spec 02)"
+    },
+    {
+      "name": "transactions",
+      "description": "Transactions, ventilations et virements (spec 02)"
+    },
+    {
+      "name": "dashboard",
+      "description": "Tableau de bord (spec 08)"
+    },
+    {
+      "name": "system",
+      "description": "Export, sauvegardes, version"
+    }
+  ]
+}
