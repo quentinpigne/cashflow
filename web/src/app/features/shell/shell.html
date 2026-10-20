@@ -10,7 +10,7 @@
       <mat-icon>add</mat-icon>
     </button>
     <nav class="bottom-nav" aria-label="Navigation principale">
-      @for (item of items; track item.path) {
+      @for (item of mobileItems; track item.path) {
         <a
           [routerLink]="item.path"
           routerLinkActive="active"

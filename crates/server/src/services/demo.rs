@@ -13,7 +13,7 @@ use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId};
 use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
-use super::{accounts, auth, categories, institutions, seed, transactions, transfers};
+use super::{accounts, auth, categories, imports, institutions, reconciliation, rules, seed, transactions, transfers};
 use crate::db::Db;
 
 /// Mot de passe du compte de démonstration.
@@ -298,6 +298,83 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         };
         transfers::mark_as_transfer(db, item.id, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
+
+    // Les transactions de plus de 10 jours sont pointées, comme après des imports ; les récentes
+    // restent en attente (RAP-07).
+    let pointed_until = today - Days::new(10);
+    for account in accounts::list(db, today).await.map_err(|e| anyhow::anyhow!("{e}"))? {
+        let page = transactions::list(
+            db,
+            account.id,
+            &transactions::TransactionFilter { limit: Some(1000), ..Default::default() },
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+        for item in page.items.iter().filter(|i| i.balance_date <= pointed_until) {
+            reconciliation::set_cleared(db, item.id, &reconciliation::ClearInput { cleared: true })
+                .await
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+    }
+
+    // Un rapprochement à la fin de l'avant-dernier mois (spec 04).
+    let reconciled_at = today
+        .checked_sub_months(Months::new(1))
+        .and_then(|d| d.with_day(1))
+        .and_then(|d| d.pred_opt())
+        .context("date de rapprochement")?;
+    if reconciled_at >= start {
+        let balance =
+            accounts::get(db, checking, reconciled_at).await.map_err(|e| anyhow::anyhow!("{e}"))?.balance_minor;
+        let point = reconciliation::create(
+            db,
+            checking,
+            &reconciliation::CheckpointInput { date: reconciled_at, balance_minor: balance, replace: false },
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+        reconciliation::reconcile(db, point.id).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+
+    // Une règle et un profil d'import, pour le relevé fictif de `fixtures/demo` (IMP-02, IMP-08).
+    if let Some(streaming) = c.get("Abonnements", "Autres") {
+        let rule = rules::RuleInput {
+            name: "Netflix".into(),
+            priority: 0,
+            conditions: cashflow_domain::import::rules::Conditions {
+                label: Some(cashflow_domain::import::rules::LabelCondition {
+                    op: cashflow_domain::import::rules::LabelOp::Contains,
+                    value: "NETFLIX".into(),
+                    field: cashflow_domain::import::rules::LabelField::BankLabel,
+                }),
+                ..Default::default()
+            },
+            actions: cashflow_domain::import::rules::Actions {
+                set_label: Some("Netflix".into()),
+                set_splits: vec![cashflow_domain::import::rules::SplitShare {
+                    category_id: Some(streaming),
+                    weight: 1,
+                }],
+                ..Default::default()
+            },
+            stop_processing: true,
+            active: true,
+        };
+        rules::save(db, None, &rule).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    let settings = serde_json::json!({
+        "header_row": 1,
+        "date": { "column": "Date", "format": "dd/MM/yyyy" },
+        "label": { "columns": ["Libellé"] },
+        "amount": { "mode": "debit_credit", "debit_column": "Débit", "credit_column": "Crédit", "debit_is_positive": true }
+    });
+    let profile = imports::ProfileInput {
+        name: "Banque démo (CSV)".into(),
+        format: crate::readers::FileFormat::Csv,
+        settings: Some(serde_json::from_value(settings)?),
+        default_account_id: Some(checking),
+    };
+    imports::save_profile(db, None, &profile).await.map_err(|e| anyhow::anyhow!("{e}"))?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
     for (offset, amount, label) in

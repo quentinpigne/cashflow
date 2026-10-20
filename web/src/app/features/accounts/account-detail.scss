@@ -145,3 +145,30 @@
 .error {
   color: var(--mat-sys-error);
 }
+
+.cleared {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.pending {
+  font-style: italic;
+}
+
+.badge {
+  font: var(--mat-sys-label-small);
+  font-style: normal;
+  color: var(--mat-sys-on-tertiary-container);
+  background: var(--mat-sys-tertiary-container);
+  border-radius: 0.5rem;
+  padding: 0 0.375rem;
+}
+
+.lock {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  vertical-align: middle;
+  color: var(--mat-sys-on-surface-variant);
+}

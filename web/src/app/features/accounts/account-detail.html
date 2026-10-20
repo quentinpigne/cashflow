@@ -12,6 +12,9 @@
           </button>
           <mat-menu #menu>
             <button mat-menu-item (click)="edit()"><mat-icon>edit</mat-icon>Modifier</button>
+            <a mat-menu-item routerLink="/import/nouveau" [queryParams]="{ compte: a.id }">
+              <mat-icon>upload_file</mat-icon>Importer un relevé
+            </a>
             @if (a.closed_on) {
               <button mat-menu-item (click)="reopen()">
                 <mat-icon>lock_open</mat-icon>Rouvrir
@@ -51,6 +54,12 @@
           <strong class="amount" [class.negative]="a.balance_minor < 0">{{
             a.balance_minor | money: a.currency
           }}</strong>
+          @if (a.cleared_balance_minor !== null && a.cleared_balance_minor !== undefined) {
+            <span class="muted cleared">
+              Pointé
+              <span class="amount">{{ a.cleared_balance_minor | money: a.currency }}</span>
+            </span>
+          }
           <mat-form-field class="at" subscriptSizing="dynamic">
             <mat-label>Solde au…</mat-label>
             <input
@@ -77,6 +86,9 @@
     }
 
     @if (account.value(); as a) {
+      @if (computed(a.family)) {
+        <app-reconciliation-panel [accountId]="a.id" />
+      }
       <div class="filter-bar">
         <button mat-stroked-button (click)="showFilters.set(!showFilters())">
           <mat-icon>filter_list</mat-icon>
@@ -141,6 +153,15 @@
               (ngModelChange)="setFilter('max', $event)"
             />
           </mat-form-field>
+          <mat-form-field>
+            <mat-label>Statut</mat-label>
+            <mat-select [ngModel]="filters().status" (ngModelChange)="setFilter('status', $event)">
+              <mat-option [value]="null">Tous</mat-option>
+              @for (status of statuses; track status) {
+                <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
           <mat-form-field class="wide">
             <mat-label>Texte</mat-label>
             <input
@@ -166,9 +187,19 @@
             <h3 class="day">{{ day.date | frDate: 'day' }}</h3>
             @for (item of day.items; track item.id) {
               <button class="item" (click)="open(item)">
-                <span class="item-text">
-                  <span class="label">{{ item.label }}</span>
-                  <span class="muted small">{{ categoryText(item) }}</span>
+                <span class="item-text" [class.pending]="item.clearing_status === 'PENDING'">
+                  <span class="label">
+                    @if (item.clearing_status === 'RECONCILED') {
+                      <mat-icon class="lock" aria-label="Rapprochée">lock</mat-icon>
+                    }
+                    {{ item.label }}
+                  </span>
+                  <span class="muted small">
+                    {{ categoryText(item) }}
+                    @if (item.clearing_status === 'PENDING') {
+                      · <span class="badge">en attente</span>
+                    }
+                  </span>
                 </span>
                 <span class="item-amounts">
                   <span class="amount" [class.negative]="item.amount_minor < 0">{{
@@ -191,13 +222,36 @@
             (matSortChange)="sort.set($event)"
             class="table"
           >
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>
+                <span class="cdk-visually-hidden">Pointage</span>
+              </th>
+              <td mat-cell *matCellDef="let t" (click)="$event.stopPropagation()">
+                @if (t.clearing_status === 'RECONCILED') {
+                  <mat-icon class="lock" matTooltip="Rapprochée">lock</mat-icon>
+                } @else {
+                  <mat-checkbox
+                    [checked]="t.clearing_status === 'CLEARED'"
+                    (change)="toggleCleared(t, $event.checked)"
+                    [matTooltip]="
+                      t.clearing_status === 'CLEARED'
+                        ? 'Pointée : décocher pour dépointer'
+                        : 'En attente : cocher pour pointer'
+                    "
+                    [attr.aria-label]="'Pointer ' + t.label"
+                  />
+                }
+              </td>
+            </ng-container>
             <ng-container matColumnDef="date">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
               <td mat-cell *matCellDef="let t">{{ t.date | frDate: 'short' }}</td>
             </ng-container>
             <ng-container matColumnDef="label">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
-              <td mat-cell *matCellDef="let t">{{ t.label }}</td>
+              <td mat-cell *matCellDef="let t" [class.pending]="t.clearing_status === 'PENDING'">
+                {{ t.label }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="category">
               <th mat-header-cell *matHeaderCellDef>Catégorie</th>

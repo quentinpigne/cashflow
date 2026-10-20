@@ -36,6 +36,45 @@ export const routes: Routes = [
           import('./features/transactions/transaction-page').then((m) => m.TransactionPage),
       },
       {
+        path: 'transactions',
+        title: 'Transactions — Cashflow',
+        loadComponent: () =>
+          import('./features/transactions/transactions').then((m) => m.TransactionsPage),
+      },
+      {
+        path: 'import',
+        title: 'Import — Cashflow',
+        loadComponent: () =>
+          import('./features/import/import-history').then((m) => m.ImportHistoryPage),
+      },
+      {
+        path: 'import/nouveau',
+        title: 'Nouvel import — Cashflow',
+        loadComponent: () =>
+          import('./features/import/import-wizard').then((m) => m.ImportWizardPage),
+      },
+      {
+        path: 'import/:id',
+        title: 'Revue de l’import — Cashflow',
+        loadComponent: () =>
+          import('./features/import/import-review').then((m) => m.ImportReviewPage),
+      },
+      {
+        path: 'analyses',
+        title: 'Analyses — Cashflow',
+        loadComponent: () => import('./features/analyses/analyses').then((m) => m.AnalysesPage),
+      },
+      {
+        path: 'reglages/regles',
+        title: 'Règles — Cashflow',
+        loadComponent: () => import('./features/settings/rules').then((m) => m.RulesPage),
+      },
+      {
+        path: 'reglages/profils',
+        title: 'Profils d’import — Cashflow',
+        loadComponent: () => import('./features/settings/profiles').then((m) => m.ProfilesPage),
+      },
+      {
         path: 'reglages',
         title: 'Réglages — Cashflow',
         loadComponent: () => import('./features/settings/settings').then((m) => m.SettingsPage),

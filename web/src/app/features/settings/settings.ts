@@ -27,6 +27,18 @@ import { confirm } from '../../shared/confirm-dialog';
           <mat-icon matListItemIcon>account_balance</mat-icon>
           <span matListItemTitle>Établissements</span>
         </a>
+        <a mat-list-item routerLink="/reglages/regles">
+          <mat-icon matListItemIcon>rule</mat-icon>
+          <span matListItemTitle>Règles de catégorisation</span>
+        </a>
+        <a mat-list-item routerLink="/import">
+          <mat-icon matListItemIcon>upload_file</mat-icon>
+          <span matListItemTitle>Import de relevés</span>
+        </a>
+        <a mat-list-item routerLink="/reglages/profils">
+          <mat-icon matListItemIcon>tune</mat-icon>
+          <span matListItemTitle>Profils d'import</span>
+        </a>
       </mat-nav-list>
 
       <section class="card section">

@@ -2607,6 +2607,14 @@
             "format": "int64",
             "description": "Solde (R-CPT-4) ou valeur (R-CPT-6) à `balance_date`."
           },
+          "cleared_balance_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Solde pointé : ouverture + transactions pointées ou rapprochées (CPT-03). Absent pour l'épargne\nvariable et les prêts, suivis par valorisations."
+          },
           "closed_on": {
             "type": [
               "string",

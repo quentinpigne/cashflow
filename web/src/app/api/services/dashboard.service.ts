@@ -10,7 +10,13 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { categoryReport } from '../fn/dashboard/category-report';
+import { CategoryReport } from '../models/category-report';
+import { CategoryReport$Params } from '../fn/dashboard/category-report';
 import { Dashboard } from '../models/dashboard';
+import { Evolution } from '../models/evolution';
+import { evolutionReport } from '../fn/dashboard/evolution-report';
+import { EvolutionReport$Params } from '../fn/dashboard/evolution-report';
 import { getDashboard } from '../fn/dashboard/get-dashboard';
 import { GetDashboard$Params } from '../fn/dashboard/get-dashboard';
 
@@ -56,6 +62,76 @@ export class DashboardService extends BaseService {
     const resp = this.getDashboard$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Dashboard>): Dashboard => r.body)
+    );
+  }
+
+  /** Path part for operation `categoryReport()` */
+  static readonly CategoryReportPath = '/api/v1/reports/categories';
+
+  /**
+   * Dépenses ou revenus par catégorie d'un mois, comparés au mois précédent et à la moyenne (TDB-02).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `categoryReport()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  categoryReport$Response(params?: CategoryReport$Params, context?: HttpContext): Observable<StrictHttpResponse<CategoryReport>> {
+    const obs = categoryReport(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Dépenses ou revenus par catégorie d'un mois, comparés au mois précédent et à la moyenne (TDB-02).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `categoryReport$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  categoryReport(params?: CategoryReport$Params, context?: HttpContext): Observable<CategoryReport> {
+    const resp = this.categoryReport$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<CategoryReport>): CategoryReport => r.body)
+    );
+  }
+
+  /** Path part for operation `evolutionReport()` */
+  static readonly EvolutionReportPath = '/api/v1/reports/evolution';
+
+  /**
+   * Revenus, dépenses, épargne et taux d'épargne mois par mois (TDB-03).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `evolutionReport()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  evolutionReport$Response(params?: EvolutionReport$Params, context?: HttpContext): Observable<StrictHttpResponse<Evolution>> {
+    const obs = evolutionReport(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Revenus, dépenses, épargne et taux d'épargne mois par mois (TDB-03).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `evolutionReport$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  evolutionReport(params?: EvolutionReport$Params, context?: HttpContext): Observable<Evolution> {
+    const resp = this.evolutionReport$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Evolution>): Evolution => r.body)
     );
   }
 

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT account_id AS \"account_id!\", balance_date AS \"balance_date!: Date\", amount AS \"amount!\" FROM ledger_transaction\n           ORDER BY account_id, balance_date, id",
+  "query": "SELECT account_id AS \"account_id!\", balance_date AS \"balance_date!: Date\", amount AS \"amount!\",\n                  (clearing_status <> 'PENDING') AS \"cleared!: bool\"\n           FROM ledger_transaction ORDER BY account_id, balance_date, id",
   "describe": {
     "columns": [
       {
@@ -35,6 +35,12 @@
             "name": "amount"
           }
         }
+      },
+      {
+        "name": "cleared!: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -43,8 +49,9 @@
     "nullable": [
       false,
       true,
-      true
+      true,
+      false
     ]
   },
-  "hash": "c0ac73531ebe90600ea14af120dc45090617a21e8dc4a515862b893b2b923e04"
+  "hash": "7a0870f289d9a4ed7be2099e3e0033f0699f1c525b2e3cc94024ccf656e2e7df"
 }

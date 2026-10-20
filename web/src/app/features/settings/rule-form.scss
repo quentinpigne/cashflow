@@ -1,0 +1,30 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+h3 {
+  margin: 0.75rem 0 0;
+  font: var(--mat-sys-title-small);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+
+  .grow {
+    flex: 1;
+    min-width: 12rem;
+  }
+
+  .percent {
+    width: 6rem;
+  }
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

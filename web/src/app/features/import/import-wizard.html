@@ -1,0 +1,397 @@
+<div class="page">
+  <div class="page-header"><h1>Importer un relevé</h1></div>
+
+  <mat-stepper [linear]="true" #stepper orientation="vertical">
+    <mat-step label="Fichier" [completed]="!!preview()">
+      <div class="step">
+        <mat-form-field>
+          <mat-label>Compte</mat-label>
+          <mat-select [ngModel]="accountId()" (ngModelChange)="accountId.set($event); refresh(0)">
+            @for (a of accounts.open(); track a.id) {
+              <mat-option [value]="a.id">{{ a.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <label class="drop">
+          <input
+            type="file"
+            accept=".csv,.txt,.xlsx,.xls,.ofx,.qfx"
+            (change)="chooseFile($event)"
+          />
+          <mat-icon>upload_file</mat-icon>
+          <span>{{ file()?.name ?? 'Choisir un fichier CSV, Excel ou OFX' }}</span>
+        </label>
+
+        <mat-form-field>
+          <mat-label>Profil d'import</mat-label>
+          <mat-select [ngModel]="profileId()" (ngModelChange)="chooseProfile($event)">
+            <mat-option [value]="newProfile">Nouveau profil</mat-option>
+            @for (p of profiles.value() ?? []; track p.id) {
+              <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (profileId() !== newProfile && format() !== 'OFX') {
+          <button mat-button class="edit-profile" (click)="editProfile()" [disabled]="!preview()">
+            <mat-icon>tune</mat-icon>Modifier ce profil
+          </button>
+        }
+
+        @if (loading()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+        @if (preview()?.already_imported) {
+          <p class="warning">
+            <mat-icon>info</mat-icon>
+            Ce fichier a déjà été importé dans ce compte. Les lignes déjà présentes seront détectées
+            comme doublons.
+          </p>
+        }
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="actions">
+          <button mat-flat-button matStepperNext [disabled]="!preview()">Continuer</button>
+        </div>
+      </div>
+    </mat-step>
+
+    @if (needsMapping()) {
+      <mat-step label="Colonnes">
+        <div class="step">
+          <div class="grid">
+            @if (format() === 'CSV') {
+              <mat-form-field>
+                <mat-label>Encodage</mat-label>
+                <mat-select
+                  [ngModel]="settings().encoding"
+                  (ngModelChange)="patch({ encoding: $event })"
+                >
+                  @for (e of encodings; track e) {
+                    <mat-option [value]="e">{{ e }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Séparateur</mat-label>
+                <mat-select
+                  [ngModel]="settings().delimiter"
+                  (ngModelChange)="patch({ delimiter: $event })"
+                >
+                  @for (d of delimiters; track d.value) {
+                    <mat-option [value]="d.value">{{ d.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+            @if (format() === 'XLSX') {
+              <mat-form-field>
+                <mat-label>Feuille</mat-label>
+                <mat-select [ngModel]="settings().sheet" (ngModelChange)="patch({ sheet: $event })">
+                  @for (s of preview()?.sheets ?? []; track s) {
+                    <mat-option [value]="s">{{ s }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+            <mat-form-field>
+              <mat-label>Ligne des en-têtes</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                [ngModel]="settings().header_row ?? 0"
+                (ngModelChange)="patch({ header_row: $event > 0 ? $event : null })"
+              />
+              <mat-hint>0 : pas d'en-têtes</mat-hint>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Lignes ignorées après les en-têtes</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                [ngModel]="settings().skip_rows_after_header ?? 0"
+                (ngModelChange)="patch({ skip_rows_after_header: $event })"
+              />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Lignes ignorées en fin de fichier</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0"
+                [ngModel]="settings().skip_footer_rows ?? 0"
+                (ngModelChange)="patch({ skip_footer_rows: $event })"
+              />
+            </mat-form-field>
+          </div>
+
+          <h3>Colonnes</h3>
+          <div class="grid">
+            <mat-form-field>
+              <mat-label>Date</mat-label>
+              <mat-select
+                [ngModel]="settings().date.column"
+                (ngModelChange)="patch({ date: { ...settings().date, column: $event } })"
+              >
+                @for (c of columns(); track c.value) {
+                  <mat-option [value]="c.value">{{ c.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Format de date</mat-label>
+              <mat-select
+                [ngModel]="settings().date.format"
+                (ngModelChange)="patch({ date: { ...settings().date, format: $event } })"
+              >
+                @for (f of dateFormats; track f) {
+                  <mat-option [value]="f">{{ f }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field class="wide">
+              <mat-label>Libellé (une ou plusieurs colonnes)</mat-label>
+              <mat-select
+                multiple
+                [ngModel]="settings().label.columns"
+                (ngModelChange)="patch({ label: { ...settings().label, columns: $event } })"
+              >
+                @for (c of columns(); track c.value) {
+                  <mat-option [value]="c.value">{{ c.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Montant</mat-label>
+              <mat-select
+                [ngModel]="settings().amount.mode"
+                (ngModelChange)="patchAmount({ mode: $event })"
+              >
+                <mat-option value="single">Une colonne signée</mat-option>
+                <mat-option value="debit_credit">Colonnes débit et crédit</mat-option>
+              </mat-select>
+            </mat-form-field>
+            @if (settings().amount.mode === 'single') {
+              <mat-form-field>
+                <mat-label>Colonne du montant</mat-label>
+                <mat-select
+                  [ngModel]="settings().amount.column"
+                  (ngModelChange)="patchAmount({ column: $event })"
+                >
+                  @for (c of columns(); track c.value) {
+                    <mat-option [value]="c.value">{{ c.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-checkbox
+                [ngModel]="settings().amount.invert_sign"
+                (ngModelChange)="patchAmount({ invert_sign: $event })"
+                >Inverser le signe</mat-checkbox
+              >
+            } @else {
+              <mat-form-field>
+                <mat-label>Colonne du débit</mat-label>
+                <mat-select
+                  [ngModel]="settings().amount.debit_column"
+                  (ngModelChange)="patchAmount({ debit_column: $event })"
+                >
+                  @for (c of columns(); track c.value) {
+                    <mat-option [value]="c.value">{{ c.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Colonne du crédit</mat-label>
+                <mat-select
+                  [ngModel]="settings().amount.credit_column"
+                  (ngModelChange)="patchAmount({ credit_column: $event })"
+                >
+                  @for (c of columns(); track c.value) {
+                    <mat-option [value]="c.value">{{ c.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-checkbox
+                [ngModel]="settings().amount.debit_is_positive"
+                (ngModelChange)="patchAmount({ debit_is_positive: $event })"
+                >Débit écrit en positif</mat-checkbox
+              >
+            }
+            <mat-form-field>
+              <mat-label>Séparateur décimal</mat-label>
+              <mat-select
+                [ngModel]="settings().amount.decimal_separator"
+                (ngModelChange)="patchAmount({ decimal_separator: $event })"
+              >
+                <mat-option value=",">Virgule</mat-option>
+                <mat-option value=".">Point</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Séparateur de milliers</mat-label>
+              <mat-select
+                [ngModel]="settings().amount.thousands_separator"
+                (ngModelChange)="patchAmount({ thousands_separator: $event })"
+              >
+                @for (t of thousands; track t.value) {
+                  <mat-option [value]="t.value">{{ t.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <h3>Lignes ignorées et soldes du relevé</h3>
+          @for (f of settings().row_filters ?? []; track $index; let i = $index) {
+            <div class="grid filter">
+              <mat-form-field>
+                <mat-label>Colonne</mat-label>
+                <mat-select
+                  [ngModel]="f.column"
+                  (ngModelChange)="updateFilter(i, { column: $event })"
+                >
+                  @for (c of columns(); track c.value) {
+                    <mat-option [value]="c.value">{{ c.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Contient</mat-label>
+                <input
+                  matInput
+                  [ngModel]="f.pattern"
+                  (ngModelChange)="updateFilter(i, { pattern: $event })"
+                />
+              </mat-form-field>
+              <mat-checkbox [ngModel]="f.regex" (ngModelChange)="updateFilter(i, { regex: $event })"
+                >Expression régulière</mat-checkbox
+              >
+              <button mat-icon-button aria-label="Retirer ce filtre" (click)="removeFilter(i)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+          <button mat-button (click)="addFilter()">
+            <mat-icon>add</mat-icon>Ignorer des lignes (soldes, totaux…)
+          </button>
+          <div class="grid">
+            <mat-form-field>
+              <mat-label>Cellule du solde de début</mat-label>
+              <input
+                matInput
+                placeholder="B2"
+                [ngModel]="balanceCell('opening')"
+                (ngModelChange)="setBalance('opening', $event)"
+              />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Cellule du solde de fin</mat-label>
+              <input
+                matInput
+                placeholder="B3"
+                [ngModel]="balanceCell('closing')"
+                (ngModelChange)="setBalance('closing', $event)"
+              />
+            </mat-form-field>
+          </div>
+
+          <h3>Fichier</h3>
+          <div class="raw">
+            <table>
+              @for (row of preview()?.raw_rows ?? []; track $index; let r = $index) {
+                <tr [class.header]="settings().header_row === r + 1">
+                  <th>{{ r + 1 }}</th>
+                  @for (cell of row; track $index) {
+                    <td>{{ cell }}</td>
+                  }
+                </tr>
+              }
+            </table>
+          </div>
+
+          <div class="actions">
+            <button mat-button matStepperPrevious>Retour</button>
+            <button mat-flat-button matStepperNext [disabled]="!!preview()?.settings_error">
+              Continuer
+            </button>
+          </div>
+        </div>
+      </mat-step>
+    }
+
+    <mat-step label="Aperçu et profil">
+      <div class="step">
+        @if (preview(); as p) {
+          @if (p.settings_error) {
+            <p class="error">{{ p.settings_error }}</p>
+          } @else {
+            <p>
+              {{ p.total_lines }} ligne(s) lue(s)
+              @if (p.error_lines) {
+                , dont <strong class="error-text">{{ p.error_lines }} en erreur</strong> (elles ne
+                seront pas importées)
+              }
+              @if (p.statement.period_start && p.statement.period_end) {
+                · du {{ p.statement.period_start | frDate }} au
+                {{ p.statement.period_end | frDate }}
+              }
+            </p>
+            @if (p.statement.gap_minor !== null && p.statement.gap_minor !== undefined) {
+              <p [class.error-text]="p.statement.gap_minor !== 0">
+                Contrôle du relevé :
+                {{
+                  p.statement.gap_minor === 0
+                    ? 'les soldes de début et de fin correspondent aux lignes'
+                    : 'écart de ' +
+                      (p.statement.gap_minor | money) +
+                      ' : une ligne est mal lue ou manquante'
+                }}
+              </p>
+            }
+            <div class="lines">
+              @for (line of p.lines; track line.line_number) {
+                <div class="line" [class.invalid]="line.errors.length > 0">
+                  <span class="muted">{{ line.line_number }}</span>
+                  <span>{{ line.date ? (line.date | frDate: 'short') : '—' }}</span>
+                  <span class="label">{{ line.bank_label || '—' }}</span>
+                  <span class="amount" [class.negative]="(line.amount_minor ?? 0) < 0">{{
+                    line.amount_minor | money
+                  }}</span>
+                  @if (line.errors.length) {
+                    <span class="errors">{{ line.errors.join(' · ') }}</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+        @if (needsMapping()) {
+          <mat-form-field class="name">
+            <mat-label>{{
+              editingProfile() ? 'Nom du profil modifié' : 'Enregistrer le profil sous le nom'
+            }}</mat-label>
+            <input matInput [ngModel]="profileName()" (ngModelChange)="profileName.set($event)" />
+            @if (!editingProfile()) {
+              <mat-hint>Vide : le profil n'est pas enregistré</mat-hint>
+            }
+          </mat-form-field>
+        }
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="actions">
+          <button mat-button matStepperPrevious>Retour</button>
+          <button
+            mat-flat-button
+            (click)="start()"
+            [disabled]="busy() || !preview() || !!preview()?.settings_error"
+          >
+            Lancer la revue
+          </button>
+        </div>
+      </div>
+    </mat-step>
+  </mat-stepper>
+</div>

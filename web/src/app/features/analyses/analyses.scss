@@ -1,0 +1,80 @@
+.tab {
+  padding: 1rem 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  .month {
+    min-width: 9rem;
+    text-align: center;
+    font: var(--mat-sys-title-medium);
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.tag {
+  font: var(--mat-sys-label-small);
+  color: var(--mat-sys-on-secondary-container);
+  background: var(--mat-sys-secondary-container);
+  border-radius: 0.5rem;
+  padding: 0.125rem 0.5rem;
+}
+
+.chart {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.evolution-chart {
+  height: 320px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    text-align: left;
+  }
+
+  .right,
+  .amount {
+    text-align: right;
+  }
+
+  tr.child td:first-child {
+    padding-left: 2.75rem;
+  }
+
+  tfoot th {
+    font-weight: 600;
+  }
+}
+
+.expand {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--mat-sys-primary);
+  cursor: pointer;
+  text-align: left;
+}

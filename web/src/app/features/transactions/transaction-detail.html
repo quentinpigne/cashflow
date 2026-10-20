@@ -15,6 +15,20 @@
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #menu>
+        @if (t.clearing_status === 'PENDING') {
+          <button mat-menu-item (click)="setCleared(t, true)">
+            <mat-icon>done</mat-icon>Pointer
+          </button>
+        } @else if (t.clearing_status === 'CLEARED') {
+          <button mat-menu-item (click)="setCleared(t, false)">
+            <mat-icon>remove_done</mat-icon>Dépointer
+          </button>
+        }
+        @if (!t.transfer) {
+          <a mat-menu-item routerLink="/reglages/regles" [queryParams]="{ depuis: t.id }">
+            <mat-icon>rule</mat-icon>Créer une règle à partir de celle-ci
+          </a>
+        }
         <button mat-menu-item (click)="duplicate(t)" [disabled]="!!t.transfer">
           <mat-icon>content_copy</mat-icon>Dupliquer
         </button>
@@ -121,6 +135,8 @@
       </mat-form-field>
 
       <dl class="info">
+        <dt>Statut</dt>
+        <dd>{{ statusLabels[t.clearing_status] }}</dd>
         <dt>Origine</dt>
         <dd>{{ originLabels[t.origin] }}</dd>
         @if (t.bank_date) {

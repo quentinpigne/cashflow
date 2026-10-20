@@ -426,12 +426,15 @@ pub struct Movement {
     pub account_id: AccountId,
     pub balance_date: Date,
     pub amount: Money,
+    /// Pointée ou rapprochée : compte dans le solde pointé (CPT-03).
+    pub cleared: bool,
 }
 
 pub async fn all_movements(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Movement>> {
     let rows = sqlx::query!(
-        r#"SELECT account_id AS "account_id!", balance_date AS "balance_date!: Date", amount AS "amount!" FROM ledger_transaction
-           ORDER BY account_id, balance_date, id"#
+        r#"SELECT account_id AS "account_id!", balance_date AS "balance_date!: Date", amount AS "amount!",
+                  (clearing_status <> 'PENDING') AS "cleared!: bool"
+           FROM ledger_transaction ORDER BY account_id, balance_date, id"#
     )
     .fetch_all(db)
     .await?;
@@ -441,6 +444,7 @@ pub async fn all_movements(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Mo
                 account_id: id_from_db(&r.account_id)?,
                 balance_date: r.balance_date,
                 amount: Money::from_minor(r.amount),
+                cleared: r.cleared,
             })
         })
         .collect()

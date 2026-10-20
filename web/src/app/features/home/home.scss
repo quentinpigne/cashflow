@@ -147,3 +147,17 @@ h2 {
     background: var(--mat-sys-surface-container);
   }
 }
+
+.alert {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  color: inherit;
+  text-decoration: none;
+
+  mat-icon {
+    color: var(--mat-sys-error);
+  }
+}

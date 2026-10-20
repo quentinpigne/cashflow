@@ -68,6 +68,27 @@
           </p>
         </section>
 
+        @if (d.alerts.length > 0) {
+          <section class="card alerts">
+            <h2>Alertes</h2>
+            @for (alert of d.alerts; track alert.account_id) {
+              <a class="alert" [routerLink]="['/comptes', alert.account_id]">
+                <mat-icon>warning</mat-icon>
+                <span>
+                  <strong>{{ alert.account_name }}</strong>
+                  @if (alert.current_gap_minor) {
+                    — écart de {{ alert.current_gap_minor | money: 'EUR' : { signed: true } }} au
+                    {{ alert.current_gap_date | frDate: 'short' }}
+                  }
+                  @if (alert.old_pending > 0) {
+                    — {{ alert.old_pending }} transaction(s) en attente depuis plus de 10 jours
+                  }
+                </span>
+              </a>
+            }
+          </section>
+        }
+
         @if (d.uncategorized.total > 0) {
           <section class="card uncategorized">
             <h2>À catégoriser ({{ d.uncategorized.total }})</h2>

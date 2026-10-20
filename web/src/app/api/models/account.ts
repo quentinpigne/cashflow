@@ -17,6 +17,12 @@ export interface Account {
    * Solde (R-CPT-4) ou valeur (R-CPT-6) à `balance_date`.
    */
   balance_minor: number;
+
+  /**
+   * Solde pointé : ouverture + transactions pointées ou rapprochées (CPT-03). Absent pour l'épargne
+   * variable et les prêts, suivis par valorisations.
+   */
+  cleared_balance_minor?: (number | null);
   closed_on?: (string | null);
   color?: (string | null);
   currency: string;

@@ -16,6 +16,16 @@ export interface ListTransactions$Params {
   id: AccountId;
 
 /**
+ * Vue transverse (TRX-08) : limite à ces comptes, séparés par des virgules.
+ */
+  accounts?: string;
+
+/**
+ * Seulement les transactions qui ont une ventilation non catégorisée (hors virements).
+ */
+  uncategorized?: boolean;
+
+/**
  * Date de l'opération, incluse.
  */
   from?: string;
@@ -49,6 +59,8 @@ export function listTransactions(http: HttpClient, rootUrl: string, params: List
   const rb = new RequestBuilder(rootUrl, listTransactions.PATH, 'get');
   if (params) {
     rb.path('id', params.id, {});
+    rb.query('accounts', params.accounts, {});
+    rb.query('uncategorized', params.uncategorized, {});
     rb.query('from', params.from, {});
     rb.query('to', params.to, {});
     rb.query('category_id', params.category_id, {});

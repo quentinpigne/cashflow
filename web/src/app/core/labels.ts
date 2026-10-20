@@ -2,7 +2,9 @@
 
 import { AccountFamily } from '../api/models/account-family';
 import { AccountKind } from '../api/models/account-kind';
+import { BatchStatus } from '../api/models/batch-status';
 import { ClearingStatus } from '../api/models/clearing-status';
+import { ImportDecision } from '../api/models/import-decision';
 import { TransactionOrigin } from '../api/models/transaction-origin';
 
 export const FAMILY_LABELS: Record<AccountFamily, string> = {
@@ -96,3 +98,16 @@ export function defaultFlags(kind: AccountKind): { emergency: boolean; budget: b
     budget: family === 'CASH',
   };
 }
+
+export const DECISION_LABELS: Record<ImportDecision, string> = {
+  CREATE: 'Créer',
+  MATCH: 'Pointer',
+  SKIP: 'Ignorer',
+};
+
+export const BATCH_STATUS_LABELS: Record<BatchStatus, string> = {
+  REVIEWING: 'En revue',
+  COMMITTED: 'Validé',
+  CANCELLED: 'Annulé',
+  REVERTED: 'Annulé après validation',
+};

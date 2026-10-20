@@ -1,8 +1,11 @@
 import { Page, expect } from '@playwright/test';
 
 export const PASSWORD = 'demo-cashflow';
+/** Date du jour du serveur de test (e2e/serve.sh) : le navigateur vit à la même date. */
+export const TODAY = '2026-10-20T10:00:00';
 
 export async function login(page: Page): Promise<void> {
+  await page.clock.install({ time: new Date(TODAY) });
   await page.goto('/connexion');
   await page.getByLabel('Mot de passe').fill(PASSWORD);
   await page.getByRole('button', { name: 'Se connecter' }).click();
@@ -21,7 +24,7 @@ export async function pickCategory(
   option: string,
 ): Promise<void> {
   const input = scope.locator('app-category-picker input').first();
-  await input.click();
+  await input.focus();
   await input.fill(search);
   await page.getByRole('option', { name: option, exact: true }).first().click();
 }

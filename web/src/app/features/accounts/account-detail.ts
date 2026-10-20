@@ -13,6 +13,9 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -22,7 +25,9 @@ import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { formatDate, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
-import { KIND_LABELS } from '../../core/labels';
+import { ClearingStatus } from '../../api/models/clearing-status';
+import { ReconciliationService } from '../../api/services/reconciliation.service';
+import { KIND_LABELS, STATUS_LABELS, hasComputedBalance } from '../../core/labels';
 import { Layout } from '../../core/layout';
 import { formatMoney, parseMoney } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
@@ -33,17 +38,27 @@ import { CategoriesStore } from '../../shared/stores';
 import { TransactionDetailView } from '../transactions/transaction-detail';
 import { AccountForm } from './account-form';
 import { CloseAccountDialog } from './close-dialog';
+import { ReconciliationPanel } from './reconciliation-panel';
 
 interface Filters {
   from: Date | null;
   to: Date | null;
   category: string | null;
+  status: ClearingStatus | null;
   min: string;
   max: string;
   text: string;
 }
 
-const NO_FILTERS: Filters = { from: null, to: null, category: null, min: '', max: '', text: '' };
+const NO_FILTERS: Filters = {
+  from: null,
+  to: null,
+  category: null,
+  status: null,
+  min: '',
+  max: '',
+  text: '',
+};
 const PAGE = 200;
 
 /** E3 — Détail d'un compte (CPT-03, TRX-02). */
@@ -63,7 +78,11 @@ const PAGE = 200;
     MatProgressBarModule,
     MatSortModule,
     MatTableModule,
+    MatCheckboxModule,
+    MatSelectModule,
+    MatTooltipModule,
     CategoryPicker,
+    ReconciliationPanel,
     MoneyPipe,
     FrDatePipe,
     TransactionDetailView,
@@ -75,6 +94,7 @@ const PAGE = 200;
 export class AccountDetailPage {
   private readonly accountsApi = inject(AccountsService);
   private readonly transactionsApi = inject(TransactionsService);
+  private readonly reconciliation = inject(ReconciliationService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
   private readonly form = inject(AccountForm);
@@ -85,7 +105,10 @@ export class AccountDetailPage {
   readonly id = input.required<string>();
 
   protected readonly kindLabels = KIND_LABELS;
-  protected readonly columns = ['date', 'label', 'category', 'amount', 'balance'];
+  protected readonly columns = ['status', 'date', 'label', 'category', 'amount', 'balance'];
+  protected readonly statuses: ClearingStatus[] = ['PENDING', 'CLEARED', 'RECONCILED'];
+  protected readonly statusLabels = STATUS_LABELS;
+  protected readonly computed = hasComputedBalance;
   protected readonly balanceDate = signal<Date | null>(null);
   protected readonly filters = signal<Filters>(NO_FILTERS);
   protected readonly showFilters = signal(false);
@@ -118,6 +141,7 @@ export class AccountDetailPage {
         from: f.from ? toIsoDate(f.from) : undefined,
         to: f.to ? toIsoDate(f.to) : undefined,
         category_id: f.category ?? undefined,
+        status: f.status ?? undefined,
         min_amount_minor: parseMoney(f.min) ?? undefined,
         max_amount_minor: parseMoney(f.max) ?? undefined,
         text: f.text.trim() || undefined,
@@ -159,6 +183,7 @@ export class AccountDetailPage {
     if (f.from) chips.push({ key: 'from', label: `Depuis le ${formatDate(toIsoDate(f.from))}` });
     if (f.to) chips.push({ key: 'to', label: `Jusqu'au ${formatDate(toIsoDate(f.to))}` });
     if (f.category) chips.push({ key: 'category', label: this.categories.label(f.category) });
+    if (f.status) chips.push({ key: 'status', label: STATUS_LABELS[f.status] });
     if (parseMoney(f.min) !== null)
       chips.push({ key: 'min', label: `≥ ${formatMoney(parseMoney(f.min) ?? 0)}` });
     if (parseMoney(f.max) !== null)
@@ -184,6 +209,16 @@ export class AccountDetailPage {
       return 'Ventilée';
     }
     return this.categories.label(item.splits[0]?.category_id);
+  }
+
+  /** Pointage manuel (RAP-07). */
+  protected async toggleCleared(item: TransactionListItem, cleared: boolean): Promise<void> {
+    try {
+      await firstValueFrom(this.reconciliation.setCleared({ id: item.id, body: { cleared } }));
+      this.version.bump();
+    } catch (error) {
+      this.error.set(errorMessage(error));
+    }
   }
 
   protected open(item: TransactionListItem): void {

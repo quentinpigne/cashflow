@@ -1,0 +1,122 @@
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+
+  .wide {
+    grid-column: span 2;
+  }
+}
+
+h3 {
+  margin: 0.5rem 0 0;
+  font: var(--mat-sys-title-small);
+}
+
+.drop {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 2px dashed var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  &:focus-within {
+    border-color: var(--mat-sys-primary);
+  }
+}
+
+.raw {
+  overflow: auto;
+  max-height: 20rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-small);
+
+  table {
+    border-collapse: collapse;
+    font: var(--mat-sys-body-small);
+  }
+
+  th,
+  td {
+    padding: 0.125rem 0.5rem;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  tr.header td {
+    font-weight: 600;
+    background: var(--mat-sys-secondary-container);
+  }
+}
+
+.lines {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 2.5rem 5rem 1fr auto;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &.invalid {
+    background: var(--mat-sys-error-container);
+  }
+
+  .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .errors {
+    grid-column: 2 / -1;
+    color: var(--mat-sys-on-error-container);
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.warning {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--mat-sys-tertiary);
+}
+
+.error,
+.error-text {
+  color: var(--mat-sys-error);
+}
+
+.name {
+  max-width: 24rem;
+}

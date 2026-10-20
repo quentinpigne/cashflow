@@ -40,6 +40,9 @@ pub struct Account {
     pub notes: Option<String>,
     /// Solde (R-CPT-4) ou valeur (R-CPT-6) à `balance_date`.
     pub balance_minor: i64,
+    /// Solde pointé : ouverture + transactions pointées ou rapprochées (CPT-03). Absent pour l'épargne
+    /// variable et les prêts, suivis par valorisations.
+    pub cleared_balance_minor: Option<i64>,
     pub balance_date: Date,
     /// Date de la valorisation retenue, pour un compte d'épargne variable ou un prêt.
     pub valuation_date: Option<Date>,
@@ -83,23 +86,26 @@ pub struct IbanView {
 /// Données nécessaires au calcul des soldes de tous les comptes.
 pub struct Ledger {
     movements: HashMap<AccountId, Vec<DatedAmount>>,
+    cleared: HashMap<AccountId, Vec<DatedAmount>>,
     valuations: HashMap<AccountId, Vec<Valuation>>,
 }
 
 impl Ledger {
     pub async fn load(db: &Db) -> AppResult<Self> {
         let mut movements: HashMap<AccountId, Vec<DatedAmount>> = HashMap::new();
+        let mut cleared: HashMap<AccountId, Vec<DatedAmount>> = HashMap::new();
         for m in db::transactions::all_movements(&db.read).await? {
-            movements
-                .entry(m.account_id)
-                .or_default()
-                .push(DatedAmount { balance_date: m.balance_date, amount: m.amount });
+            let movement = DatedAmount { balance_date: m.balance_date, amount: m.amount };
+            if m.cleared {
+                cleared.entry(m.account_id).or_default().push(movement);
+            }
+            movements.entry(m.account_id).or_default().push(movement);
         }
         let mut valuations: HashMap<AccountId, Vec<Valuation>> = HashMap::new();
         for (account, date, value) in db::accounts::all_valuations(&db.read).await? {
             valuations.entry(account).or_default().push(Valuation { date, value });
         }
-        Ok(Self { movements, valuations })
+        Ok(Self { movements, cleared, valuations })
     }
 
     /// Solde ou valeur d'un compte à la fin de la journée `at`, selon sa famille.
@@ -113,6 +119,14 @@ impl Ledger {
         }
     }
 
+    /// Solde pointé à `at` (CPT-03), pour les comptes à solde calculé.
+    pub fn cleared_balance(&self, account: &AccountRow, at: Date) -> Option<Money> {
+        account.kind.family().has_computed_balance().then(|| {
+            let cleared = self.cleared.get(&account.id).map(Vec::as_slice).unwrap_or_default();
+            balance::balance_at(account.opening_balance, cleared, at)
+        })
+    }
+
     pub fn has_activity(&self, account: AccountId) -> bool {
         self.movements.get(&account).is_some_and(|m| !m.is_empty())
             || self.valuations.get(&account).is_some_and(|v| !v.is_empty())
@@ -121,6 +135,7 @@ impl Ledger {
 
 fn to_view(row: AccountRow, institutions: &HashMap<InstitutionId, String>, ledger: &Ledger, at: Date) -> Account {
     let (value, valuation_date) = ledger.value(&row, at);
+    let cleared = ledger.cleared_balance(&row, at);
     Account {
         id: row.id,
         family: row.kind.family(),
@@ -140,6 +155,7 @@ fn to_view(row: AccountRow, institutions: &HashMap<InstitutionId, String>, ledge
         color: row.color,
         notes: row.notes,
         balance_minor: value.minor(),
+        cleared_balance_minor: cleared.map(Money::minor),
         balance_date: at,
         valuation_date,
         has_activity: ledger.has_activity(row.id),

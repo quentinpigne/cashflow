@@ -10,9 +10,12 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { BulkCategorizeResult } from '../models/bulk-categorize-result';
 import { Candidate } from '../models/candidate';
 import { categorizeSplit } from '../fn/transactions/categorize-split';
 import { CategorizeSplit$Params } from '../fn/transactions/categorize-split';
+import { categorizeTransactions } from '../fn/transactions/categorize-transactions';
+import { CategorizeTransactions$Params } from '../fn/transactions/categorize-transactions';
 import { createTransaction } from '../fn/transactions/create-transaction';
 import { CreateTransaction$Params } from '../fn/transactions/create-transaction';
 import { createTransfer } from '../fn/transactions/create-transfer';
@@ -21,6 +24,8 @@ import { deleteTransaction } from '../fn/transactions/delete-transaction';
 import { DeleteTransaction$Params } from '../fn/transactions/delete-transaction';
 import { getTransaction } from '../fn/transactions/get-transaction';
 import { GetTransaction$Params } from '../fn/transactions/get-transaction';
+import { listAllTransactions } from '../fn/transactions/list-all-transactions';
+import { ListAllTransactions$Params } from '../fn/transactions/list-all-transactions';
 import { listTransactions } from '../fn/transactions/list-transactions';
 import { ListTransactions$Params } from '../fn/transactions/list-transactions';
 import { markAsTransfer } from '../fn/transactions/mark-as-transfer';
@@ -117,6 +122,41 @@ export class TransactionsService extends BaseService {
     );
   }
 
+  /** Path part for operation `listAllTransactions()` */
+  static readonly ListAllTransactionsPath = '/api/v1/transactions';
+
+  /**
+   * Toutes les transactions, tous comptes confondus (TRX-08).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `listAllTransactions()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listAllTransactions$Response(params?: ListAllTransactions$Params, context?: HttpContext): Observable<StrictHttpResponse<TransactionPage>> {
+    const obs = listAllTransactions(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Toutes les transactions, tous comptes confondus (TRX-08).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `listAllTransactions$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listAllTransactions(params?: ListAllTransactions$Params, context?: HttpContext): Observable<TransactionPage> {
+    const resp = this.listAllTransactions$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<TransactionPage>): TransactionPage => r.body)
+    );
+  }
+
   /** Path part for operation `createTransaction()` */
   static readonly CreateTransactionPath = '/api/v1/transactions';
 
@@ -149,6 +189,41 @@ export class TransactionsService extends BaseService {
     const resp = this.createTransaction$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<TransactionCreated>): TransactionCreated => r.body)
+    );
+  }
+
+  /** Path part for operation `categorizeTransactions()` */
+  static readonly CategorizeTransactionsPath = '/api/v1/transactions/categorize';
+
+  /**
+   * Catégorise plusieurs transactions d'un coup (TRX-06).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `categorizeTransactions()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  categorizeTransactions$Response(params: CategorizeTransactions$Params, context?: HttpContext): Observable<StrictHttpResponse<BulkCategorizeResult>> {
+    const obs = categorizeTransactions(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Catégorise plusieurs transactions d'un coup (TRX-06).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `categorizeTransactions$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  categorizeTransactions(params: CategorizeTransactions$Params, context?: HttpContext): Observable<BulkCategorizeResult> {
+    const resp = this.categorizeTransactions$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BulkCategorizeResult>): BulkCategorizeResult => r.body)
     );
   }
 

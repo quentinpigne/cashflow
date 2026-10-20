@@ -28,7 +28,8 @@ import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
-import { ORIGIN_LABELS } from '../../core/labels';
+import { ReconciliationService } from '../../api/services/reconciliation.service';
+import { ORIGIN_LABELS, STATUS_LABELS } from '../../core/labels';
 import { abs, negate, parseMoney, toEditable } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { confirm } from '../../shared/confirm-dialog';
@@ -76,6 +77,8 @@ export class TransactionDetailView {
   readonly closed = output<void>();
 
   protected readonly originLabels = ORIGIN_LABELS;
+  protected readonly statusLabels = STATUS_LABELS;
+  private readonly reconciliation = inject(ReconciliationService);
   protected readonly detail = rxResource({
     params: () => ({ id: this.transactionId(), version: this.version.value() }),
     stream: ({ params }) => this.api.getTransaction({ id: params.id }),
@@ -217,6 +220,16 @@ export class TransactionDetailView {
       this.error.set(errorMessage(error));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /** Pointage manuel (RAP-07). */
+  protected async setCleared(t: TransactionDetail, cleared: boolean): Promise<void> {
+    try {
+      await firstValueFrom(this.reconciliation.setCleared({ id: t.id, body: { cleared } }));
+      this.version.bump();
+    } catch (error) {
+      this.error.set(errorMessage(error));
     }
   }
 

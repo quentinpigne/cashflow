@@ -1,0 +1,173 @@
+<h2 mat-dialog-title>{{ editing ? 'Modifier la règle' : 'Nouvelle règle' }}</h2>
+<mat-dialog-content class="form">
+  <mat-form-field>
+    <mat-label>Nom</mat-label>
+    <input matInput [ngModel]="name()" (ngModelChange)="name.set($event)" />
+  </mat-form-field>
+
+  <h3>Si…</h3>
+  <div class="row">
+    <mat-form-field>
+      <mat-label>Libellé</mat-label>
+      <mat-select [ngModel]="labelOp()" (ngModelChange)="labelOp.set($event)">
+        <mat-option value="contains">contient</mat-option>
+        <mat-option value="starts_with">commence par</mat-option>
+        <mat-option value="equals">est égal à</mat-option>
+        <mat-option value="regex">correspond au motif (* ?)</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="grow">
+      <mat-label>Texte</mat-label>
+      <input
+        matInput
+        [ngModel]="labelValue()"
+        (ngModelChange)="labelValue.set($event)"
+        placeholder="NETFLIX"
+      />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Champ</mat-label>
+      <mat-select [ngModel]="labelField()" (ngModelChange)="labelField.set($event)">
+        <mat-option value="bank_label">Libellé bancaire</mat-option>
+        <mat-option value="label">Libellé</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <div class="row">
+    <mat-form-field>
+      <mat-label>Montant</mat-label>
+      <mat-select [ngModel]="amountOp()" (ngModelChange)="amountOp.set($event)">
+        <mat-option value="">peu importe</mat-option>
+        <mat-option value="eq">égal à</mat-option>
+        <mat-option value="lt">inférieur à</mat-option>
+        <mat-option value="gt">supérieur à</mat-option>
+        <mat-option value="between">entre</mat-option>
+      </mat-select>
+    </mat-form-field>
+    @if (amountOp()) {
+      <mat-form-field>
+        <mat-label>Montant (signé)</mat-label>
+        <input
+          matInput
+          inputmode="decimal"
+          [ngModel]="amountValue()"
+          (ngModelChange)="amountValue.set($event)"
+          placeholder="-13,99"
+        />
+      </mat-form-field>
+      @if (amountOp() === 'between') {
+        <mat-form-field>
+          <mat-label>et</mat-label>
+          <input
+            matInput
+            inputmode="decimal"
+            [ngModel]="amountMax()"
+            (ngModelChange)="amountMax.set($event)"
+          />
+        </mat-form-field>
+      }
+    }
+    <mat-form-field>
+      <mat-label>Sens</mat-label>
+      <mat-select [ngModel]="sign()" (ngModelChange)="sign.set($event)">
+        <mat-option value="">les deux</mat-option>
+        <mat-option value="debit">sortie</mat-option>
+        <mat-option value="credit">entrée</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <mat-form-field>
+    <mat-label>Comptes (tous si vide)</mat-label>
+    <mat-select multiple [ngModel]="accountIds()" (ngModelChange)="accountIds.set($event)">
+      @for (a of accounts.list(); track a.id) {
+        <mat-option [value]="a.id">{{ a.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <h3>Alors…</h3>
+  <mat-form-field>
+    <mat-label>Virement vers / depuis</mat-label>
+    <mat-select [ngModel]="transferTo()" (ngModelChange)="transferTo.set($event)">
+      <mat-option value="">Non, catégoriser</mat-option>
+      @for (a of accounts.open(); track a.id) {
+        <mat-option [value]="a.id">{{ a.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  @if (!transferTo()) {
+    @for (share of shares(); track $index; let i = $index) {
+      <div class="row">
+        <app-category-picker
+          class="grow"
+          [value]="share.category"
+          (valueChange)="updateShare(i, { category: $event })"
+        />
+        <mat-form-field class="percent">
+          <mat-label>%</mat-label>
+          <input
+            matInput
+            inputmode="decimal"
+            [ngModel]="share.percent"
+            (ngModelChange)="updateShare(i, { percent: $event })"
+          />
+        </mat-form-field>
+        <button
+          mat-icon-button
+          aria-label="Retirer"
+          (click)="removeShare(i)"
+          [disabled]="shares().length === 1"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    }
+    <button mat-button (click)="addShare()"><mat-icon>call_split</mat-icon>Ventiler</button>
+  }
+  <div class="row">
+    <mat-form-field class="grow">
+      <mat-label>Renommer en</mat-label>
+      <input matInput [ngModel]="setLabel()" (ngModelChange)="setLabel.set($event)" />
+    </mat-form-field>
+    <mat-form-field class="grow">
+      <mat-label>Note</mat-label>
+      <input matInput [ngModel]="note()" (ngModelChange)="note.set($event)" />
+    </mat-form-field>
+  </div>
+  <div class="row">
+    <mat-checkbox [ngModel]="stop()" (ngModelChange)="stop.set($event)"
+      >Arrêter ici (ne pas évaluer les règles suivantes)</mat-checkbox
+    >
+    <mat-checkbox [ngModel]="active()" (ngModelChange)="active.set($event)">Active</mat-checkbox>
+  </div>
+
+  <h3>Transactions existantes non catégorisées</h3>
+  <button mat-stroked-button (click)="preview()">Aperçu</button>
+  @if (matches(); as list) {
+    @for (m of list; track m.transaction_id) {
+      <mat-checkbox
+        [checked]="chosen().has(m.transaction_id)"
+        (change)="toggle(m.transaction_id, $event.checked)"
+      >
+        {{ m.date | frDate: 'short' }} · {{ m.account_name }} · {{ m.label }} ·
+        {{ m.amount_minor | money }}
+      </mat-checkbox>
+    } @empty {
+      <p class="muted">Aucune transaction non catégorisée concernée.</p>
+    }
+  }
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Annuler</button>
+  @if (matches()?.length) {
+    <button mat-stroked-button (click)="save(true)" [disabled]="busy() || !name().trim()">
+      Enregistrer et appliquer ({{ chosen().size }})
+    </button>
+  }
+  <button mat-flat-button (click)="save(false)" [disabled]="busy() || !name().trim()">
+    Enregistrer
+  </button>
+</mat-dialog-actions>

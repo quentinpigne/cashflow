@@ -1,0 +1,254 @@
+<div class="page">
+  @if (batch.value(); as b) {
+    <div class="page-header">
+      <a mat-icon-button routerLink="/import" aria-label="Retour aux imports"
+        ><mat-icon>arrow_back</mat-icon></a
+      >
+      <h1>{{ b.summary.account_name }}</h1>
+      <span class="muted">{{ statusLabels[b.summary.status] }}</span>
+    </div>
+    <p class="muted">
+      {{ b.summary.file_name }}
+      @if (b.statement.period_start && b.statement.period_end) {
+        · du {{ b.statement.period_start | frDate: 'short' }} au
+        {{ b.statement.period_end | frDate }}
+      }
+    </p>
+    @if (b.statement.gap_minor !== null && b.statement.gap_minor !== undefined) {
+      <p class="check" [class.ko]="b.statement.gap_minor !== 0">
+        <mat-icon>{{ b.statement.gap_minor === 0 ? 'check_circle' : 'error' }}</mat-icon>
+        @if (b.statement.gap_minor === 0) {
+          Contrôle du relevé : soldes de début et de fin cohérents avec les lignes.
+        } @else {
+          Contrôle du relevé : écart de {{ b.statement.gap_minor | money: b.currency }} entre les
+          soldes et les lignes. Une ligne est mal lue ou manquante.
+        }
+      </p>
+    }
+
+    @if (result(); as r) {
+      <section class="card done">
+        <h2>Import validé</h2>
+        <p>
+          {{ r.created }} transaction(s) créée(s), {{ r.matched }} pointée(s),
+          {{ r.skipped }} ignorée(s)
+          @if (r.transfers) {
+            , {{ r.transfers }} virement(s)
+          }
+          .
+        </p>
+        @for (c of r.checkpoints; track c.id) {
+          <p class="checkpoint">
+            Point de contrôle au {{ c.date | frDate }} : {{ c.balance_minor | money: b.currency }},
+            @if (c.gap_minor === 0) {
+              écart nul.
+              @if (!c.reconciled) {
+                <button mat-flat-button (click)="reconcile(c.id)">
+                  Rapprocher au {{ c.date | frDate }}
+                </button>
+              } @else {
+                <strong>rapproché.</strong>
+              }
+            } @else {
+              <span class="ko">écart de {{ c.gap_minor | money: b.currency }}</span> : à expliquer
+              depuis la fiche du compte.
+            }
+          </p>
+        }
+        <a mat-stroked-button [routerLink]="['/comptes', b.summary.account_id]">Voir le compte</a>
+      </section>
+    }
+
+    <mat-chip-listbox
+      [value]="view()"
+      (change)="view.set($event.value ?? 'all')"
+      aria-label="Filtrer les lignes"
+    >
+      <mat-chip-option value="all">Toutes ({{ counts().all }})</mat-chip-option>
+      <mat-chip-option value="create">À créer ({{ counts().create }})</mat-chip-option>
+      <mat-chip-option value="match">À pointer ({{ counts().match }})</mat-chip-option>
+      <mat-chip-option value="uncategorized"
+        >Non catégorisées ({{ counts().uncategorized }})</mat-chip-option
+      >
+      <mat-chip-option value="duplicate">Doublons ({{ counts().duplicate }})</mat-chip-option>
+      <mat-chip-option value="error">En erreur ({{ counts().error }})</mat-chip-option>
+    </mat-chip-listbox>
+
+    @if (reviewing() && selection().size > 0) {
+      <div class="bulk card">
+        <span>{{ selection().size }} ligne(s)</span>
+        <button mat-button (click)="bulk('CREATE')">Créer</button>
+        <button mat-button (click)="bulk('MATCH')">Pointer</button>
+        <button mat-button (click)="bulk('SKIP')">Ignorer</button>
+        <app-category-picker
+          class="bulk-picker"
+          label="Catégorie"
+          [value]="bulkCategory()"
+          (valueChange)="bulkCategory.set($event)"
+        />
+        <button mat-stroked-button (click)="bulk(null)" [disabled]="!bulkCategory()">
+          Catégoriser
+        </button>
+      </div>
+    }
+
+    @if (reviewing()) {
+      <mat-checkbox class="all" (change)="toggleAll($event.checked)"
+        >Tout sélectionner</mat-checkbox
+      >
+    }
+
+    @for (line of lines(); track line.id) {
+      <article
+        class="line"
+        [class.skip]="line.decision === 'SKIP'"
+        [class.invalid]="line.errors.length > 0"
+      >
+        <div class="head">
+          @if (reviewing()) {
+            <mat-checkbox
+              [checked]="selection().has(line.id)"
+              [disabled]="line.errors.length > 0"
+              (change)="toggle(line.id, $event.checked)"
+              [attr.aria-label]="'Sélectionner la ligne ' + line.line_number"
+            />
+          }
+          <span class="date">{{ line.date ? (line.date | frDate: 'short') : '—' }}</span>
+          <span class="bank">{{ line.bank_label ?? '—' }}</span>
+          <span class="amount" [class.negative]="(line.amount_minor ?? 0) < 0">{{
+            line.amount_minor | money: b.currency
+          }}</span>
+          @if (line.errors.length === 0) {
+            <mat-form-field class="decision" subscriptSizing="dynamic">
+              <mat-select
+                [value]="line.decision"
+                (selectionChange)="setDecision(line, $event.value)"
+                [disabled]="!reviewing()"
+                aria-label="Décision"
+              >
+                <mat-option value="CREATE">{{ decisionLabels.CREATE }}</mat-option>
+                <mat-option
+                  value="MATCH"
+                  [disabled]="!line.matched || line.match_kind === 'DUPLICATE'"
+                  >{{ decisionLabels.MATCH }}</mat-option
+                >
+                <mat-option value="SKIP">{{ decisionLabels.SKIP }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          }
+        </div>
+
+        @if (line.errors.length > 0) {
+          <p class="errors">{{ line.errors.join(' · ') }}</p>
+        } @else if (line.match_kind === 'DUPLICATE') {
+          <p class="muted info">
+            Doublon : déjà importée{{ line.matched ? ' (' + line.matched.label + ')' : '' }}.
+          </p>
+        } @else if (line.decision === 'MATCH' && line.matched) {
+          <p class="info">
+            <mat-icon>link</mat-icon>
+            Pointe « {{ line.matched.label }} » du {{ line.matched.date | frDate: 'short' }} (score
+            {{ line.matched.score }}).
+          </p>
+        } @else if (line.decision === 'CREATE') {
+          <div class="create">
+            @if (line.transfer_to) {
+              <p class="info">
+                <mat-icon>swap_horiz</mat-icon>
+                Virement {{ (line.amount_minor ?? 0) < 0 ? 'vers' : 'depuis' }}
+                {{ accountName(line.transfer_to) }}
+                @if (reviewing()) {
+                  <button mat-button (click)="setTransfer(line, null)">Retirer</button>
+                }
+              </p>
+            } @else {
+              @if (line.splits.length > 1) {
+                <p class="info">
+                  <mat-icon>call_split</mat-icon> Ventilée en {{ line.splits.length }} lignes
+                  @if (reviewing()) {
+                    <button mat-button (click)="editSplits(line)">Modifier</button>
+                  }
+                </p>
+              } @else {
+                <app-category-picker
+                  [value]="line.splits[0]?.category_id ?? null"
+                  (valueChange)="setCategory(line, $event)"
+                  [kind]="(line.amount_minor ?? 0) < 0 ? 'EXPENSE' : 'INCOME'"
+                />
+              }
+              @if (line.suggested_by_rule) {
+                <span class="tag">règle</span>
+              } @else if (line.learned) {
+                <span class="tag">déjà vu</span>
+              }
+              @if (line.proposal; as p) {
+                <p class="proposal">
+                  <mat-icon>swap_horiz</mat-icon>
+                  Virement {{ (line.amount_minor ?? 0) < 0 ? 'vers' : 'depuis' }}
+                  {{ accountName(p.account_id) }} ? ({{ p.label }}, {{ p.date | frDate: 'short' }})
+                  @if (reviewing()) {
+                    <button mat-button (click)="acceptProposal(line)">Accepter</button>
+                  }
+                </p>
+              }
+            }
+            @if (line.matched && line.match_kind === 'CANDIDATE') {
+              <p class="muted info">
+                Peut-être « {{ line.matched.label }} » du
+                {{ line.matched.date | frDate: 'short' }} (score {{ line.matched.score }}) : choisir
+                « Pointer » pour la vérifier.
+              </p>
+            }
+            @if (reviewing()) {
+              <div class="more">
+                <mat-form-field subscriptSizing="dynamic" class="label">
+                  <mat-label>Libellé de la transaction</mat-label>
+                  <input
+                    matInput
+                    [value]="line.label ?? ''"
+                    [placeholder]="line.bank_label ?? ''"
+                    (change)="setLabel(line, $any($event.target).value)"
+                  />
+                </mat-form-field>
+                <button mat-button [matMenuTriggerFor]="moreMenu">Plus</button>
+                <mat-menu #moreMenu>
+                  <button mat-menu-item (click)="editSplits(line)">
+                    <mat-icon>call_split</mat-icon>Ventiler
+                  </button>
+                  <button mat-menu-item [matMenuTriggerFor]="transferMenu">
+                    <mat-icon>swap_horiz</mat-icon>Virement vers ou depuis…
+                  </button>
+                </mat-menu>
+                <mat-menu #transferMenu>
+                  @for (a of accounts.open(); track a.id) {
+                    @if (a.id !== b.summary.account_id) {
+                      <button mat-menu-item (click)="setTransfer(line, a.id)">{{ a.name }}</button>
+                    }
+                  }
+                </mat-menu>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    } @empty {
+      <p class="empty">Aucune ligne dans ce filtre.</p>
+    }
+
+    @if (reviewing() && !result()) {
+      <footer class="footer">
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <button mat-button (click)="cancel()">Annuler l'import</button>
+        <button mat-flat-button (click)="commit()" [disabled]="busy()">
+          Valider ({{ counts().create }} à créer, {{ counts().match }} à pointer)
+        </button>
+      </footer>
+    }
+  } @else if (batch.isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (batch.error()) {
+    <p class="empty">Import introuvable.</p>
+  }
+</div>

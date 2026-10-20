@@ -19,3 +19,14 @@ unsafe_code = "forbid"
 mod_module_files = "deny"
 unwrap_used = "deny"
 expect_used = "deny"
+
+# Le hachage argon2id est très lent sans optimisation : on optimise les bibliothèques de cryptographie
+# même en développement (connexion en quelques millisecondes au lieu de plusieurs secondes).
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3

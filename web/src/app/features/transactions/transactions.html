@@ -1,0 +1,153 @@
+<div class="page">
+  <div class="page-header"><h1>Transactions</h1></div>
+
+  @if (layout.mobile()) {
+    <button mat-stroked-button class="toggle-filters" (click)="showFilters.set(!showFilters())">
+      <mat-icon>filter_list</mat-icon>
+      Filtres
+    </button>
+  }
+  <div class="filters card" [hidden]="layout.mobile() && !showFilters()">
+    <mat-form-field>
+      <mat-label>Comptes</mat-label>
+      <mat-select
+        multiple
+        [ngModel]="accountIds()"
+        (ngModelChange)="accountIds.set($event); reset()"
+      >
+        @for (a of accounts.list(); track a.id) {
+          <mat-option [value]="a.id">{{ a.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Du</mat-label>
+      <input
+        matInput
+        [matDatepicker]="fromPicker"
+        [ngModel]="from()"
+        (ngModelChange)="from.set($event); reset()"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+      <mat-datepicker #fromPicker />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Au</mat-label>
+      <input
+        matInput
+        [matDatepicker]="toPicker"
+        [ngModel]="to()"
+        (ngModelChange)="to.set($event); reset()"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+      <mat-datepicker #toPicker />
+    </mat-form-field>
+    <app-category-picker
+      class="wide"
+      [value]="category()"
+      (valueChange)="category.set($event); reset()"
+    />
+    <mat-form-field>
+      <mat-label>Statut</mat-label>
+      <mat-select [ngModel]="status()" (ngModelChange)="status.set($event); reset()">
+        <mat-option [value]="null">Tous</mat-option>
+        @for (s of statuses; track s) {
+          <mat-option [value]="s">{{ statusLabels[s] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Montant min.</mat-label>
+      <input
+        matInput
+        inputmode="decimal"
+        [ngModel]="min()"
+        (ngModelChange)="min.set($event); reset()"
+      />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Montant max.</mat-label>
+      <input
+        matInput
+        inputmode="decimal"
+        [ngModel]="max()"
+        (ngModelChange)="max.set($event); reset()"
+      />
+    </mat-form-field>
+    <mat-form-field class="wide">
+      <mat-label>Texte</mat-label>
+      <input matInput [ngModel]="text()" (ngModelChange)="text.set($event); reset()" />
+    </mat-form-field>
+    <mat-slide-toggle
+      [checked]="uncategorized()"
+      (change)="uncategorized.set($event.checked); reset()"
+    >
+      À catégoriser
+    </mat-slide-toggle>
+  </div>
+
+  @if (selection().size > 0) {
+    <div class="bulk card">
+      <span>{{ selection().size }} sélectionnée(s)</span>
+      <app-category-picker
+        class="bulk-picker"
+        label="Catégoriser en"
+        [value]="bulkCategory()"
+        (valueChange)="bulkCategory.set($event)"
+      />
+      <button
+        mat-flat-button
+        (click)="categorizeSelection()"
+        [disabled]="!bulkCategory() || busy()"
+      >
+        Catégoriser
+      </button>
+      <button mat-button (click)="clearSelection()">Annuler</button>
+    </div>
+  }
+
+  @if (page.value(); as p) {
+    <div class="list-head">
+      <mat-checkbox
+        [checked]="allSelected()"
+        [indeterminate]="selection().size > 0 && !allSelected()"
+        (change)="toggleAll($event.checked)"
+      >
+        {{ p.total }} transaction(s)
+      </mat-checkbox>
+    </div>
+    @for (item of items(); track item.id) {
+      <div class="row" [class.pending]="item.clearing_status === 'PENDING'">
+        <mat-checkbox
+          [checked]="selection().has(item.id)"
+          [disabled]="!!item.transfer || item.splits.length > 1"
+          (change)="toggle(item.id, $event.checked)"
+          [attr.aria-label]="'Sélectionner ' + item.label"
+        />
+        <button class="open" (click)="open(item)">
+          <span class="text">
+            <span>{{ item.label }}</span>
+            <span class="muted small"
+              >{{ item.date | frDate: 'short' }} · {{ item.account_name }} ·
+              {{ categoryText(item) }}</span
+            >
+          </span>
+          <span class="amount" [class.negative]="item.amount_minor < 0">{{
+            item.amount_minor | money
+          }}</span>
+        </button>
+      </div>
+    } @empty {
+      <p class="empty">Aucune transaction ne correspond aux filtres.</p>
+    }
+    @if (p.next_cursor) {
+      <div class="more">
+        <button mat-stroked-button (click)="limit.set(limit() + 200)">
+          Voir plus ({{ p.items.length }} sur {{ p.total }})
+        </button>
+      </div>
+    }
+  } @else if (page.isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+</div>

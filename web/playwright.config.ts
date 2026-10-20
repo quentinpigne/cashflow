@@ -23,5 +23,7 @@ export default defineConfig({
     url: 'http://127.0.0.1:3100/api/v1/health',
     timeout: 600_000,
     reuseExistingServer: false,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });

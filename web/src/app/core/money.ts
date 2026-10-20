@@ -165,3 +165,20 @@ export function formatRatePpm(ppm: number): string {
   const absolute = Math.abs(tenths);
   return `${negative ? '−' : ''}${Math.trunc(absolute / 10)},${absolute % 10}\u00a0%`;
 }
+
+/**
+ * Valeur d'axe pour un graphique (« 1234.56 » pour 123456 centimes). Affichage seulement : ce nombre
+ * n'est jamais réutilisé dans un calcul.
+ */
+export function toChartValue(minor: number, currency = 'EUR'): number {
+  return minor / 10 ** minorDigits(currency);
+}
+
+/** Libellé d'une valeur d'axe ou d'info-bulle d'un graphique. */
+export function formatChartValue(
+  value: number,
+  currency = 'EUR',
+  options: Omit<FormatOptions, 'currency'> = {},
+): string {
+  return formatMoney(Math.round(value * 10 ** minorDigits(currency)), { ...options, currency });
+}

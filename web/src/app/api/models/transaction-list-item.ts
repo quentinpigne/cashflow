@@ -9,12 +9,13 @@ import { TransactionOrigin } from '../models/transaction-origin';
 import { TransferSummary } from '../models/transfer-summary';
 export interface TransactionListItem {
   account_id: AccountId;
+  account_name: string;
   amount_minor: number;
 
   /**
-   * Solde du compte après cette opération (TRX-02).
+   * Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
    */
-  balance_after_minor: number;
+  balance_after_minor?: (number | null);
   balance_date: string;
   bank_date?: (string | null);
   clearing_status: ClearingStatus;

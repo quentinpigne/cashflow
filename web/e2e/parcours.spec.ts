@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  TODAY,
   isMobile,
   login,
   openAccount,
@@ -12,6 +13,7 @@ import {
 const unique = () => Math.random().toString(36).slice(2, 7).toUpperCase();
 
 test('E0 : un mauvais mot de passe est refusé, le bon ouvre l’accueil', async ({ page }) => {
+  await page.clock.install({ time: new Date(TODAY) });
   await page.goto('/');
   await expect(page).toHaveURL(/connexion/);
   await page.getByLabel('Mot de passe').fill('mauvais');

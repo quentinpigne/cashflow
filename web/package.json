@@ -23,7 +23,9 @@
     "@angular/material": "^22.2.3",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "echarts": "^6.1.0",
     "material-symbols": "^0.48.0",
+    "ngx-echarts": "^22.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

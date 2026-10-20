@@ -40,11 +40,18 @@ export class Shell {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
 
+  /** Menu latéral (ordinateur). */
   protected readonly items: NavItem[] = [
     { path: '/', label: 'Accueil', icon: 'home', exact: true },
     { path: '/comptes', label: 'Comptes', icon: 'account_balance', exact: false },
+    { path: '/transactions', label: 'Transactions', icon: 'receipt_long', exact: true },
+    { path: '/import', label: 'Import', icon: 'upload_file', exact: false },
+    { path: '/analyses', label: 'Analyses', icon: 'insights', exact: false },
     { path: '/reglages', label: 'Réglages', icon: 'settings', exact: false },
   ];
+
+  /** Barre du bas (mobile) : l'import s'ouvre depuis un compte ou les réglages (ecrans.md). */
+  protected readonly mobileItems = this.items.filter((i) => i.path !== '/import');
 
   protected newTransaction(): void {
     // Sur la fiche d'un compte, ce compte est présélectionné (ecrans.md E3).

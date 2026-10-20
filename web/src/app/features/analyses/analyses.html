@@ -1,0 +1,147 @@
+<div class="page">
+  <div class="page-header"><h1>Analyses</h1></div>
+  <mat-tab-group>
+    <mat-tab label="Par catégorie">
+      <div class="tab">
+        <div class="toolbar">
+          <button mat-icon-button aria-label="Mois précédent" (click)="previousMonth()">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <strong class="month">{{ monthLabel() }}</strong>
+          <button
+            mat-icon-button
+            aria-label="Mois suivant"
+            (click)="nextMonth()"
+            [disabled]="isCurrent()"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          @if (isCurrent()) {
+            <span class="tag">mois en cours</span>
+          }
+          <span class="spacer"></span>
+          <mat-button-toggle-group
+            [value]="kind()"
+            (change)="kind.set($event.value)"
+            aria-label="Nature"
+          >
+            <mat-button-toggle value="EXPENSE">Dépenses</mat-button-toggle>
+            <mat-button-toggle value="INCOME">Revenus</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        @if (report.value(); as r) {
+          @if (categoryChart(); as options) {
+            <div echarts [options]="options" class="chart" [style.height.px]="chartHeight()"></div>
+          }
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Catégorie</th>
+                <th class="right">{{ r.current_month ? 'Ce mois-ci' : 'Montant' }}</th>
+                <th class="right">{{ r.current_month ? 'Mois préc. à date' : 'Mois préc.' }}</th>
+                <th class="right">Moy. 12 mois</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of r.lines; track line.category_id ?? 'none') {
+                <tr class="root">
+                  <td>
+                    @if (line.children.length) {
+                      <button
+                        mat-icon-button
+                        class="expand"
+                        (click)="toggle(line)"
+                        [attr.aria-label]="(isExpanded(line) ? 'Replier ' : 'Déplier ') + line.name"
+                      >
+                        <mat-icon>{{ isExpanded(line) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      </button>
+                    }
+                    <button class="link" (click)="drill(line)">{{ line.name }}</button>
+                  </td>
+                  <td class="amount">{{ line.amount_minor | money }}</td>
+                  <td class="amount muted">{{ line.previous_minor | money }}</td>
+                  <td class="amount muted">{{ line.average_minor | money }}</td>
+                </tr>
+                @if (isExpanded(line)) {
+                  @for (child of line.children; track child.category_id) {
+                    <tr class="child">
+                      <td>
+                        <button class="link" (click)="drill(child)">{{ child.name }}</button>
+                      </td>
+                      <td class="amount">{{ child.amount_minor | money }}</td>
+                      <td class="amount muted">{{ child.previous_minor | money }}</td>
+                      <td class="amount muted">{{ child.average_minor | money }}</td>
+                    </tr>
+                  }
+                }
+              } @empty {
+                <tr>
+                  <td colspan="4" class="empty">Aucune donnée pour ce mois.</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>Total</th>
+                <th class="amount">{{ r.total_minor | money }}</th>
+                <th class="amount muted">{{ r.previous_total_minor | money }}</th>
+                <th class="amount muted">{{ r.average_total_minor | money }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        } @else if (report.isLoading()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Évolution">
+      <div class="tab">
+        <div class="toolbar">
+          <mat-button-toggle-group
+            [value]="months()"
+            (change)="months.set($event.value)"
+            aria-label="Période"
+          >
+            <mat-button-toggle [value]="12">12 mois</mat-button-toggle>
+            <mat-button-toggle [value]="24">24 mois</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+        @if (evolution.value(); as e) {
+          @if (evolutionChart(); as options) {
+            <div echarts [options]="options" class="chart evolution-chart"></div>
+          }
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Mois</th>
+                <th class="right">Revenus</th>
+                <th class="right">Dépenses</th>
+                <th class="right">Épargne</th>
+                <th class="right">Taux</th>
+                <th class="right">Taux 12 mois</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of e.months.slice().reverse(); track m.month) {
+                <tr>
+                  <td>{{ m.month }}{{ m.current_month ? ' (en cours)' : '' }}</td>
+                  <td class="amount">{{ m.income_minor | money }}</td>
+                  <td class="amount">{{ m.expenses_minor | money }}</td>
+                  <td class="amount" [class.negative]="m.savings_minor < 0">
+                    {{ m.savings_minor | money }}
+                  </td>
+                  <td class="amount">{{ rate(m.savings_rate_ppm) }}</td>
+                  <td class="amount muted">{{ rate(m.rolling_rate_ppm) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else if (evolution.isLoading()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
