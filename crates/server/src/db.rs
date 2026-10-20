@@ -3,9 +3,12 @@
 pub mod accounts;
 pub mod auth;
 pub mod categories;
+pub mod checkpoints;
 pub mod codec;
 pub mod export;
+pub mod imports;
 pub mod institutions;
+pub mod rules;
 pub mod settings;
 pub mod transactions;
 

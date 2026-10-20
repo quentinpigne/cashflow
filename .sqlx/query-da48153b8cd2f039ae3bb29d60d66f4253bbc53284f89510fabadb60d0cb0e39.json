@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE import_batch SET status = ?, committed_at = coalesce(?, committed_at), updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "da48153b8cd2f039ae3bb29d60d66f4253bbc53284f89510fabadb60d0cb0e39"
+}

@@ -1,0 +1,218 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT l.id, l.batch_id, l.line_number, l.raw, l.date AS \"date: Date\", l.value_date AS \"value_date: Date\", l.amount,\n                  l.bank_label, l.fingerprint, l.errors, l.match_kind, l.match_transaction_id, l.match_score, l.suggested,\n                  l.decision, l.transaction_id, b.account_id AS \"account_id!\"\n           FROM import_line l JOIN import_batch b ON b.id = l.batch_id\n           WHERE b.status = 'REVIEWING' AND b.id <> ? AND l.amount IS NOT NULL AND l.errors = '[]'",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "batch_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "batch_id"
+          }
+        }
+      },
+      {
+        "name": "line_number",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "line_number"
+          }
+        }
+      },
+      {
+        "name": "raw",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "raw"
+          }
+        }
+      },
+      {
+        "name": "date: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "value_date: Date",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "value_date"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "bank_label",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "bank_label"
+          }
+        }
+      },
+      {
+        "name": "fingerprint",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "fingerprint"
+          }
+        }
+      },
+      {
+        "name": "errors",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "errors"
+          }
+        }
+      },
+      {
+        "name": "match_kind",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "match_kind"
+          }
+        }
+      },
+      {
+        "name": "match_transaction_id",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "match_transaction_id"
+          }
+        }
+      },
+      {
+        "name": "match_score",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "match_score"
+          }
+        }
+      },
+      {
+        "name": "suggested",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "suggested"
+          }
+        }
+      },
+      {
+        "name": "decision",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "decision"
+          }
+        }
+      },
+      {
+        "name": "transaction_id",
+        "ordinal": 15,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "account_id!",
+        "ordinal": 16,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "account_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "27f82f7274bd79e5db8502af2e3e7ba6a5baf3b40a224b59f701504198b0f1a0"
+}

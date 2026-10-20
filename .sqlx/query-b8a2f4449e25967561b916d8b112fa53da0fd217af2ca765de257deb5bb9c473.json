@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE import_line SET decision = ?, match_transaction_id = ?, suggested = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "b8a2f4449e25967561b916d8b112fa53da0fd217af2ca765de257deb5bb9c473"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE import_line SET transaction_id = ?, suggested = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "853ecf2a00fe0a3b3f1201bca6a2b16cfc2f2999eb07142e86de30039dfe8563"
+}

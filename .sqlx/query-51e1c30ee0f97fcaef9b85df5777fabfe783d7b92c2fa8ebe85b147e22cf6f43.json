@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM import_profile WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "51e1c30ee0f97fcaef9b85df5777fabfe783d7b92c2fa8ebe85b147e22cf6f43"
+}

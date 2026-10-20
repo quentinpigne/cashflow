@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM balance_checkpoint WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b12d863d4a53621f50ec895bb92ee23f3c221e1d8b819b3bc5c6e480031f6b30"
+}

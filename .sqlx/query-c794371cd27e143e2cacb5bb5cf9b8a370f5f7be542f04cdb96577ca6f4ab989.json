@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE categorization_rule SET hit_count = hit_count + 1 WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c794371cd27e143e2cacb5bb5cf9b8a370f5f7be542f04cdb96577ca6f4ab989"
+}

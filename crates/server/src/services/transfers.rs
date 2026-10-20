@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use super::transactions::{insert_validated, period};
-use super::{check_split_sums, clean, required};
+use super::{check_split_sums, clean, reconciliation, required};
 use crate::db::transactions::{NewSplit, NewTransaction, TransactionRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
@@ -103,6 +103,8 @@ pub async fn create(db: &Db, input: &TransferInput) -> AppResult<TransferCreated
     transfer::check_transfer(&leg(from.id, -amount, from.currency), &leg(to.id, amount, to.currency))?;
     period(&from).check(input.date)?;
     period(&to).check(input.date)?;
+    reconciliation::lock(&mut tx, from.id).await?.check(input.date)?;
+    reconciliation::lock(&mut tx, to.id).await?.check(input.date)?;
 
     let (outflow, inflow) = (TransactionId::new(), TransactionId::new());
     for (id, account, signed) in [(outflow, from.id, -amount), (inflow, to.id, amount)] {
@@ -176,8 +178,9 @@ pub async fn mark_as_transfer(db: &Db, id: TransactionId, input: &MarkAsTransfer
             other
         }
         None => {
-            // Jambe opposée créée automatiquement (R-TRX-36).
+            // Jambe opposée créée automatiquement (R-TRX-36), hors période rapprochée (R-RAP-7).
             period(&counterpart_account).check(source.date)?;
+            reconciliation::lock(&mut tx, counterpart_account.id).await?.check(source.date)?;
             let created = TransactionId::new();
             let new = NewTransaction {
                 id: created,

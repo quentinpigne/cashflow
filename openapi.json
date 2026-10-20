@@ -205,6 +205,86 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/checkpoints": {
+      "get": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Points de contrôle d'un compte, avec leur écart (RAP-01, R-RAP-3).",
+        "operationId": "listCheckpoints",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Checkpoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Saisit un point de contrôle manuel (RAP-01).",
+        "operationId": "createCheckpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckpointInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checkpoint"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}/close": {
       "post": {
         "tags": [
@@ -742,6 +822,165 @@
         }
       }
     },
+    "/api/v1/checkpoints/{id}": {
+      "delete": {
+        "tags": [
+          "reconciliation"
+        ],
+        "operationId": "deleteCheckpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CheckpointId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkpoints/{id}/gap-hints": {
+      "get": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Pistes pour expliquer un écart (RAP-05, R-RAP-9).",
+        "operationId": "gapHints",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CheckpointId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GapHintsView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkpoints/{id}/reconcile": {
+      "get": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Ce que le rapprochement va faire : points figés, transactions en attente (R-RAP-4, R-RAP-5).",
+        "operationId": "reconcilePreview",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CheckpointId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconcilePreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Rapproche un point de contrôle à écart nul (RAP-03).",
+        "operationId": "reconcile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CheckpointId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkpoints/{id}/unlock": {
+      "post": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Déverrouille un rapprochement et les suivants (RAP-04, R-RAP-6).",
+        "operationId": "unlockCheckpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CheckpointId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "tags": [
@@ -792,6 +1031,525 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-profiles": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Profils d'import enregistrés (IMP-02).",
+        "operationId": "listImportProfiles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Profile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "operationId": "createImportProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-profiles/{id}": {
+      "put": {
+        "tags": [
+          "imports"
+        ],
+        "operationId": "updateImportProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportProfileId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "imports"
+        ],
+        "operationId": "deleteImportProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportProfileId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/imports": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Historique des lots (IMP-06).",
+        "operationId": "listImports",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BatchSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Lit le relevé et crée un lot en revue (IMP-01 à IMP-05). Aucune transaction n'est modifiée (R-IMP-1).",
+        "operationId": "startImport",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/preview": {
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Aperçu en direct d'un relevé avec un profil ou des réglages (IMP-01). N'enregistre rien.",
+        "operationId": "previewImport",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/{id}": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Lot et lignes, pour la revue (IMP-04).",
+        "operationId": "getImport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Annule une revue : le lot et ses lignes sont supprimés (R-IMP-1).",
+        "operationId": "cancelImport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/{id}/commit": {
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Valide le lot, de façon atomique (R-IMP-15, R-IMP-16).",
+        "operationId": "commitImport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommitResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/{id}/file": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Télécharge le fichier source conservé (R-IMP-21).",
+        "operationId": "downloadImportFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fichier source",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Supprime le fichier source conservé ; le lot reste (R-IMP-21).",
+        "operationId": "deleteImportFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/{id}/lines/bulk": {
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Décision ou catégorie appliquée à plusieurs lignes (IMP-04).",
+        "operationId": "bulkReviewImport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/imports/{id}/lines/{line_id}": {
+      "put": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Décision et choix d'une ligne (IMP-04).",
+        "operationId": "reviewImportLine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          },
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportLineId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineReviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/{id}/revert": {
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Annule un lot validé (R-IMP-17).",
+        "operationId": "revertImport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -891,6 +1649,246 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Institution"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reconciliation/health": {
+      "get": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Santé des comptes : dernier rapprochement, écart courant, transactions en attente (RAP-06, R-TDB-10).",
+        "operationId": "accountsHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountHealth"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules": {
+      "get": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Règles de catégorisation, par priorité (IMP-08).",
+        "operationId": "listRules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "rules"
+        ],
+        "operationId": "createRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules/preview": {
+      "post": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Transactions non catégorisées concernées par ces conditions (aperçu, R-IMP-19).",
+        "operationId": "previewRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Conditions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleMatch"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules/{id}": {
+      "put": {
+        "tags": [
+          "rules"
+        ],
+        "operationId": "updateRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategorizationRuleId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "rules"
+        ],
+        "operationId": "deleteRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategorizationRuleId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/rules/{id}/apply": {
+      "post": {
+        "tags": [
+          "rules"
+        ],
+        "summary": "Applique une règle aux transactions choisies dans l'aperçu (R-IMP-19).",
+        "operationId": "applyRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategorizationRuleId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyResult"
                 }
               }
             }
@@ -1106,6 +2104,47 @@
             }
           }
         ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{id}/cleared": {
+      "put": {
+        "tags": [
+          "reconciliation"
+        ],
+        "summary": "Pointe ou dépointe une transaction à la main (RAP-07).",
+        "operationId": "setCleared",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearInput"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {},
           "422": {
@@ -1411,6 +2450,50 @@
           "LIABILITY"
         ]
       },
+      "AccountHealth": {
+        "type": "object",
+        "description": "Santé d'un compte (RAP-06, R-TDB-10).",
+        "required": [
+          "account_id",
+          "account_name",
+          "old_pending"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "current_gap_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "current_gap_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Écart du point de contrôle le plus récent, s'il n'est pas rapproché."
+          },
+          "last_reconciled": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "old_pending": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Transactions `PENDING` de plus de 10 jours."
+          }
+        }
+      },
       "AccountId": {
         "type": "string",
         "format": "uuid"
@@ -1533,6 +2616,174 @@
           "LOAN_OTHER"
         ]
       },
+      "Actions": {
+        "type": "object",
+        "description": "Actions d'une règle (spec 03).",
+        "properties": {
+          "mark_transfer_to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "set_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "set_project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SplitShare"
+            },
+            "description": "Ventilation proposée : parts en pourcentage (poids), l'arrondi allant sur la dernière."
+          }
+        }
+      },
+      "AmountColumns": {
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "properties": {
+          "column": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ColumnRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "credit_column": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ColumnRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "debit_column": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ColumnRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "debit_is_positive": {
+            "type": "boolean",
+            "description": "Mode débit/crédit : le débit est-il écrit en positif ?"
+          },
+          "decimal_separator": {
+            "type": "string"
+          },
+          "invert_sign": {
+            "type": "boolean",
+            "description": "Mode simple : inverser le signe (export de carte, par exemple)."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AmountMode"
+          },
+          "thousands_separator": {
+            "type": "string",
+            "description": "Espace, espace insécable, point, apostrophe ; vide : aucun."
+          }
+        }
+      },
+      "AmountCondition": {
+        "type": "object",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "max": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "op": {
+            "$ref": "#/components/schemas/AmountOp"
+          },
+          "value": {
+            "type": "integer",
+            "format": "int64",
+            "description": "En unités mineures, signé."
+          }
+        }
+      },
+      "AmountMode": {
+        "type": "string",
+        "enum": [
+          "single",
+          "debit_credit"
+        ]
+      },
+      "AmountOp": {
+        "type": "string",
+        "enum": [
+          "eq",
+          "between",
+          "lt",
+          "gt"
+        ]
+      },
+      "ApplyInput": {
+        "type": "object",
+        "required": [
+          "transaction_ids"
+        ],
+        "properties": {
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            },
+            "description": "Transactions choisies dans l'aperçu."
+          }
+        }
+      },
+      "ApplyResult": {
+        "type": "object",
+        "required": [
+          "applied"
+        ],
+        "properties": {
+          "applied": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "AuthStatus": {
         "type": "object",
         "required": [
@@ -1546,6 +2797,189 @@
           "password_set": {
             "type": "boolean",
             "description": "Faux tant que `cashflow set-password` n'a pas été lancé sur le serveur."
+          }
+        }
+      },
+      "BatchCreated": {
+        "type": "object",
+        "required": [
+          "batch_id"
+        ],
+        "properties": {
+          "batch_id": {
+            "$ref": "#/components/schemas/ImportBatchId"
+          },
+          "profile_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportProfileId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "BatchDetail": {
+        "type": "object",
+        "required": [
+          "summary",
+          "currency",
+          "statement",
+          "lines"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportLineView"
+            }
+          },
+          "statement": {
+            "$ref": "#/components/schemas/StatementInfo"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BatchSummary"
+          }
+        }
+      },
+      "BatchStatus": {
+        "type": "string",
+        "description": "Statut d'un lot d'import.",
+        "enum": [
+          "REVIEWING",
+          "COMMITTED",
+          "CANCELLED",
+          "REVERTED"
+        ]
+      },
+      "BatchSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "account_name",
+          "file_name",
+          "status",
+          "created_at",
+          "line_count",
+          "error_count",
+          "to_create",
+          "to_match",
+          "to_skip",
+          "has_file"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "committed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "error_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "has_file": {
+            "type": "boolean",
+            "description": "Le fichier source est encore conservé (R-IMP-21)."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ImportBatchId"
+          },
+          "line_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "period_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "period_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "profile_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportProfileId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BatchStatus"
+          },
+          "to_create": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "to_match": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "to_skip": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "BulkInput": {
+        "type": "object",
+        "required": [
+          "line_ids"
+        ],
+        "properties": {
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Catégorie posée sur les lignes `CREATE` non ventilées."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "line_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportLineId"
+            }
           }
         }
       },
@@ -1577,6 +3011,10 @@
             "type": "string"
           }
         }
+      },
+      "CategorizationRuleId": {
+        "type": "string",
+        "format": "uuid"
       },
       "CategorizeInput": {
         "type": "object",
@@ -1716,6 +3154,114 @@
           "EXPENSE"
         ]
       },
+      "CellRef": {
+        "type": "object",
+        "required": [
+          "cell"
+        ],
+        "properties": {
+          "cell": {
+            "type": "string"
+          }
+        }
+      },
+      "Checkpoint": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "date",
+          "balance_minor",
+          "computed_minor",
+          "gap_minor",
+          "source",
+          "reconciled",
+          "frozen"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "computed_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Solde calculé au soir de `date` (R-RAP-1)."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "Non rapproché mais antérieur à un point rapproché : son écart est figé (R-RAP-4)."
+          },
+          "gap_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Écart = solde annoncé − solde calculé, jamais stocké (R-RAP-3)."
+          },
+          "id": {
+            "$ref": "#/components/schemas/CheckpointId"
+          },
+          "import_batch_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportBatchId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reconciled": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "description": "`STATEMENT` (relevé importé) ou `MANUAL`."
+          }
+        }
+      },
+      "CheckpointId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "CheckpointInput": {
+        "type": "object",
+        "required": [
+          "date",
+          "balance_minor"
+        ],
+        "properties": {
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "Remplace un point de contrôle existant à la même date (R-RAP-2)."
+          }
+        }
+      },
+      "ClearInput": {
+        "type": "object",
+        "required": [
+          "cleared"
+        ],
+        "properties": {
+          "cleared": {
+            "type": "boolean"
+          }
+        }
+      },
       "ClearingStatus": {
         "type": "string",
         "description": "État de pointage d'une transaction (R-TRX-5).",
@@ -1738,6 +3284,105 @@
           "confirm": {
             "type": "boolean",
             "description": "Confirmation explicite d'une clôture à solde non nul (R-CPT-5)."
+          }
+        }
+      },
+      "ColumnRef": {
+        "oneOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "description": "Colonne désignée par son en-tête ou par son numéro (1 = première colonne)."
+      },
+      "CommitInput": {
+        "type": "object",
+        "properties": {
+          "replace_checkpoints": {
+            "type": "boolean",
+            "description": "Remplace les points de contrôle existants aux mêmes dates (R-RAP-2)."
+          }
+        }
+      },
+      "CommitResult": {
+        "type": "object",
+        "required": [
+          "created",
+          "matched",
+          "skipped",
+          "transfers",
+          "checkpoints"
+        ],
+        "properties": {
+          "checkpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Checkpoint"
+            },
+            "description": "Points de contrôle créés ou mis à jour par le relevé (R-IMP-16) ; à écart nul, l'écran propose\n« Rapprocher » en un clic (R-RAP-11)."
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "matched": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "transfers": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Conditions": {
+        "type": "object",
+        "description": "Conditions d'une règle : toutes doivent être vraies (spec 03).",
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountId"
+            },
+            "description": "Vide : tous les comptes."
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AmountCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LabelCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sign": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Sign"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -1807,6 +3452,50 @@
           }
         }
       },
+      "DateColumn": {
+        "type": "object",
+        "required": [
+          "column",
+          "format"
+        ],
+        "properties": {
+          "column": {
+            "$ref": "#/components/schemas/ColumnRef"
+          },
+          "format": {
+            "type": "string",
+            "description": "Par exemple `dd/MM/yyyy`, `yyyy-MM-dd`, `dd/MM/yy`."
+          }
+        }
+      },
+      "DraftSplit": {
+        "type": "object",
+        "required": [
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "FamilyGroup": {
         "type": "object",
         "required": [
@@ -1830,6 +3519,16 @@
             "description": "Total des comptes en euros du groupe (R-CPT-2)."
           }
         }
+      },
+      "FileFormat": {
+        "type": "string",
+        "description": "Format d'un fichier de relevé (modèle de données, `ImportProfile.format`).",
+        "enum": [
+          "CSV",
+          "XLSX",
+          "OFX",
+          "PDF_OCR"
+        ]
       },
       "FlowsView": {
         "type": "object",
@@ -1881,6 +3580,91 @@
           }
         }
       },
+      "GapHintsView": {
+        "type": "object",
+        "description": "Pistes pour expliquer un écart (R-RAP-9).",
+        "required": [
+          "gap_minor",
+          "to",
+          "pending",
+          "singles",
+          "pairs",
+          "sign_errors"
+        ],
+        "properties": {
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "gap_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/GapTransactionView"
+              }
+            }
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapTransactionView"
+            }
+          },
+          "sign_errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapTransactionView"
+            }
+          },
+          "singles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapTransactionView"
+            }
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "GapTransactionView": {
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "label",
+          "amount_minor",
+          "clearing_status"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clearing_status": {
+            "$ref": "#/components/schemas/ClearingStatus"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
       "Health": {
         "type": "object",
         "required": [
@@ -1902,6 +3686,248 @@
             "type": "string"
           }
         }
+      },
+      "ImportBatchId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ImportDecision": {
+        "type": "string",
+        "description": "Décision de l'utilisateur pour une ligne (glossaire).",
+        "enum": [
+          "CREATE",
+          "MATCH",
+          "SKIP"
+        ]
+      },
+      "ImportLineId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ImportLineView": {
+        "type": "object",
+        "required": [
+          "id",
+          "line_number",
+          "raw",
+          "errors",
+          "match_kind",
+          "splits",
+          "suggested_by_rule",
+          "learned"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "bank_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Non vide : ligne invalide, exclue de la validation (R-IMP-3)."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ImportLineId"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Libellé de la transaction créée (par défaut le libellé bancaire)."
+          },
+          "learned": {
+            "type": "boolean"
+          },
+          "line_number": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "match_kind": {
+            "$ref": "#/components/schemas/MatchKind"
+          },
+          "matched": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MatchView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proposal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransferProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "raw": {},
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftSplit"
+            }
+          },
+          "suggested_by_rule": {
+            "type": "boolean",
+            "description": "Suggestion issue d'au moins une règle (R-IMP-12) ou de l'apprentissage (R-IMP-13)."
+          },
+          "transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transfer_to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transfer_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "ImportPreview": {
+        "type": "object",
+        "description": "Aperçu en direct de l'assistant (IMP-01).",
+        "required": [
+          "format",
+          "sheets",
+          "raw_rows",
+          "lines",
+          "total_lines",
+          "error_lines",
+          "statement",
+          "already_imported"
+        ],
+        "properties": {
+          "already_imported": {
+            "type": "boolean",
+            "description": "Un lot validé avec ce même fichier existe dans le compte (R-IMP-7)."
+          },
+          "delimiter": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "encoding": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error_lines": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "format": {
+            "$ref": "#/components/schemas/FileFormat"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewLine"
+            }
+          },
+          "raw_rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Premières lignes brutes du fichier (CSV/XLSX)."
+          },
+          "settings_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Réglages incomplets ou invalides : l'aperçu montre seulement les lignes brutes."
+          },
+          "sheets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "statement": {
+            "$ref": "#/components/schemas/StatementInfo"
+          },
+          "total_lines": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ImportProfileId": {
+        "type": "string",
+        "format": "uuid"
       },
       "Institution": {
         "type": "object",
@@ -1964,6 +3990,57 @@
           }
         }
       },
+      "LabelColumns": {
+        "type": "object",
+        "required": [
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnRef"
+            }
+          },
+          "separator": {
+            "type": "string"
+          }
+        }
+      },
+      "LabelCondition": {
+        "type": "object",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/LabelField"
+          },
+          "op": {
+            "$ref": "#/components/schemas/LabelOp"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "LabelField": {
+        "type": "string",
+        "enum": [
+          "bank_label",
+          "label"
+        ]
+      },
+      "LabelOp": {
+        "type": "string",
+        "enum": [
+          "contains",
+          "starts_with",
+          "equals",
+          "regex"
+        ]
+      },
       "LastBackup": {
         "type": "object",
         "required": [
@@ -1980,6 +4057,68 @@
           },
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "LineReviewInput": {
+        "type": "object",
+        "description": "État complet de revue d'une ligne, envoyé par l'écran de revue (IMP-04).",
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ImportDecision"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "match_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId",
+                "description": "Transaction pointée par un `MATCH`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftSplit"
+            },
+            "description": "Ventilation de la transaction créée ; sans ventilation, une seule non catégorisée."
+          },
+          "transfer_to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transfer_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -2018,6 +4157,51 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "MatchKind": {
+        "type": "string",
+        "description": "Correspondance d'une ligne avec l'existant (modèle de données, `ImportLine.match_kind`).",
+        "enum": [
+          "NONE",
+          "DUPLICATE",
+          "CANDIDATE"
+        ]
+      },
+      "MatchView": {
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "date",
+          "label",
+          "amount_minor",
+          "clearing_status"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clearing_status": {
+            "$ref": "#/components/schemas/ClearingStatus"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "score": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
           }
         }
       },
@@ -2063,6 +4247,43 @@
             "format": "int64"
           },
           "total_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PreviewLine": {
+        "type": "object",
+        "required": [
+          "line_number",
+          "bank_label",
+          "errors"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "bank_label": {
+            "type": "string"
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "line_number": {
             "type": "integer",
             "format": "int64"
           }
@@ -2120,9 +4341,207 @@
           }
         }
       },
+      "Profile": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "format"
+        ],
+        "properties": {
+          "default_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "$ref": "#/components/schemas/FileFormat"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ImportProfileId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfileSettings",
+                "description": "Réglages CSV/XLSX ; absents pour l'OFX, qui n'a pas besoin de profil."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ProfileInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "format"
+        ],
+        "properties": {
+          "default_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "$ref": "#/components/schemas/FileFormat"
+          },
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfileSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ProfileSettings": {
+        "type": "object",
+        "description": "Réglages d'un profil (`ImportProfile.settings`), tels que décrits par la spec 03.",
+        "required": [
+          "date",
+          "label",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/AmountColumns"
+          },
+          "category_column": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ColumnRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "$ref": "#/components/schemas/DateColumn"
+          },
+          "delimiter": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "encoding": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CSV : `UTF-8`, `UTF-8-BOM`, `windows-1252`, `ISO-8859-1`."
+          },
+          "header_row": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Ligne des en-têtes, à partir de 1 ; absente : colonnes désignées par leur numéro.",
+            "minimum": 0
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelColumns"
+          },
+          "quote": {
+            "type": "string"
+          },
+          "row_filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RowFilter"
+            }
+          },
+          "sheet": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "XLSX : nom de la feuille (la première par défaut)."
+          },
+          "skip_footer_rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skip_rows_after_header": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "statement_balances": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StatementBalances"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value_date": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateColumn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "ProjectId": {
         "type": "string",
         "format": "uuid"
+      },
+      "ReconcilePreview": {
+        "type": "object",
+        "description": "Ce que valider le rapprochement va faire (R-RAP-4, R-RAP-5), affiché avant validation.",
+        "required": [
+          "checkpoint",
+          "frozen",
+          "pending"
+        ],
+        "properties": {
+          "checkpoint": {
+            "$ref": "#/components/schemas/Checkpoint"
+          },
+          "frozen": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Checkpoint"
+            },
+            "description": "Points antérieurs dont l'écart sera figé."
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapTransactionView"
+            },
+            "description": "Transactions encore `PENDING` qui seront rapprochées : souvent suspectes."
+          }
+        }
       },
       "ReorderInput": {
         "type": "object",
@@ -2138,6 +4557,137 @@
             "description": "Catégories d'un même niveau, dans l'ordre voulu."
           }
         }
+      },
+      "RowFilter": {
+        "type": "object",
+        "description": "Ligne ignorée si la colonne correspond au motif (soldes, totaux…).",
+        "required": [
+          "column",
+          "pattern"
+        ],
+        "properties": {
+          "column": {
+            "$ref": "#/components/schemas/ColumnRef"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "regex": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RuleInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "conditions",
+          "actions"
+        ],
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/Actions"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/Conditions"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "stop_processing": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RuleMatch": {
+        "type": "object",
+        "description": "Transaction existante non catégorisée à laquelle la règle s'appliquerait (R-IMP-19).",
+        "required": [
+          "transaction_id",
+          "account_id",
+          "account_name",
+          "date",
+          "label",
+          "amount_minor"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "RuleView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "priority",
+          "conditions",
+          "actions",
+          "stop_processing",
+          "active",
+          "hit_count"
+        ],
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/Actions"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/Conditions"
+          },
+          "hit_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/CategorizationRuleId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Plus petit = évaluée en premier."
+          },
+          "stop_processing": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Sign": {
+        "type": "string",
+        "enum": [
+          "debit",
+          "credit"
+        ]
       },
       "Split": {
         "type": "object",
@@ -2220,6 +4770,97 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "SplitShare": {
+        "type": "object",
+        "required": [
+          "weight"
+        ],
+        "properties": {
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Poids de la part (par exemple un pourcentage en centièmes de point : 10000 = 100 %).",
+            "minimum": 0
+          }
+        }
+      },
+      "StatementBalances": {
+        "type": "object",
+        "description": "Cellules où lire les soldes du relevé (par exemple `B2`).",
+        "properties": {
+          "closing": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CellRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "opening": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CellRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "StatementInfo": {
+        "type": "object",
+        "properties": {
+          "closing_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "gap_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "`fin − début − Σ lignes valides` (R-IMP-18) ; non nul : une ligne mal lue ou manquante."
+          },
+          "opening_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "period_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "period_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
           }
         }
       },
@@ -2640,6 +5281,49 @@
           }
         }
       },
+      "TransferProposal": {
+        "type": "object",
+        "description": "Virement repéré automatiquement, à accepter (R-IMP-14).",
+        "required": [
+          "account_id",
+          "date",
+          "label"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "line_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportLineId",
+                "description": "Ligne d'un autre lot en revue."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId",
+                "description": "Transaction existante à lier."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "TransferSummary": {
         "type": "object",
         "description": "L'autre jambe d'un virement, vue depuis une transaction.",
@@ -2729,6 +5413,59 @@
             "format": "int64"
           }
         }
+      },
+      "UploadForm": {
+        "type": "object",
+        "description": "Formulaire d'envoi d'un relevé (`multipart/form-data`).",
+        "required": [
+          "file",
+          "account_id"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary"
+          },
+          "format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileFormat",
+                "description": "Imposé ; sinon déduit du nom et du contenu du fichier."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportProfileId",
+                "description": "Profil existant ; sinon, `settings`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "save_profile_as": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Enregistre les réglages comme nouveau profil sous ce nom."
+          },
+          "settings": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Réglages CSV/XLSX, en JSON (schéma `ProfileSettings`)."
+          }
+        }
       }
     }
   },
@@ -2752,6 +5489,18 @@
     {
       "name": "transactions",
       "description": "Transactions, ventilations et virements (spec 02)"
+    },
+    {
+      "name": "imports",
+      "description": "Import de relevés (spec 03)"
+    },
+    {
+      "name": "reconciliation",
+      "description": "Rapprochement (spec 04)"
+    },
+    {
+      "name": "rules",
+      "description": "Règles de catégorisation (spec 03)"
     },
     {
       "name": "dashboard",

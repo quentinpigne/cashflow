@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, priority, conditions, actions, stop_processing AS \"stop_processing: bool\", active AS \"active: bool\", hit_count\n           FROM categorization_rule ORDER BY priority, name COLLATE NOCASE",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "priority",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "name": "conditions",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "conditions"
+          }
+        }
+      },
+      {
+        "name": "actions",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "actions"
+          }
+        }
+      },
+      {
+        "name": "stop_processing: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "stop_processing"
+          }
+        }
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "name": "hit_count",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "categorization_rule",
+            "name": "hit_count"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "59e12edfb7d10e82138fa8451e6cca64bbd63803b912c54108cfdad3007d80d0"
+}

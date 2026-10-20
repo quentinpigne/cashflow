@@ -4,7 +4,10 @@ mod accounts;
 mod auth;
 mod categories;
 mod dashboard;
+mod imports;
 mod institutions;
+mod reconciliation;
+mod rules;
 mod system;
 mod transactions;
 
@@ -31,6 +34,9 @@ use crate::state::AppState;
         (name = "institutions", description = "Établissements (spec 01)"),
         (name = "categories", description = "Catégories (spec 02)"),
         (name = "transactions", description = "Transactions, ventilations et virements (spec 02)"),
+        (name = "imports", description = "Import de relevés (spec 03)"),
+        (name = "reconciliation", description = "Rapprochement (spec 04)"),
+        (name = "rules", description = "Règles de catégorisation (spec 03)"),
         (name = "dashboard", description = "Tableau de bord (spec 08)"),
         (name = "system", description = "Export, sauvegardes, version"),
     )
@@ -64,6 +70,27 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(transactions::transfer_candidates))
         .routes(routes!(transactions::mark_as_transfer))
         .routes(routes!(transactions::unlink_transfer))
+        .routes(routes!(imports::preview))
+        .routes(routes!(imports::list, imports::start))
+        .routes(routes!(imports::get, imports::cancel))
+        .routes(routes!(imports::review_line))
+        .routes(routes!(imports::bulk))
+        .routes(routes!(imports::commit))
+        .routes(routes!(imports::revert))
+        .routes(routes!(imports::download_file, imports::delete_file))
+        .routes(routes!(imports::list_profiles, imports::create_profile))
+        .routes(routes!(imports::update_profile, imports::delete_profile))
+        .routes(routes!(reconciliation::list, reconciliation::create))
+        .routes(routes!(reconciliation::delete))
+        .routes(routes!(reconciliation::preview, reconciliation::reconcile))
+        .routes(routes!(reconciliation::unlock))
+        .routes(routes!(reconciliation::gap_hints))
+        .routes(routes!(reconciliation::set_cleared))
+        .routes(routes!(reconciliation::health))
+        .routes(routes!(rules::list, rules::create))
+        .routes(routes!(rules::update, rules::delete))
+        .routes(routes!(rules::preview))
+        .routes(routes!(rules::apply))
         .routes(routes!(dashboard::get))
         .routes(routes!(system::info))
         .routes(routes!(system::export))

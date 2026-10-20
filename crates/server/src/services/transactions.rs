@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqliteConnection;
 use utoipa::{IntoParams, ToSchema};
 
-use super::{check_split_sums, clean, required};
+use super::{check_split_sums, clean, reconciliation, required};
 use crate::db::accounts::AccountRow;
 use crate::db::transactions::{NewSplit, NewTransaction, SplitRow, TransactionUpdate, TransferSide};
 use crate::db::{self, Db};
@@ -343,6 +343,7 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
     let mut tx = db.write.begin().await?;
     let account = db::accounts::find(&mut *tx, input.account_id).await?.ok_or(AppError::NotFound("compte"))?;
     period(&account).check(input.date)?;
+    reconciliation::lock(&mut tx, input.account_id).await?.check(input.date)?;
     check_references(&mut tx, &splits).await?;
     let id = TransactionId::new();
     let note = clean(input.note.as_deref());
@@ -385,6 +386,13 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
     )?;
     period(&account).check(input.date)?;
     period(&account).check(new_balance_date)?;
+    // Une écriture qui change le solde à une date rapprochée est refusée, avant comme après (R-RAP-7).
+    let moves_balance =
+        amount != current.amount || input.account_id != current.account_id || new_balance_date != current.balance_date;
+    if moves_balance {
+        reconciliation::lock(&mut tx, current.account_id).await?.check(current.balance_date)?;
+        reconciliation::lock(&mut tx, input.account_id).await?.check(new_balance_date)?;
+    }
 
     let transfer = db::transactions::transfer_of(&mut *tx, id).await?;
     let existing = db::transactions::splits_of(&mut *tx, id).await?;
@@ -434,6 +442,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 counterpart.clearing_status,
                 BalanceAffectingChange { amount: true, ..Default::default() },
             )?;
+            reconciliation::lock(&mut tx, counterpart.account_id).await?.check(counterpart.balance_date)?;
             let update = TransactionUpdate {
                 account_id: counterpart.account_id,
                 date: counterpart.date,
@@ -475,7 +484,9 @@ pub async fn delete(db: &Db, id: TransactionId) -> AppResult<()> {
     if current.clearing_status == ClearingStatus::Reconciled {
         return Err(DomainError::TransactionLocked.into());
     }
-    db::transactions::delete(&db.write, id).await?;
+    let mut conn = db.write.acquire().await?;
+    reconciliation::lock(&mut conn, current.account_id).await?.check(current.balance_date)?;
+    db::transactions::delete(&mut *conn, id).await?;
     Ok(())
 }
 

@@ -1,0 +1,98 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, account_id, date AS \"date: Date\", balance, source, import_batch_id, reconciled_at\n           FROM balance_checkpoint WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "date: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "balance",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "balance"
+          }
+        }
+      },
+      {
+        "name": "source",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "name": "import_batch_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "import_batch_id"
+          }
+        }
+      },
+      {
+        "name": "reconciled_at",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "balance_checkpoint",
+            "name": "reconciled_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "d44a37b1009141fdb9bc036e001cf007945ce16441f32fa2b7a2a52dedae494e"
+}

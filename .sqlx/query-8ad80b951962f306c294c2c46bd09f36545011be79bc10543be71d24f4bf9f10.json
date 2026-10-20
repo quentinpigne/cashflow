@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id AS \"id!\", balance_date AS \"balance_date!: Date\", amount AS \"amount!\", label AS \"label!\"\n           FROM ledger_transaction\n           WHERE account_id = ? AND balance_date BETWEEN ? AND ?\n             AND (clearing_status = 'PENDING' OR (clearing_status = 'CLEARED' AND fingerprint IS NULL))",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "balance_date!: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "balance_date"
+          }
+        }
+      },
+      {
+        "name": "amount!",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "label!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "label"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "8ad80b951962f306c294c2c46bd09f36545011be79bc10543be71d24f4bf9f10"
+}

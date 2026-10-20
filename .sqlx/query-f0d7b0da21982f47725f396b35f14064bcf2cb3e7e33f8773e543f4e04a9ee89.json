@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT clearing_status AS \"clearing_status!\", bank_date AS \"bank_date?\", bank_label AS \"bank_label?\",\n                  value_date AS \"value_date?\", fingerprint AS \"fingerprint?\"\n           FROM ledger_transaction WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "clearing_status!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "clearing_status"
+          }
+        }
+      },
+      {
+        "name": "bank_date?",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "bank_date"
+          }
+        }
+      },
+      {
+        "name": "bank_label?",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "bank_label"
+          }
+        }
+      },
+      {
+        "name": "value_date?",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "value_date"
+          }
+        }
+      },
+      {
+        "name": "fingerprint?",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "fingerprint"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f0d7b0da21982f47725f396b35f14064bcf2cb3e7e33f8773e543f4e04a9ee89"
+}

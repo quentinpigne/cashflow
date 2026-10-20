@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, account_id, profile_id, file_name, file_sha256, status, period_start AS \"period_start: Date\",\n                  period_end AS \"period_end: Date\", statement_opening_balance, statement_closing_balance, committed_at, created_at\n           FROM import_batch WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "profile_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "profile_id"
+          }
+        }
+      },
+      {
+        "name": "file_name",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "name": "file_sha256",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "file_sha256"
+          }
+        }
+      },
+      {
+        "name": "status",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "period_start: Date",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "name": "period_end: Date",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "period_end"
+          }
+        }
+      },
+      {
+        "name": "statement_opening_balance",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "statement_opening_balance"
+          }
+        }
+      },
+      {
+        "name": "statement_closing_balance",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "statement_closing_balance"
+          }
+        }
+      },
+      {
+        "name": "committed_at",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "committed_at"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "0ab54d7cde9fc9d039470f3b2e38a6fef0a0a8e022cc33a3b35b4e3a3f451df8"
+}

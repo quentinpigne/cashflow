@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE import_batch SET profile_id = NULL WHERE profile_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "9bbbc9e3926c65450c853ac47edb4c0581fd54b45332356adf7e8cadf06fc4fe"
+}

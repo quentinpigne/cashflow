@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT coalesce(t.bank_label, t.label) AS \"label!: String\", s.category_id AS \"category_id!\"\n           FROM ledger_transaction t JOIN split s ON s.transaction_id = t.id\n           WHERE t.account_id = ? AND s.category_id IS NOT NULL\n             AND (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) = 1\n           ORDER BY t.date DESC, t.id DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "label!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "name": "category_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "category_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "063d681f58a9a118420368aa8cd408318b8fbf9f246b062f9e74154c91f62769"
+}

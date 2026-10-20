@@ -314,6 +314,12 @@ pub async fn update(db: &Db, id: AccountId, input: &AccountInput, today: Date) -
     if current.closed_on.is_some_and(|closed| closed < input.opening_date) {
         return Err(DomainError::ClosingBeforeOpening.into());
     }
+    // Le solde d'ouverture est un point de contrôle implicite toujours rapproché (R-RAP-8).
+    let opening_changes =
+        input.opening_balance_minor != current.opening_balance.minor() || input.opening_date != current.opening_date;
+    if opening_changes && db::checkpoints::locked_until(&db.read, id).await?.is_some() {
+        return Err(DomainError::OpeningBalanceLocked.into());
+    }
     let (net_worth, emergency, budget) = flags(input);
     let fields = AccountFields {
         name: &v.name,
@@ -373,7 +379,9 @@ pub async fn reopen(db: &Db, id: AccountId, today: Date) -> AppResult<Account> {
 pub async fn delete(db: &Db, id: AccountId) -> AppResult<()> {
     db::accounts::find(&db.read, id).await?.ok_or(AppError::NotFound("compte"))?;
     // Seules les transactions l'empêchent : valorisations et points de contrôle partent avec le compte.
-    if db::accounts::transaction_date_bounds(&db.read, id).await?.is_some() {
+    if db::accounts::transaction_date_bounds(&db.read, id).await?.is_some()
+        || db::imports::batches_for_account(&db.read, id).await? > 0
+    {
         return Err(DomainError::AccountNotEmpty.into());
     }
     let mut tx = db.write.begin().await?;

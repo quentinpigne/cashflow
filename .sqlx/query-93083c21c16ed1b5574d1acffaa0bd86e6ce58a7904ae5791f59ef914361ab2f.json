@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT fingerprint AS \"fingerprint!\", id FROM ledger_transaction WHERE account_id = ? AND fingerprint IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "fingerprint!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "fingerprint"
+          }
+        }
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "93083c21c16ed1b5574d1acffaa0bd86e6ce58a7904ae5791f59ef914361ab2f"
+}

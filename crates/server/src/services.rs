@@ -8,7 +8,10 @@ pub mod categories;
 pub mod dashboard;
 pub mod demo;
 pub mod export;
+pub mod imports;
 pub mod institutions;
+pub mod reconciliation;
+pub mod rules;
 pub mod seed;
 pub mod transactions;
 pub mod transfers;
@@ -47,5 +50,7 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
     Ok(value.to_owned())
 }
 
+#[cfg(test)]
+mod import_tests;
 #[cfg(test)]
 mod tests;

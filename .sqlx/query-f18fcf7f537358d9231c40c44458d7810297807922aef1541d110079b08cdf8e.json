@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE balance_checkpoint SET reconciled_at = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "f18fcf7f537358d9231c40c44458d7810297807922aef1541d110079b08cdf8e"
+}

@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT count(*) FROM import_batch WHERE account_id = ? AND file_sha256 = ? AND status = 'COMMITTED'",
+  "describe": {
+    "columns": [
+      {
+        "name": "count(*)",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6e26c31e43e560d7e2705cd52ef352717c4d11902f407a0afd2039901ae80b1d"
+}

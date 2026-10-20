@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM categorization_rule WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "1bf1cf270c35e62d274f1877f6a3e629a0c9265110a540e738531bd19e5e59b5"
+}

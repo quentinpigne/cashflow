@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE balance_checkpoint SET balance = ?, source = ?, import_batch_id = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "fe69b62e6cf061bfb8b14a49ae2c2905ccc73c842b2923755b3fa5cbe65548cf"
+}

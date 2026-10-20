@@ -19,6 +19,7 @@ mod clock;
 mod config;
 mod db;
 mod error;
+mod readers;
 mod services;
 mod state;
 mod web;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM balance_checkpoint WHERE import_batch_id = ? AND reconciled_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2f4ca0e6cedf7d9cafee2dd9ac187d14146fd1cb4decec6330da7accdc67a6cc"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE ledger_transaction SET clearing_status = 'RECONCILED', updated_at = ?\n         WHERE account_id = ? AND balance_date <= ? AND clearing_status <> 'RECONCILED'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "183175a778eb76cb12e9b4fab0fe6a39d598987719c7f33069e05b15f6ddf2f6"
+}

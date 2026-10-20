@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO categorization_rule (id, name, priority, conditions, actions, stop_processing, active, hit_count, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)\n         ON CONFLICT (id) DO UPDATE SET name = excluded.name, priority = excluded.priority, conditions = excluded.conditions,\n                                        actions = excluded.actions, stop_processing = excluded.stop_processing,\n                                        active = excluded.active, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "bb3a0d121a41c722444d424039352950cef4fba16905d6ac46ebaffeb1772214"
+}

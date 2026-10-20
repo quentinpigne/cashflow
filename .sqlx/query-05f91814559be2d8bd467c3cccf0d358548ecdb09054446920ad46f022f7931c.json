@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT max(date) AS \"date: Date\" FROM balance_checkpoint WHERE account_id = ? AND reconciled_at IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "date: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "05f91814559be2d8bd467c3cccf0d358548ecdb09054446920ad46f022f7931c"
+}

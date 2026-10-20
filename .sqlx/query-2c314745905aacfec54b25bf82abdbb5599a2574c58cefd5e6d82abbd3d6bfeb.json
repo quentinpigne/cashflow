@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM import_batch WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2c314745905aacfec54b25bf82abdbb5599a2574c58cefd5e6d82abbd3d6bfeb"
+}

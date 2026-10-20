@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, format, settings, default_account_id FROM import_profile WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_profile",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_profile",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "format",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_profile",
+            "name": "format"
+          }
+        }
+      },
+      {
+        "name": "settings",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_profile",
+            "name": "settings"
+          }
+        }
+      },
+      {
+        "name": "default_account_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_profile",
+            "name": "default_account_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "b30ece18b06e7307f8f0b2ebbac32adfd452017d68ac5376a7e2799cc2abbf04"
+}
