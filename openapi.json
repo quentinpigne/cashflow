@@ -420,6 +420,24 @@
             }
           },
           {
+            "name": "accounts",
+            "in": "query",
+            "description": "Vue transverse (TRX-08) : limite à ces comptes, séparés par des virgules.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uncategorized",
+            "in": "query",
+            "description": "Seulement les transactions qui ont une ventilation non catégorisée (hors virements).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "from",
             "in": "query",
             "description": "Date de l'opération, incluse.",
@@ -1688,6 +1706,88 @@
         }
       }
     },
+    "/api/v1/reports/categories": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Dépenses ou revenus par catégorie d'un mois, comparés au mois précédent et à la moyenne (TDB-02).",
+        "operationId": "categoryReport",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Mois analysé, `AAAA-MM` ; le mois en cours par défaut.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "`EXPENSE` par défaut.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/evolution": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Revenus, dépenses, épargne et taux d'épargne mois par mois (TDB-03).",
+        "operationId": "evolutionReport",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "description": "12 ou 24 (12 par défaut).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Evolution"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/rules": {
       "get": {
         "tags": [
@@ -1967,6 +2067,126 @@
       }
     },
     "/api/v1/transactions": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Toutes les transactions, tous comptes confondus (TRX-08).",
+        "operationId": "listAllTransactions",
+        "parameters": [
+          {
+            "name": "accounts",
+            "in": "query",
+            "description": "Vue transverse (TRX-08) : limite à ces comptes, séparés par des virgules.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "uncategorized",
+            "in": "query",
+            "description": "Seulement les transactions qui ont une ventilation non catégorisée (hors virements).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Date de l'opération, incluse.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "Inclut les sous-catégories (R-TRX-21).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ClearingStatus"
+            }
+          },
+          {
+            "name": "min_amount_minor",
+            "in": "query",
+            "description": "Bornes sur la valeur absolue du montant.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "max_amount_minor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "description": "Recherche dans le libellé, le libellé bancaire et la note.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "200 par défaut.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionPage"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "transactions"
@@ -1994,6 +2214,45 @@
             }
           },
           "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/categorize": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Catégorise plusieurs transactions d'un coup (TRX-06).",
+        "operationId": "categorizeTransactions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCategorizeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkCategorizeResult"
+                }
+              }
+            }
+          },
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2948,6 +3207,43 @@
           }
         }
       },
+      "BulkCategorizeInput": {
+        "type": "object",
+        "description": "Catégorisation en masse (TRX-06).",
+        "required": [
+          "transaction_ids",
+          "category_id"
+        ],
+        "properties": {
+          "category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        }
+      },
+      "BulkCategorizeResult": {
+        "type": "object",
+        "required": [
+          "categorized",
+          "skipped"
+        ],
+        "properties": {
+          "categorized": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "description": "Virements et transactions ventilées, laissés tels quels.",
+            "minimum": 0
+          }
+        }
+      },
       "BulkInput": {
         "type": "object",
         "required": [
@@ -3153,6 +3449,110 @@
           "INCOME",
           "EXPENSE"
         ]
+      },
+      "CategoryLine": {
+        "type": "object",
+        "required": [
+          "name",
+          "amount_minor",
+          "previous_minor",
+          "average_minor",
+          "children"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "average_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Moyenne des 12 mois complets précédents."
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Absent : non catégorisé."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryLine"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "previous_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Mois précédent (à la même date si le mois analysé est en cours, R-TDB-13)."
+          }
+        }
+      },
+      "CategoryReport": {
+        "type": "object",
+        "description": "Dépenses (ou revenus) par catégorie d'un mois, comparés au mois précédent et à la moyenne (TDB-02).",
+        "required": [
+          "kind",
+          "from",
+          "to",
+          "current_month",
+          "previous_from",
+          "previous_to",
+          "total_minor",
+          "previous_total_minor",
+          "average_total_minor",
+          "lines"
+        ],
+        "properties": {
+          "average_total_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current_month": {
+            "type": "boolean"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CategoryKind"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryLine"
+            }
+          },
+          "previous_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "previous_to": {
+            "type": "string",
+            "format": "date"
+          },
+          "previous_total_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "total_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "CellRef": {
         "type": "object",
@@ -3408,9 +3808,17 @@
           "month",
           "previous_month",
           "families",
-          "uncategorized"
+          "uncategorized",
+          "alerts"
         ],
         "properties": {
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountHealth"
+            },
+            "description": "Comptes qui demandent une action : écart de rapprochement ou transactions en attente anciennes (R-TDB-10)."
+          },
           "families": {
             "type": "array",
             "items": {
@@ -3493,6 +3901,21 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "Evolution": {
+        "type": "object",
+        "description": "Revenus, dépenses, épargne et taux d'épargne mois par mois (TDB-03).",
+        "required": [
+          "months"
+        ],
+        "properties": {
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthFlows"
+            }
           }
         }
       },
@@ -4227,6 +4650,62 @@
             "format": "int64",
             "description": "Nombre de ventilations réaffectées.",
             "minimum": 0
+          }
+        }
+      },
+      "MonthFlows": {
+        "type": "object",
+        "required": [
+          "month",
+          "from",
+          "to",
+          "income_minor",
+          "expenses_minor",
+          "savings_minor",
+          "current_month"
+        ],
+        "properties": {
+          "current_month": {
+            "type": "boolean"
+          },
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string",
+            "description": "`AAAA-MM`."
+          },
+          "rolling_rate_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Taux d'épargne sur les 12 mois glissants qui finissent ce mois-ci (R-TDB-7)."
+          },
+          "savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_rate_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -5059,27 +5538,33 @@
         "required": [
           "id",
           "account_id",
+          "account_name",
           "date",
           "balance_date",
           "label",
           "amount_minor",
           "clearing_status",
           "origin",
-          "splits",
-          "balance_after_minor"
+          "splits"
         ],
         "properties": {
           "account_id": {
             "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
           },
           "amount_minor": {
             "type": "integer",
             "format": "int64"
           },
           "balance_after_minor": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
-            "description": "Solde du compte après cette opération (TRX-02)."
+            "description": "Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08)."
           },
           "balance_date": {
             "type": "string",

@@ -132,6 +132,70 @@ pub fn end_of_previous_month(today: Date) -> NaiveDate {
     first_of_month(today).pred_opt().unwrap_or(today)
 }
 
+/// Mois civils successifs : `count` mois finissant par celui de `last` (inclus), du plus ancien au plus récent.
+pub fn months_until(last: Date, count: u32) -> Vec<Period> {
+    let end_month = first_of_month(last);
+    (0..count)
+        .rev()
+        .filter_map(|back| end_month.checked_sub_months(Months::new(back)))
+        .map(|start| Period { from: start, to: last_of_month(start) })
+        .collect()
+}
+
+/// Taux d'épargne glissant : épargne cumulée / revenus cumulés sur la fenêtre (R-TDB-7).
+pub fn rolling_rate(window: &[Flows]) -> Option<Rate> {
+    let savings: Money = window.iter().map(|f| f.savings).sum();
+    let income: Money = window.iter().map(|f| f.income).sum();
+    savings_rate(savings, income)
+}
+
+/// Moyenne exacte, arrondie à l'unité mineure, demi vers le haut (R-TDB-8).
+pub fn average(amounts: &[Money]) -> Money {
+    if amounts.is_empty() {
+        return Money::ZERO;
+    }
+    let total: Money = amounts.iter().sum();
+    let count = Decimal::from(amounts.len());
+    let value =
+        (Decimal::from(total.minor()) / count).round_dp_with_strategy(0, RoundingStrategy::MidpointAwayFromZero);
+    Money::from_minor(value.to_i64().unwrap_or(0))
+}
+
+/// Une ventilation vue par l'analyse par catégorie (TDB-02).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CategorizedFact<C> {
+    pub date: Date,
+    pub amount: Money,
+    /// Catégorie de la ventilation ; `None` : non catégorisée.
+    pub category: Option<C>,
+    pub kind: Option<CategoryKind>,
+    pub is_transfer: bool,
+    pub is_eur: bool,
+}
+
+/// Montant d'une nature (dépenses en positif, remboursements déduits ; revenus tels quels) par catégorie
+/// sur une période, hors virements et hors comptes non euros (R-TDB-3, R-TDB-4).
+pub fn by_category<C: Copy + Eq + std::hash::Hash>(
+    facts: &[CategorizedFact<C>],
+    kind: CategoryKind,
+    period: Period,
+) -> std::collections::HashMap<Option<C>, Money> {
+    let mut totals = std::collections::HashMap::new();
+    for fact in facts.iter().filter(|f| f.is_eur && !f.is_transfer && f.date >= period.from && f.date <= period.to) {
+        let counts = match (fact.kind, kind) {
+            (Some(k), _) => k == kind,
+            // Non catégorisé : sorties avec les dépenses, entrées avec les revenus.
+            (None, CategoryKind::Expense) => fact.amount.is_negative(),
+            (None, CategoryKind::Income) => fact.amount.is_positive(),
+        };
+        if counts {
+            let signed = if kind == CategoryKind::Expense { -fact.amount } else { fact.amount };
+            *totals.entry(fact.category).or_insert(Money::ZERO) += signed;
+        }
+    }
+    totals
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,6 +266,45 @@ mod tests {
     #[test]
     fn r_tdb_7_rate_undefined_without_income() {
         assert_eq!(savings_rate(m(-100), Money::ZERO), None);
+    }
+
+    #[test]
+    fn months_and_rolling_rate() {
+        let months = months_until(d("2026-03-15"), 3);
+        assert_eq!(
+            months.iter().map(|p| p.from).collect::<Vec<_>>(),
+            vec![d("2026-01-01"), d("2026-02-01"), d("2026-03-01")]
+        );
+        assert_eq!(months[1].to, d("2026-02-28"));
+        let flows = |income: i64, savings: i64| Flows { income: m(income), savings: m(savings), ..Default::default() };
+        assert_eq!(rolling_rate(&[flows(100_000, 10_000), flows(100_000, 30_000)]), Some(Rate::from_ppm(200_000)));
+        assert_eq!(average(&[m(100), m(101)]), m(101));
+    }
+
+    #[test]
+    fn tdb_02_by_category_deducts_refunds_and_ignores_transfers() {
+        let fact = |amount: i64, category: Option<u8>, kind: Option<CategoryKind>, is_transfer: bool| CategorizedFact {
+            date: d("2026-03-10"),
+            amount: m(amount),
+            category,
+            kind,
+            is_transfer,
+            is_eur: true,
+        };
+        use CategoryKind::*;
+        let facts = [
+            fact(-5_000, Some(1), Some(Expense), false),
+            fact(3_500, Some(1), Some(Expense), false),
+            fact(-2_000, None, None, false),
+            fact(-50_000, None, None, true),
+            fact(300_000, Some(9), Some(Income), false),
+        ];
+        let period = Period { from: d("2026-03-01"), to: d("2026-03-31") };
+        let expenses = by_category(&facts, Expense, period);
+        assert_eq!(expenses.get(&Some(1)), Some(&m(1_500)));
+        assert_eq!(expenses.get(&None), Some(&m(2_000)));
+        assert_eq!(expenses.len(), 2);
+        assert_eq!(by_category(&facts, Income, period).get(&Some(9)), Some(&m(300_000)));
     }
 
     #[test]

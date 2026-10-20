@@ -11,6 +11,7 @@ pub mod export;
 pub mod imports;
 pub mod institutions;
 pub mod reconciliation;
+pub mod reports;
 pub mod rules;
 pub mod seed;
 pub mod transactions;

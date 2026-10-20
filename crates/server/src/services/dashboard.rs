@@ -90,6 +90,8 @@ pub struct Dashboard {
     pub previous_month: FlowsView,
     pub families: Vec<FamilyGroup>,
     pub uncategorized: UncategorizedView,
+    /// Comptes qui demandent une action : écart de rapprochement ou transactions en attente anciennes (R-TDB-10).
+    pub alerts: Vec<super::reconciliation::AccountHealth>,
 }
 
 fn values(rows: &[db::accounts::AccountRow], ledger: &accounts::Ledger, at: Date) -> Vec<AccountValue> {
@@ -181,5 +183,10 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
         previous_month: flows_view(previous_period, previous_month),
         families,
         uncategorized,
+        alerts: super::reconciliation::health(db, today)
+            .await?
+            .into_iter()
+            .filter(|h| h.old_pending > 0 || h.current_gap_minor.is_some_and(|g| g != 0))
+            .collect(),
     })
 }

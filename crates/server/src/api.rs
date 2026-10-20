@@ -7,6 +7,7 @@ mod dashboard;
 mod imports;
 mod institutions;
 mod reconciliation;
+mod reports;
 mod rules;
 mod system;
 mod transactions;
@@ -92,6 +93,10 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(rules::preview))
         .routes(routes!(rules::apply))
         .routes(routes!(dashboard::get))
+        .routes(routes!(reports::categories))
+        .routes(routes!(reports::evolution))
+        .routes(routes!(transactions::list_all))
+        .routes(routes!(transactions::categorize_many))
         .routes(routes!(system::info))
         .routes(routes!(system::export))
 }

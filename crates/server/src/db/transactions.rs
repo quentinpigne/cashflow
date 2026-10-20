@@ -551,3 +551,81 @@ pub async fn split_sum_mismatches(conn: &mut SqliteConnection, ids: &[Transactio
     }
     Ok(mismatches)
 }
+
+/// Toutes les transactions, tous comptes confondus (TRX-08).
+pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<TransactionRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
+                  balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
+                  bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
+                  origin AS "origin!"
+           FROM ledger_transaction ORDER BY date, id"#
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| transaction_row!(r)).collect()
+}
+
+pub async fn all_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<SplitRow>> {
+    let rows = sqlx::query!(
+        "SELECT id, transaction_id, amount, category_id, note, project_id FROM split ORDER BY transaction_id, position"
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| split_row!(r)).collect()
+}
+
+pub async fn all_transfers(
+    db: impl SqliteExecutor<'_>,
+) -> anyhow::Result<Vec<(TransferId, TransactionId, TransactionId)>> {
+    let rows =
+        sqlx::query!("SELECT id, outflow_transaction_id, inflow_transaction_id FROM transfer").fetch_all(db).await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok((id_from_db(&r.id)?, id_from_db(&r.outflow_transaction_id)?, id_from_db(&r.inflow_transaction_id)?))
+        })
+        .collect()
+}
+
+/// Ventilation vue par l'analyse par catégorie (TDB-02).
+pub struct CategorizedFactRow {
+    pub date: Date,
+    pub amount: Money,
+    pub category_id: Option<CategoryId>,
+    pub category_kind: Option<CategoryKind>,
+    pub is_transfer: bool,
+    pub currency: String,
+}
+
+pub async fn categorized_facts(
+    db: impl SqliteExecutor<'_>,
+    from: Date,
+    to: Date,
+) -> anyhow::Result<Vec<CategorizedFactRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, c.kind AS "category_kind?", a.currency,
+                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
+                      AS "is_transfer!: bool"
+           FROM split s
+           JOIN ledger_transaction t ON t.id = s.transaction_id
+           JOIN account a ON a.id = t.account_id
+           LEFT JOIN category c ON c.id = s.category_id
+           WHERE t.date BETWEEN ? AND ?"#,
+        from,
+        to
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(CategorizedFactRow {
+                date: r.date,
+                amount: Money::from_minor(r.amount),
+                category_id: opt_id_from_db(r.category_id.as_deref())?,
+                category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
+                is_transfer: r.is_transfer,
+                currency: r.currency,
+            })
+        })
+        .collect()
+}

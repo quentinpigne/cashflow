@@ -179,13 +179,13 @@ async fn trx_02_running_balance_and_filters() {
     transactions::create(&db, &tx(checking, "2026-03-01", -1_000, Some(market))).await.unwrap();
     transactions::create(&db, &tx(checking, "2026-03-02", 500, None)).await.unwrap();
     let page = transactions::list(&db, checking, &TransactionFilter::default()).await.unwrap();
-    assert_eq!(page.items.iter().map(|i| i.balance_after_minor).collect::<Vec<_>>(), vec![9_500, 9_000]);
+    assert_eq!(page.items.iter().map(|i| i.balance_after_minor).collect::<Vec<_>>(), vec![Some(9_500), Some(9_000)]);
 
     // Le filtre par catégorie parente inclut ses sous-catégories (R-TRX-21).
     let filter = TransactionFilter { category_id: Some(food), ..Default::default() };
     let page = transactions::list(&db, checking, &filter).await.unwrap();
     assert_eq!(page.total, 1);
-    assert_eq!(page.items[0].balance_after_minor, 9_000);
+    assert_eq!(page.items[0].balance_after_minor, Some(9_000));
 }
 
 #[tokio::test]
@@ -305,4 +305,76 @@ async fn r_trx_22_merge_and_delete_categories() {
         icon: None,
     };
     assert_eq!(domain_error(categories::create(&db, &input).await), DomainError::CategoryDepthExceeded);
+}
+
+#[tokio::test]
+async fn trx_08_transverse_list_and_trx_06_bulk_categorize() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 100_000).await;
+    let livret = account(&db, "Livret A", AccountKind::LivretA, 0).await;
+    let food = category(&db, "Nourriture", CategoryKind::Expense, None).await;
+    let a = transactions::create(&db, &tx(checking, "2026-03-01", -1_000, None)).await.unwrap();
+    let b = transactions::create(&db, &tx(livret, "2026-03-02", 500, None)).await.unwrap();
+    let transfer = transfers::create(
+        &db,
+        &TransferInput {
+            from_account_id: checking,
+            to_account_id: livret,
+            amount_minor: 2_000,
+            date: d("2026-03-03"),
+            label: "Épargne".into(),
+            note: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let all = transactions::list_all(&db, &TransactionFilter::default()).await.unwrap();
+    assert_eq!(all.total, 4);
+    assert!(all.items.iter().all(|i| i.balance_after_minor.is_none()));
+    let uncategorized = TransactionFilter { uncategorized: Some(true), ..Default::default() };
+    assert_eq!(
+        transactions::list_all(&db, &uncategorized).await.unwrap().total,
+        2,
+        "les virements ne sont pas à catégoriser"
+    );
+    let only_livret = TransactionFilter { accounts: Some(livret.to_string()), ..Default::default() };
+    assert_eq!(transactions::list_all(&db, &only_livret).await.unwrap().total, 2);
+
+    let input = transactions::BulkCategorizeInput {
+        transaction_ids: vec![a, b, transfer.outflow_transaction_id],
+        category_id: food,
+    };
+    let result = transactions::categorize_many(&db, &input).await.unwrap();
+    assert_eq!((result.categorized, result.skipped), (2, 1));
+}
+
+#[tokio::test]
+async fn tdb_02_category_report_and_tdb_03_evolution() {
+    use super::reports;
+
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 100_000).await;
+    let food = category(&db, "Nourriture", CategoryKind::Expense, None).await;
+    let market = category(&db, "Marché", CategoryKind::Expense, Some(food)).await;
+    let salary = category(&db, "Paie", CategoryKind::Income, None).await;
+    transactions::create(&db, &tx(checking, "2026-02-10", -3_000, Some(food))).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-03-05", -1_000, Some(food))).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-03-06", -500, Some(market))).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-03-07", 200_000, Some(salary))).await.unwrap();
+
+    let query = reports::CategoryReportQuery { month: Some("2026-03".into()), kind: None };
+    let report = reports::categories(&db, &query, d(TODAY)).await.unwrap();
+    assert!(report.current_month);
+    let line = report.lines.iter().find(|l| l.category_id == Some(food)).unwrap();
+    assert_eq!(line.amount_minor, 1_500, "la racine cumule ses sous-catégories");
+    assert_eq!(line.children.len(), 1);
+    assert_eq!(line.previous_minor, 3_000);
+    assert_eq!(line.average_minor, 250, "3 000 sur 12 mois complets");
+
+    let evolution = reports::evolution(&db, &reports::EvolutionQuery { months: Some(12) }, d(TODAY)).await.unwrap();
+    assert_eq!(evolution.months.len(), 12);
+    let march = evolution.months.last().unwrap();
+    assert_eq!(march.month, "2026-03");
+    assert_eq!((march.income_minor, march.expenses_minor), (200_000, 1_500));
 }

@@ -56,6 +56,7 @@ pub struct TransferSummary {
 pub struct TransactionListItem {
     pub id: TransactionId,
     pub account_id: AccountId,
+    pub account_name: String,
     pub date: Date,
     pub bank_date: Option<Date>,
     pub balance_date: Date,
@@ -66,8 +67,8 @@ pub struct TransactionListItem {
     pub origin: TransactionOrigin,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
-    /// Solde du compte après cette opération (TRX-02).
-    pub balance_after_minor: i64,
+    /// Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
+    pub balance_after_minor: Option<i64>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -134,6 +135,20 @@ pub struct TransactionUpdateInput {
     pub splits: Option<Vec<SplitInput>>,
 }
 
+/// Catégorisation en masse (TRX-06).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BulkCategorizeInput {
+    pub transaction_ids: Vec<TransactionId>,
+    pub category_id: CategoryId,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BulkCategorizeResult {
+    pub categorized: usize,
+    /// Virements et transactions ventilées, laissés tels quels.
+    pub skipped: usize,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CategorizeInput {
     pub category_id: Option<CategoryId>,
@@ -142,6 +157,10 @@ pub struct CategorizeInput {
 #[derive(Debug, Default, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct TransactionFilter {
+    /// Vue transverse (TRX-08) : limite à ces comptes, séparés par des virgules.
+    pub accounts: Option<String>,
+    /// Seulement les transactions qui ont une ventilation non catégorisée (hors virements).
+    pub uncategorized: Option<bool>,
     /// Date de l'opération, incluse.
     pub from: Option<Date>,
     pub to: Option<Date>,
@@ -194,20 +213,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
         transactions.iter().map(|t| DatedAmount { balance_date: t.balance_date, amount: t.amount }).collect();
     let running = balance::running_balances(row.opening_balance, &movements);
 
-    let category_ids = match filter.category_id {
-        Some(category) => {
-            let mut ids: HashSet<CategoryId> = HashSet::from([category]);
-            ids.extend(
-                db::categories::list(&db.read)
-                    .await?
-                    .into_iter()
-                    .filter(|c| c.parent_id == Some(category))
-                    .map(|c| c.id),
-            );
-            Some(ids)
-        }
-        None => None,
-    };
+    let category_ids = category_family(db, filter.category_id).await?;
     let text = clean(filter.text.as_deref()).map(|t| t.to_lowercase());
 
     let mut items: Vec<TransactionListItem> = transactions
@@ -215,22 +221,17 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
         .zip(running)
         .filter_map(|(t, balance_after)| {
             let tx_splits = splits.remove(&t.id).unwrap_or_default();
-            let keep = filter.from.is_none_or(|from| t.date >= from)
-                && filter.to.is_none_or(|to| t.date <= to)
-                && filter.status.is_none_or(|status| t.clearing_status == status)
-                && filter.min_amount_minor.is_none_or(|min| t.amount.minor().abs() >= min)
-                && filter.max_amount_minor.is_none_or(|max| t.amount.minor().abs() <= max)
-                && category_ids
-                    .as_ref()
-                    .is_none_or(|ids| tx_splits.iter().any(|s| s.category_id.is_some_and(|c| ids.contains(&c))))
-                && text.as_ref().is_none_or(|text| {
-                    [Some(&t.label), t.bank_label.as_ref(), t.note.as_ref()]
-                        .into_iter()
-                        .flatten()
-                        .any(|field| field.to_lowercase().contains(text.as_str()))
-                });
+            let keep = matches_filter(
+                &t,
+                &tx_splits,
+                transfers.contains_key(&t.id),
+                filter,
+                category_ids.as_ref(),
+                text.as_deref(),
+            );
             keep.then(|| TransactionListItem {
                 id: t.id,
+                account_name: row.name.clone(),
                 account_id: t.account_id,
                 date: t.date,
                 bank_date: t.bank_date,
@@ -242,7 +243,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
                 origin: t.origin,
                 splits: tx_splits,
                 transfer: transfers.get(&t.id).map(|side| transfer_summary(side, &names)),
-                balance_after_minor: balance_after.minor(),
+                balance_after_minor: Some(balance_after.minor()),
             })
         })
         .collect();
@@ -515,4 +516,130 @@ pub(crate) async fn insert_validated(
     split::check_splits(t.amount, &splits.iter().map(|s| s.amount).collect::<Vec<_>>())?;
     db::transactions::insert(conn, t, splits).await?;
     Ok(())
+}
+
+/// Filtre commun aux listes de transactions.
+fn matches_filter(
+    t: &crate::db::transactions::TransactionRow,
+    splits: &[Split],
+    is_transfer: bool,
+    filter: &TransactionFilter,
+    category_ids: Option<&HashSet<CategoryId>>,
+    text: Option<&str>,
+) -> bool {
+    filter.from.is_none_or(|from| t.date >= from)
+        && filter.to.is_none_or(|to| t.date <= to)
+        && filter.status.is_none_or(|status| t.clearing_status == status)
+        && filter.min_amount_minor.is_none_or(|min| t.amount.minor().abs() >= min)
+        && filter.max_amount_minor.is_none_or(|max| t.amount.minor().abs() <= max)
+        && category_ids.is_none_or(|ids| splits.iter().any(|s| s.category_id.is_some_and(|c| ids.contains(&c))))
+        && (!filter.uncategorized.unwrap_or(false) || (!is_transfer && splits.iter().any(|s| s.category_id.is_none())))
+        && text.is_none_or(|text| {
+            [Some(&t.label), t.bank_label.as_ref(), t.note.as_ref()]
+                .into_iter()
+                .flatten()
+                .any(|field| field.to_lowercase().contains(text))
+        })
+}
+
+async fn category_family(db: &Db, category: Option<CategoryId>) -> AppResult<Option<HashSet<CategoryId>>> {
+    let Some(category) = category else { return Ok(None) };
+    let mut ids: HashSet<CategoryId> = HashSet::from([category]);
+    ids.extend(
+        db::categories::list(&db.read).await?.into_iter().filter(|c| c.parent_id == Some(category)).map(|c| c.id),
+    );
+    Ok(Some(ids))
+}
+
+/// Toutes les transactions, tous comptes confondus, les plus récentes d'abord (TRX-08).
+pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<TransactionPage> {
+    let accounts: HashMap<AccountId, String> =
+        db::accounts::list(&db.read).await?.into_iter().map(|a| (a.id, a.name)).collect();
+    let wanted: Option<HashSet<AccountId>> =
+        filter.accounts.as_deref().map(|list| list.split(',').filter_map(|id| id.trim().parse().ok()).collect());
+    let mut splits: HashMap<TransactionId, Vec<Split>> = HashMap::new();
+    for s in db::transactions::all_splits(&db.read).await? {
+        splits.entry(s.transaction_id).or_default().push(s.into());
+    }
+    let transactions = db::transactions::list_all(&db.read).await?;
+    let account_of: HashMap<TransactionId, AccountId> = transactions.iter().map(|t| (t.id, t.account_id)).collect();
+    let mut sides: HashMap<TransactionId, TransferSide> = HashMap::new();
+    for (transfer, outflow, inflow) in db::transactions::all_transfers(&db.read).await? {
+        for (this, other, is_outflow) in [(outflow, inflow, true), (inflow, outflow, false)] {
+            if let Some(account) = account_of.get(&other) {
+                sides.insert(
+                    this,
+                    TransferSide {
+                        transfer_id: transfer,
+                        transaction_id: this,
+                        counterpart_transaction_id: other,
+                        counterpart_account_id: *account,
+                        is_outflow,
+                    },
+                );
+            }
+        }
+    }
+    let category_ids = category_family(db, filter.category_id).await?;
+    let text = clean(filter.text.as_deref()).map(|t| t.to_lowercase());
+    let mut items: Vec<TransactionListItem> = transactions
+        .into_iter()
+        .filter(|t| wanted.as_ref().is_none_or(|w| w.contains(&t.account_id)))
+        .filter_map(|t| {
+            let tx_splits = splits.remove(&t.id).unwrap_or_default();
+            let side = sides.get(&t.id);
+            matches_filter(&t, &tx_splits, side.is_some(), filter, category_ids.as_ref(), text.as_deref()).then(|| {
+                TransactionListItem {
+                    id: t.id,
+                    account_name: accounts.get(&t.account_id).cloned().unwrap_or_default(),
+                    account_id: t.account_id,
+                    date: t.date,
+                    bank_date: t.bank_date,
+                    balance_date: t.balance_date,
+                    label: t.label,
+                    note: t.note,
+                    amount_minor: t.amount.minor(),
+                    clearing_status: t.clearing_status,
+                    origin: t.origin,
+                    splits: tx_splits,
+                    transfer: side.map(|s| transfer_summary(s, &accounts)),
+                    balance_after_minor: None,
+                }
+            })
+        })
+        .collect();
+    items.reverse();
+    let total = items.len();
+    let start = match &filter.cursor {
+        Some(cursor) => items.iter().position(|i| i.id.to_string() == *cursor).map_or(total, |p| p + 1),
+        None => 0,
+    };
+    let limit = filter.limit.unwrap_or(200).clamp(1, 1000);
+    let mut page: Vec<TransactionListItem> = items.into_iter().skip(start).collect();
+    let next_cursor = (page.len() > limit).then(|| page[limit - 1].id.to_string());
+    page.truncate(limit);
+    Ok(TransactionPage { items: page, next_cursor, total })
+}
+
+/// Catégorise plusieurs transactions d'un coup (TRX-06) : seules les transactions à ventilation unique,
+/// hors virements, sont modifiées.
+pub async fn categorize_many(db: &Db, input: &BulkCategorizeInput) -> AppResult<BulkCategorizeResult> {
+    if db::categories::find(&db.read, input.category_id).await?.is_none() {
+        return Err(AppError::NotFound("catégorie"));
+    }
+    let mut result = BulkCategorizeResult { categorized: 0, skipped: 0 };
+    let mut tx = db.write.begin().await?;
+    for id in &input.transaction_ids {
+        let splits = db::transactions::splits_of(&mut *tx, *id).await?;
+        let is_transfer = db::transactions::transfer_of(&mut *tx, *id).await?.is_some();
+        match splits.as_slice() {
+            [single] if !is_transfer => {
+                db::transactions::set_split_category(&mut *tx, single.id, Some(input.category_id)).await?;
+                result.categorized += 1;
+            }
+            _ => result.skipped += 1,
+        }
+    }
+    tx.commit().await?;
+    Ok(result)
 }

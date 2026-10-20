@@ -7,8 +7,8 @@ use utoipa::ToSchema;
 
 use crate::error::{AppResult, Problem};
 use crate::services::transactions::{
-    self, CategorizeInput, TransactionDetail, TransactionFilter, TransactionInput, TransactionPage,
-    TransactionUpdateInput,
+    self, BulkCategorizeInput, BulkCategorizeResult, CategorizeInput, TransactionDetail, TransactionFilter,
+    TransactionInput, TransactionPage, TransactionUpdateInput,
 };
 use crate::services::transfers::{
     self, Candidate, CandidatesQuery, MarkAsTransferInput, TransferCreated, TransferInput,
@@ -142,4 +142,28 @@ pub async fn mark_as_transfer(
 pub async fn unlink_transfer(State(state): State<AppState>, Path(id): Path<TransferId>) -> AppResult<StatusCode> {
     transfers::unlink(&state.db, id).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Toutes les transactions, tous comptes confondus (TRX-08).
+#[utoipa::path(
+    get, operation_id = "listAllTransactions", path = "/transactions", tag = "transactions", params(TransactionFilter),
+    responses((status = 200, body = TransactionPage))
+)]
+pub async fn list_all(
+    State(state): State<AppState>,
+    Query(filter): Query<TransactionFilter>,
+) -> AppResult<Json<TransactionPage>> {
+    Ok(Json(transactions::list_all(&state.db, &filter).await?))
+}
+
+/// Catégorise plusieurs transactions d'un coup (TRX-06).
+#[utoipa::path(
+    post, operation_id = "categorizeTransactions", path = "/transactions/categorize", tag = "transactions",
+    request_body = BulkCategorizeInput, responses((status = 200, body = BulkCategorizeResult), (status = 404, body = Problem))
+)]
+pub async fn categorize_many(
+    State(state): State<AppState>,
+    Json(input): Json<BulkCategorizeInput>,
+) -> AppResult<Json<BulkCategorizeResult>> {
+    Ok(Json(transactions::categorize_many(&state.db, &input).await?))
 }

@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, outflow_transaction_id, inflow_transaction_id FROM transfer",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "outflow_transaction_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "outflow_transaction_id"
+          }
+        }
+      },
+      {
+        "name": "inflow_transaction_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "inflow_transaction_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6b8749e78b6f91af0103e9f8943c65b206181b1da455706a223a9ee87461aac0"
+}
