@@ -67,6 +67,24 @@ pub enum DomainError {
     TransferLegCategorized,
     #[error("cette transaction fait déjà partie d'un virement")]
     AlreadyTransferLeg,
+
+    // ----- Rapprochement (spec 04)
+    #[error("point de contrôle introuvable")]
+    CheckpointNotFound,
+    #[error("ce point de contrôle est déjà rapproché")]
+    CheckpointAlreadyReconciled,
+    #[error("l'écart vaut {gap} : on ne rapproche qu'un point de contrôle à écart nul")]
+    CheckpointGapNotZero { gap: Money },
+    #[error("la période est rapprochée jusqu'au {until} : déverrouiller ce point de contrôle pour la modifier")]
+    PeriodReconciled { until: Date },
+    #[error("ce type de compte n'a pas de point de contrôle : il se suit par valorisations")]
+    NoCheckpointForFamily,
+    #[error("un point de contrôle est rapproché : le solde d'ouverture ne peut plus changer")]
+    OpeningBalanceLocked,
+
+    // ----- Import (spec 03)
+    #[error("une règle doit avoir au moins une condition")]
+    RuleWithoutCondition,
 }
 
 impl DomainError {
@@ -101,6 +119,13 @@ impl DomainError {
             TransferAmountsNotOpposite => "TRANSFER_AMOUNTS_NOT_OPPOSITE",
             TransferLegCategorized => "TRANSFER_LEG_CATEGORIZED",
             AlreadyTransferLeg => "ALREADY_TRANSFER_LEG",
+            CheckpointNotFound => "CHECKPOINT_NOT_FOUND",
+            CheckpointAlreadyReconciled => "CHECKPOINT_ALREADY_RECONCILED",
+            CheckpointGapNotZero { .. } => "CHECKPOINT_GAP_NOT_ZERO",
+            PeriodReconciled { .. } => "PERIOD_RECONCILED",
+            NoCheckpointForFamily => "NO_CHECKPOINT_FOR_FAMILY",
+            OpeningBalanceLocked => "OPENING_BALANCE_LOCKED",
+            RuleWithoutCondition => "RULE_WITHOUT_CONDITION",
         }
     }
 
@@ -126,6 +151,12 @@ impl DomainError {
                 "R-TRX-30"
             }
             TransferLegCategorized => "R-TRX-32",
+            CheckpointNotFound => return None,
+            CheckpointAlreadyReconciled | CheckpointGapNotZero { .. } => "R-RAP-4",
+            PeriodReconciled { .. } => "R-RAP-7",
+            NoCheckpointForFamily => "R-RAP-10",
+            OpeningBalanceLocked => "R-RAP-8",
+            RuleWithoutCondition => "R-IMP-12",
         })
     }
 }

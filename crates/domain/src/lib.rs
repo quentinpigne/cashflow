@@ -4,7 +4,9 @@
 //! La date du jour est toujours un paramètre. Les flottants y sont interdits (ADR-0001).
 
 pub mod accounts;
+pub mod import;
 pub mod ledger;
+pub mod reconciliation;
 pub mod reporting;
 pub mod shared;
 
