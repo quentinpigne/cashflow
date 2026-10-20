@@ -1,0 +1,109 @@
+<div class="page">
+  <div class="page-header">
+    <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages"
+      ><mat-icon>arrow_back</mat-icon></a
+    >
+    <h1>Catégories</h1>
+    <button mat-flat-button (click)="create(null)"><mat-icon>add</mat-icon>Ajouter</button>
+  </div>
+
+  <mat-tab-group
+    [selectedIndex]="kind() === 'EXPENSE' ? 0 : 1"
+    (selectedIndexChange)="kind.set($event === 0 ? 'EXPENSE' : 'INCOME')"
+  >
+    <mat-tab label="Dépenses" />
+    <mat-tab label="Revenus" />
+  </mat-tab-group>
+
+  @if (store.tree.isLoading() && !store.tree.hasValue()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="tree" cdkDropList (cdkDropListDropped)="drop(active(), $event)">
+    @for (category of active(); track category.id) {
+      <div class="node" cdkDrag>
+        <div class="row root">
+          <mat-icon class="handle" cdkDragHandle aria-hidden="true">drag_indicator</mat-icon>
+          <span class="name">{{ category.name }}</span>
+          <span class="muted usage">{{ category.usage }}</span>
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="menu"
+            [attr.aria-label]="'Actions sur ' + category.name"
+          >
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu>
+            <button mat-menu-item (click)="rename(category)">
+              <mat-icon>edit</mat-icon>Renommer
+            </button>
+            <button mat-menu-item (click)="create(category)">
+              <mat-icon>subdirectory_arrow_right</mat-icon>Ajouter une sous-catégorie
+            </button>
+            <button mat-menu-item (click)="setArchived(category, true)">
+              <mat-icon>archive</mat-icon>Archiver
+            </button>
+            <button mat-menu-item (click)="merge(category)">
+              <mat-icon>merge</mat-icon>Fusionner dans…
+            </button>
+            <button mat-menu-item (click)="remove(category)" [disabled]="!deletable(category)">
+              <mat-icon>delete</mat-icon>Supprimer
+            </button>
+          </mat-menu>
+        </div>
+        <div
+          class="children"
+          cdkDropList
+          (cdkDropListDropped)="drop(activeChildren(category), $event)"
+        >
+          @for (child of activeChildren(category); track child.id) {
+            <div class="row child" cdkDrag>
+              <mat-icon class="handle" cdkDragHandle aria-hidden="true">drag_indicator</mat-icon>
+              <span class="name">{{ child.name }}</span>
+              <span class="muted usage">{{ child.usage }}</span>
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="childMenu"
+                [attr.aria-label]="'Actions sur ' + child.name"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #childMenu>
+                <button mat-menu-item (click)="rename(child)">
+                  <mat-icon>edit</mat-icon>Renommer
+                </button>
+                <button mat-menu-item (click)="setArchived(child, true)">
+                  <mat-icon>archive</mat-icon>Archiver
+                </button>
+                <button mat-menu-item (click)="merge(child)">
+                  <mat-icon>merge</mat-icon>Fusionner dans…
+                </button>
+                <button mat-menu-item (click)="remove(child)" [disabled]="child.usage > 0">
+                  <mat-icon>delete</mat-icon>Supprimer
+                </button>
+              </mat-menu>
+            </div>
+          }
+        </div>
+      </div>
+    } @empty {
+      <p class="empty">Aucune catégorie.</p>
+    }
+  </div>
+
+  @if (archived().length > 0) {
+    <mat-accordion>
+      <mat-expansion-panel class="archived">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Archivées ({{ archived().length }})</mat-panel-title>
+        </mat-expansion-panel-header>
+        @for (category of archived(); track category.id) {
+          <div class="row">
+            <span class="name">{{ store.label(category.id) }}</span>
+            <button mat-button (click)="setArchived(category, false)">Désarchiver</button>
+          </div>
+        }
+      </mat-expansion-panel>
+    </mat-accordion>
+  }
+</div>

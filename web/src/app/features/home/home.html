@@ -1,0 +1,131 @@
+<div class="page">
+  @if (dashboard.value(); as d) {
+    <div class="grid">
+      <div class="column">
+        <section class="card net-worth">
+          <div class="label">
+            Patrimoine
+            <mat-icon
+              class="info"
+              [matTooltip]="definitions.netWorth"
+              aria-label="Comment est-ce calculé ?"
+              >info</mat-icon
+            >
+          </div>
+          <button
+            class="figure"
+            (click)="showDetail.set(!showDetail())"
+            [attr.aria-expanded]="showDetail()"
+          >
+            <span class="amount big" [class.negative]="d.net_worth.total_minor < 0">{{
+              d.net_worth.total_minor | money
+            }}</span>
+            <span class="variation" [matTooltip]="definitions.variation">
+              <mat-icon>{{
+                d.net_worth_variation_minor < 0 ? 'arrow_downward' : 'arrow_upward'
+              }}</mat-icon>
+              {{ d.net_worth_variation_minor | money: 'EUR' : { signed: true } }} ce mois-ci
+            </span>
+          </button>
+          @if (showDetail()) {
+            <dl class="detail">
+              <dt>Actif brut</dt>
+              <dd class="amount">{{ d.net_worth.assets_minor | money }}</dd>
+              <dt>Dettes</dt>
+              <dd class="amount negative">{{ d.net_worth.liabilities_minor | money }}</dd>
+            </dl>
+          }
+        </section>
+
+        <section class="card month">
+          <h2>{{ monthLabel() }} <span class="tag">mois en cours</span></h2>
+          <dl>
+            <dt>
+              Revenus <mat-icon class="info" [matTooltip]="definitions.income">info</mat-icon>
+            </dt>
+            <dd class="amount">{{ d.month.income_minor | money }}</dd>
+            <dd class="previous amount muted">{{ d.previous_month.income_minor | money }}</dd>
+            <dt>
+              Dépenses <mat-icon class="info" [matTooltip]="definitions.expenses">info</mat-icon>
+            </dt>
+            <dd class="amount">{{ d.month.expenses_minor | money }}</dd>
+            <dd class="previous amount muted">{{ d.previous_month.expenses_minor | money }}</dd>
+            <dt>
+              Épargne <mat-icon class="info" [matTooltip]="definitions.savings">info</mat-icon>
+            </dt>
+            <dd class="amount" [class.negative]="d.month.savings_minor < 0">
+              {{ d.month.savings_minor | money }}
+            </dd>
+            <dd class="previous amount muted">{{ d.previous_month.savings_minor | money }}</dd>
+            <dt>
+              Taux d'épargne <mat-icon class="info" [matTooltip]="definitions.rate">info</mat-icon>
+            </dt>
+            <dd class="amount">{{ rate(d.month) }}</dd>
+            <dd class="previous amount muted">{{ rate(d.previous_month) }}</dd>
+          </dl>
+          <p class="muted small">
+            En gris : le mois précédent, du 1er au {{ d.previous_month.to | frDate: 'short' }}
+          </p>
+        </section>
+
+        @if (d.uncategorized.total > 0) {
+          <section class="card uncategorized">
+            <h2>À catégoriser ({{ d.uncategorized.total }})</h2>
+            @for (item of d.uncategorized.items; track item.split_id) {
+              <div class="todo">
+                <div class="todo-head">
+                  <a [routerLink]="['/transactions', item.transaction_id]" class="todo-label">
+                    <span class="muted small"
+                      >{{ item.date | frDate: 'short' }} · {{ item.account_name }}</span
+                    >
+                    <span>{{ item.label }}{{ item.is_split ? ' (ventilée)' : '' }}</span>
+                  </a>
+                  <span class="amount" [class.negative]="item.amount_minor < 0">{{
+                    item.amount_minor | money
+                  }}</span>
+                </div>
+                <app-category-picker
+                  label=""
+                  placeholder="Catégorie…"
+                  [kind]="item.amount_minor < 0 ? 'EXPENSE' : 'INCOME'"
+                  (valueChange)="categorize(item, $event)"
+                />
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <div class="column">
+        <section class="card accounts">
+          <h2><a routerLink="/comptes">Comptes</a></h2>
+          @for (group of d.families; track group.family) {
+            <div class="family">
+              <span>{{ familyLabels[group.family] }}</span>
+              <span class="amount" [class.negative]="group.total_minor < 0">{{
+                group.total_minor | money
+              }}</span>
+            </div>
+            @for (account of group.accounts; track account.id) {
+              <a class="account" [routerLink]="['/comptes', account.id]">
+                <span>{{ account.name }}</span>
+                <span class="amount" [class.negative]="account.balance_minor < 0">{{
+                  account.balance_minor | money: account.currency
+                }}</span>
+              </a>
+            }
+          } @empty {
+            <div class="empty">
+              <p>Aucun compte.</p>
+              <a mat-stroked-button routerLink="/comptes">Créer un compte</a>
+            </div>
+          }
+        </section>
+      </div>
+    </div>
+  } @else if (dashboard.isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (dashboard.error()) {
+    <p class="empty">Impossible de charger l'accueil.</p>
+  }
+</div>

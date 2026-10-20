@@ -23,13 +23,13 @@ pub struct SystemInfo {
 }
 
 /// Le serveur répond (sans authentification).
-#[utoipa::path(get, path = "/health", tag = "system", responses((status = 200, body = Health)))]
+#[utoipa::path(get, operation_id = "health", path = "/health", tag = "system", responses((status = 200, body = Health)))]
 pub async fn health() -> Json<Health> {
     Json(Health { status: "ok" })
 }
 
 /// Version et dernière sauvegarde (`ecrans.md` E9, « À propos »).
-#[utoipa::path(get, path = "/system/info", tag = "system", responses((status = 200, body = SystemInfo)))]
+#[utoipa::path(get, operation_id = "systemInfo", path = "/system/info", tag = "system", responses((status = 200, body = SystemInfo)))]
 pub async fn info(State(state): State<AppState>) -> AppResult<Json<SystemInfo>> {
     Ok(Json(SystemInfo {
         version: env!("CARGO_PKG_VERSION"),
@@ -40,7 +40,7 @@ pub async fn info(State(state): State<AppState>) -> AppResult<Json<SystemInfo>> 
 
 /// Export complet, au format JSON (ADR-0008).
 #[utoipa::path(
-    get, path = "/export", tag = "system",
+    get, operation_id = "exportAll", path = "/export", tag = "system",
     responses((status = 200, description = "Fichier JSON (format décrit dans docs/export.md)", content_type = "application/json"))
 )]
 pub async fn export(State(state): State<AppState>) -> AppResult<impl IntoResponse> {

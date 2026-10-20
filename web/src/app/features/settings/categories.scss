@@ -1,0 +1,49 @@
+.tree {
+  margin-top: 0.5rem;
+}
+
+.node {
+  background: var(--mat-sys-surface);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+
+  .name {
+    flex: 1;
+  }
+
+  &.root .name {
+    font: var(--mat-sys-title-small);
+  }
+
+  &.child {
+    padding-left: 2rem;
+  }
+}
+
+.handle {
+  cursor: grab;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.usage {
+  font: var(--mat-sys-body-small);
+}
+
+.archived {
+  margin-top: 1rem;
+}
+
+.cdk-drag-preview {
+  box-shadow: var(--mat-sys-level3);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}

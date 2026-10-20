@@ -1,0 +1,110 @@
+<form [formGroup]="form" (ngSubmit)="save()" class="entry">
+  <div class="head">
+    <mat-button-toggle-group
+      [value]="mode()"
+      (change)="setMode($event.value)"
+      aria-label="Type d'opération"
+      class="modes"
+    >
+      <mat-button-toggle value="expense">Dépense</mat-button-toggle>
+      <mat-button-toggle value="income">Revenu</mat-button-toggle>
+      <mat-button-toggle value="transfer">Virement</mat-button-toggle>
+    </mat-button-toggle-group>
+    <button mat-icon-button type="button" aria-label="Fermer" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-form-field class="amount-field">
+    <mat-label>Montant</mat-label>
+    <input
+      matInput
+      formControlName="amount"
+      inputmode="decimal"
+      autocomplete="off"
+      cdkFocusInitial
+    />
+    <span matTextSuffix>&nbsp;{{ currency() === 'EUR' ? '€' : currency() }}</span>
+    @if (form.controls.amount.touched && form.controls.amount.invalid) {
+      <mat-error>Saisir un montant positif, par exemple 12,50</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ mode() === 'transfer' ? 'Compte de départ' : 'Compte' }}</mat-label>
+    <mat-select formControlName="accountId">
+      @for (account of accounts.open(); track account.id) {
+        <mat-option [value]="account.id">{{ account.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  @if (mode() === 'transfer') {
+    <mat-form-field>
+      <mat-label>Compte d'arrivée</mat-label>
+      <mat-select formControlName="targetAccountId">
+        @for (account of targets(); track account.id) {
+          <mat-option [value]="account.id">{{ account.name }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.targetAccountId.touched && form.controls.targetAccountId.invalid) {
+        <mat-error>Choisir le compte d'arrivée</mat-error>
+      }
+    </mat-form-field>
+  } @else if (splits(); as list) {
+    <div class="split-summary">
+      <mat-icon>call_split</mat-icon>
+      <span>{{ splitSummary() }}</span>
+      <button mat-button type="button" (click)="editSplits()">Modifier</button>
+    </div>
+  } @else {
+    <app-category-picker
+      [value]="category()"
+      (valueChange)="category.set($event)"
+      [kind]="categoryKind()"
+    />
+  }
+
+  <mat-form-field>
+    <mat-label>Libellé</mat-label>
+    <input matInput formControlName="label" maxlength="200" />
+    @if (form.controls.label.touched && form.controls.label.invalid) {
+      <mat-error>Le libellé est obligatoire</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Date</mat-label>
+    <input matInput [matDatepicker]="picker" formControlName="date" />
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-datepicker #picker />
+  </mat-form-field>
+
+  @if (showNote()) {
+    <mat-form-field>
+      <mat-label>Note</mat-label>
+      <textarea matInput formControlName="note" rows="2"></textarea>
+    </mat-form-field>
+  }
+
+  <div class="links">
+    @if (mode() !== 'transfer') {
+      <button mat-button type="button" (click)="editSplits()">
+        <mat-icon>call_split</mat-icon>
+        Ventiler
+      </button>
+    }
+    @if (!showNote()) {
+      <button mat-button type="button" (click)="showNote.set(true)">
+        <mat-icon>notes</mat-icon>
+        Note
+      </button>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <button mat-flat-button type="submit" class="save" [disabled]="busy()">Enregistrer</button>
+</form>

@@ -1,0 +1,48 @@
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .modes {
+    flex: 1;
+  }
+}
+
+.amount-field input {
+  font: var(--mat-sys-headline-medium);
+  text-align: right;
+}
+
+.split-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-surface-container);
+
+  span {
+    flex: 1;
+  }
+}
+
+.links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.error {
+  color: var(--mat-sys-error);
+  margin: 0;
+}
+
+.save {
+  height: 3rem;
+}

@@ -1,0 +1,259 @@
+<div class="layout" [class.with-panel]="selected() && !layout.mobile()">
+  <div class="page main">
+    @if (account.value(); as a) {
+      <header class="head">
+        <div class="title">
+          <a mat-icon-button routerLink="/comptes" aria-label="Retour aux comptes"
+            ><mat-icon>arrow_back</mat-icon></a
+          >
+          <h1>{{ a.name }}</h1>
+          <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Actions sur le compte">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu>
+            <button mat-menu-item (click)="edit()"><mat-icon>edit</mat-icon>Modifier</button>
+            @if (a.closed_on) {
+              <button mat-menu-item (click)="reopen()">
+                <mat-icon>lock_open</mat-icon>Rouvrir
+              </button>
+            } @else {
+              <button mat-menu-item (click)="close()"><mat-icon>archive</mat-icon>Clôturer</button>
+            }
+            <button mat-menu-item (click)="remove()" [disabled]="a.has_activity">
+              <mat-icon>delete</mat-icon>Supprimer
+            </button>
+          </mat-menu>
+        </div>
+        <p class="muted meta">
+          {{ kindLabels[a.kind] }}
+          @if (a.institution_name) {
+            · {{ a.institution_name }}
+          }
+          @if (a.iban_masked) {
+            ·
+            <button
+              class="iban"
+              (click)="revealIban()"
+              [attr.aria-label]="iban() ? 'Masquer l’IBAN' : 'Afficher l’IBAN'"
+            >
+              {{ iban() ?? a.iban_masked }}
+            </button>
+          }
+          @if (a.closed_on) {
+            · Clôturé le {{ a.closed_on | frDate }}
+          }
+        </p>
+        <div class="balance">
+          <span class="muted"
+            >Solde{{ balanceDate() ? ' au ' : ''
+            }}{{ balanceDate() ? (a.balance_date | frDate) : '' }}</span
+          >
+          <strong class="amount" [class.negative]="a.balance_minor < 0">{{
+            a.balance_minor | money: a.currency
+          }}</strong>
+          <mat-form-field class="at" subscriptSizing="dynamic">
+            <mat-label>Solde au…</mat-label>
+            <input
+              matInput
+              [matDatepicker]="at"
+              [ngModel]="balanceDate()"
+              (ngModelChange)="balanceDate.set($event)"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="at" />
+            <mat-datepicker #at />
+          </mat-form-field>
+          @if (balanceDate()) {
+            <button mat-button (click)="balanceDate.set(null)">Aujourd'hui</button>
+          }
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+      </header>
+    } @else if (account.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else if (account.error()) {
+      <p class="empty">Compte introuvable.</p>
+    }
+
+    @if (account.value(); as a) {
+      <div class="filter-bar">
+        <button mat-stroked-button (click)="showFilters.set(!showFilters())">
+          <mat-icon>filter_list</mat-icon>
+          Filtres
+        </button>
+        <mat-chip-set aria-label="Filtres actifs">
+          @for (chip of chips(); track chip.key) {
+            <mat-chip (removed)="clearFilter(chip.key)">
+              {{ chip.label }}
+              <button matChipRemove [attr.aria-label]="'Retirer ' + chip.label">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip>
+          }
+        </mat-chip-set>
+      </div>
+
+      @if (showFilters()) {
+        <div class="filters card">
+          <mat-form-field>
+            <mat-label>Du</mat-label>
+            <input
+              matInput
+              [matDatepicker]="from"
+              [ngModel]="filters().from"
+              (ngModelChange)="setFilter('from', $event)"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="from" />
+            <mat-datepicker #from />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Au</mat-label>
+            <input
+              matInput
+              [matDatepicker]="to"
+              [ngModel]="filters().to"
+              (ngModelChange)="setFilter('to', $event)"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="to" />
+            <mat-datepicker #to />
+          </mat-form-field>
+          <app-category-picker
+            class="wide"
+            [value]="filters().category"
+            (valueChange)="setFilter('category', $event)"
+          />
+          <mat-form-field>
+            <mat-label>Montant min.</mat-label>
+            <input
+              matInput
+              inputmode="decimal"
+              [ngModel]="filters().min"
+              (ngModelChange)="setFilter('min', $event)"
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Montant max.</mat-label>
+            <input
+              matInput
+              inputmode="decimal"
+              [ngModel]="filters().max"
+              (ngModelChange)="setFilter('max', $event)"
+            />
+          </mat-form-field>
+          <mat-form-field class="wide">
+            <mat-label>Texte</mat-label>
+            <input
+              matInput
+              [ngModel]="filters().text"
+              (ngModelChange)="setFilter('text', $event)"
+            />
+          </mat-form-field>
+        </div>
+      }
+
+      @if (page.value(); as p) {
+        @if (p.total === 0) {
+          <div class="empty">
+            @if (chips().length > 0) {
+              <p>Aucune transaction ne correspond aux filtres.</p>
+            } @else {
+              <p>Aucune transaction. Le bouton « + » en ajoute une.</p>
+            }
+          </div>
+        } @else if (layout.mobile()) {
+          @for (day of days(); track day.date) {
+            <h3 class="day">{{ day.date | frDate: 'day' }}</h3>
+            @for (item of day.items; track item.id) {
+              <button class="item" (click)="open(item)">
+                <span class="item-text">
+                  <span class="label">{{ item.label }}</span>
+                  <span class="muted small">{{ categoryText(item) }}</span>
+                </span>
+                <span class="item-amounts">
+                  <span class="amount" [class.negative]="item.amount_minor < 0">{{
+                    item.amount_minor | money: a.currency
+                  }}</span>
+                  <span class="muted small amount">{{
+                    item.balance_after_minor | money: a.currency
+                  }}</span>
+                </span>
+              </button>
+            }
+          }
+        } @else {
+          <table
+            mat-table
+            [dataSource]="items()"
+            matSort
+            [matSortActive]="sort().active"
+            [matSortDirection]="sort().direction"
+            (matSortChange)="sort.set($event)"
+            class="table"
+          >
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+              <td mat-cell *matCellDef="let t">{{ t.date | frDate: 'short' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="label">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
+              <td mat-cell *matCellDef="let t">{{ t.label }}</td>
+            </ng-container>
+            <ng-container matColumnDef="category">
+              <th mat-header-cell *matHeaderCellDef>Catégorie</th>
+              <td mat-cell *matCellDef="let t" class="muted">{{ categoryText(t) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="amount">
+              <th
+                mat-header-cell
+                *matHeaderCellDef
+                mat-sort-header
+                arrowPosition="before"
+                class="right"
+              >
+                Montant
+              </th>
+              <td mat-cell *matCellDef="let t" class="amount" [class.negative]="t.amount_minor < 0">
+                {{ t.amount_minor | money: a.currency }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="balance">
+              <th mat-header-cell *matHeaderCellDef class="right">Solde après</th>
+              <td mat-cell *matCellDef="let t" class="amount muted">
+                {{ t.balance_after_minor | money: a.currency }}
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+            <tr
+              mat-row
+              *matRowDef="let t; columns: columns"
+              (click)="open(t)"
+              [class.selected]="selected() === t.id"
+              tabindex="0"
+              (keydown.enter)="open(t)"
+            ></tr>
+          </table>
+        }
+        @if (p.next_cursor) {
+          <div class="more">
+            <button mat-stroked-button (click)="limit.set(limit() + 200)">
+              Voir plus ({{ p.items.length }} sur {{ p.total }})
+            </button>
+          </div>
+        }
+      } @else if (page.isLoading()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+    }
+  </div>
+
+  @if (selected() && !layout.mobile()) {
+    <aside class="panel">
+      <app-transaction-detail
+        [transactionId]="selected()!"
+        [embedded]="true"
+        (closed)="selected.set(null)"
+      />
+    </aside>
+  }
+</div>

@@ -1,0 +1,63 @@
+<div class="page">
+  <div class="page-header">
+    <h1>Comptes</h1>
+    <button mat-flat-button (click)="create()">
+      <mat-icon>add</mat-icon>
+      Nouveau compte
+    </button>
+  </div>
+
+  @if (store.all.isLoading() && !store.all.hasValue()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (store.all.error()) {
+    <p class="empty">Impossible de charger les comptes.</p>
+  } @else if (store.list().length === 0) {
+    <div class="empty">
+      <p>Aucun compte.</p>
+      <button mat-stroked-button (click)="create()">Créer un compte</button>
+    </div>
+  } @else {
+    @for (group of groups(); track group.family) {
+      <section class="group card">
+        <header>
+          <h2>{{ group.label }}</h2>
+          <span class="amount" [class.negative]="group.totalMinor < 0">{{
+            group.totalMinor | money
+          }}</span>
+        </header>
+        @for (account of group.accounts; track account.id) {
+          <a class="row" [routerLink]="['/comptes', account.id]">
+            <span class="name">
+              <span>{{ account.name }}</span>
+              <span class="muted small">
+                {{ account.institution_name ?? '' }}
+                @if (account.currency !== 'EUR') {
+                  · {{ account.currency }}, hors totaux
+                }
+              </span>
+            </span>
+            <span class="amount" [class.negative]="account.balance_minor < 0">
+              {{ account.balance_minor | money: account.currency }}
+            </span>
+          </a>
+        }
+      </section>
+    }
+
+    @if (closed().length > 0) {
+      <mat-accordion>
+        <mat-expansion-panel class="closed">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Comptes clôturés ({{ closed().length }})</mat-panel-title>
+          </mat-expansion-panel-header>
+          @for (account of closed(); track account.id) {
+            <a class="row" [routerLink]="['/comptes', account.id]">
+              <span class="name">{{ account.name }}</span>
+              <span class="muted small">Clôturé</span>
+            </a>
+          }
+        </mat-expansion-panel>
+      </mat-accordion>
+    }
+  }
+</div>

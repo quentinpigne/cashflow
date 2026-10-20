@@ -1,0 +1,62 @@
+@if (layout.mobile()) {
+  <div class="mobile">
+    <mat-toolbar class="top">
+      <span class="brand">Cashflow</span>
+    </mat-toolbar>
+    <main class="content">
+      <router-outlet />
+    </main>
+    <button mat-fab class="fab" aria-label="Nouvelle transaction" (click)="newTransaction()">
+      <mat-icon>add</mat-icon>
+    </button>
+    <nav class="bottom-nav" aria-label="Navigation principale">
+      @for (item of items; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.exact }"
+          #rla="routerLinkActive"
+          [attr.aria-current]="rla.isActive ? 'page' : null"
+        >
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </div>
+} @else {
+  <mat-sidenav-container class="desktop">
+    <mat-sidenav mode="side" opened class="side">
+      <div class="brand side-brand">Cashflow</div>
+      <button mat-flat-button class="new" (click)="newTransaction()">
+        <mat-icon>add</mat-icon>
+        Nouvelle transaction
+      </button>
+      <mat-nav-list>
+        @for (item of items; track item.path) {
+          <a
+            mat-list-item
+            [routerLink]="item.path"
+            routerLinkActive
+            #rla="routerLinkActive"
+            [routerLinkActiveOptions]="{ exact: item.exact }"
+            [activated]="rla.isActive"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      </mat-nav-list>
+      <span class="spacer"></span>
+      <button mat-button class="logout" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Déconnexion
+      </button>
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <main>
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+}

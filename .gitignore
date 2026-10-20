@@ -1,5 +1,9 @@
 # Données personnelles : jamais versionnées
+/data/
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 *.sqlite
 *.sqlite3
 imports/

@@ -15,13 +15,13 @@ pub struct Created {
 }
 
 /// Arbre des catégories à deux niveaux (TRX-04).
-#[utoipa::path(get, path = "/categories", tag = "categories", responses((status = 200, body = Vec<Category>)))]
+#[utoipa::path(get, operation_id = "listCategories", path = "/categories", tag = "categories", responses((status = 200, body = Vec<Category>)))]
 pub async fn tree(State(state): State<AppState>) -> AppResult<Json<Vec<Category>>> {
     Ok(Json(categories::tree(&state.db).await?))
 }
 
 #[utoipa::path(
-    post, path = "/categories", tag = "categories", request_body = CategoryInput,
+    post, operation_id = "createCategory", path = "/categories", tag = "categories", request_body = CategoryInput,
     responses((status = 201, body = Created), (status = 422, body = Problem))
 )]
 pub async fn create(
@@ -34,7 +34,7 @@ pub async fn create(
 
 /// Renomme, déplace, archive ou désarchive (R-TRX-20, R-TRX-22).
 #[utoipa::path(
-    put, path = "/categories/{id}", tag = "categories", params(("id" = CategoryId, Path)), request_body = CategoryInput,
+    put, operation_id = "updateCategory", path = "/categories/{id}", tag = "categories", params(("id" = CategoryId, Path)), request_body = CategoryInput,
     responses((status = 204), (status = 422, body = Problem))
 )]
 pub async fn update(
@@ -48,7 +48,7 @@ pub async fn update(
 
 /// Supprime une catégorie jamais utilisée (R-TRX-22).
 #[utoipa::path(
-    delete, path = "/categories/{id}", tag = "categories", params(("id" = CategoryId, Path)),
+    delete, operation_id = "deleteCategory", path = "/categories/{id}", tag = "categories", params(("id" = CategoryId, Path)),
     responses((status = 204), (status = 422, body = Problem))
 )]
 pub async fn delete(State(state): State<AppState>, Path(id): Path<CategoryId>) -> AppResult<StatusCode> {
@@ -57,7 +57,7 @@ pub async fn delete(State(state): State<AppState>, Path(id): Path<CategoryId>) -
 }
 
 /// Ordre d'affichage d'un niveau de l'arbre.
-#[utoipa::path(post, path = "/categories/reorder", tag = "categories", request_body = ReorderInput, responses((status = 204)))]
+#[utoipa::path(post, operation_id = "reorderCategories", path = "/categories/reorder", tag = "categories", request_body = ReorderInput, responses((status = 204)))]
 pub async fn reorder(State(state): State<AppState>, Json(input): Json<ReorderInput>) -> AppResult<StatusCode> {
     categories::reorder(&state.db, &input).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -65,7 +65,7 @@ pub async fn reorder(State(state): State<AppState>, Json(input): Json<ReorderInp
 
 /// Fusionne la catégorie dans une autre (R-TRX-22).
 #[utoipa::path(
-    post, path = "/categories/{id}/merge", tag = "categories", params(("id" = CategoryId, Path)), request_body = MergeInput,
+    post, operation_id = "mergeCategory", path = "/categories/{id}/merge", tag = "categories", params(("id" = CategoryId, Path)), request_body = MergeInput,
     responses((status = 200, body = MergeResult), (status = 422, body = Problem))
 )]
 pub async fn merge(

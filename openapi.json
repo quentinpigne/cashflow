@@ -16,7 +16,7 @@
           "accounts"
         ],
         "summary": "Tous les comptes, avec leur solde ou leur valeur (CPT-01, CPT-03).",
-        "operationId": "list",
+        "operationId": "listAccounts",
         "parameters": [
           {
             "name": "at",
@@ -49,7 +49,7 @@
           "accounts"
         ],
         "summary": "Crée un compte (CPT-01). Un compte à taux déterminé reçoit ses conditions préremplies (R-CPT-9).",
-        "operationId": "create",
+        "operationId": "createAccount",
         "requestBody": {
           "content": {
             "application/json": {
@@ -87,7 +87,7 @@
         "tags": [
           "accounts"
         ],
-        "operationId": "get",
+        "operationId": "getAccount",
         "parameters": [
           {
             "name": "id",
@@ -133,7 +133,7 @@
         "tags": [
           "accounts"
         ],
-        "operationId": "update",
+        "operationId": "updateAccount",
         "parameters": [
           {
             "name": "id",
@@ -180,7 +180,7 @@
           "accounts"
         ],
         "summary": "Supprime un compte sans transaction (R-CPT-7).",
-        "operationId": "delete",
+        "operationId": "deleteAccount",
         "parameters": [
           {
             "name": "id",
@@ -211,7 +211,7 @@
           "accounts"
         ],
         "summary": "Clôture un compte (CPT-04, R-CPT-5).",
-        "operationId": "close",
+        "operationId": "closeAccount",
         "parameters": [
           {
             "name": "id",
@@ -260,7 +260,7 @@
           "accounts"
         ],
         "summary": "IBAN complet, affiché à la demande (R-CPT-8).",
-        "operationId": "reveal_iban",
+        "operationId": "revealIban",
         "parameters": [
           {
             "name": "id",
@@ -299,7 +299,7 @@
           "accounts"
         ],
         "summary": "Rouvre un compte clôturé.",
-        "operationId": "reopen",
+        "operationId": "reopenAccount",
         "parameters": [
           {
             "name": "id",
@@ -329,7 +329,7 @@
           "transactions"
         ],
         "summary": "Transactions d'un compte, les plus récentes d'abord, avec le solde après opération (TRX-02).",
-        "operationId": "list",
+        "operationId": "listTransactions",
         "parameters": [
           {
             "name": "id",
@@ -516,7 +516,7 @@
           "auth"
         ],
         "summary": "Se déconnecter de tous les appareils (ADR-0015).",
-        "operationId": "logout_everywhere",
+        "operationId": "logoutEverywhere",
         "responses": {
           "204": {}
         }
@@ -528,7 +528,7 @@
           "auth"
         ],
         "summary": "État de la session courante.",
-        "operationId": "status",
+        "operationId": "authStatus",
         "responses": {
           "200": {
             "content": {
@@ -548,7 +548,7 @@
           "categories"
         ],
         "summary": "Arbre des catégories à deux niveaux (TRX-04).",
-        "operationId": "tree",
+        "operationId": "listCategories",
         "responses": {
           "200": {
             "content": {
@@ -568,7 +568,7 @@
         "tags": [
           "categories"
         ],
-        "operationId": "create",
+        "operationId": "createCategory",
         "requestBody": {
           "content": {
             "application/json": {
@@ -607,7 +607,7 @@
           "categories"
         ],
         "summary": "Ordre d'affichage d'un niveau de l'arbre.",
-        "operationId": "reorder",
+        "operationId": "reorderCategories",
         "requestBody": {
           "content": {
             "application/json": {
@@ -629,7 +629,7 @@
           "categories"
         ],
         "summary": "Renomme, déplace, archive ou désarchive (R-TRX-20, R-TRX-22).",
-        "operationId": "update",
+        "operationId": "updateCategory",
         "parameters": [
           {
             "name": "id",
@@ -668,7 +668,7 @@
           "categories"
         ],
         "summary": "Supprime une catégorie jamais utilisée (R-TRX-22).",
-        "operationId": "delete",
+        "operationId": "deleteCategory",
         "parameters": [
           {
             "name": "id",
@@ -699,7 +699,7 @@
           "categories"
         ],
         "summary": "Fusionne la catégorie dans une autre (R-TRX-22).",
-        "operationId": "merge",
+        "operationId": "mergeCategory",
         "parameters": [
           {
             "name": "id",
@@ -748,7 +748,7 @@
           "dashboard"
         ],
         "summary": "Accueil (TDB-01).",
-        "operationId": "get",
+        "operationId": "getDashboard",
         "responses": {
           "200": {
             "content": {
@@ -768,7 +768,7 @@
           "system"
         ],
         "summary": "Export complet, au format JSON (ADR-0008).",
-        "operationId": "export",
+        "operationId": "exportAll",
         "responses": {
           "200": {
             "description": "Fichier JSON (format décrit dans docs/export.md)",
@@ -805,7 +805,7 @@
           "institutions"
         ],
         "summary": "Établissements, archivés compris (CPT-02).",
-        "operationId": "list",
+        "operationId": "listInstitutions",
         "responses": {
           "200": {
             "content": {
@@ -825,7 +825,7 @@
         "tags": [
           "institutions"
         ],
-        "operationId": "create",
+        "operationId": "createInstitution",
         "requestBody": {
           "content": {
             "application/json": {
@@ -864,7 +864,7 @@
           "institutions"
         ],
         "summary": "Modifie ou archive un établissement (R-CPT-10).",
-        "operationId": "update",
+        "operationId": "updateInstitution",
         "parameters": [
           {
             "name": "id",
@@ -913,7 +913,7 @@
           "transactions"
         ],
         "summary": "Catégorise une ventilation sur place (`ecrans.md` E1).",
-        "operationId": "categorize_split",
+        "operationId": "categorizeSplit",
         "parameters": [
           {
             "name": "id",
@@ -954,7 +954,7 @@
           "system"
         ],
         "summary": "Version et dernière sauvegarde (`ecrans.md` E9, « À propos »).",
-        "operationId": "info",
+        "operationId": "systemInfo",
         "responses": {
           "200": {
             "content": {
@@ -974,7 +974,7 @@
           "transactions"
         ],
         "summary": "Saisit une transaction, `PENDING` (TRX-01, TRX-03).",
-        "operationId": "create",
+        "operationId": "createTransaction",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1012,7 +1012,7 @@
         "tags": [
           "transactions"
         ],
-        "operationId": "get",
+        "operationId": "getTransaction",
         "parameters": [
           {
             "name": "id",
@@ -1049,7 +1049,7 @@
           "transactions"
         ],
         "summary": "Modifie une transaction (R-TRX-3, R-TRX-4).",
-        "operationId": "update",
+        "operationId": "updateTransaction",
         "parameters": [
           {
             "name": "id",
@@ -1095,7 +1095,7 @@
         "tags": [
           "transactions"
         ],
-        "operationId": "delete",
+        "operationId": "deleteTransaction",
         "parameters": [
           {
             "name": "id",
@@ -1126,7 +1126,7 @@
           "transactions"
         ],
         "summary": "Marque une transaction comme virement (R-TRX-36).",
-        "operationId": "mark_as_transfer",
+        "operationId": "markAsTransfer",
         "parameters": [
           {
             "name": "id",
@@ -1175,7 +1175,7 @@
           "transactions"
         ],
         "summary": "Transactions candidates pour former un virement (R-TRX-35).",
-        "operationId": "transfer_candidates",
+        "operationId": "transferCandidates",
         "parameters": [
           {
             "name": "id",
@@ -1216,7 +1216,7 @@
           "transactions"
         ],
         "summary": "Saisit un virement interne : les deux jambes d'un coup (TRX-05, R-TRX-33).",
-        "operationId": "create_transfer",
+        "operationId": "createTransfer",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1255,7 +1255,7 @@
           "transactions"
         ],
         "summary": "Délie un virement (R-TRX-34).",
-        "operationId": "unlink_transfer",
+        "operationId": "unlinkTransfer",
         "parameters": [
           {
             "name": "id",

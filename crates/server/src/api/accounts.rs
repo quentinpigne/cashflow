@@ -18,14 +18,14 @@ pub struct AtQuery {
 }
 
 /// Tous les comptes, avec leur solde ou leur valeur (CPT-01, CPT-03).
-#[utoipa::path(get, path = "/accounts", tag = "accounts", params(AtQuery), responses((status = 200, body = Vec<Account>)))]
+#[utoipa::path(get, operation_id = "listAccounts", path = "/accounts", tag = "accounts", params(AtQuery), responses((status = 200, body = Vec<Account>)))]
 pub async fn list(State(state): State<AppState>, Query(q): Query<AtQuery>) -> AppResult<Json<Vec<Account>>> {
     Ok(Json(accounts::list(&state.db, q.at.unwrap_or_else(|| state.clock.today())).await?))
 }
 
 /// Crée un compte (CPT-01). Un compte à taux déterminé reçoit ses conditions préremplies (R-CPT-9).
 #[utoipa::path(
-    post, path = "/accounts", tag = "accounts", request_body = AccountInput,
+    post, operation_id = "createAccount", path = "/accounts", tag = "accounts", request_body = AccountInput,
     responses((status = 201, body = Account), (status = 422, body = Problem))
 )]
 pub async fn create(
@@ -36,7 +36,7 @@ pub async fn create(
 }
 
 #[utoipa::path(
-    get, path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path), AtQuery),
+    get, operation_id = "getAccount", path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path), AtQuery),
     responses((status = 200, body = Account), (status = 404, body = Problem))
 )]
 pub async fn get(
@@ -48,7 +48,7 @@ pub async fn get(
 }
 
 #[utoipa::path(
-    put, path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path)), request_body = AccountInput,
+    put, operation_id = "updateAccount", path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path)), request_body = AccountInput,
     responses((status = 200, body = Account), (status = 422, body = Problem))
 )]
 pub async fn update(
@@ -61,7 +61,7 @@ pub async fn update(
 
 /// Supprime un compte sans transaction (R-CPT-7).
 #[utoipa::path(
-    delete, path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path)),
+    delete, operation_id = "deleteAccount", path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path)),
     responses((status = 204), (status = 422, body = Problem))
 )]
 pub async fn delete(State(state): State<AppState>, Path(id): Path<AccountId>) -> AppResult<StatusCode> {
@@ -71,7 +71,7 @@ pub async fn delete(State(state): State<AppState>, Path(id): Path<AccountId>) ->
 
 /// IBAN complet, affiché à la demande (R-CPT-8).
 #[utoipa::path(
-    get, path = "/accounts/{id}/iban", tag = "accounts", params(("id" = AccountId, Path)),
+    get, operation_id = "revealIban", path = "/accounts/{id}/iban", tag = "accounts", params(("id" = AccountId, Path)),
     responses((status = 200, body = IbanView), (status = 404, body = Problem))
 )]
 pub async fn reveal_iban(State(state): State<AppState>, Path(id): Path<AccountId>) -> AppResult<Json<IbanView>> {
@@ -80,7 +80,7 @@ pub async fn reveal_iban(State(state): State<AppState>, Path(id): Path<AccountId
 
 /// Clôture un compte (CPT-04, R-CPT-5).
 #[utoipa::path(
-    post, path = "/accounts/{id}/close", tag = "accounts", params(("id" = AccountId, Path)), request_body = CloseInput,
+    post, operation_id = "closeAccount", path = "/accounts/{id}/close", tag = "accounts", params(("id" = AccountId, Path)), request_body = CloseInput,
     responses((status = 200, body = Account), (status = 422, body = Problem))
 )]
 pub async fn close(
@@ -93,7 +93,7 @@ pub async fn close(
 
 /// Rouvre un compte clôturé.
 #[utoipa::path(
-    post, path = "/accounts/{id}/reopen", tag = "accounts", params(("id" = AccountId, Path)),
+    post, operation_id = "reopenAccount", path = "/accounts/{id}/reopen", tag = "accounts", params(("id" = AccountId, Path)),
     responses((status = 200, body = Account))
 )]
 pub async fn reopen(State(state): State<AppState>, Path(id): Path<AccountId>) -> AppResult<Json<Account>> {

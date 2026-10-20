@@ -1,0 +1,146 @@
+@if (value(); as t) {
+  <div class="detail">
+    <header>
+      @if (embedded()) {
+        <button mat-icon-button aria-label="Fermer" (click)="closed.emit()">
+          <mat-icon>close</mat-icon>
+        </button>
+      } @else {
+        <a mat-icon-button aria-label="Retour au compte" [routerLink]="['/comptes', t.account_id]"
+          ><mat-icon>arrow_back</mat-icon></a
+        >
+      }
+      <h2>{{ t.account_name }}</h2>
+      <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Plus d'actions">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #menu>
+        <button mat-menu-item (click)="duplicate(t)" [disabled]="!!t.transfer">
+          <mat-icon>content_copy</mat-icon>Dupliquer
+        </button>
+        <button mat-menu-item (click)="remove(t)" [disabled]="t.locked">
+          <mat-icon>delete</mat-icon>Supprimer
+        </button>
+      </mat-menu>
+    </header>
+
+    @if (t.locked) {
+      <p class="locked">
+        <mat-icon>lock</mat-icon>
+        Transaction rapprochée : le montant, le compte et la date de solde sont verrouillés.
+      </p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save(t)" class="form">
+      @if (!t.transfer) {
+        <mat-button-toggle-group
+          [value]="direction()"
+          (change)="direction.set($event.value)"
+          [disabled]="t.locked"
+          aria-label="Sens"
+        >
+          <mat-button-toggle value="out">Dépense</mat-button-toggle>
+          <mat-button-toggle value="in">Revenu</mat-button-toggle>
+        </mat-button-toggle-group>
+      }
+      <mat-form-field>
+        <mat-label>Montant</mat-label>
+        <input matInput formControlName="amount" inputmode="decimal" class="amount" />
+        <span matTextSuffix>&nbsp;€</span>
+        @if (form.controls.amount.touched && form.controls.amount.invalid) {
+          <mat-error>Montant invalide</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Date</mat-label>
+        <input matInput [matDatepicker]="picker" formControlName="date" />
+        <mat-datepicker-toggle matIconSuffix [for]="picker" />
+        <mat-datepicker #picker />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Libellé</mat-label>
+        <input matInput formControlName="label" maxlength="200" />
+        @if (t.bank_label) {
+          <mat-hint>Libellé bancaire : {{ t.bank_label }}</mat-hint>
+        }
+      </mat-form-field>
+
+      @if (t.transfer; as transfer) {
+        <div class="transfer card">
+          <mat-icon>swap_horiz</mat-icon>
+          <span>
+            Virement {{ transfer.is_outflow ? 'vers' : 'depuis' }}
+            <a [routerLink]="['/transactions', transfer.counterpart_transaction_id]">{{
+              transfer.counterpart_account_name
+            }}</a>
+          </span>
+          <button mat-button type="button" (click)="unlink(t)">Délier</button>
+        </div>
+      } @else if (isSplit()) {
+        <div class="splits card">
+          <div class="splits-head">
+            <strong>Ventilation</strong>
+            <button mat-button type="button" (click)="editSplits(t)">Modifier</button>
+          </div>
+          @for (split of splits(); track $index) {
+            <div class="split">
+              <span
+                >{{ categories.label(split.category_id) }}
+                @if (split.note) {
+                  · <span class="muted">{{ split.note }}</span>
+                }
+              </span>
+              <span class="amount" [class.negative]="split.amount_minor < 0">{{
+                split.amount_minor | money: t.currency
+              }}</span>
+            </div>
+          }
+          @if (pendingSplits()) {
+            <p class="muted">Ventilation modifiée : enregistrer pour l'appliquer.</p>
+          }
+        </div>
+      } @else {
+        <app-category-picker
+          [value]="category()"
+          (valueChange)="category.set($event)"
+          [kind]="direction() === 'out' ? 'EXPENSE' : 'INCOME'"
+        />
+        <div class="links">
+          <button mat-button type="button" (click)="editSplits(t)">
+            <mat-icon>call_split</mat-icon>Ventiler
+          </button>
+          <button mat-button type="button" (click)="markAsTransfer(t)">
+            <mat-icon>swap_horiz</mat-icon>Marquer comme virement
+          </button>
+        </div>
+      }
+
+      <mat-form-field>
+        <mat-label>Note</mat-label>
+        <textarea matInput formControlName="note" rows="2"></textarea>
+      </mat-form-field>
+
+      <dl class="info">
+        <dt>Origine</dt>
+        <dd>{{ originLabels[t.origin] }}</dd>
+        @if (t.bank_date) {
+          <dt>Date bancaire</dt>
+          <dd>{{ t.bank_date | frDate }}</dd>
+        }
+        @if (t.value_date) {
+          <dt>Date de valeur</dt>
+          <dd>{{ t.value_date | frDate }}</dd>
+        }
+      </dl>
+
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+      <button mat-flat-button type="submit" [disabled]="busy()">Enregistrer</button>
+    </form>
+  </div>
+} @else if (detail.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+} @else if (detail.error()) {
+  <p class="empty">Transaction introuvable.</p>
+}

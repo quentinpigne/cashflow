@@ -1,0 +1,123 @@
+<h2 mat-dialog-title>{{ account ? 'Modifier le compte' : 'Nouveau compte' }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="form" (ngSubmit)="save()" id="account-form">
+    <mat-form-field>
+      <mat-label>Nature</mat-label>
+      <mat-select formControlName="kind">
+        @for (group of kindGroups; track group.label) {
+          <mat-optgroup [label]="group.label">
+            @for (kind of group.kinds; track kind) {
+              <mat-option [value]="kind">{{ kindLabels[kind] }}</mat-option>
+            }
+          </mat-optgroup>
+        }
+      </mat-select>
+      @if (account?.has_activity) {
+        <mat-hint>Le compte a des transactions : sa nature ne peut plus changer.</mat-hint>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Nom</mat-label>
+      <input matInput formControlName="name" maxlength="80" />
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <mat-error>Le nom est obligatoire</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Établissement</mat-label>
+      <mat-select formControlName="institutionId">
+        <mat-option value="">Aucun</mat-option>
+        @for (institution of institutions.active(); track institution.id) {
+          <mat-option [value]="institution.id">{{ institution.name }}</mat-option>
+        }
+        <mat-option [value]="newInstitution">Nouvel établissement…</mat-option>
+      </mat-select>
+    </mat-form-field>
+    @if (creatingInstitution()) {
+      <mat-form-field>
+        <mat-label>Nom du nouvel établissement</mat-label>
+        <input matInput formControlName="newInstitutionName" maxlength="80" />
+      </mat-form-field>
+    }
+
+    <div class="pair">
+      <mat-form-field>
+        <mat-label>Date d'ouverture</mat-label>
+        <input matInput [matDatepicker]="opening" formControlName="openingDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="opening" />
+        <mat-datepicker #opening />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ loan() ? 'Capital restant dû' : "Solde d'ouverture" }}</mat-label>
+        <input matInput formControlName="openingBalance" inputmode="decimal" class="amount" />
+        @if (loan()) {
+          <mat-hint>En positif : il sera enregistré comme une dette.</mat-hint>
+        }
+        @if (form.controls.openingBalance.touched && form.controls.openingBalance.invalid) {
+          <mat-error>Montant invalide</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <mat-accordion multi>
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Coordonnées bancaires</mat-panel-title>
+        </mat-expansion-panel-header>
+        <mat-form-field class="full-width">
+          <mat-label>IBAN</mat-label>
+          <input
+            matInput
+            formControlName="iban"
+            autocomplete="off"
+            [placeholder]="account?.iban_masked ?? 'FR76 …'"
+          />
+          @if (account?.iban_masked) {
+            <mat-hint>Laisser vide pour conserver {{ account?.iban_masked }}</mat-hint>
+          }
+          @if (ibanError()) {
+            <mat-hint class="error">{{ ibanError() }}</mat-hint>
+          }
+        </mat-form-field>
+        <mat-form-field class="full-width">
+          <mat-label>Numéro de compte</mat-label>
+          <input matInput formControlName="accountNumber" maxlength="30" />
+        </mat-form-field>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Options</mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="options">
+          <mat-checkbox formControlName="netWorth">Compter dans le patrimoine</mat-checkbox>
+          <mat-checkbox formControlName="emergency"
+            >Compter dans l'épargne de précaution</mat-checkbox
+          >
+          <mat-checkbox formControlName="budget">Compter dans les budgets</mat-checkbox>
+          <mat-form-field>
+            <mat-label>Devise</mat-label>
+            <input matInput formControlName="currency" maxlength="3" />
+            <mat-hint>Non modifiable après la création</mat-hint>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Note</mat-label>
+            <textarea matInput formControlName="notes" rows="2"></textarea>
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Annuler</button>
+  <button mat-flat-button type="submit" form="account-form" [disabled]="busy()">
+    {{ account ? 'Enregistrer' : 'Créer le compte' }}
+  </button>
+</mat-dialog-actions>

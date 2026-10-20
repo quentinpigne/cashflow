@@ -8,13 +8,13 @@ use crate::services::institutions::{self, Institution, InstitutionInput};
 use crate::state::AppState;
 
 /// Établissements, archivés compris (CPT-02).
-#[utoipa::path(get, path = "/institutions", tag = "institutions", responses((status = 200, body = Vec<Institution>)))]
+#[utoipa::path(get, operation_id = "listInstitutions", path = "/institutions", tag = "institutions", responses((status = 200, body = Vec<Institution>)))]
 pub async fn list(State(state): State<AppState>) -> AppResult<Json<Vec<Institution>>> {
     Ok(Json(institutions::list(&state.db).await?))
 }
 
 #[utoipa::path(
-    post, path = "/institutions", tag = "institutions", request_body = InstitutionInput,
+    post, operation_id = "createInstitution", path = "/institutions", tag = "institutions", request_body = InstitutionInput,
     responses((status = 201, body = Institution), (status = 422, body = Problem))
 )]
 pub async fn create(
@@ -26,7 +26,7 @@ pub async fn create(
 
 /// Modifie ou archive un établissement (R-CPT-10).
 #[utoipa::path(
-    put, path = "/institutions/{id}", tag = "institutions", params(("id" = InstitutionId, Path)),
+    put, operation_id = "updateInstitution", path = "/institutions/{id}", tag = "institutions", params(("id" = InstitutionId, Path)),
     request_body = InstitutionInput, responses((status = 200, body = Institution), (status = 422, body = Problem))
 )]
 pub async fn update(

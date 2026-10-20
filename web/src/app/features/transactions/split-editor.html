@@ -1,0 +1,90 @@
+<h2 mat-dialog-title>Ventilation</h2>
+<mat-dialog-content>
+  <div class="summary">
+    <span
+      >Montant
+      <strong class="amount" [class.negative]="data.totalMinor < 0">{{ total }}</strong></span
+    >
+    <span [class.remaining-error]="remaining() !== 0">
+      Reste à ventiler <strong class="amount">{{ format(remaining()) }}</strong>
+    </span>
+  </div>
+
+  <mat-button-toggle-group
+    [value]="mode()"
+    (change)="switchMode($event.value)"
+    aria-label="Mode de saisie"
+  >
+    <mat-button-toggle value="amount">€</mat-button-toggle>
+    <mat-button-toggle value="percent">%</mat-button-toggle>
+  </mat-button-toggle-group>
+  @if (mode() === 'percent') {
+    <span class="muted percent-total">Total {{ percentTotal() / 100 }} %</span>
+  }
+
+  @for (line of lines(); track $index; let i = $index) {
+    <div class="line">
+      <app-category-picker
+        class="category"
+        [value]="line.category"
+        (valueChange)="update(i, { category: $event })"
+        [kind]="data.kind"
+      />
+      <mat-form-field class="value">
+        <mat-label>{{ mode() === 'amount' ? 'Montant' : '%' }}</mat-label>
+        <input
+          matInput
+          inputmode="decimal"
+          [ngModel]="line.input"
+          (ngModelChange)="update(i, { input: $event })"
+          [name]="'value' + i"
+        />
+        @if (mode() === 'percent') {
+          <mat-hint align="end">{{ format(amounts()[i]) }}</mat-hint>
+        }
+        @if (isOpposite(amounts()[i])) {
+          <mat-hint>Remboursement</mat-hint>
+        }
+      </mat-form-field>
+      <mat-form-field class="note">
+        <mat-label>Note</mat-label>
+        <input
+          matInput
+          [ngModel]="line.note"
+          (ngModelChange)="update(i, { note: $event })"
+          [name]="'note' + i"
+        />
+      </mat-form-field>
+      <div class="line-actions">
+        @if (mode() === 'amount') {
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Répartir le reste sur cette ligne"
+            (click)="fill(i)"
+            [disabled]="!remaining()"
+          >
+            <mat-icon>vertical_align_bottom</mat-icon>
+          </button>
+        }
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Supprimer la ligne"
+          (click)="remove(i)"
+          [disabled]="lines().length === 1"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+  }
+  <button mat-button type="button" (click)="add()">
+    <mat-icon>add</mat-icon>
+    Ajouter une ligne
+  </button>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Annuler</button>
+  <button mat-flat-button [disabled]="!valid()" (click)="save()">Valider</button>
+</mat-dialog-actions>

@@ -27,7 +27,7 @@ pub struct TransferLinked {
 
 /// Transactions d'un compte, les plus récentes d'abord, avec le solde après opération (TRX-02).
 #[utoipa::path(
-    get, path = "/accounts/{id}/transactions", tag = "transactions",
+    get, operation_id = "listTransactions", path = "/accounts/{id}/transactions", tag = "transactions",
     params(("id" = AccountId, Path), TransactionFilter),
     responses((status = 200, body = TransactionPage), (status = 404, body = Problem))
 )]
@@ -41,7 +41,7 @@ pub async fn list(
 
 /// Saisit une transaction, `PENDING` (TRX-01, TRX-03).
 #[utoipa::path(
-    post, path = "/transactions", tag = "transactions", request_body = TransactionInput,
+    post, operation_id = "createTransaction", path = "/transactions", tag = "transactions", request_body = TransactionInput,
     responses((status = 201, body = TransactionCreated), (status = 422, body = Problem))
 )]
 pub async fn create(
@@ -53,7 +53,7 @@ pub async fn create(
 }
 
 #[utoipa::path(
-    get, path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
+    get, operation_id = "getTransaction", path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
     responses((status = 200, body = TransactionDetail), (status = 404, body = Problem))
 )]
 pub async fn get(State(state): State<AppState>, Path(id): Path<TransactionId>) -> AppResult<Json<TransactionDetail>> {
@@ -62,7 +62,7 @@ pub async fn get(State(state): State<AppState>, Path(id): Path<TransactionId>) -
 
 /// Modifie une transaction (R-TRX-3, R-TRX-4).
 #[utoipa::path(
-    put, path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
+    put, operation_id = "updateTransaction", path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
     request_body = TransactionUpdateInput,
     responses((status = 200, body = TransactionDetail), (status = 422, body = Problem))
 )]
@@ -76,7 +76,7 @@ pub async fn update(
 }
 
 #[utoipa::path(
-    delete, path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
+    delete, operation_id = "deleteTransaction", path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
     responses((status = 204), (status = 422, body = Problem))
 )]
 pub async fn delete(State(state): State<AppState>, Path(id): Path<TransactionId>) -> AppResult<StatusCode> {
@@ -86,7 +86,7 @@ pub async fn delete(State(state): State<AppState>, Path(id): Path<TransactionId>
 
 /// Catégorise une ventilation sur place (`ecrans.md` E1).
 #[utoipa::path(
-    put, path = "/splits/{id}/category", tag = "transactions", params(("id" = SplitId, Path)),
+    put, operation_id = "categorizeSplit", path = "/splits/{id}/category", tag = "transactions", params(("id" = SplitId, Path)),
     request_body = CategorizeInput, responses((status = 204), (status = 422, body = Problem))
 )]
 pub async fn categorize_split(
@@ -100,7 +100,7 @@ pub async fn categorize_split(
 
 /// Saisit un virement interne : les deux jambes d'un coup (TRX-05, R-TRX-33).
 #[utoipa::path(
-    post, path = "/transfers", tag = "transactions", request_body = TransferInput,
+    post, operation_id = "createTransfer", path = "/transfers", tag = "transactions", request_body = TransferInput,
     responses((status = 201, body = TransferCreated), (status = 422, body = Problem))
 )]
 pub async fn create_transfer(
@@ -112,7 +112,7 @@ pub async fn create_transfer(
 
 /// Transactions candidates pour former un virement (R-TRX-35).
 #[utoipa::path(
-    get, path = "/transactions/{id}/transfer-candidates", tag = "transactions",
+    get, operation_id = "transferCandidates", path = "/transactions/{id}/transfer-candidates", tag = "transactions",
     params(("id" = TransactionId, Path), CandidatesQuery), responses((status = 200, body = Vec<Candidate>))
 )]
 pub async fn transfer_candidates(
@@ -125,7 +125,7 @@ pub async fn transfer_candidates(
 
 /// Marque une transaction comme virement (R-TRX-36).
 #[utoipa::path(
-    post, path = "/transactions/{id}/transfer", tag = "transactions", params(("id" = TransactionId, Path)),
+    post, operation_id = "markAsTransfer", path = "/transactions/{id}/transfer", tag = "transactions", params(("id" = TransactionId, Path)),
     request_body = MarkAsTransferInput, responses((status = 201, body = TransferLinked), (status = 422, body = Problem))
 )]
 pub async fn mark_as_transfer(
@@ -138,7 +138,7 @@ pub async fn mark_as_transfer(
 }
 
 /// Délie un virement (R-TRX-34).
-#[utoipa::path(delete, path = "/transfers/{id}", tag = "transactions", params(("id" = TransferId, Path)), responses((status = 204)))]
+#[utoipa::path(delete, operation_id = "unlinkTransfer", path = "/transfers/{id}", tag = "transactions", params(("id" = TransferId, Path)), responses((status = 204)))]
 pub async fn unlink_transfer(State(state): State<AppState>, Path(id): Path<TransferId>) -> AppResult<StatusCode> {
     transfers::unlink(&state.db, id).await?;
     Ok(StatusCode::NO_CONTENT)

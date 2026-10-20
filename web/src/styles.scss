@@ -1,0 +1,112 @@
+// Thème Material 3 (ADR-0009). Polices et icônes servies localement : aucun appel à un tiers (ADR-0015).
+@use '@angular/material' as mat;
+@use 'material-symbols/outlined';
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: (
+        plain-family: (
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif,
+        ),
+        brand-family: (
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif,
+        ),
+      ),
+      density: 0,
+    )
+  );
+}
+
+body {
+  color-scheme: light;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  margin: 0;
+  height: 100%;
+}
+
+// Les icônes Material utilisent la police locale Material Symbols.
+.mat-icon {
+  font-family: 'Material Symbols Outlined';
+}
+
+// Montants : alignés à droite, chiffres à chasse fixe, sorties en rouge (ecrans.md, principes).
+.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.amount.negative {
+  color: var(--mat-sys-error);
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.page {
+  box-sizing: border-box;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  h1 {
+    flex: 1;
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+}
+
+.card {
+  background: var(--mat-sys-surface-container-low);
+  border-radius: var(--mat-sys-corner-large);
+  padding: 1rem;
+}
+
+.empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.full-width {
+  width: 100%;
+}
+
+// Dialogues plein écran sur mobile (ecrans.md E4).
+.fullscreen-dialog {
+  max-width: 100vw !important;
+  width: 100vw;
+  height: 100dvh;
+
+  .mat-mdc-dialog-surface {
+    border-radius: 0 !important;
+  }
+}

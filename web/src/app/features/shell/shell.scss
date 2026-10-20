@@ -1,0 +1,99 @@
+.brand {
+  font: var(--mat-sys-title-large);
+  color: var(--mat-sys-primary);
+}
+
+.mobile {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--mat-sys-surface-container);
+  }
+
+  .content {
+    flex: 1;
+    // Place pour la barre du bas et le bouton flottant.
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+  }
+}
+
+.fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  z-index: 3;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--mat-sys-surface-container);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+
+  a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.5rem 0 0.625rem;
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+    font: var(--mat-sys-label-medium);
+
+    &.active {
+      color: var(--mat-sys-primary);
+
+      mat-icon {
+        background: var(--mat-sys-secondary-container);
+        border-radius: 1rem;
+        width: 3.5rem;
+        text-align: center;
+      }
+    }
+  }
+}
+
+.desktop {
+  height: 100dvh;
+}
+
+.side {
+  width: 16.5rem;
+  padding: 1rem 0.75rem;
+  box-sizing: border-box;
+  background: var(--mat-sys-surface-container-low);
+  border-right: none;
+
+  ::ng-deep .mat-drawer-inner-container {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.side-brand {
+  padding: 0 0.75rem 1rem;
+}
+
+.new {
+  margin: 0 0.5rem 1rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.logout {
+  align-self: flex-start;
+}

@@ -25,7 +25,7 @@ pub struct LoginInput {
 }
 
 /// État de la session courante.
-#[utoipa::path(get, path = "/auth/status", tag = "auth", responses((status = 200, body = AuthStatus)))]
+#[utoipa::path(get, operation_id = "authStatus", path = "/auth/status", tag = "auth", responses((status = 200, body = AuthStatus)))]
 pub async fn status(State(state): State<AppState>, jar: CookieJar) -> AppResult<Json<AuthStatus>> {
     let authenticated = match jar.get(COOKIE_NAME) {
         Some(cookie) => auth::authenticate(&state.db, cookie.value()).await.is_ok(),
@@ -36,7 +36,7 @@ pub async fn status(State(state): State<AppState>, jar: CookieJar) -> AppResult<
 
 /// Ouvre une session : pose le cookie `cashflow_session` (HttpOnly, SameSite=Strict, 30 jours glissants).
 #[utoipa::path(
-    post, path = "/auth/login", tag = "auth", request_body = LoginInput,
+    post, operation_id = "login", path = "/auth/login", tag = "auth", request_body = LoginInput,
     responses(
         (status = 204, description = "Session ouverte"),
         (status = 401, body = Problem, description = "Mot de passe incorrect"),
@@ -73,7 +73,7 @@ fn removal() -> Cookie<'static> {
 }
 
 /// Ferme la session courante.
-#[utoipa::path(post, path = "/auth/logout", tag = "auth", responses((status = 204)))]
+#[utoipa::path(post, operation_id = "logout", path = "/auth/logout", tag = "auth", responses((status = 204)))]
 pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> AppResult<(StatusCode, CookieJar)> {
     if let Some(cookie) = jar.get(COOKIE_NAME) {
         auth::logout(&state.db, cookie.value()).await?;
@@ -82,7 +82,7 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> AppResult<
 }
 
 /// Se déconnecter de tous les appareils (ADR-0015).
-#[utoipa::path(post, path = "/auth/logout-everywhere", tag = "auth", responses((status = 204)))]
+#[utoipa::path(post, operation_id = "logoutEverywhere", path = "/auth/logout-everywhere", tag = "auth", responses((status = 204)))]
 pub async fn logout_everywhere(State(state): State<AppState>, jar: CookieJar) -> AppResult<(StatusCode, CookieJar)> {
     auth::logout_everywhere(&state.db).await?;
     Ok((StatusCode::NO_CONTENT, jar.remove(removal())))
