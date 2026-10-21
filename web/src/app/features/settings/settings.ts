@@ -27,6 +27,10 @@ import { confirm } from '../../shared/confirm-dialog';
           <mat-icon matListItemIcon>account_balance</mat-icon>
           <span matListItemTitle>Établissements</span>
         </a>
+        <a mat-list-item routerLink="/reglages/baremes">
+          <mat-icon matListItemIcon>percent</mat-icon>
+          <span matListItemTitle>Barèmes de taux</span>
+        </a>
         <a mat-list-item routerLink="/reglages/regles">
           <mat-icon matListItemIcon>rule</mat-icon>
           <span matListItemTitle>Règles de catégorisation</span>

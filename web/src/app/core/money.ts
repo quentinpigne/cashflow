@@ -182,3 +182,22 @@ export function formatChartValue(
 ): string {
   return formatMoney(Math.round(value * 10 ** minorDigits(currency)), { ...options, currency });
 }
+
+/** Taux annuel en millionièmes affiché avec deux décimales : « 1,70 % » (taux réglementés). */
+export function formatRate(ppm: number): string {
+  const hundredths = Math.round(ppm / 100);
+  const negative = hundredths < 0;
+  const absolute = Math.abs(hundredths);
+  const decimals = String(absolute % 100).padStart(2, '0');
+  return `${negative ? '−' : ''}${Math.trunc(absolute / 100)},${decimals} %`;
+}
+
+/** Saisie d'un taux en pour cent (« 1,7 », « 2.40 % ») → millionièmes ; `null` si invalide. */
+export function parseRatePpm(input: string): number | null {
+  const text = input.replace(/\s|%/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,4})?$/.test(text)) {
+    return null;
+  }
+  const [units, decimals = ''] = text.split('.');
+  return Number(units) * 10_000 + Number(decimals.padEnd(4, '0'));
+}

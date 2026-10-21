@@ -38,6 +38,8 @@ import { CategoriesStore } from '../../shared/stores';
 import { TransactionDetailView } from '../transactions/transaction-detail';
 import { AccountForm } from './account-form';
 import { CloseAccountDialog } from './close-dialog';
+import { InterestPanel } from '../savings/interest-panel';
+import { ValuationPanel } from '../savings/valuation-panel';
 import { ReconciliationPanel } from './reconciliation-panel';
 
 interface Filters {
@@ -83,6 +85,8 @@ const PAGE = 200;
     MatTooltipModule,
     CategoryPicker,
     ReconciliationPanel,
+    InterestPanel,
+    ValuationPanel,
     MoneyPipe,
     FrDatePipe,
     TransactionDetailView,

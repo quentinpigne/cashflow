@@ -89,6 +89,12 @@
       @if (computed(a.family)) {
         <app-reconciliation-panel [accountId]="a.id" />
       }
+      @if (a.family === 'FIXED_SAVINGS') {
+        <app-interest-panel [accountId]="a.id" />
+      }
+      @if (a.family === 'VARIABLE_SAVINGS' || a.family === 'LIABILITY') {
+        <app-valuation-panel [accountId]="a.id" [family]="a.family" />
+      }
       <div class="filter-bar">
         <button mat-stroked-button (click)="showFilters.set(!showFilters())">
           <mat-icon>filter_list</mat-icon>

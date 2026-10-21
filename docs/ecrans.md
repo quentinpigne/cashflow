@@ -452,3 +452,41 @@ marque lue et ouvre le budget du mois ou le projet ; « Tout marquer comme lu »
 seuils après chaque écriture et regroupe en une notification les seuils franchis ensemble (R-BUD-62,
 R-BUD-63).
 
+
+# Écrans — phase 5 (épargne)
+
+Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+
+Ce qui change dans les écrans existants :
+- **E1 Accueil** : bloc **Épargne** (TDB-05) sous le budget : épargne de précaution en mois de dépenses,
+  intérêts de l'année (courus et attendus) par livret, valeur, capital investi et TRI global de l'épargne
+  variable, puis par compte. Un livret dont les intérêts de l'an dernier restent à inscrire est signalé.
+- **E9 Réglages** : entrée **Barèmes de taux** (E22).
+
+## E3 — Fiche d'un compte à taux déterminé : panneau Intérêts (EPA-02 à EPA-04, CPT-05)
+
+- Barème et taux en vigueur ; année affichée (flèches), gardée quand la fiche se recharge.
+- Année en cours : intérêts **courus** depuis le 1er janvier (quinzaines terminées) et **attendus** au
+  31 décembre sans nouveau mouvement. Année passée : calculés, **inscrits** et l'écart éventuel.
+- Capital versé sur plafond, et un avertissement daté si un versement l'a dépassé (R-EPA-9).
+- Année finie sans transaction d'intérêts : « Inscrire les intérêts AAAA » crée une transaction en
+  attente au 31/12, que l'import du relevé pointera (R-EPA-10).
+- « Détail par quinzaine » : solde en valeur, taux, intérêt ; les quinzaines à venir en italique.
+- « Conditions » : barème (lien vers E22), méthode (seules les quinzaines sont calculées en V1),
+  plafond, catégorie des intérêts, arrondi à chaque quinzaine (R-EPA-6).
+
+## E3 — Fiche d'un compte à rendement variable ou d'un prêt (CPT-06, EPA-05, EPA-06)
+
+- **Performance** (épargne variable) : valeur (« estimée » si la dernière valorisation a plus de
+  90 jours), capital investi, plus-value en € et en %, TRI depuis l'ouverture et depuis le 1er janvier,
+  performance pondérée par le temps (signalée comme une approximation), tableau par année civile
+  (« données insuffisantes » sans valorisation à ±15 jours du 31/12).
+- **Valorisations** (ou **Capital restant dû** pour un prêt, saisi en positif et enregistré en
+  négatif) : liste datée, « Ajouter », suppression ; une saisie à une date déjà valorisée demande de
+  confirmer le remplacement.
+
+## E22 — Barèmes de taux (EPA-01)
+
+Dans les réglages. Un bloc par barème (réglementé ou propre à un compte) : comptes qui l'utilisent,
+taux successifs datés (le plus récent en premier, supprimables), ajout d'un taux à une date d'effet. Un
+rappel invite à vérifier les taux réglementés à la source officielle (R-EPA-12).

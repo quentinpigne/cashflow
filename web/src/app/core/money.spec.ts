@@ -1,13 +1,24 @@
 import {
   allocate,
   formatMoney,
+  formatRate,
   formatRatePpm,
   parseMoney,
   parsePercent,
+  parseRatePpm,
   toEditable,
 } from './money';
 
 describe('money', () => {
+  it('formate et analyse les taux annuels', () => {
+    expect(formatRate(17_000)).toBe('1,70\u00a0%');
+    expect(formatRate(30_000)).toBe('3,00\u00a0%');
+    expect(parseRatePpm('1,7')).toBe(17_000);
+    expect(parseRatePpm('2.40 %')).toBe(24_000);
+    expect(parseRatePpm('0,125')).toBe(1_250);
+    expect(parseRatePpm('abc')).toBeNull();
+  });
+
   it('formate à la française', () => {
     expect(formatMoney(123456)).toBe('1 234,56 €');
     expect(formatMoney(-9500)).toBe('−95,00 €');

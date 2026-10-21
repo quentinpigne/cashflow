@@ -3,6 +3,7 @@
 
 export { AccountsService } from './services/accounts.service';
 export { ReconciliationService } from './services/reconciliation.service';
+export { SavingsService } from './services/savings.service';
 export { TransactionsService } from './services/transactions.service';
 export { AuthService } from './services/auth.service';
 export { BudgetsService } from './services/budgets.service';

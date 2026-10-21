@@ -91,6 +91,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/rules').then((m) => m.RulesPage),
       },
       {
+        path: 'reglages/baremes',
+        title: 'Barèmes de taux — Cashflow',
+        loadComponent: () => import('./features/savings/schedules').then((m) => m.SchedulesPage),
+      },
+      {
         path: 'reglages/profils',
         title: 'Profils d’import — Cashflow',
         loadComponent: () => import('./features/settings/profiles').then((m) => m.ProfilesPage),
