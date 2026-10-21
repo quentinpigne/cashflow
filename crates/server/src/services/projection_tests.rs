@@ -130,6 +130,25 @@ async fn prj_02_04_05_projections_and_history() {
     let life_growth = p.points[0].value_minor - 1_000_000;
     assert_eq!(first.value_minor, 1_600_000 + life_growth);
 
+    // Une fois le plafond du livret atteint, les versements sont ignorés des deux côtés (R-PRJ-22) :
+    // le patrimoine ne baisse jamais.
+    let input = super::savings::TermsInput {
+        rate_schedule_id: terms.rate_schedule_id,
+        interest_method: terms.interest_method,
+        capitalization: terms.capitalization,
+        deposit_cap_minor: Some(120_000),
+        maturity_date: None,
+        interest_category_id: terms.interest_category_id,
+        round_each_fortnight: false,
+    };
+    super::savings::update_terms(&db, livret, &input, d(TODAY)).await.unwrap();
+    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(24) }, d(TODAY)).await.unwrap();
+    for series in &worth.scenarios {
+        for pair in series.points.windows(2) {
+            assert!(pair[1].value_minor >= pair[0].value_minor, "{} : {:?}", series.name, pair[1].date);
+        }
+    }
+
     let history = projections::history(&db, &HistoryQuery { months: Some(6) }, d(TODAY)).await.unwrap();
     let last = history.last().unwrap();
     assert_eq!(last.date, d(TODAY));

@@ -490,6 +490,66 @@ fn points(values: Vec<(Date, Money)>, scenario: &ScenarioView) -> Vec<Projection
         .collect()
 }
 
+/// Ce qu'il faut pour projeter un compte à taux déterminé (R-PRJ-20 à R-PRJ-22).
+struct FixedParts {
+    movements: Vec<Movement>,
+    rates: Vec<RatePoint>,
+    terms: FortnightlyTerms,
+    deposits: Vec<Movement>,
+    cap: Option<Money>,
+    capital: Money,
+    recorded: Vec<i32>,
+}
+
+async fn fixed_parts(
+    db: &Db,
+    ctx: &Context,
+    row: &AccountRow,
+    scenario: &ScenarioView,
+    contribution: Option<i64>,
+    today: Date,
+    ends: &[Date],
+) -> AppResult<FixedParts> {
+    let horizon = ends.last().copied().unwrap_or(today);
+    let terms = ctx.terms.get(&row.id);
+    let mut rates: Vec<RatePoint> = ctx
+        .periods
+        .iter()
+        .filter(|p| terms.is_some_and(|t| t.rate_schedule_id == p.schedule_id))
+        .map(|p| RatePoint { from: p.effective_from, rate: p.rate })
+        .collect();
+    if let Some(path) = terms.and_then(|t| scenario.assumptions.rate_paths.get(&t.rate_schedule_id.to_string())) {
+        rates.extend(path.iter().map(|s| RatePoint { from: s.from, rate: Rate::from_ppm(s.rate_ppm) }));
+    }
+    let rows = db::savings::movements(&db.read, row.id, terms.and_then(|t| t.interest_category_id)).await?;
+    let is_interest = |m: &db::savings::MovementRow| m.origin == TransactionOrigin::Interest || m.is_interest;
+    let mut movements = vec![Movement { date: row.opening_date, amount: row.opening_balance }];
+    movements.extend(rows.iter().map(|m| Movement { date: m.interest_date, amount: m.amount }));
+    let capital = row.opening_balance + rows.iter().filter(|m| !is_interest(m)).map(|m| m.amount).sum::<Money>();
+    let recorded = rows
+        .iter()
+        .filter(|m| is_interest(m))
+        .map(|m| if m.balance_date.month() == 1 { m.balance_date.year() - 1 } else { m.balance_date.year() })
+        .collect();
+    let deposits = match contribution {
+        Some(monthly) => ends.iter().map(|d| Movement { date: *d, amount: Money::from_minor(monthly) }).collect(),
+        None => scheduled_deposits(&ctx.rules, row.id, today, horizon),
+    };
+    Ok(FixedParts {
+        movements,
+        rates,
+        terms: FortnightlyTerms {
+            opened: row.opening_date,
+            closed: row.closed_on,
+            round_each: terms.is_some_and(|t| t.round_each_fortnight),
+        },
+        deposits,
+        cap: terms.and_then(|t| t.deposit_cap),
+        capital,
+        recorded,
+    })
+}
+
 async fn project_account(
     db: &Db,
     ctx: &Context,
@@ -520,50 +580,18 @@ async fn project_account(
     };
     match row.kind.family() {
         AccountFamily::FixedSavings => {
-            let terms = ctx.terms.get(&row.id);
-            let mut rates: Vec<RatePoint> = ctx
-                .periods
-                .iter()
-                .filter(|p| terms.is_some_and(|t| t.rate_schedule_id == p.schedule_id))
-                .map(|p| RatePoint { from: p.effective_from, rate: p.rate })
-                .collect();
-            if let Some(path) = terms.and_then(|t| scenario.assumptions.rate_paths.get(&t.rate_schedule_id.to_string()))
-            {
-                rates.extend(path.iter().map(|s| RatePoint { from: s.from, rate: Rate::from_ppm(s.rate_ppm) }));
-            }
-            let movements =
-                db::savings::movements(&db.read, row.id, terms.and_then(|t| t.interest_category_id)).await?;
-            let is_interest = |m: &db::savings::MovementRow| m.origin == TransactionOrigin::Interest || m.is_interest;
-            let mut all = vec![Movement { date: row.opening_date, amount: row.opening_balance }];
-            all.extend(movements.iter().map(|m| Movement { date: m.interest_date, amount: m.amount }));
-            let capital: Money =
-                row.opening_balance + movements.iter().filter(|m| !is_interest(m)).map(|m| m.amount).sum::<Money>();
-            let recorded: Vec<i32> = movements
-                .iter()
-                .filter(|m| is_interest(m))
-                .map(|m| if m.balance_date.month() == 1 { m.balance_date.year() - 1 } else { m.balance_date.year() })
-                .collect();
-            let deposits = match contribution {
-                Some(monthly) => {
-                    ends.iter().map(|d| Movement { date: *d, amount: Money::from_minor(monthly) }).collect()
-                }
-                None => scheduled_deposits(&ctx.rules, row.id, today, horizon),
-            };
-            let fortnightly = FortnightlyTerms {
-                opened: row.opening_date,
-                closed: row.closed_on,
-                round_each: terms.is_some_and(|t| t.round_each_fortnight),
-            };
+            let parts = fixed_parts(db, ctx, row, scenario, contribution, today, &ends).await?;
+            let (rates, terms) = (&parts.rates, ctx.terms.get(&row.id));
             let input = FixedInput {
-                movements: &all,
-                rates: &rates,
-                terms: fortnightly,
-                deposits: &deposits,
-                cap: terms.and_then(|t| t.deposit_cap),
-                capital,
-                recorded_years: &recorded,
+                movements: &parts.movements,
+                rates: &parts.rates,
+                terms: parts.terms,
+                deposits: &parts.deposits,
+                cap: parts.cap,
+                capital: parts.capital,
+                recorded_years: &parts.recorded,
             };
-            view.rate_ppm = Some(cashflow_domain::savings::rate_at(&rates, today).ppm());
+            view.rate_ppm = Some(cashflow_domain::savings::rate_at(rates, today).ppm());
             view.deposit_cap_minor = terms.and_then(|t| t.deposit_cap).map(Money::minor);
             view.monthly_contribution_minor =
                 contribution.unwrap_or_else(|| monthly_equivalent(&ctx.rules, row.id).minor());
@@ -586,36 +614,63 @@ async fn project_account(
         AccountFamily::Cash | AccountFamily::Liability => {
             // Liquidités : solde constant, moins les virements programmés vers l'épargne (R-PRJ-40, R-PRJ-41).
             // Prêts : dernière valeur, constante faute de tableau d'amortissement.
-            let transfers: Vec<(Date, Money)> = if row.kind.family() == AccountFamily::Cash {
-                ctx.rules
-                    .iter()
-                    .filter(|r| r.active && r.target_account_id.is_some())
-                    .flat_map(|r| {
-                        let amount = if r.account_id == row.id {
-                            Some(r.amount)
-                        } else if r.target_account_id == Some(row.id) {
-                            Some(-r.amount)
-                        } else {
-                            None
-                        };
-                        let start = today.checked_add_days(Days::new(1)).unwrap_or(today);
-                        amount
-                            .map(|a| {
-                                recurring::schedule(r)
-                                    .occurrences(start, horizon)
-                                    .into_iter()
-                                    .map(move |d| (d, a))
-                                    .collect::<Vec<_>>()
-                            })
-                            .unwrap_or_default()
-                    })
-                    .collect()
-            } else {
-                Vec::new()
-            };
+            let start = today.checked_add_days(Days::new(1)).unwrap_or(today);
+            // Virements programmés, par compte de contrepartie : (date, montant signé sur ce compte).
+            let mut flows: HashMap<AccountId, Vec<(Date, Money)>> = HashMap::new();
+            if row.kind.family() == AccountFamily::Cash {
+                for rule in ctx.rules.iter().filter(|r| r.active) {
+                    let (other, amount) = match rule.target_account_id {
+                        Some(target) if rule.account_id == row.id => (target, rule.amount),
+                        Some(_) if rule.target_account_id == Some(row.id) => (rule.account_id, -rule.amount),
+                        _ => continue,
+                    };
+                    let dates = recurring::schedule(rule).occurrences(start, horizon);
+                    flows.entry(other).or_default().extend(dates.into_iter().map(|d| (d, amount)));
+                }
+            }
+            // Vers un compte plafonné, seuls partent les versements qu'il accepte (R-PRJ-22) : sinon le
+            // patrimoine fuirait.
+            let mut accepted: HashMap<AccountId, Vec<Movement>> = HashMap::new();
+            for other in flows.keys() {
+                let Some(target) = db::accounts::find(&db.read, *other).await? else { continue };
+                if target.kind.family() != AccountFamily::FixedSavings {
+                    continue;
+                }
+                let own = scenario
+                    .assumptions
+                    .by_account
+                    .get(&target.id.to_string())
+                    .and_then(|a| a.monthly_contribution_minor);
+                let parts = fixed_parts(db, ctx, &target, scenario, own, today, &ends).await?;
+                if parts.cap.is_some() {
+                    accepted.insert(
+                        *other,
+                        projection::accepted(&parts.deposits, parts.cap, parts.capital, today, horizon),
+                    );
+                }
+            }
             let values = ends
                 .iter()
-                .map(|end| (*end, current + transfers.iter().filter(|(d, _)| d <= end).map(|(_, a)| *a).sum::<Money>()))
+                .map(|end| {
+                    let moved: Money = flows
+                        .iter()
+                        .map(|(other, list)| {
+                            let out: Money =
+                                list.iter().filter(|(d, a)| d <= end && a.is_negative()).map(|(_, a)| *a).sum();
+                            let inflow: Money =
+                                list.iter().filter(|(d, a)| d <= end && a.is_positive()).map(|(_, a)| *a).sum();
+                            let out = match accepted.get(other) {
+                                Some(taken) => {
+                                    let taken: Money = taken.iter().filter(|m| m.date <= *end).map(|m| m.amount).sum();
+                                    -((-out).min(taken))
+                                }
+                                None => out,
+                            };
+                            out + inflow
+                        })
+                        .sum();
+                    (*end, current + moved)
+                })
                 .collect();
             view.points = points(values, scenario);
         }

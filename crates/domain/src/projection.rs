@@ -101,20 +101,36 @@ pub struct FixedInput<'a> {
     pub recorded_years: &'a [i32],
 }
 
+/// Versements programmés réellement faits : ceux qui portent le capital versé au-delà du plafond sont
+/// réduits puis ignorés (R-PRJ-22).
+pub fn accepted(
+    deposits: &[Movement],
+    cap: Option<Money>,
+    capital: Money,
+    today: Date,
+    horizon: Date,
+) -> Vec<Movement> {
+    let mut sorted: Vec<Movement> = deposits.iter().copied().filter(|d| d.date > today && d.date <= horizon).collect();
+    sorted.sort_by_key(|d| d.date);
+    let mut capital = capital;
+    let mut result = Vec::new();
+    for deposit in sorted {
+        let room = cap.map_or(deposit.amount, |cap| (cap - capital).min(deposit.amount));
+        if room.is_positive() {
+            result.push(Movement { date: deposit.date, amount: room });
+            capital += room;
+        }
+    }
+    result
+}
+
 /// Valeur en fin de chaque mois : versements (arrêtés au plafond) et intérêts capitalisés au 31/12,
 /// calculés par le même moteur que le réel (R-PRJ-20).
 pub fn fixed(input: &FixedInput<'_>, today: Date, months: u32) -> Vec<(Date, Money)> {
     let ends = month_ends(today, months);
     let Some(horizon) = ends.last().copied() else { return Vec::new() };
     let mut all: Vec<Movement> = input.movements.to_vec();
-    let mut capital = input.capital;
-    for deposit in input.deposits.iter().filter(|d| d.date > today && d.date <= horizon) {
-        let room = input.cap.map_or(deposit.amount, |cap| (cap - capital).min(deposit.amount));
-        if room.is_positive() {
-            all.push(Movement { date: deposit.date, amount: room });
-            capital += room;
-        }
-    }
+    all.extend(accepted(input.deposits, input.cap, input.capital, today, horizon));
     // Capitalisation annuelle des intérêts non encore inscrits, année par année (R-EPA-5).
     for year in today.year()..=horizon.year() {
         if input.recorded_years.contains(&year) {
