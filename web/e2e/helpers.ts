@@ -22,11 +22,17 @@ export async function pickCategory(
   scope: ReturnType<Page['locator']>,
   search: string,
   option: string,
+  /** Vérifier le texte affiché ; inutile quand le choix fait disparaître le champ (accueil). */
+  checkDisplay = true,
 ): Promise<void> {
   const input = scope.locator('app-category-picker input').first();
   await input.focus();
   await input.fill(search);
   await page.getByRole('option', { name: option, exact: true }).first().click();
+  // Le champ affiche la catégorie choisie (« Parent › Enfant »), jamais « — ».
+  if (checkDisplay) {
+    await expect(input).toHaveValue(new RegExp(`${option}$`));
+  }
 }
 
 /** Ouvre la saisie rapide depuis le bouton « + » ou « Nouvelle transaction ». */

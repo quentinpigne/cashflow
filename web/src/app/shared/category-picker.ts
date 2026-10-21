@@ -107,7 +107,14 @@ export class CategoryPicker {
     );
   }
 
-  protected readonly display = (id: string | null): string => (id ? this.store.label(id) : '');
+  /**
+   * Texte du champ. Le déclencheur d'autocomplétion est aussi l'accesseur de `ngModel` : il reçoit
+   * tantôt l'identifiant de l'option choisie, tantôt le texte du champ (libellé ou saisie en cours).
+   */
+  protected readonly display = (value: string | null): string => {
+    if (!value) return '';
+    return this.store.byId().has(value) ? this.store.label(value) : value;
+  };
 
   protected readonly groups = computed<Group[]>(() => {
     const query = this.text().trim().toLowerCase();

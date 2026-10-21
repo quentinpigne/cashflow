@@ -92,7 +92,8 @@ test('E1 : catégoriser sur place depuis l’accueil (R-TDB-5)', async ({ page }
   const title = card.getByRole('heading');
   const before = Number((await title.textContent())?.match(/\((\d+)\)/)?.[1]);
   const first = card.locator('.todo').first();
-  await pickCategory(page, first, 'Supermarché', 'Supermarché / épicerie');
+  // La ligne disparaît dès qu'elle est catégorisée : pas de texte à vérifier.
+  await pickCategory(page, first, 'Supermarché', 'Supermarché / épicerie', false);
   if (before > 1) {
     await expect(title).toHaveText(`À catégoriser (${before - 1})`);
   } else {
