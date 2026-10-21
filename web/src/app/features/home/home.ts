@@ -1,5 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDragHandle,
+  CdkDragPlaceholder,
+  CdkDropList,
+  CdkDropListGroup,
+  moveItemInArray,
+  transferArrayItem,
+} from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -16,6 +26,7 @@ import { DataVersion } from '../../core/data-version';
 import { formatMonth } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { FAMILY_LABELS } from '../../core/labels';
+import { Layout } from '../../core/layout';
 import { formatRatePpm } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
@@ -23,6 +34,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { HomeBudget } from '../budget/home-budget';
 import { HomeMissed } from '../projections/home-missed';
 import { HomeSavings } from '../savings/home-savings';
+import { HomeLayout, Widget } from './home-layout';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
 const DEFINITIONS = {
@@ -37,10 +49,27 @@ const DEFINITIONS = {
   rate: 'Épargne du mois divisée par les revenus. Non défini si les revenus sont nuls.',
 };
 
-/** E1 — Accueil (TDB-01). */
+/** Nom de chaque encadré, pour les lecteurs d'écran. */
+const WIDGET_LABELS: Record<Widget, string> = {
+  'net-worth': 'Patrimoine',
+  month: 'Mois en cours',
+  alerts: 'Alertes',
+  missed: 'Échéances non vues',
+  uncategorized: 'À catégoriser',
+  budget: 'Budget du mois',
+  savings: 'Épargne',
+  accounts: 'Comptes',
+};
+
+/** E1 — Accueil (TDB-01), dont les encadrés se réorganisent par glisser-déposer. */
 @Component({
   selector: 'app-home',
   imports: [
+    CdkDrag,
+    CdkDragHandle,
+    CdkDragPlaceholder,
+    CdkDropList,
+    CdkDropListGroup,
     HomeBudget,
     HomeSavings,
     HomeMissed,
@@ -70,6 +99,34 @@ export class HomePage {
     stream: () => this.api.getDashboard(),
   });
   protected readonly showDetail = signal(false);
+
+  protected readonly layout = inject(HomeLayout);
+  private readonly screen = inject(Layout);
+  protected readonly labels = WIDGET_LABELS;
+
+  /** Deux colonnes sur ordinateur, une seule sur mobile : chacune a sa disposition. */
+  protected readonly columns = computed<Widget[][]>(() => {
+    const state = this.layout.state();
+    return this.screen.mobile() ? [state.mobile] : state.desktop;
+  });
+
+  protected drop(event: CdkDragDrop<number>): void {
+    const columns = this.columns().map((c) => [...c]);
+    const from = columns[event.previousContainer.data];
+    const to = columns[event.container.data];
+    // L'encadré déplacé est repéré par sa donnée, pas par l'index calculé par le CDK.
+    const previous = from.indexOf(event.item.data as Widget);
+    if (previous < 0) return;
+    if (event.previousContainer === event.container) {
+      moveItemInArray(to, previous, event.currentIndex);
+    } else {
+      transferArrayItem(from, to, previous, event.currentIndex);
+    }
+    const state = this.layout.state();
+    this.layout.save(
+      this.screen.mobile() ? { ...state, mobile: columns[0] } : { ...state, desktop: columns },
+    );
+  }
 
   protected readonly monthLabel = computed(() =>
     this.dashboard.hasValue() ? formatMonth(this.dashboard.value().month.from) : '',

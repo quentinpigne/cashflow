@@ -124,6 +124,12 @@ comptes à droite, « à catégoriser » et alertes en dessous.
 └──────────────────────────┘
 ```
 
+
+**Disposition personnalisable.** Chaque encadré porte une poignée (⋮⋮, en haut à droite) : on le fait
+glisser pour le réordonner dans sa colonne, ou le changer de colonne sur ordinateur. La disposition est
+gardée dans le navigateur (`localStorage`), séparément pour l'ordinateur (deux colonnes) et pour le
+mobile (une colonne) ; « Disposition par défaut » apparaît dès qu'elle a été modifiée. Un encadré sans
+contenu (aucune alerte, rien à catégoriser) reste masqué à sa place.
 ## E2 — Comptes (CPT-01, CPT-03)
 
 Liste de tous les comptes, **groupés par famille** (Liquidités, Épargne à taux fixe, Épargne variable,

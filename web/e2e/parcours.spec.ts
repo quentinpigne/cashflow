@@ -74,7 +74,12 @@ test('E5 : un virement crée les deux jambes (TRX-05)', async ({ page }) => {
   const label = `TEST VIREMENT ${unique()}`;
   await openAccount(page, 'Compte courant');
   await openQuickEntry(page);
-  await page.getByRole('radio', { name: 'Virement' }).click();
+  // Sur mobile, un clic pendant l'ouverture animée du dialogue peut se perdre : on vérifie qu'il a pris.
+  const transfer = page.getByRole('radio', { name: 'Virement' });
+  await expect(async () => {
+    await transfer.click();
+    await expect(transfer).toBeChecked({ timeout: 1000 });
+  }).toPass();
   await page.getByLabel('Montant').fill('50');
   await page.getByRole('combobox', { name: "Compte d'arrivée" }).click();
   await page.getByRole('option', { name: 'Livret A' }).click();
