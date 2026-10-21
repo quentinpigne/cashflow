@@ -8,6 +8,8 @@
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #mobileMenu>
+        <a mat-menu-item routerLink="/projections"><mat-icon>timeline</mat-icon> Projections</a>
+        <a mat-menu-item routerLink="/recurrences"><mat-icon>event_repeat</mat-icon> Récurrences</a>
         <a mat-menu-item routerLink="/reglages"><mat-icon>settings</mat-icon> Réglages</a>
         <a mat-menu-item routerLink="/import"><mat-icon>upload_file</mat-icon> Import</a>
         <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Déconnexion</button>

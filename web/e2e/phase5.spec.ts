@@ -52,7 +52,7 @@ test('E22 : barèmes de taux (EPA-01)', async ({ page }) => {
 
 test('accueil : bloc épargne (TDB-05)', async ({ page }) => {
   await login(page);
-  await expect(page.getByRole('heading', { name: 'Épargne', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Épargne', exact: true, level: 2 })).toBeVisible();
   await expect(page.getByText('Épargne de précaution').first()).toBeVisible();
   await expect(page.getByText(/TRI global/)).toBeVisible();
 });

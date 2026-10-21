@@ -81,6 +81,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/budget/projects').then((m) => m.ProjectPage),
       },
       {
+        path: 'projections',
+        title: 'Projections — Cashflow',
+        loadComponent: () =>
+          import('./features/projections/projections').then((m) => m.ProjectionsPage),
+      },
+      {
+        path: 'recurrences',
+        title: 'Récurrences — Cashflow',
+        loadComponent: () =>
+          import('./features/projections/recurrences').then((m) => m.RecurrencesPage),
+      },
+      {
         path: 'analyses',
         title: 'Analyses — Cashflow',
         loadComponent: () => import('./features/analyses/analyses').then((m) => m.AnalysesPage),

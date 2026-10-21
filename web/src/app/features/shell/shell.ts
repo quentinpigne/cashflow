@@ -52,6 +52,7 @@ export class Shell {
     { path: '/budget', label: 'Budget', icon: 'savings', exact: false },
     { path: '/import', label: 'Import', icon: 'upload_file', exact: false },
     { path: '/analyses', label: 'Analyses', icon: 'insights', exact: false },
+    { path: '/projections', label: 'Projections', icon: 'timeline', exact: false },
     { path: '/reglages', label: 'Réglages', icon: 'settings', exact: false },
   ];
 
@@ -60,7 +61,7 @@ export class Shell {
    * réglages depuis le menu du haut (ecrans.md).
    */
   protected readonly mobileItems = this.items.filter(
-    (i) => i.path !== '/import' && i.path !== '/reglages',
+    (i) => !['/import', '/reglages', '/projections'].includes(i.path),
   );
 
   protected newTransaction(): void {

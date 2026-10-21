@@ -1,0 +1,253 @@
+<div class="page">
+  <div class="page-header"><h1>Projections</h1></div>
+  <mat-tab-group>
+    <mat-tab label="Patrimoine">
+      <div class="tab">
+        <div class="toolbar">
+          <mat-button-toggle-group
+            [value]="years()"
+            (change)="years.set($event.value)"
+            aria-label="Horizon"
+          >
+            <mat-button-toggle [value]="5">5 ans</mat-button-toggle>
+            <mat-button-toggle [value]="10">10 ans</mat-button-toggle>
+            <mat-button-toggle [value]="20">20 ans</mat-button-toggle>
+            <mat-button-toggle [value]="30">30 ans</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+        @if (worth.isLoading() && !worth.hasValue()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+        @if (worthChart(); as options) {
+          <div echarts [options]="options" class="chart"></div>
+        }
+        @if (worth.value(); as w) {
+          <div class="finals">
+            @for (f of finals(); track f.name) {
+              <div class="card final">
+                <span class="muted">{{ f.name }} dans {{ years() }} ans</span>
+                <strong class="amount">{{ f.value | money }}</strong>
+                @if (f.real !== null) {
+                  <span class="muted small">{{ f.real | money }} en euros constants</span>
+                }
+              </div>
+            }
+          </div>
+          <p class="muted small">
+            Départ : patrimoine du {{ w.today | frDate }}, {{ w.start_minor | money }}. Liquidités
+            constantes (moins les virements programmés vers l'épargne), prêts à leur dernière
+            valeur.
+            {{ disclaimer }}
+          </p>
+          @if (w.estimated_accounts.length > 0) {
+            <p class="warning">
+              <mat-icon>warning</mat-icon> Valeur de départ estimée (valorisation ancienne) :
+              {{ w.estimated_accounts.join(', ') }}.
+            </p>
+          }
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Trésorerie">
+      <div class="tab">
+        <div class="toolbar">
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Compte</mat-label>
+            <mat-select [value]="cashAccount()" (selectionChange)="cashAccount.set($event.value)">
+              @for (a of cashAccounts(); track a.id) {
+                <mat-option [value]="a.id">{{ a.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-button-toggle-group
+            [value]="days()"
+            (change)="days.set($event.value)"
+            aria-label="Durée"
+          >
+            <mat-button-toggle [value]="30">30 j</mat-button-toggle>
+            <mat-button-toggle [value]="90">90 j</mat-button-toggle>
+            <mat-button-toggle [value]="180">180 j</mat-button-toggle>
+          </mat-button-toggle-group>
+          <mat-checkbox [checked]="withVariable()" (change)="withVariable.set($event.checked)">
+            Dépenses courantes moyennes
+          </mat-checkbox>
+        </div>
+        @if (cash.value(); as p) {
+          <div class="figures">
+            <div class="card final">
+              <span class="muted">Aujourd'hui</span>
+              <strong class="amount">{{ p.start_minor | money }}</strong>
+            </div>
+            <div class="card final" [class.alert]="p.below_threshold">
+              <span class="muted">Solde le plus bas</span>
+              <strong class="amount" [class.negative]="p.minimum_minor < 0">{{
+                p.minimum_minor | money
+              }}</strong>
+              <span class="muted small">le {{ p.minimum_date | frDate }}</span>
+            </div>
+            @if (p.variable_monthly_minor !== null && p.variable_monthly_minor !== undefined) {
+              <div class="card final">
+                <span class="muted">Dépenses courantes</span>
+                <strong class="amount">{{ p.variable_monthly_minor | money }}/mois</strong>
+                <span class="muted small">moyenne des 3 derniers mois, hors échéances</span>
+              </div>
+            }
+          </div>
+          @if (p.below_threshold) {
+            <p class="warning">
+              <mat-icon>warning</mat-icon> Le solde passe sous zéro le
+              {{ p.minimum_date | frDate }}.
+            </p>
+          }
+          @if (cashChart(); as options) {
+            <div echarts [options]="options" class="chart"></div>
+          }
+          <h2>Mouvements connus</h2>
+          @for (e of p.events; track $index) {
+            <div class="event">
+              <span>{{ e.date | frDate: 'short' }}</span>
+              <span>
+                {{ e.label }}
+                <span class="muted small">{{
+                  e.kind === 'SCHEDULED' ? 'échéance prévue' : 'en attente'
+                }}</span>
+              </span>
+              <span class="amount" [class.negative]="e.amount_minor < 0">{{
+                e.amount_minor | money
+              }}</span>
+            </div>
+          } @empty {
+            <p class="muted">
+              Aucun mouvement prévu : ajoute tes prélèvements et ton salaire dans les récurrences.
+            </p>
+          }
+        } @else if (cashAccounts().length === 0) {
+          <p class="muted">Aucun compte de liquidités.</p>
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Épargne">
+      <div class="tab">
+        <div class="toolbar">
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Compte</mat-label>
+            <mat-select
+              [value]="savingsAccount()"
+              (selectionChange)="savingsAccount.set($event.value)"
+            >
+              @for (a of savingsAccounts(); track a.id) {
+                <mat-option [value]="a.id">{{ a.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Scénario</mat-label>
+            <mat-select [value]="scenarioId()" (selectionChange)="scenarioId.set($event.value)">
+              @for (s of scenarios.value() ?? []; track s.id) {
+                <mat-option [value]="s.id">{{ s.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-button-toggle-group
+            [value]="savingsYears()"
+            (change)="savingsYears.set($event.value)"
+            aria-label="Horizon"
+          >
+            <mat-button-toggle [value]="1">1 an</mat-button-toggle>
+            <mat-button-toggle [value]="5">5 ans</mat-button-toggle>
+            <mat-button-toggle [value]="10">10 ans</mat-button-toggle>
+            <mat-button-toggle [value]="20">20 ans</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+        @if (projection.value(); as p) {
+          <div class="figures">
+            <div class="card final">
+              <span class="muted">Aujourd'hui</span>
+              <strong class="amount">{{ p.start_minor | money }}</strong>
+            </div>
+            <div class="card final">
+              <span class="muted">Dans {{ savingsYears() }} an(s)</span>
+              <strong class="amount">{{
+                p.points[p.points.length - 1]?.value_minor ?? 0 | money
+              }}</strong>
+            </div>
+          </div>
+          <p class="muted small hypotheses">
+            Hypothèses :
+            @if (p.family === 'FIXED_SAVINGS') {
+              taux {{ rate(p.rate_ppm) }} (dernier taux connu, sauf trajectoire du scénario),
+              intérêts par quinzaines capitalisés au 31 décembre
+              @if (p.deposit_cap_minor) {
+                , versements arrêtés au plafond de {{ p.deposit_cap_minor | money }}
+              }
+            } @else {
+              rendement {{ rate(p.annual_return_ppm) }}/an, frais {{ rate(p.annual_fees_ppm) }}/an
+              (scénario « {{ p.scenario_name }} »)
+            }
+            ; versements de {{ p.monthly_contribution_minor | money }} par mois. {{ disclaimer }}
+          </p>
+          @if (p.estimated) {
+            <p class="warning">
+              <mat-icon>warning</mat-icon> Valeur de départ estimée : la dernière valorisation a
+              plus de 90 jours.
+            </p>
+          }
+          @if (savingsChart(); as options) {
+            <div echarts [options]="options" class="chart"></div>
+          }
+        } @else if (savingsAccounts().length === 0) {
+          <p class="muted">Aucun compte d'épargne.</p>
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Scénarios">
+      <div class="tab">
+        <p class="muted">{{ disclaimer }}</p>
+        @for (s of scenarios.value() ?? []; track s.id) {
+          <section class="card scenario">
+            <header>
+              <h2>
+                {{ s.name }}
+                @if (s.is_default) {
+                  <span class="tag">par défaut</span>
+                }
+              </h2>
+              <button mat-button (click)="editScenario(s)">
+                <mat-icon>edit</mat-icon>Modifier
+              </button>
+              @if (!s.is_default) {
+                <button
+                  mat-icon-button
+                  [attr.aria-label]="'Supprimer ' + s.name"
+                  (click)="removeScenario(s)"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </header>
+            <p class="muted small">
+              Horizon {{ s.horizon_months / 12 }} ans
+              @if (s.inflation_rate_ppm) {
+                · inflation {{ rate(s.inflation_rate_ppm) }}
+              }
+            </p>
+            <ul class="yields">
+              @for (y of kindYields(s); track y.label) {
+                <li>
+                  <span>{{ y.label }}</span
+                  ><span class="amount">{{ y.rate }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+        <button mat-stroked-button (click)="editScenario(null)">
+          <mat-icon>add</mat-icon>Nouveau scénario
+        </button>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

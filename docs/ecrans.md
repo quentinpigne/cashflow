@@ -490,3 +490,43 @@ Ce qui change dans les écrans existants :
 Dans les réglages. Un bloc par barème (réglementé ou propre à un compte) : comptes qui l'utilisent,
 taux successifs datés (le plus récent en premier, supprimables), ajout d'un taux à une date d'effet. Un
 rappel invite à vérifier les taux réglementés à la source officielle (R-EPA-12).
+
+# Écrans — phase 6 (récurrences et projections)
+
+Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+
+Ce qui change dans les écrans existants :
+- **Navigation** : entrée **Projections** (E24) dans le menu de l'ordinateur ; sur mobile, Projections et
+  **Récurrences** (E23) sont dans le menu ⋮ du haut.
+- **E1 Accueil** : bloc **Échéances non vues** (R-TRX-42) quand une échéance passée n'a été honorée par
+  aucune transaction.
+- **E9 Réglages** : entrée **Récurrences**.
+
+## E23 — Récurrences (TRX-07)
+
+Deux onglets :
+- **Échéancier** : échéances des 60 derniers jours et des 60 prochains, avec leur compte (et le compte
+  d'arrivée d'un virement) et leur état : honorée (lien vers la transaction), **non vue** en rouge, à
+  venir. « Créer » matérialise une échéance en transaction en attente avec la catégorie de la
+  récurrence (R-TRX-43).
+- **Récurrences** : liste (rythme, compte, prochaine échéance, nombre d'échéances non vues) ; un clic
+  ouvre la modification.
+
+Formulaire : dépense, revenu ou virement (compte d'arrivée) ; libellé, compte, catégorie, montant, écart
+toléré, rythme (« tous les N semaine / mois / trimestre / an »), première échéance, fin, active.
+
+## E24 — Projections (PRJ-01 à PRJ-05, TDB-04)
+
+Quatre onglets, chacun avec ses hypothèses affichées et le rappel qu'il s'agit d'hypothèses, non de
+prévisions (R-PRJ-3, R-PRJ-31) :
+- **Patrimoine** : courbe réelle des 24 derniers mois (TDB-04), prolongée en pointillés par chaque
+  scénario ; horizon 5, 10, 20 ou 30 ans ; valeur finale par scénario (et en euros constants si le
+  scénario a une inflation) ; comptes partis d'une valorisation ancienne signalés.
+- **Trésorerie** : compte de liquidités, 30, 90 ou 180 jours, case « Dépenses courantes moyennes »
+  (R-PRJ-11) ; solde du jour, solde le plus bas et sa date (avertissement sous zéro, R-PRJ-12), courbe
+  en escalier, liste des mouvements connus (échéances prévues et transactions en attente).
+- **Épargne** : compte d'épargne, scénario, horizon ; valeur du jour et à l'horizon, courbe, hypothèses
+  (taux et plafond pour un livret, rendement et frais pour l'épargne variable, versement mensuel).
+- **Scénarios** : un bloc par scénario (horizon, inflation, rendements par nature) ; « Modifier » ouvre
+  les hypothèses : rendement et frais par nature, réglages par compte (dont le versement mensuel), taux
+  futurs des barèmes (R-PRJ-21) ; scénario par défaut ; suppression sauf pour le scénario par défaut.

@@ -19,6 +19,9 @@ import { evolutionReport } from '../fn/dashboard/evolution-report';
 import { EvolutionReport$Params } from '../fn/dashboard/evolution-report';
 import { getDashboard } from '../fn/dashboard/get-dashboard';
 import { GetDashboard$Params } from '../fn/dashboard/get-dashboard';
+import { netWorthHistory } from '../fn/dashboard/net-worth-history';
+import { NetWorthHistory$Params } from '../fn/dashboard/net-worth-history';
+import { NetWorthPoint } from '../models/net-worth-point';
 
 
 /**
@@ -132,6 +135,41 @@ export class DashboardService extends BaseService {
     const resp = this.evolutionReport$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Evolution>): Evolution => r.body)
+    );
+  }
+
+  /** Path part for operation `netWorthHistory()` */
+  static readonly NetWorthHistoryPath = '/api/v1/reports/net-worth';
+
+  /**
+   * Historique du patrimoine par famille de comptes (TDB-04).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `netWorthHistory()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  netWorthHistory$Response(params?: NetWorthHistory$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<NetWorthPoint>>> {
+    const obs = netWorthHistory(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Historique du patrimoine par famille de comptes (TDB-04).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `netWorthHistory$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  netWorthHistory(params?: NetWorthHistory$Params, context?: HttpContext): Observable<Array<NetWorthPoint>> {
+    const resp = this.netWorthHistory$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<NetWorthPoint>>): Array<NetWorthPoint> => r.body)
     );
   }
 

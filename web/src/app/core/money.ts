@@ -189,7 +189,7 @@ export function formatRate(ppm: number): string {
   const negative = hundredths < 0;
   const absolute = Math.abs(hundredths);
   const decimals = String(absolute % 100).padStart(2, '0');
-  return `${negative ? '−' : ''}${Math.trunc(absolute / 100)},${decimals} %`;
+  return `${negative ? '−' : ''}${Math.trunc(absolute / 100)},${decimals}\u00a0%`;
 }
 
 /** Saisie d'un taux en pour cent (« 1,7 », « 2.40 % ») → millionièmes ; `null` si invalide. */

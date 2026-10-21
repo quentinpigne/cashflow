@@ -21,6 +21,7 @@ import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { HomeBudget } from '../budget/home-budget';
+import { HomeMissed } from '../projections/home-missed';
 import { HomeSavings } from '../savings/home-savings';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
@@ -42,6 +43,7 @@ const DEFINITIONS = {
   imports: [
     HomeBudget,
     HomeSavings,
+    HomeMissed,
     RouterLink,
     MatButtonModule,
     MatIconModule,
