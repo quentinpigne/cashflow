@@ -167,6 +167,8 @@ export type { MergeCategory$Params as MergeCategory$Params } from './fn/categori
 export { mergeCategory as mergeCategory } from './fn/categories/merge-category';
 export type { GetDashboard$Params as GetDashboard$Params } from './fn/dashboard/get-dashboard';
 export { getDashboard as getDashboard } from './fn/dashboard/get-dashboard';
+export type { RecentTransactions$Params as RecentTransactions$Params } from './fn/dashboard/recent-transactions';
+export { recentTransactions as recentTransactions } from './fn/dashboard/recent-transactions';
 export type { CategoryReport$Params as CategoryReport$Params } from './fn/dashboard/category-report';
 export { categoryReport as categoryReport } from './fn/dashboard/category-report';
 export type { EvolutionReport$Params as EvolutionReport$Params } from './fn/dashboard/evolution-report';

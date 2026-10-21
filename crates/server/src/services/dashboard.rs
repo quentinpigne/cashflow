@@ -1,11 +1,12 @@
 //! Accueil (TDB-01) : patrimoine, mois en cours, comptes, ventilations à catégoriser.
 
 use cashflow_domain::accounts::AccountFamily;
+use cashflow_domain::ledger::ClearingStatus;
 use cashflow_domain::reporting::{self, AccountValue, Flows, Period, SplitFact};
-use cashflow_domain::shared::ids::{AccountId, SplitId, TransactionId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, SplitId, TransactionId};
 use cashflow_domain::{Currency, Date, Money};
-use serde::Serialize;
-use utoipa::ToSchema;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 use super::accounts::{self, Account};
 use crate::db::{self, Db};
@@ -189,4 +190,51 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
             .filter(|h| h.old_pending > 0 || h.current_gap_minor.is_some_and(|g| g != 0))
             .collect(),
     })
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct RecentQuery {
+    /// Nombre de transactions (10 par défaut, 50 au plus).
+    pub limit: Option<i64>,
+}
+
+/// Une transaction récemment saisie (TDB-01).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RecentTransaction {
+    pub id: TransactionId,
+    pub account_id: AccountId,
+    pub account_name: String,
+    pub currency: String,
+    pub date: Date,
+    pub label: String,
+    pub amount_minor: i64,
+    pub clearing_status: ClearingStatus,
+    /// Catégorie de l'unique ventilation, si elle en a une.
+    pub category_id: Option<CategoryId>,
+    pub split_count: i64,
+    /// Compte de l'autre jambe, pour un virement interne.
+    pub counterpart_account_name: Option<String>,
+}
+
+/// Les dernières transactions saisies, la plus récente d'abord, pour y revenir depuis l'accueil.
+pub async fn recent(db: &Db, query: &RecentQuery) -> AppResult<Vec<RecentTransaction>> {
+    let limit = query.limit.unwrap_or(10).clamp(1, 50);
+    Ok(db::transactions::recent(&db.read, limit)
+        .await?
+        .into_iter()
+        .map(|r| RecentTransaction {
+            id: r.id,
+            account_id: r.account_id,
+            account_name: r.account_name,
+            currency: r.currency,
+            date: r.date,
+            label: r.label,
+            amount_minor: r.amount.minor(),
+            clearing_status: r.clearing_status,
+            category_id: r.category_id,
+            split_count: r.split_count,
+            counterpart_account_name: r.counterpart_account_name,
+        })
+        .collect())
 }

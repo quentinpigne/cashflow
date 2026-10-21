@@ -38,3 +38,16 @@ test('E1 : réorganiser les encadrés de l’accueil, gardé après rechargement
   await expect(page.locator('.grid > .column').first().locator('section.net-worth')).toBeVisible();
   await expect(page.getByRole('button', { name: /Disposition par défaut/ })).toBeHidden();
 });
+
+test('E1 : dernières saisies, la plus récente en tête (TDB-01)', async ({ page }) => {
+  await login(page);
+  const widget = page.locator('app-home-recent');
+  await expect(widget.locator('a.row')).toHaveCount(5);
+  await widget.getByRole('radio', { name: '10' }).click();
+  await expect(widget.locator('a.row')).toHaveCount(10);
+  // Le choix est gardé dans le navigateur.
+  await page.reload();
+  await expect(page.locator('app-home-recent a.row')).toHaveCount(10);
+  await page.locator('app-home-recent a.row').first().click();
+  await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
+});

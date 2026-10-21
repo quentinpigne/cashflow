@@ -378,3 +378,31 @@ async fn tdb_02_category_report_and_tdb_03_evolution() {
     assert_eq!(march.month, "2026-03");
     assert_eq!((march.income_minor, march.expenses_minor), (200_000, 1_500));
 }
+
+#[tokio::test]
+async fn tdb_01_recent_transactions_follow_entry_order() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 100_000).await;
+    let livret = account(&db, "Livret A", AccountKind::LivretA, 0).await;
+    let food = category(&db, "Courses B", CategoryKind::Expense, None).await;
+    transactions::create(&db, &tx(checking, "2026-03-20", -1_000, Some(food))).await.unwrap();
+    // Saisie ensuite, mais datée plus tôt : elle apparaît quand même en tête.
+    let late = transactions::create(&db, &tx(checking, "2026-03-01", -2_000, None)).await.unwrap();
+    let transfer = TransferInput {
+        from_account_id: checking,
+        to_account_id: livret,
+        amount_minor: 5_000,
+        date: d("2026-03-10"),
+        label: "Épargne".into(),
+        note: None,
+    };
+    transfers::create(&db, &transfer).await.unwrap();
+
+    let recent = dashboard::recent(&db, &dashboard::RecentQuery { limit: Some(3) }).await.unwrap();
+    assert_eq!(recent.len(), 3);
+    assert!(recent[0].counterpart_account_name.is_some());
+    assert_eq!(recent[2].id, late);
+    let all = dashboard::recent(&db, &dashboard::RecentQuery { limit: None }).await.unwrap();
+    assert_eq!(all.len(), 4);
+    assert_eq!(all[3].category_id, Some(food));
+}

@@ -35,6 +35,7 @@ import { HomeBudget } from '../budget/home-budget';
 import { HomeMissed } from '../projections/home-missed';
 import { HomeSavings } from '../savings/home-savings';
 import { HomeLayout, Widget } from './home-layout';
+import { HomeRecent } from './home-recent';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
 const DEFINITIONS = {
@@ -53,6 +54,7 @@ const DEFINITIONS = {
 const WIDGET_LABELS: Record<Widget, string> = {
   'net-worth': 'Patrimoine',
   month: 'Mois en cours',
+  recent: 'Dernières saisies',
   alerts: 'Alertes',
   missed: 'Échéances non vues',
   uncategorized: 'À catégoriser',
@@ -71,6 +73,7 @@ const WIDGET_LABELS: Record<Widget, string> = {
     CdkDropList,
     CdkDropListGroup,
     HomeBudget,
+    HomeRecent,
     HomeSavings,
     HomeMissed,
     RouterLink,

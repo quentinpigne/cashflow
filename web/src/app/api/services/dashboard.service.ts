@@ -22,6 +22,9 @@ import { GetDashboard$Params } from '../fn/dashboard/get-dashboard';
 import { netWorthHistory } from '../fn/dashboard/net-worth-history';
 import { NetWorthHistory$Params } from '../fn/dashboard/net-worth-history';
 import { NetWorthPoint } from '../models/net-worth-point';
+import { RecentTransaction } from '../models/recent-transaction';
+import { recentTransactions } from '../fn/dashboard/recent-transactions';
+import { RecentTransactions$Params } from '../fn/dashboard/recent-transactions';
 
 
 /**
@@ -65,6 +68,41 @@ export class DashboardService extends BaseService {
     const resp = this.getDashboard$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Dashboard>): Dashboard => r.body)
+    );
+  }
+
+  /** Path part for operation `recentTransactions()` */
+  static readonly RecentTransactionsPath = '/api/v1/dashboard/recent-transactions';
+
+  /**
+   * Les dernières transactions saisies (TDB-01).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `recentTransactions()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  recentTransactions$Response(params?: RecentTransactions$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<RecentTransaction>>> {
+    const obs = recentTransactions(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Les dernières transactions saisies (TDB-01).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `recentTransactions$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  recentTransactions(params?: RecentTransactions$Params, context?: HttpContext): Observable<Array<RecentTransaction>> {
+    const resp = this.recentTransactions$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<RecentTransaction>>): Array<RecentTransaction> => r.body)
     );
   }
 

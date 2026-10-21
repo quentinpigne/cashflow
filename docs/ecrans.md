@@ -125,6 +125,11 @@ comptes à droite, « à catégoriser » et alertes en dessous.
 ```
 
 
+**Dernières saisies.** Encadré des 5, 10 ou 15 dernières transactions **saisies** (ordre de
+création, quelle que soit leur date d'opération) : date, compte, libellé (en italique si en attente),
+catégorie, ventilation ou virement, montant ; un clic ouvre la transaction (E7). Le nombre affiché est
+gardé dans le navigateur.
+
 **Disposition personnalisable.** Chaque encadré porte une poignée (⋮⋮, en haut à droite) : on le fait
 glisser pour le réordonner dans sa colonne, ou le changer de colonne sur ordinateur. La disposition est
 gardée dans le navigateur (`localStorage`), séparément pour l'ordinateur (deux colonnes) et pour le

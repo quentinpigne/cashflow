@@ -1893,6 +1893,41 @@
         }
       }
     },
+    "/api/v1/dashboard/recent-transactions": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Les dernières transactions saisies (TDB-01).",
+        "operationId": "recentTransactions",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Nombre de transactions (10 par défaut, 50 au plus).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecentTransaction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/export": {
       "get": {
         "tags": [
@@ -8397,6 +8432,71 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "RecentTransaction": {
+        "type": "object",
+        "description": "Une transaction récemment saisie (TDB-01).",
+        "required": [
+          "id",
+          "account_id",
+          "account_name",
+          "currency",
+          "date",
+          "label",
+          "amount_minor",
+          "clearing_status",
+          "split_count"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Catégorie de l'unique ventilation, si elle en a une."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clearing_status": {
+            "$ref": "#/components/schemas/ClearingStatus"
+          },
+          "counterpart_account_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Compte de l'autre jambe, pour un virement interne."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/TransactionId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "split_count": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

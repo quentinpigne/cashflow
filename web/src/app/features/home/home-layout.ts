@@ -4,6 +4,7 @@ import { Injectable, signal } from '@angular/core';
 export const WIDGETS = [
   'net-worth',
   'month',
+  'recent',
   'alerts',
   'missed',
   'uncategorized',
@@ -23,7 +24,7 @@ export interface HomeLayoutState {
 const STORAGE_KEY = 'cashflow.home-layout.v1';
 
 const DEFAULT_DESKTOP: Widget[][] = [
-  ['net-worth', 'month', 'alerts', 'missed', 'uncategorized'],
+  ['net-worth', 'month', 'recent', 'alerts', 'missed', 'uncategorized'],
   ['budget', 'savings', 'accounts'],
 ];
 

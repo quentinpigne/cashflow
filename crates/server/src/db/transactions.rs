@@ -636,3 +636,62 @@ pub async fn categorized_facts(
         })
         .collect()
 }
+
+/// Une transaction récemment saisie, pour l'accueil (TDB-01).
+pub struct RecentRow {
+    pub id: TransactionId,
+    pub account_id: AccountId,
+    pub account_name: String,
+    pub currency: String,
+    pub date: Date,
+    pub label: String,
+    pub amount: Money,
+    pub clearing_status: ClearingStatus,
+    /// Catégorie de l'unique ventilation ; absente si plusieurs ventilations ou non catégorisée.
+    pub category_id: Option<CategoryId>,
+    pub split_count: i64,
+    /// Compte de l'autre jambe, pour un virement interne.
+    pub counterpart_account_name: Option<String>,
+}
+
+/// Les `limit` dernières transactions saisies (ordre de création, la plus récente d'abord).
+pub async fn recent(db: impl SqliteExecutor<'_>, limit: i64) -> anyhow::Result<Vec<RecentRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT t.id AS "id!", a.id AS "account_id!", a.name AS "account_name!", a.currency AS "currency!",
+                  t.date AS "date!: Date", t.label AS "label!", t.amount AS "amount!: i64",
+                  t.clearing_status AS "clearing_status!",
+                  (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS "split_count!: i64",
+                  (SELECT x.category_id FROM split x WHERE x.transaction_id = t.id ORDER BY x.position LIMIT 1)
+                      AS "category_id?",
+                  (SELECT oa.name FROM transfer tr
+                     JOIN ledger_transaction o
+                       ON o.id = CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_transaction_id
+                                      ELSE tr.outflow_transaction_id END
+                     JOIN account oa ON oa.id = o.account_id
+                   WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id)) AS "counterpart?"
+           FROM ledger_transaction t
+           JOIN account a ON a.id = t.account_id
+           ORDER BY t.created_at DESC, t.id DESC
+           LIMIT ?"#,
+        limit
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(RecentRow {
+                id: id_from_db(&r.id)?,
+                account_id: id_from_db(&r.account_id)?,
+                account_name: r.account_name,
+                currency: r.currency,
+                date: r.date,
+                label: r.label,
+                amount: Money::from_minor(r.amount),
+                clearing_status: enum_from_db(&r.clearing_status)?,
+                category_id: if r.split_count == 1 { opt_id_from_db(r.category_id.as_deref())? } else { None },
+                split_count: r.split_count,
+                counterpart_account_name: r.counterpart,
+            })
+        })
+        .collect()
+}

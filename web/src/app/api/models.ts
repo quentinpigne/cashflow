@@ -135,6 +135,7 @@ export type { RatePeriodView } from './models/rate-period-view';
 export type { RateScheduleId } from './models/rate-schedule-id';
 export type { RateStep } from './models/rate-step';
 export type { ReadInput } from './models/read-input';
+export type { RecentTransaction } from './models/recent-transaction';
 export type { ReconcilePreview } from './models/reconcile-preview';
 export type { RecurringRuleId } from './models/recurring-rule-id';
 export type { RecurringRuleInput } from './models/recurring-rule-input';
