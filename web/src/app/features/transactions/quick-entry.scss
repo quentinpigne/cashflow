@@ -10,14 +10,15 @@
   align-items: center;
   gap: 0.5rem;
 
+  // Le bouton « Fermer » reste à droite ; le choix du type garde sa largeur naturelle.
   .modes {
-    flex: 1;
+    margin-right: auto;
   }
 }
 
 .amount-field input {
   font: var(--mat-sys-headline-medium);
-  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .split-summary {

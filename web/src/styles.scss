@@ -60,6 +60,19 @@ body {
   color: var(--mat-sys-error);
 }
 
+// Dans un champ de saisie, un montant s'aligne à gauche comme les autres champs (chiffres à chasse fixe).
+input.amount {
+  text-align: left;
+}
+
+// Choix d'un type (dépense, revenu, virement…) : largeur naturelle, jamais étiré par un formulaire en
+// colonne ou une barre flexible.
+.mat-button-toggle-group {
+  width: fit-content;
+  max-width: 100%;
+  flex: none;
+}
+
 .muted {
   color: var(--mat-sys-on-surface-variant);
 }
