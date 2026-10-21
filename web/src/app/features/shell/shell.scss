@@ -83,7 +83,12 @@
 }
 
 .side-brand {
-  padding: 0 0.75rem 1rem;
+  padding: 0 0.75rem;
+}
+
+// Entrées du menu latéral, légèrement espacées.
+.side a.mat-mdc-list-item:not(:last-child) {
+  margin-bottom: 0.25rem;
 }
 
 .new {
@@ -103,6 +108,7 @@
   align-items: center;
   justify-content: space-between;
   padding-right: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .top .spacer {
