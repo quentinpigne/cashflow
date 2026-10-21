@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE projection_scenario SET is_default = 0 WHERE id <> ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "eb26fa5dc3605751d6e26933b0ca6ed314b1a0aca7c986b5dfc9f0ce3c58d04b"
+}

@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, horizon_months, inflation_rate, assumptions, is_default AS \"is_default: bool\"\n           FROM projection_scenario ORDER BY created_at, name",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "projection_scenario",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "projection_scenario",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "horizon_months",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "projection_scenario",
+            "name": "horizon_months"
+          }
+        }
+      },
+      {
+        "name": "inflation_rate",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "projection_scenario",
+            "name": "inflation_rate"
+          }
+        }
+      },
+      {
+        "name": "assumptions",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "projection_scenario",
+            "name": "assumptions"
+          }
+        }
+      },
+      {
+        "name": "is_default: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "projection_scenario",
+            "name": "is_default"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "613faf0a35c60fc92cb00748390e10a881dc0ccaaf9c224dbb016e8e2c597999"
+}

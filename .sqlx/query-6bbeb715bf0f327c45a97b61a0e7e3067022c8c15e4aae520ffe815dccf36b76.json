@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO projection_scenario (id, name, horizon_months, inflation_rate, assumptions, is_default, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)\n         ON CONFLICT (id) DO UPDATE SET name = excluded.name, horizon_months = excluded.horizon_months,\n                                        inflation_rate = excluded.inflation_rate, assumptions = excluded.assumptions,\n                                        is_default = excluded.is_default, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "6bbeb715bf0f327c45a97b61a0e7e3067022c8c15e4aae520ffe815dccf36b76"
+}

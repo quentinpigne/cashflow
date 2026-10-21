@@ -529,6 +529,134 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/projection": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "summary": "Projection mensuelle d'un compte sous un scénario (PRJ-02, PRJ-04).",
+        "operationId": "accountProjection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "query",
+            "description": "Scénario ; celui par défaut sinon.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ScenarioId"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Horizon en mois ; celui du scénario sinon.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountProjectionView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/projection/cash": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "summary": "Trésorerie d'un compte de liquidités jour par jour (PRJ-01).",
+        "operationId": "cashProjection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "description": "Jours projetés (90 par défaut).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "variable",
+            "in": "query",
+            "description": "Inclure la dépense variable moyenne (oui par défaut, R-PRJ-11).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "threshold_minor",
+            "in": "query",
+            "description": "Seuil d'avertissement, en centimes (0 par défaut, R-PRJ-12).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashProjectionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}/reopen": {
       "post": {
         "tags": [
@@ -2478,6 +2606,39 @@
         }
       }
     },
+    "/api/v1/projections/net-worth": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "summary": "Patrimoine projeté sous chaque scénario (PRJ-05).",
+        "operationId": "netWorthProjection",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Horizon en mois (celui du scénario par défaut sinon).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetWorthProjection"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects": {
       "get": {
         "tags": [
@@ -2796,6 +2957,225 @@
         }
       }
     },
+    "/api/v1/recurring-rules": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "listRecurringRules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecurringRuleView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "createRecurringRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurringRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringRuleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recurring-rules/occurrences": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "summary": "Échéancier : échéances récentes et à venir, honorées ou non (R-TRX-40, R-TRX-42).",
+        "operationId": "listOccurrences",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "description": "Compte ; tous par défaut.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "description": "Jours à venir (90 par défaut).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OccurrenceView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recurring-rules/{id}": {
+      "put": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "updateRecurringRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/RecurringRuleId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurringRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringRuleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "deleteRecurringRule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/RecurringRuleId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {}
+        }
+      }
+    },
+    "/api/v1/recurring-rules/{id}/materialize": {
+      "post": {
+        "tags": [
+          "projections"
+        ],
+        "summary": "Matérialise une échéance en transaction en attente (R-TRX-43).",
+        "operationId": "materializeOccurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/RecurringRuleId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterializeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Materialized"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports/categories": {
       "get": {
         "tags": [
@@ -2880,6 +3260,42 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Evolution"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/net-worth": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Historique du patrimoine par famille de comptes (TDB-04).",
+        "operationId": "netWorthHistory",
+        "parameters": [
+          {
+            "name": "months",
+            "in": "query",
+            "description": "Mois d'historique (24 par défaut).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NetWorthPoint"
+                  }
                 }
               }
             }
@@ -3117,6 +3533,140 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SavingsOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "listScenarios",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "createScenario",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/{id}": {
+      "put": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "updateScenario",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ScenarioId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "projections"
+        ],
+        "operationId": "deleteScenario",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ScenarioId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -3865,6 +4415,34 @@
           }
         }
       },
+      "AccountAssumption": {
+        "type": "object",
+        "description": "Hypothèses propres à un compte : elles l'emportent sur la nature et la famille (R-PRJ-31).",
+        "properties": {
+          "annual_fees_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "annual_return_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "monthly_contribution_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Remplace les versements programmés des récurrences (R-PRJ-4)."
+          }
+        }
+      },
       "AccountFamily": {
         "type": "string",
         "description": "Famille d'un compte : fixe son comportement dans l'application (spec 01).",
@@ -4040,6 +4618,90 @@
           "CONSUMER_LOAN",
           "LOAN_OTHER"
         ]
+      },
+      "AccountProjectionView": {
+        "type": "object",
+        "description": "Hypothèses retenues, affichées avec la projection (R-PRJ-3).",
+        "required": [
+          "account_id",
+          "name",
+          "family",
+          "scenario_id",
+          "scenario_name",
+          "start_date",
+          "start_minor",
+          "estimated",
+          "monthly_contribution_minor",
+          "points"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "annual_fees_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "annual_return_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "deposit_cap_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "estimated": {
+            "type": "boolean",
+            "description": "La valeur de départ vient d'une valorisation de plus de 90 jours (R-PRJ-3)."
+          },
+          "family": {
+            "$ref": "#/components/schemas/AccountFamily"
+          },
+          "monthly_contribution_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectionPoint"
+            }
+          },
+          "rate_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Taux du barème retenu au départ (épargne à taux déterminé)."
+          },
+          "scenario_id": {
+            "$ref": "#/components/schemas/ScenarioId"
+          },
+          "scenario_name": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "start_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "Actions": {
         "type": "object",
@@ -4245,6 +4907,54 @@
           "applied": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "Assumptions": {
+        "type": "object",
+        "properties": {
+          "by_account": {
+            "type": "object",
+            "description": "Par compte (identifiant).",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AccountAssumption"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "by_family": {
+            "type": "object",
+            "description": "Par famille de comptes (`VARIABLE_SAVINGS`…).",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Yield"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "by_kind": {
+            "type": "object",
+            "description": "Par nature de compte (`LIFE_INSURANCE`, `PEA`…).",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Yield"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "rate_paths": {
+            "type": "object",
+            "description": "Trajectoire de taux par barème (identifiant), au-delà du dernier taux connu.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RateStep"
+              }
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           }
         }
       },
@@ -4899,6 +5609,123 @@
           "MONTHLY",
           "AT_MATURITY"
         ]
+      },
+      "CashDayView": {
+        "type": "object",
+        "required": [
+          "date",
+          "balance_minor",
+          "variable_minor"
+        ],
+        "properties": {
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "variable_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CashEventKind": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "SCHEDULED"
+        ]
+      },
+      "CashEventView": {
+        "type": "object",
+        "required": [
+          "date",
+          "label",
+          "amount_minor",
+          "kind"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CashEventKind"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "CashProjectionView": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "today",
+          "start_minor",
+          "days",
+          "events",
+          "minimum_minor",
+          "minimum_date",
+          "threshold_minor",
+          "below_threshold"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "below_threshold": {
+            "type": "boolean",
+            "description": "Le solde projeté passe sous le seuil (R-PRJ-12)."
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashDayView"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashEventView"
+            }
+          },
+          "minimum_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "minimum_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "start_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "threshold_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "variable_monthly_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Dépense variable moyenne d'un mois, si elle est incluse (R-PRJ-11)."
+          }
+        }
       },
       "CategorizationRuleId": {
         "type": "string",
@@ -5671,6 +6498,15 @@
           }
         }
       },
+      "Frequency": {
+        "type": "string",
+        "enum": [
+          "WEEKLY",
+          "MONTHLY",
+          "QUARTERLY",
+          "YEARLY"
+        ]
+      },
       "GapHintsView": {
         "type": "object",
         "description": "Pistes pour expliquer un écart (R-RAP-9).",
@@ -6431,6 +7267,30 @@
           }
         }
       },
+      "MaterializeInput": {
+        "type": "object",
+        "required": [
+          "date"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date de l'échéance à matérialiser."
+          }
+        }
+      },
+      "Materialized": {
+        "type": "object",
+        "required": [
+          "transaction_id"
+        ],
+        "properties": {
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
       "MergeInput": {
         "type": "object",
         "required": [
@@ -6615,6 +7475,75 @@
           }
         }
       },
+      "NetWorthPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "total_minor",
+          "cash_minor",
+          "fixed_savings_minor",
+          "variable_savings_minor",
+          "liabilities_minor"
+        ],
+        "properties": {
+          "cash_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "fixed_savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "liabilities_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "variable_savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "NetWorthProjection": {
+        "type": "object",
+        "required": [
+          "today",
+          "start_minor",
+          "estimated_accounts",
+          "scenarios"
+        ],
+        "properties": {
+          "estimated_accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Comptes partis d'une valorisation ancienne (R-PRJ-3)."
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeries"
+            }
+          },
+          "start_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "NetWorthView": {
         "type": "object",
         "required": [
@@ -6694,6 +7623,68 @@
           "unread": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "OccurrenceStatus": {
+        "type": "string",
+        "description": "État d'une échéance (R-TRX-42).",
+        "enum": [
+          "HONORED",
+          "MISSED",
+          "UPCOMING"
+        ]
+      },
+      "OccurrenceView": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "label",
+          "account_id",
+          "date",
+          "amount_minor",
+          "status"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "rule_id": {
+            "$ref": "#/components/schemas/RecurringRuleId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OccurrenceStatus"
+          },
+          "target_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -7312,6 +8303,31 @@
           }
         }
       },
+      "ProjectionPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "value_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "real_value_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "En euros constants, si le scénario définit une inflation (R-PRJ-33)."
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "RatePeriodInput": {
         "type": "object",
         "required": [
@@ -7349,6 +8365,24 @@
       "RateScheduleId": {
         "type": "string",
         "format": "uuid"
+      },
+      "RateStep": {
+        "type": "object",
+        "description": "Taux d'un barème à partir d'une date (R-PRJ-21).",
+        "required": [
+          "from",
+          "rate_ppm"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "ReadInput": {
         "type": "object",
@@ -7391,6 +8425,163 @@
               "$ref": "#/components/schemas/GapTransactionView"
             },
             "description": "Transactions encore `PENDING` qui seront rapprochées : souvent suspectes."
+          }
+        }
+      },
+      "RecurringRuleId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "RecurringRuleInput": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "label",
+          "amount_minor",
+          "frequency",
+          "anchor_date"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount_tolerance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "anchor_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/Frequency"
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string"
+          },
+          "split_template": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateSplit"
+            }
+          },
+          "target_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "RecurringRuleView": {
+        "type": "object",
+        "required": [
+          "id",
+          "account_id",
+          "label",
+          "amount_minor",
+          "amount_tolerance_minor",
+          "frequency",
+          "interval",
+          "anchor_date",
+          "split_template",
+          "active",
+          "missed"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant attendu sur le compte, signé (négatif : dépense ou virement sortant)."
+          },
+          "amount_tolerance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "anchor_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/Frequency"
+          },
+          "id": {
+            "$ref": "#/components/schemas/RecurringRuleId"
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string"
+          },
+          "missed": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Échéances des 60 derniers jours non honorées (R-TRX-42)."
+          },
+          "next_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "split_template": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateSplit"
+            }
+          },
+          "target_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -7599,6 +8790,103 @@
             "type": "integer",
             "format": "int64",
             "description": "Valeur et capital investi cumulés des comptes à rendement variable."
+          }
+        }
+      },
+      "ScenarioId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ScenarioInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "horizon_months",
+          "assumptions"
+        ],
+        "properties": {
+          "assumptions": {
+            "$ref": "#/components/schemas/Assumptions"
+          },
+          "horizon_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "inflation_rate_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ScenarioSeries": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "name",
+          "is_default",
+          "points"
+        ],
+        "properties": {
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectionPoint"
+            }
+          },
+          "scenario_id": {
+            "$ref": "#/components/schemas/ScenarioId"
+          }
+        }
+      },
+      "ScenarioView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "horizon_months",
+          "assumptions",
+          "is_default"
+        ],
+        "properties": {
+          "assumptions": {
+            "$ref": "#/components/schemas/Assumptions"
+          },
+          "horizon_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "id": {
+            "$ref": "#/components/schemas/ScenarioId"
+          },
+          "inflation_rate_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -7864,6 +9152,29 @@
           },
           "version": {
             "type": "string"
+          }
+        }
+      },
+      "TemplateSplit": {
+        "type": "object",
+        "description": "Une part du modèle de ventilation d'une récurrence.",
+        "required": [
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -8720,6 +10031,23 @@
             "format": "int32"
           }
         }
+      },
+      "Yield": {
+        "type": "object",
+        "description": "Rendement et frais annuels, en millionièmes.",
+        "required": [
+          "annual_return_ppm"
+        ],
+        "properties": {
+          "annual_fees_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "annual_return_ppm": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       }
     }
   },
@@ -8763,6 +10091,10 @@
     {
       "name": "savings",
       "description": "Épargne : intérêts, valorisations, performance (spec 06)"
+    },
+    {
+      "name": "projections",
+      "description": "Récurrences, scénarios et projections (spec 02, spec 07)"
     },
     {
       "name": "dashboard",

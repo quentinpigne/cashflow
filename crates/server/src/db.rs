@@ -9,6 +9,8 @@ pub mod codec;
 pub mod export;
 pub mod imports;
 pub mod institutions;
+pub mod projections;
+pub mod recurring;
 pub mod rules;
 pub mod savings;
 pub mod settings;

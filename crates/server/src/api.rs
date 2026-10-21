@@ -7,6 +7,7 @@ mod categories;
 mod dashboard;
 mod imports;
 mod institutions;
+mod projections;
 mod reconciliation;
 mod reports;
 mod rules;
@@ -43,6 +44,7 @@ use crate::state::AppState;
         (name = "rules", description = "Règles de catégorisation (spec 03)"),
         (name = "budgets", description = "Budgets, projets et notifications (spec 05)"),
         (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
+        (name = "projections", description = "Récurrences, scénarios et projections (spec 02, spec 07)"),
         (name = "dashboard", description = "Tableau de bord (spec 08)"),
         (name = "system", description = "Export, sauvegardes, version"),
     )
@@ -126,6 +128,16 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(savings::delete_valuation))
         .routes(routes!(savings::performance))
         .routes(routes!(savings::overview))
+        .routes(routes!(projections::occurrences))
+        .routes(routes!(projections::list_rules, projections::create_rule))
+        .routes(routes!(projections::update_rule, projections::delete_rule))
+        .routes(routes!(projections::materialize))
+        .routes(routes!(projections::list_scenarios, projections::create_scenario))
+        .routes(routes!(projections::update_scenario, projections::delete_scenario))
+        .routes(routes!(projections::cash))
+        .routes(routes!(projections::account))
+        .routes(routes!(projections::net_worth))
+        .routes(routes!(projections::history))
         .routes(routes!(system::info))
         .routes(routes!(system::export))
 }

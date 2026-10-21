@@ -83,6 +83,15 @@ fn uncategorized(amount: Money) -> [NewSplit<'static>; 1] {
 
 /// Crée les deux jambes d'un virement saisi (R-TRX-33).
 pub async fn create(db: &Db, input: &TransferInput) -> AppResult<TransferCreated> {
+    create_from(db, input, None).await
+}
+
+/// Crée un virement, généré par une récurrence le cas échéant (origine `RECURRING`, R-TRX-43, R-TRX-44).
+pub async fn create_from(
+    db: &Db,
+    input: &TransferInput,
+    rule: Option<cashflow_domain::shared::ids::RecurringRuleId>,
+) -> AppResult<TransferCreated> {
     if input.amount_minor <= 0 {
         return Err(AppError::invalid_field("AMOUNT_NOT_POSITIVE", "amount_minor", "le montant doit être positif"));
     }
@@ -119,8 +128,8 @@ pub async fn create(db: &Db, input: &TransferInput) -> AppResult<TransferCreated
             label: &label,
             note: note.as_deref(),
             clearing_status: ClearingStatus::Pending,
-            origin: TransactionOrigin::Manual,
-            recurring_rule_id: None,
+            origin: if rule.is_some() { TransactionOrigin::Recurring } else { TransactionOrigin::Manual },
+            recurring_rule_id: rule,
             fingerprint: None,
         };
         insert_validated(&mut tx, &new, &uncategorized(signed)).await?;

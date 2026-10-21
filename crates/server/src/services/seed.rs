@@ -118,6 +118,8 @@ pub async fn run(db: &Db) -> anyhow::Result<()> {
     }
 
     tx.commit().await?;
+    // Scénarios de projection par défaut (R-PRJ-31).
+    super::projections::ensure_default_scenarios(db).await?;
     Ok(())
 }
 

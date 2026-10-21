@@ -14,8 +14,8 @@ use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
 use super::{
-    accounts, auth, budgets, categories, imports, institutions, reconciliation, rules, savings, seed, transactions,
-    transfers,
+    accounts, auth, budgets, categories, imports, institutions, reconciliation, recurring, rules, savings, seed,
+    transactions, transfers,
 };
 use crate::db::Db;
 
@@ -387,6 +387,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
 
     budget(db, &c, start, today, livret_a, life, checking).await?;
     valuations(db, start, today, life, pea, loan).await?;
+    recurrences(db, &c, start, today, checking, livret_a, life).await?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
     for (offset, amount, label) in
@@ -396,6 +397,50 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         if let Some(date) = date {
             spend(db, checking, date, amount, label, None).await?;
         }
+    }
+    Ok(())
+}
+
+/// Les échéances régulières du compte courant (TRX-07), qui alimentent la projection de trésorerie.
+async fn recurrences(
+    db: &Db,
+    c: &Categories,
+    start: Date,
+    today: Date,
+    checking: AccountId,
+    livret_a: AccountId,
+    life: AccountId,
+) -> anyhow::Result<()> {
+    use cashflow_domain::recurrence::Frequency;
+    let rules = [
+        ("Loyer", 3, -89_000, c.get("Logement", "Loyer"), None, 0),
+        ("Échéance prêt immobilier", 5, -72_000, c.get("Prêts", ""), None, 0),
+        ("Box internet", 6, -2_999, c.get("Abonnements", "Internet"), None, 0),
+        ("Forfait mobile", 15, -1_299, c.get("Abonnements", "Téléphone"), None, 0),
+        ("Électricité et gaz", 10, -8_000, c.get("Logement", "Gaz, électricité, eau"), None, 1_700),
+        ("Salaire", 27, 285_000, c.get("Salaires", ""), None, 0),
+        ("Épargne Livret A", 2, -20_000, None, Some(livret_a), 0),
+        ("Versement assurance vie", 16, -10_000, None, Some(life), 0),
+    ];
+    for (label, day, amount, category, target, tolerance) in rules {
+        let input = recurring::RecurringRuleInput {
+            account_id: checking,
+            target_account_id: target,
+            label: label.into(),
+            amount_minor: amount,
+            amount_tolerance_minor: tolerance,
+            frequency: Frequency::Monthly,
+            interval: 1,
+            anchor_date: start.with_day(day).context("jour d'échéance")?,
+            end_date: None,
+            split_template: if target.is_some() {
+                Vec::new()
+            } else {
+                vec![crate::db::recurring::TemplateSplit { category_id: category, amount_minor: amount }]
+            },
+            active: true,
+        };
+        recurring::save(db, None, &input, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }

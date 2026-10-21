@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE ledger_transaction SET recurring_rule_id = NULL WHERE recurring_rule_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "e68862faf8cbfb84966922528aa0971027d461e3ada59eea05a143ffa26d4a1f"
+}
