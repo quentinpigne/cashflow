@@ -260,14 +260,24 @@ pub async fn default_thresholds(db: &Db) -> AppResult<Vec<u32>> {
 }
 
 pub async fn set_thresholds(db: &Db, input: &Thresholds) -> AppResult<Thresholds> {
-    let thresholds = check_thresholds(Some(&input.thresholds))?.unwrap_or_default();
+    let thresholds = check_global(&input.thresholds)?;
     db::settings::set(&db.write, THRESHOLDS_SETTING, &thresholds).await?;
     Ok(Thresholds { thresholds })
 }
 
+/// Seuils d'une ligne ou d'un projet : absents, les seuils globaux s'appliquent ; une liste **vide**
+/// désactive les alertes (une ligne fixe comme le loyer, par exemple, R-BUD-60).
 fn check_thresholds(value: Option<&Vec<u32>>) -> AppResult<Option<Vec<u32>>> {
     let Some(value) = value else { return Ok(None) };
-    let mut thresholds = value.clone();
+    if value.is_empty() {
+        return Ok(Some(Vec::new()));
+    }
+    check_global(value).map(Some)
+}
+
+/// Seuils globaux : un ou deux pourcentages, jamais aucun.
+fn check_global(value: &[u32]) -> AppResult<Vec<u32>> {
+    let mut thresholds = value.to_vec();
     thresholds.sort_unstable();
     thresholds.dedup();
     if thresholds.is_empty() || thresholds.len() > 2 || thresholds.iter().any(|t| !(1..=500).contains(t)) {
@@ -277,7 +287,7 @@ fn check_thresholds(value: Option<&Vec<u32>>) -> AppResult<Option<Vec<u32>>> {
             "un ou deux seuils, en pour cent, entre 1 et 500",
         ));
     }
-    Ok(Some(thresholds))
+    Ok(thresholds)
 }
 
 /// Tout ce qu'il faut pour calculer le budget jusqu'à la fin de `month`.
@@ -331,6 +341,8 @@ fn level(line: &budgeting::LineMonth<BudgetLineId>, thresholds: &[u32], month_ov
     match line.kind {
         BudgetKind::Income => AlertLevel::None,
         BudgetKind::Savings if line.actual >= line.available => AlertLevel::Reached,
+        // Alertes désactivées : ni orange, ni rouge, ni objectif signalé comme manqué.
+        _ if thresholds.is_empty() => AlertLevel::None,
         BudgetKind::Savings if budgeting::savings_goal_missed(line.actual, line.available, month_over) => {
             AlertLevel::Missed
         }

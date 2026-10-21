@@ -151,7 +151,10 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 ### Alertes
 
 - **R-BUD-60** — Chaque ligne de dépense, chaque projet et chaque objectif d'épargne a des seuils
-  d'alerte (par défaut 80 % et 100 % du disponible, réglables globalement et par ligne).
+  d'alerte (par défaut 80 % et 100 % du disponible, réglables globalement et par ligne). Une ligne ou un
+  projet peut aussi **n'avoir aucune alerte** (budget fixe comme un loyer ou une échéance de prêt) :
+  ni jauge orange ou rouge, ni notification, ni objectif signalé comme manqué. Un seuil est franchi
+  quand le réel le **dépasse** (« au-delà », R-BUD-61).
 - **R-BUD-61** — Affichage : jauge neutre sous le premier seuil, orange entre les deux, rouge au-delà
   du second. Pour un objectif d'épargne, la logique est inversée : on signale l'objectif **non atteint**
   en fin de mois.

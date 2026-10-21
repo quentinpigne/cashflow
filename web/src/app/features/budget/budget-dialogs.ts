@@ -145,6 +145,11 @@ export interface LineCreateData {
           Reporter le reliquat d'un mois sur l'autre
         </mat-checkbox>
       }
+      @if (kind() !== 'INCOME') {
+        <mat-checkbox [ngModel]="noAlert()" (ngModelChange)="noAlert.set($event)">
+          Pas d'alerte ({{ kind() === 'SAVINGS' ? 'objectif' : 'budget fixe, comme un loyer' }})
+        </mat-checkbox>
+      }
       <p class="muted small">À partir de {{ monthLabel }}.</p>
       @if (error()) {
         <p class="error" role="alert">{{ error() }}</p>
@@ -182,6 +187,7 @@ export class LineCreateDialog {
   protected readonly yearStart = signal(1);
   protected readonly amount = signal('');
   protected readonly rollover = signal(false);
+  protected readonly noAlert = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
 
@@ -213,6 +219,7 @@ export class LineCreateDialog {
             amount_minor: parseMoney(this.amount()) ?? 0,
             rollover: this.kind() !== 'INCOME' && this.rollover(),
             from: this.data.month,
+            alert_thresholds: this.kind() !== 'INCOME' && this.noAlert() ? [] : null,
           },
         }),
       );
@@ -289,11 +296,24 @@ export interface LineEditData {
           Reporter le reliquat d'un mois sur l'autre
         </mat-checkbox>
       }
-      @if (line.kind === 'EXPENSE') {
-        <mat-checkbox [ngModel]="customThresholds()" (ngModelChange)="customThresholds.set($event)">
-          Seuils d'alerte propres à cette ligne
-        </mat-checkbox>
-        @if (customThresholds()) {
+      @if (line.kind !== 'INCOME') {
+        <mat-radio-group
+          class="scope"
+          [ngModel]="alertMode()"
+          (ngModelChange)="alertMode.set($event)"
+          aria-label="Alertes"
+        >
+          <mat-radio-button value="GLOBAL">
+            Alertes aux seuils habituels ({{ globalLabel }})
+          </mat-radio-button>
+          @if (line.kind === 'EXPENSE') {
+            <mat-radio-button value="CUSTOM">Seuils propres à cette ligne</mat-radio-button>
+          }
+          <mat-radio-button value="NONE">
+            Pas d'alerte ({{ line.kind === 'SAVINGS' ? 'objectif' : 'budget fixe' }})
+          </mat-radio-button>
+        </mat-radio-group>
+        @if (alertMode() === 'CUSTOM') {
           <div class="thresholds">
             <mat-form-field>
               <mat-label>Premier seuil</mat-label>
@@ -306,7 +326,7 @@ export interface LineEditData {
               <span matTextSuffix>%</span>
             </mat-form-field>
             <mat-form-field>
-              <mat-label>Second seuil</mat-label>
+              <mat-label>Second seuil (facultatif)</mat-label>
               <input
                 matInput
                 inputmode="numeric"
@@ -386,12 +406,26 @@ export class LineEditDialog {
   protected readonly amount = signal(toEditable(this.initialAmount));
   protected readonly scope = signal<AmountScope>('FROM_MONTH');
   protected readonly rollover = signal(this.line.rollover);
-  protected readonly customThresholds = signal(!!this.line.alert_thresholds);
+  /** Alertes : seuils globaux, seuils propres, ou désactivées (liste vide, R-BUD-60). */
+  protected readonly alertMode = signal<'GLOBAL' | 'CUSTOM' | 'NONE'>(
+    !this.line.alert_thresholds
+      ? 'GLOBAL'
+      : this.line.alert_thresholds.length === 0
+        ? 'NONE'
+        : 'CUSTOM',
+  );
+  protected readonly globalLabel = this.data.thresholds.map((t) => `${t} %`).join(' et ');
   protected readonly first = signal(
-    String((this.line.alert_thresholds ?? this.data.thresholds)[0] ?? ''),
+    String(
+      (this.line.alert_thresholds?.length ? this.line.alert_thresholds : this.data.thresholds)[0] ??
+        '',
+    ),
   );
   protected readonly second = signal(
-    String((this.line.alert_thresholds ?? this.data.thresholds)[1] ?? ''),
+    String(
+      (this.line.alert_thresholds?.length ? this.line.alert_thresholds : this.data.thresholds)[1] ??
+        '',
+    ),
   );
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
@@ -402,7 +436,7 @@ export class LineEditDialog {
   protected readonly valid = computed(() => {
     const amount = parseMoney(this.amount());
     if (amount === null || amount < 0) return false;
-    return !this.customThresholds() || parseThresholds(this.first(), this.second()) !== null;
+    return this.alertMode() !== 'CUSTOM' || parseThresholds(this.first(), this.second()) !== null;
   });
 
   private async run(action: () => Promise<unknown>): Promise<void> {
@@ -420,9 +454,13 @@ export class LineEditDialog {
 
   protected save(): Promise<void> {
     return this.run(async () => {
-      const thresholds = this.customThresholds()
-        ? parseThresholds(this.first(), this.second())
-        : null;
+      const mode = this.alertMode();
+      const thresholds =
+        mode === 'NONE'
+          ? []
+          : mode === 'CUSTOM'
+            ? parseThresholds(this.first(), this.second())
+            : null;
       const settingsChanged =
         this.rollover() !== this.line.rollover ||
         JSON.stringify(thresholds) !== JSON.stringify(this.line.alert_thresholds ?? null);

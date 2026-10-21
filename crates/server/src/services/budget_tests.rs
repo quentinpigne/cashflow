@@ -263,3 +263,27 @@ async fn bud_10_suggestions_average_complete_months() {
     assert_eq!(market.suggested_minor, 57_600);
     assert!(!market.has_line);
 }
+
+#[tokio::test]
+async fn r_bud_60_alerts_can_be_disabled_per_line() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let rent = category(&db, "Loyer B", CategoryKind::Expense, None).await;
+    let input =
+        BudgetLineInput { alert_thresholds: Some(Vec::new()), ..line(BudgetKind::Expense, rent, 89_000, "2026-01") };
+    let created = budgets::create_line(&db, &input).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-03-03", -95_000, Some(rent))).await.unwrap();
+    assert_eq!(budgets::evaluate_alerts(&db, d(TODAY)).await.unwrap(), 0);
+    let march = view(&db, "2026-03").await;
+    assert_eq!(march.lines[0].alert, AlertLevel::None);
+    assert_eq!(march.lines[0].alert_thresholds, Some(Vec::new()));
+
+    // Seuils propres à la ligne : 50 % seulement.
+    let settings = budgets::LineSettings { rollover: false, alert_thresholds: Some(vec![50]) };
+    budgets::update_settings(&db, created.id, &settings).await.unwrap();
+    assert_eq!(view(&db, "2026-03").await.lines[0].alert, AlertLevel::Over);
+    assert_eq!(budgets::evaluate_alerts(&db, d(TODAY)).await.unwrap(), 1);
+
+    // Les seuils globaux ne peuvent pas être vides.
+    assert!(budgets::set_thresholds(&db, &budgets::Thresholds { thresholds: Vec::new() }).await.is_err());
+}

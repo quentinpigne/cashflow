@@ -102,6 +102,11 @@
                     >edit_calendar</mat-icon
                   >
                 }
+                @if (line.alert_thresholds?.length === 0) {
+                  <mat-icon class="badge" matTooltip="Pas d'alerte pour cette ligne"
+                    >notifications_off</mat-icon
+                  >
+                }
                 @if (line.alert === 'OVER') {
                   <mat-icon class="badge over" aria-label="Dépassé">warning</mat-icon>
                 }

@@ -320,7 +320,7 @@ Décision : ADR-0014.
 | `rollover` | booléen | défaut `false` ; interdit pour `INCOME` |
 | `effective_from` | mois `YYYY-MM` | requis |
 | `effective_to` | mois `YYYY-MM` | optionnel, ≥ `effective_from` |
-| `alert_thresholds` | `Json` | optionnel : pourcentages, sinon réglage global |
+| `alert_thresholds` | `Json` | optionnel : un ou deux pourcentages ; absent : réglage global ; liste vide : aucune alerte (R-BUD-60) |
 | `previous_version_id` | `Id` → BudgetLine | optionnel : chaîne des versions |
 
 Contrainte : pour une catégorie (ou un compte cible), les intervalles [`effective_from`, `effective_to`]
@@ -344,7 +344,7 @@ de ses lignes ne se chevauchent pas (R-BUD-11).
 | `amount` | `Money` | requis, > 0 |
 | `exclude_from_period_budgets` | booléen | défaut `true` (R-BUD-21) |
 | `status` | enum | `ACTIVE` \| `CLOSED` |
-| `alert_thresholds` | `Json` | optionnel |
+| `alert_thresholds` | `Json` | optionnel, comme pour `BudgetLine` |
 | `note` | texte | optionnel |
 
 ## Authentification — ADR-0006, ADR-0015

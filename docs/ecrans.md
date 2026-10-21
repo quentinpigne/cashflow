@@ -296,7 +296,7 @@ Liste d'entrées, chacune ouvrant sa page :
 
 # Écrans — phases 2 et 3
 
-Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+Statut : **Validée** (2026-10-21)
 
 Ce qui change dans les écrans de la phase 1 :
 - **E1 Accueil** : le bloc **Alertes** apparaît (écart de rapprochement, transactions en attente depuis
@@ -394,7 +394,7 @@ les réglages (mêmes champs que l'étape 2 de l'assistant).
 
 # Écrans — phase 4 (budgets)
 
-Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+Statut : **Validée** (2026-10-21)
 
 Ce qui change dans les écrans existants :
 - **Navigation** : entrée **Budget** (E18). Sur mobile, la barre du bas garde cinq entrées (Accueil,
@@ -424,10 +424,11 @@ Ce qui change dans les écrans existants :
   E14 filtré sur le mois.
 - Un clic sur une ligne ouvre sa modification : montant **à partir de ce mois** ou **pour ce mois
   seulement** (pour cette année budgétaire, ligne annuelle), avec un avertissement sur un mois passé
-  (R-BUD-52) ; report ; seuils propres ; « Remettre le report à zéro » ; « Revenir au montant
+  (R-BUD-52) ; report ; alertes aux seuils habituels, à des seuils propres ou **pas d'alerte** (budget
+  fixe, signalé par une icône sur la ligne, R-BUD-60) ; « Remettre le report à zéro » ; « Revenir au montant
   habituel » ; « Supprimer à partir de ce mois » (R-BUD-53).
 - « Ajouter une ligne » : dépense, revenu ou épargne ; catégorie ou compte d'épargne ; par mois ou par
-  an (mois de début de l'année budgétaire) ; montant ; report.
+  an (mois de début de l'année budgétaire) ; montant ; report ; « Pas d'alerte ».
 - Menu ⋮ : assistant (E19), seuils d'alerte globaux.
 - Sans aucune ligne : invitation à lancer l'assistant.
 
@@ -455,7 +456,7 @@ R-BUD-63).
 
 # Écrans — phase 5 (épargne)
 
-Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+Statut : **Validée** (2026-10-21)
 
 Ce qui change dans les écrans existants :
 - **E1 Accueil** : bloc **Épargne** (TDB-05) sous le budget : épargne de précaution en mois de dépenses,
@@ -493,7 +494,7 @@ rappel invite à vérifier les taux réglementés à la source officielle (R-EPA
 
 # Écrans — phase 6 (récurrences et projections)
 
-Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+Statut : **Validée** (2026-10-21)
 
 Ce qui change dans les écrans existants :
 - **Navigation** : entrée **Projections** (E24) dans le menu de l'ordinateur ; sur mobile, Projections et
