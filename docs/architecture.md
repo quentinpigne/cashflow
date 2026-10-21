@@ -190,7 +190,8 @@ server ──► domain
 ```
 
 - `domain` ne dépend d'aucun crate d'I/O (ni `tokio`, ni `sqlx`, ni `axum`, ni `reqwest`). Ses dépendances
-  autorisées : `rust_decimal`, `chrono`, `uuid`, `serde`, `thiserror`, `sha2` et `hex` (empreintes des
+  autorisées : `rust_decimal` (avec sa feature `maths` : logarithme et exponentielle décimaux du TRI,
+  R-EPA-22), `chrono`, `uuid`, `serde`, `thiserror`, `sha2` et `hex` (empreintes des
   lignes d'import, R-IMP-5), et `utoipa` derrière la feature
   optionnelle `openapi` (dérivation des schémas des types exposés par l'API, sans I/O). Les flottants y
   sont interdits par clippy (`disallowed-types`). La frontière de crate fait respecter la pureté par le

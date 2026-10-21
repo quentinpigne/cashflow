@@ -9,6 +9,7 @@ pub mod import;
 pub mod ledger;
 pub mod reconciliation;
 pub mod reporting;
+pub mod savings;
 pub mod shared;
 
 pub use shared::{Currency, Date, DomainError, Money, Rate};
