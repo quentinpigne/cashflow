@@ -2,6 +2,16 @@
   <div class="mobile">
     <mat-toolbar class="top">
       <span class="brand">Cashflow</span>
+      <span class="spacer"></span>
+      <app-notifications />
+      <button mat-icon-button [matMenuTriggerFor]="mobileMenu" aria-label="Menu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #mobileMenu>
+        <a mat-menu-item routerLink="/reglages"><mat-icon>settings</mat-icon> Réglages</a>
+        <a mat-menu-item routerLink="/import"><mat-icon>upload_file</mat-icon> Import</a>
+        <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Déconnexion</button>
+      </mat-menu>
     </mat-toolbar>
     <main class="content">
       <router-outlet />
@@ -27,7 +37,10 @@
 } @else {
   <mat-sidenav-container class="desktop">
     <mat-sidenav mode="side" opened class="side">
-      <div class="brand side-brand">Cashflow</div>
+      <div class="side-head">
+        <div class="brand side-brand">Cashflow</div>
+        <app-notifications />
+      </div>
       <button mat-flat-button class="new" (click)="newTransaction()">
         <mat-icon>add</mat-icon>
         Nouvelle transaction

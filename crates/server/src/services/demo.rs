@@ -425,7 +425,7 @@ async fn budget(
         line(BudgetKind::Income, c.get("Salaires", ""), 285_000, false),
         line(BudgetKind::Expense, c.get("Logement", "Loyer"), 89_000, false),
         line(BudgetKind::Expense, c.get("Logement", "Gaz, électricité, eau"), 9_000, false),
-        line(BudgetKind::Expense, c.get("Alimentation & restauration", "Supermarché / épicerie"), 32_000, true),
+        line(BudgetKind::Expense, c.get("Alimentation & restauration", "Supermarché / épicerie"), 41_000, true),
         line(BudgetKind::Expense, c.get("Alimentation & restauration", "Restaurants"), 8_000, false),
         line(BudgetKind::Expense, c.get("Auto & transports", ""), 8_000, false),
         line(BudgetKind::Expense, c.get("Abonnements", ""), 5_000, false),

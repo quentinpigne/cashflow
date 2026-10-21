@@ -4,7 +4,9 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Account } from '../api/models/account';
 import { Category } from '../api/models/category';
 import { Institution } from '../api/models/institution';
+import { ProjectView } from '../api/models/project-view';
 import { AccountsService } from '../api/services/accounts.service';
+import { BudgetsService } from '../api/services/budgets.service';
 import { CategoriesService } from '../api/services/categories.service';
 import { InstitutionsService } from '../api/services/institutions.service';
 import { DataVersion } from '../core/data-version';
@@ -91,4 +93,20 @@ export class InstitutionsStore {
   readonly list = computed<Institution[]>(() => (this.all.hasValue() ? this.all.value() : []));
   /** Établissements proposés à la création de compte (R-CPT-10). */
   readonly active = computed(() => this.list().filter((i) => !i.archived));
+}
+
+/** Projets (BUD-06), partagés par les écrans qui y rattachent des transactions. */
+@Injectable({ providedIn: 'root' })
+export class ProjectsStore {
+  private readonly api = inject(BudgetsService);
+  private readonly version = inject(DataVersion);
+
+  readonly all = rxResource({
+    params: () => this.version.value(),
+    stream: () => this.api.listProjects(),
+  });
+  readonly list = computed<ProjectView[]>(() => (this.all.hasValue() ? this.all.value() : []));
+  /** On ne rattache de nouvelles transactions qu'à un projet en cours (R-BUD-24). */
+  readonly active = computed(() => this.list().filter((p) => p.active));
+  readonly byId = computed(() => new Map(this.list().map((p) => [p.id, p])));
 }

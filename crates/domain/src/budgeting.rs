@@ -515,7 +515,8 @@ pub fn project_actual<C: Copy + Eq + Hash + Ord, P: Copy + Eq>(
 /// Seuils d'alerte par défaut, en pour cent du disponible (R-BUD-60).
 pub const DEFAULT_THRESHOLDS: [u32; 2] = [80, 100];
 
-/// Seuils franchis : ceux dont `réel ≥ seuil × disponible` (R-BUD-60). Pour un objectif d'épargne, voir
+/// Seuils franchis : ceux que le réel dépasse, `réel > seuil × disponible` (R-BUD-60, « au-delà », R-BUD-61) ;
+/// une ligne consommée à 100 % pile ne franchit pas le seuil de 100 %. Pour un objectif d'épargne, voir
 /// [`savings_goal_missed`].
 pub fn crossed(actual: Money, available: Money, thresholds: &[u32]) -> BTreeSet<u32> {
     if !available.is_positive() {
@@ -524,7 +525,7 @@ pub fn crossed(actual: Money, available: Money, thresholds: &[u32]) -> BTreeSet<
     thresholds
         .iter()
         .copied()
-        .filter(|t| i128::from(actual.minor()) * 100 >= i128::from(available.minor()) * i128::from(*t))
+        .filter(|t| i128::from(actual.minor()) * 100 > i128::from(available.minor()) * i128::from(*t))
         .collect()
 }
 
@@ -784,7 +785,8 @@ mod tests {
     fn bud_08_thresholds() {
         assert_eq!(crossed(eur(11_000), eur(15_000), &DEFAULT_THRESHOLDS), BTreeSet::new());
         assert_eq!(crossed(eur(16_500), eur(15_000), &DEFAULT_THRESHOLDS), BTreeSet::from([80, 100]));
-        assert_eq!(crossed(eur(12_000), eur(15_000), &DEFAULT_THRESHOLDS), BTreeSet::from([80]));
+        assert_eq!(crossed(eur(12_100), eur(15_000), &DEFAULT_THRESHOLDS), BTreeSet::from([80]));
+        assert_eq!(crossed(eur(15_000), eur(15_000), &DEFAULT_THRESHOLDS), BTreeSet::from([80]));
         assert!(savings_goal_missed(eur(10_000), eur(20_000), true));
         assert!(!savings_goal_missed(eur(10_000), eur(20_000), false));
         assert_eq!(alert_key("budget", 7, m("2027-03"), 80), "budget:7:2027-03:80");

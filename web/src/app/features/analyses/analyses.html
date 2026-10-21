@@ -28,6 +28,9 @@
             <mat-button-toggle value="EXPENSE">Dépenses</mat-button-toggle>
             <mat-button-toggle value="INCOME">Revenus</mat-button-toggle>
           </mat-button-toggle-group>
+          <mat-checkbox [checked]="withProjects()" (change)="withProjects.set($event.checked)">
+            Inclure les projets
+          </mat-checkbox>
         </div>
 
         @if (report.value(); as r) {

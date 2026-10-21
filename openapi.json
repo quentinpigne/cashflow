@@ -6001,6 +6001,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "parent_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

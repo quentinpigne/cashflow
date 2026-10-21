@@ -82,6 +82,7 @@ pub struct BudgetLineMonth {
 pub struct OffBudgetLine {
     pub category_id: CategoryId,
     pub name: String,
+    pub parent_name: Option<String>,
     pub amount_minor: i64,
 }
 
@@ -454,6 +455,7 @@ async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetVie
             Some(OffBudgetLine {
                 category_id: category,
                 name: names.get(&category).map(|n| n.0.clone()).unwrap_or_default(),
+                parent_name: names.get(&category).and_then(|n| n.1).and_then(|p| names.get(&p)).map(|p| p.0.clone()),
                 amount_minor: amount.minor(),
             })
         })
@@ -1096,7 +1098,7 @@ pub async fn evaluate_alerts(db: &Db, today: Date) -> AppResult<usize> {
                     euros(Money::from_minor(line.actual_minor)),
                     euros(Money::from_minor(line.available_minor))
                 ),
-                link: format!("/budget?month={current}"),
+                link: format!("/budget?mois={current}"),
             });
         }
     }
@@ -1112,7 +1114,7 @@ pub async fn evaluate_alerts(db: &Db, today: Date) -> AppResult<usize> {
                 euros(Money::from_minor(line.actual_minor)),
                 euros(Money::from_minor(line.available_minor))
             ),
-            link: format!("/budget?month={}", current.previous()),
+            link: format!("/budget?mois={}", current.previous()),
         });
     }
 

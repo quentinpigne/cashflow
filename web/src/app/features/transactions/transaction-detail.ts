@@ -19,6 +19,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -35,7 +36,7 @@ import { CategoryPicker } from '../../shared/category-picker';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { CategoriesStore } from '../../shared/stores';
+import { CategoriesStore, ProjectsStore } from '../../shared/stores';
 import { MarkTransferDialog } from './mark-transfer';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
@@ -45,6 +46,7 @@ type Direction = 'out' | 'in';
 @Component({
   selector: 'app-transaction-detail',
   imports: [
+    MatSelectModule,
     ReactiveFormsModule,
     RouterLink,
     MatButtonModule,
@@ -88,6 +90,14 @@ export class TransactionDetailView {
   protected readonly error = signal<string | null>(null);
   protected readonly direction = signal<Direction>('out');
   protected readonly category = signal<string | null>(null);
+  /** Projet de la transaction (BUD-06) : l'interface le porte sur toutes ses ventilations. */
+  protected readonly project = signal<string | null>(null);
+  protected readonly projects = inject(ProjectsStore);
+  /** Projets proposés : ceux en cours, plus le projet actuel même clôturé (R-BUD-24). */
+  protected readonly projectOptions = computed(() => {
+    const current = this.project();
+    return this.projects.list().filter((p) => p.active || p.id === current);
+  });
   /** Ventilation modifiée, pas encore enregistrée. */
   protected readonly pendingSplits = signal<SplitDraft[] | null>(null);
 
@@ -127,6 +137,7 @@ export class TransactionDetailView {
       });
       this.direction.set(t.amount_minor < 0 ? 'out' : 'in');
       this.category.set(t.splits.length === 1 ? (t.splits[0].category_id ?? null) : null);
+      this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       this.pendingSplits.set(null);
       // Rapprochée : montant et date de solde verrouillés (R-TRX-3).
       if (t.locked) {
@@ -198,6 +209,18 @@ export class TransactionDetailView {
         { amount_minor: amount, category_id: this.category(), note: t.splits[0]?.note ?? null },
       ];
     }
+    // Une ventilation multiple inchangée garde ses ventilations, mais le projet peut avoir changé.
+    if (
+      !splits &&
+      this.isSplit() &&
+      this.project() !== (t.splits.find((s) => s.project_id)?.project_id ?? null)
+    ) {
+      splits = t.splits.map((s) => ({
+        amount_minor: s.amount_minor,
+        category_id: s.category_id ?? null,
+        note: s.note ?? null,
+      }));
+    }
     this.busy.set(true);
     this.error.set(null);
     try {
@@ -210,7 +233,7 @@ export class TransactionDetailView {
             amount_minor: amount,
             label: value.label,
             note: value.note || null,
-            splits: splits?.map((s) => ({ ...s, project_id: null })) ?? null,
+            splits: splits?.map((s) => ({ ...s, project_id: this.project() })) ?? null,
           },
         }),
       );
@@ -283,7 +306,7 @@ export class TransactionDetailView {
               amount_minor: s.amount_minor,
               category_id: s.category_id ?? null,
               note: s.note ?? null,
-              project_id: null,
+              project_id: this.keptProject(s.project_id),
             })),
           },
         }),
@@ -307,13 +330,18 @@ export class TransactionDetailView {
                 amount_minor: s.amount_minor,
                 category_id: s.category_id ?? null,
                 note: s.note ?? null,
-                project_id: null,
+                project_id: this.keptProject(s.project_id),
               })),
         },
       }),
     );
     this.version.bump();
     await this.router.navigate(['/transactions', created.id]);
+  }
+
+  /** Projet repris par une copie : seulement s'il est encore en cours (R-BUD-24). */
+  private keptProject(id: string | null | undefined): string | null {
+    return id && this.projects.byId().get(id)?.active ? id : null;
   }
 
   protected leave(t: TransactionDetail): void {

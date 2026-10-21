@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -9,6 +10,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { Session } from '../../core/auth';
 import { Layout } from '../../core/layout';
 import { QuickEntry } from '../transactions/quick-entry';
+import { NotificationsButton } from './notifications';
 
 interface NavItem {
   path: string;
@@ -26,7 +28,9 @@ interface NavItem {
     RouterLinkActive,
     MatSidenavModule,
     MatListModule,
+    MatMenuModule,
     MatToolbarModule,
+    NotificationsButton,
     MatIconModule,
     MatButtonModule,
   ],
@@ -45,13 +49,19 @@ export class Shell {
     { path: '/', label: 'Accueil', icon: 'home', exact: true },
     { path: '/comptes', label: 'Comptes', icon: 'account_balance', exact: false },
     { path: '/transactions', label: 'Transactions', icon: 'receipt_long', exact: true },
+    { path: '/budget', label: 'Budget', icon: 'savings', exact: false },
     { path: '/import', label: 'Import', icon: 'upload_file', exact: false },
     { path: '/analyses', label: 'Analyses', icon: 'insights', exact: false },
     { path: '/reglages', label: 'Réglages', icon: 'settings', exact: false },
   ];
 
-  /** Barre du bas (mobile) : l'import s'ouvre depuis un compte ou les réglages (ecrans.md). */
-  protected readonly mobileItems = this.items.filter((i) => i.path !== '/import');
+  /**
+   * Barre du bas (mobile), cinq entrées : l'import s'ouvre depuis un compte ou les réglages, et les
+   * réglages depuis le menu du haut (ecrans.md).
+   */
+  protected readonly mobileItems = this.items.filter(
+    (i) => i.path !== '/import' && i.path !== '/reglages',
+  );
 
   protected newTransaction(): void {
     // Sur la fiche d'un compte, ce compte est présélectionné (ecrans.md E3).

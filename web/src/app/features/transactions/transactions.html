@@ -102,6 +102,24 @@
       >
         Catégoriser
       </button>
+      @if (projects.active().length > 0) {
+        <mat-form-field class="bulk-project" subscriptSizing="dynamic">
+          <mat-label>Projet</mat-label>
+          <mat-select [value]="bulkProject()" (selectionChange)="bulkProject.set($event.value)">
+            <mat-option [value]="NO_PROJECT">Aucun (détacher)</mat-option>
+            @for (p of projects.active(); track p.id) {
+              <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button
+          mat-stroked-button
+          (click)="attachSelection()"
+          [disabled]="!bulkProject() || busy()"
+        >
+          Rattacher
+        </button>
+      }
       <button mat-button (click)="clearSelection()">Annuler</button>
     </div>
   }

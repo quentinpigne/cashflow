@@ -123,6 +123,17 @@
       </div>
     }
     <button mat-button (click)="addShare()"><mat-icon>call_split</mat-icon>Ventiler</button>
+    @if (projectOptions().length > 0) {
+      <mat-form-field>
+        <mat-label>Rattacher au projet</mat-label>
+        <mat-select [ngModel]="project()" (ngModelChange)="project.set($event)">
+          <mat-option value="">Aucun</mat-option>
+          @for (p of projectOptions(); track p.id) {
+            <mat-option [value]="p.id">{{ p.name }}{{ p.active ? '' : ' (terminé)' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
   }
   <div class="row">
     <mat-form-field class="grow">

@@ -48,3 +48,20 @@ export function formatMonth(iso: string): string {
   const text = month.format(fromIsoDate(iso));
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** Mois en cours, `AAAA-MM`. */
+export function currentMonth(): string {
+  return todayIso().slice(0, 7);
+}
+
+/** Mois `AAAA-MM` décalé de `delta` mois. */
+export function shiftMonth(value: string, delta: number): string {
+  const [y, m] = value.split('-').map(Number);
+  const date = new Date(y, m - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** `AAAA-MM` → « Mars 2026 ». */
+export function formatMonthKey(value: string): string {
+  return formatMonth(`${value}-01`);
+}

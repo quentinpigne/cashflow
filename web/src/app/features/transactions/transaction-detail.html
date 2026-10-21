@@ -129,6 +129,18 @@
         </div>
       }
 
+      @if (!t.transfer && projectOptions().length > 0) {
+        <mat-form-field>
+          <mat-label>Projet</mat-label>
+          <mat-select [value]="project()" (selectionChange)="project.set($event.value)">
+            <mat-option [value]="null">Aucun</mat-option>
+            @for (p of projectOptions(); track p.id) {
+              <mat-option [value]="p.id">{{ p.name }}{{ p.active ? '' : ' (terminé)' }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
       <mat-form-field>
         <mat-label>Note</mat-label>
         <textarea matInput formControlName="note" rows="2"></textarea>

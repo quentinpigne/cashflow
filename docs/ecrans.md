@@ -391,3 +391,64 @@ cocher et catégoriser d'un coup (R-IMP-19).
 
 Dans les réglages : liste des profils (nom, format, compte par défaut), renommer, supprimer, modifier
 les réglages (mêmes champs que l'étape 2 de l'assistant).
+
+# Écrans — phase 4 (budgets)
+
+Statut : **Brouillon** (écrits pendant l'implémentation de la V1, à relire)
+
+Ce qui change dans les écrans existants :
+- **Navigation** : entrée **Budget** (E18). Sur mobile, la barre du bas garde cinq entrées (Accueil,
+  Comptes, Transactions, Budget, Analyses) ; **Réglages**, Import et Déconnexion passent dans le menu ⋮
+  de la barre du haut.
+- **Cloche de notifications** (E21) en haut de l'écran sur mobile, à côté du nom de l'application sur
+  ordinateur, avec un badge du nombre de non lues.
+- **E1 Accueil** : bloc **Budget du mois** (TDB-06) dans la colonne de droite : reste à budgéter, lignes
+  en alerte avec leur jauge, objectifs d'épargne du mois, projets en cours. Absent tant qu'aucun budget
+  ni projet n'existe.
+- **E7 Détail d'une transaction** : champ **Projet** (en cours, ou le projet actuel même terminé). Le
+  projet s'applique à toutes les ventilations de la transaction.
+- **E14 Transactions** : dans la barre d'action de la sélection, **Projet** puis « Rattacher » (ou
+  « Aucun » pour détacher).
+- **E15 Analyses** : case « Inclure les projets » (TDB-07).
+- **E16 Règles** : action « Rattacher au projet ».
+
+## E18 — Budget du mois (BUD-02 à BUD-05, BUD-07)
+
+- Mois affiché (flèches, « mois en cours »), mémorisé dans l'adresse (`?mois=AAAA-MM`).
+- Deux chiffres en tête : **reste à budgéter** (prévu, R-BUD-40) et **solde du mois** (réel, R-BUD-41),
+  avec leur définition en infobulle.
+- Sections **Revenus**, **Dépenses mensuelles**, **Dépenses annuelles** (quote-part du mois et
+  consommé sur l'année), **Épargne** : prévu, réel, reste, jauge colorée selon les seuils (R-BUD-61),
+  pastille du report, icône d'une période surchargée.
+- **Hors lignes** : dépenses hors budget par catégorie, non catégorisé, projets exclus ; un clic ouvre
+  E14 filtré sur le mois.
+- Un clic sur une ligne ouvre sa modification : montant **à partir de ce mois** ou **pour ce mois
+  seulement** (pour cette année budgétaire, ligne annuelle), avec un avertissement sur un mois passé
+  (R-BUD-52) ; report ; seuils propres ; « Remettre le report à zéro » ; « Revenir au montant
+  habituel » ; « Supprimer à partir de ce mois » (R-BUD-53).
+- « Ajouter une ligne » : dépense, revenu ou épargne ; catégorie ou compte d'épargne ; par mois ou par
+  an (mois de début de l'année budgétaire) ; montant ; report.
+- Menu ⋮ : assistant (E19), seuils d'alerte globaux.
+- Sans aucune ligne : invitation à lancer l'assistant.
+
+## E19 — Assistant de création (BUD-10)
+
+Une ligne par catégorie qui a des mouvements sur les 6 derniers mois complets (moins s'il y a moins
+d'historique) : montants mois par mois, proposition (moyenne arrondie à l'euro supérieur) modifiable,
+case à cocher. Les catégories qui ont déjà une ligne sont grisées. « Créer le budget » crée les lignes
+cochées à partir du mois en cours.
+
+## E20 — Projets (BUD-06)
+
+- **Liste** : en cours, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
+- **Détail** : réel et jauge, dates, exclusion des lignes du mois ; réel **par catégorie** ; transactions
+  rattachées, celles hors des dates signalées (R-BUD-23). « Modifier » (y compris clôturer) ;
+  « Supprimer » seulement sans transaction rattachée.
+
+## E21 — Notifications (BUD-08)
+
+Menu de la cloche : notifications les plus récentes (titre, détail, date), non lues en gras ; un clic
+marque lue et ouvre le budget du mois ou le projet ; « Tout marquer comme lu ». Le serveur évalue les
+seuils après chaque écriture et regroupe en une notification les seuils franchis ensemble (R-BUD-62,
+R-BUD-63).
+

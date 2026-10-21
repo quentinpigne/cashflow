@@ -3,6 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -14,16 +15,9 @@ import { CategoryKind } from '../../api/models/category-kind';
 import { CategoryLine } from '../../api/models/category-line';
 import { DashboardService } from '../../api/services/dashboard.service';
 import { DataVersion } from '../../core/data-version';
-import { formatMonth, toIsoDate } from '../../core/dates';
+import { formatMonth, shiftMonth, toIsoDate } from '../../core/dates';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
-
-/** Mois `AAAA-MM` décalé de `delta` mois. */
-function shiftMonth(month: string, delta: number): string {
-  const [y, m] = month.split('-').map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
 
 /** E15 — Analyses (TDB-02, TDB-03). */
 @Component({
@@ -32,6 +26,7 @@ function shiftMonth(month: string, delta: number): string {
     FormsModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatCheckboxModule,
     MatIconModule,
     MatProgressBarModule,
     MatTabsModule,
@@ -50,11 +45,23 @@ export class AnalysesPage {
   protected readonly month = signal(toIsoDate(new Date()).slice(0, 7));
   protected readonly kind = signal<CategoryKind>('EXPENSE');
   protected readonly months = signal<12 | 24>(12);
+  /** Inclure les dépenses rattachées à des projets (TDB-07). */
+  protected readonly withProjects = signal(true);
   protected readonly expanded = signal<Set<string>>(new Set());
 
   protected readonly report = rxResource({
-    params: () => ({ month: this.month(), kind: this.kind(), version: this.version.value() }),
-    stream: ({ params }) => this.api.categoryReport({ month: params.month, kind: params.kind }),
+    params: () => ({
+      month: this.month(),
+      kind: this.kind(),
+      withProjects: this.withProjects(),
+      version: this.version.value(),
+    }),
+    stream: ({ params }) =>
+      this.api.categoryReport({
+        month: params.month,
+        kind: params.kind,
+        exclude_projects: !params.withProjects,
+      }),
   });
 
   protected readonly evolution = rxResource({

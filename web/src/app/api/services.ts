@@ -5,6 +5,7 @@ export { AccountsService } from './services/accounts.service';
 export { ReconciliationService } from './services/reconciliation.service';
 export { TransactionsService } from './services/transactions.service';
 export { AuthService } from './services/auth.service';
+export { BudgetsService } from './services/budgets.service';
 export { CategoriesService } from './services/categories.service';
 export { DashboardService } from './services/dashboard.service';
 export { SystemService } from './services/system.service';

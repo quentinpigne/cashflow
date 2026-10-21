@@ -97,3 +97,14 @@
 .logout {
   align-self: flex-start;
 }
+
+.side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 0.5rem;
+}
+
+.top .spacer {
+  flex: 1;
+}

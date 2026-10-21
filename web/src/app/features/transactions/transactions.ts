@@ -24,6 +24,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { ClearingStatus } from '../../api/models/clearing-status';
 import { TransactionListItem } from '../../api/models/transaction-list-item';
+import { BudgetsService } from '../../api/services/budgets.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, toIsoDate } from '../../core/dates';
@@ -34,7 +35,7 @@ import { parseMoney } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AccountsStore, CategoriesStore } from '../../shared/stores';
+import { AccountsStore, CategoriesStore, ProjectsStore } from '../../shared/stores';
 
 const PAGE = 200;
 
@@ -88,6 +89,10 @@ export class TransactionsPage implements OnInit {
   protected readonly uncategorized = signal(false);
   protected readonly limit = signal(PAGE);
   protected readonly selection = signal<Set<string>>(new Set());
+  protected readonly projects = inject(ProjectsStore);
+  private readonly budgets = inject(BudgetsService);
+  protected readonly NO_PROJECT = 'none';
+  protected readonly bulkProject = signal<string | null>(null);
   protected readonly bulkCategory = signal<string | null>(null);
   protected readonly busy = signal(false);
   /** Sur mobile, les filtres sont repliés derrière un bouton (comme sur E3). */
@@ -169,6 +174,36 @@ export class TransactionsPage implements OnInit {
 
   protected open(item: TransactionListItem): void {
     void this.router.navigate(['/transactions', item.id]);
+  }
+
+  /** Rattachement en masse à un projet, ou détachement (BUD-06). */
+  protected async attachSelection(): Promise<void> {
+    const choice = this.bulkProject();
+    if (!choice || this.selection().size === 0) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.budgets.attachToProject({
+          body: {
+            transaction_ids: [...this.selection()],
+            project_id: choice === this.NO_PROJECT ? null : choice,
+          },
+        }),
+      );
+      this.selection.set(new Set());
+      this.version.bump();
+      const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
+      const verb = choice === this.NO_PROJECT ? 'détachée(s)' : 'rattachée(s)';
+      this.snack.open(`${result.attached} transaction(s) ${verb}${skipped}`, undefined, {
+        duration: 4000,
+      });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   /** Catégorisation en masse (TRX-06). */

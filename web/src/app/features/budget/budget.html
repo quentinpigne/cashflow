@@ -1,0 +1,195 @@
+<div class="page">
+  <div class="page-header">
+    <h1>Budget</h1>
+    <span class="spacer"></span>
+    <a mat-button routerLink="/budget/projets"><mat-icon>flag</mat-icon> Projets</a>
+    <button mat-icon-button [matMenuTriggerFor]="more" aria-label="Plus d'actions">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #more>
+      <a mat-menu-item routerLink="/budget/assistant">
+        <mat-icon>auto_fix_high</mat-icon> Assistant de création
+      </a>
+      <button mat-menu-item (click)="editThresholds()">
+        <mat-icon>tune</mat-icon> Seuils d'alerte
+      </button>
+    </mat-menu>
+  </div>
+
+  <div class="toolbar">
+    <button mat-icon-button aria-label="Mois précédent" (click)="previousMonth()">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <strong class="month">{{ monthLabel() }}</strong>
+    <button mat-icon-button aria-label="Mois suivant" (click)="nextMonth()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    @if (budget.value()?.current_month) {
+      <span class="tag">mois en cours</span>
+    }
+    <span class="spacer"></span>
+    <button mat-flat-button (click)="add()"><mat-icon>add</mat-icon> Ajouter une ligne</button>
+  </div>
+
+  @if (budget.isLoading() && !budget.hasValue()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (budget.value(); as b) {
+    @if (!b.has_lines) {
+      <div class="empty card">
+        <p>Aucun budget pour l'instant.</p>
+        <p class="muted">
+          L'assistant propose des montants d'après tes dépenses des derniers mois.
+        </p>
+        <a mat-flat-button routerLink="/budget/assistant">Lancer l'assistant</a>
+      </div>
+    } @else {
+      <div class="summary">
+        <section class="card figure">
+          <span class="label">
+            Reste à budgéter
+            <mat-icon class="info" [matTooltip]="definitions.toBudget">info</mat-icon>
+          </span>
+          <span class="amount big" [class.negative]="b.to_budget_minor < 0">{{
+            b.to_budget_minor | money
+          }}</span>
+          <span class="muted small">prévu</span>
+        </section>
+        <section class="card figure">
+          <span class="label">
+            Solde du mois
+            <mat-icon class="info" [matTooltip]="definitions.balance">info</mat-icon>
+          </span>
+          <span class="amount big" [class.negative]="b.balance_minor < 0">{{
+            b.balance_minor | money
+          }}</span>
+          <span class="muted small">
+            {{ b.income_minor | money }} de revenus, {{ b.expenses_minor | money }} de dépenses,
+            {{ b.savings_minor | money }} épargnés
+          </span>
+        </section>
+      </div>
+
+      @for (section of sections(); track section.title) {
+        <section class="card section">
+          <h2>
+            {{ section.title }}
+            @if (section.hint) {
+              <span class="muted small">({{ section.hint }})</span>
+            }
+          </h2>
+          <div class="head muted small" aria-hidden="true">
+            <span></span>
+            <span class="right">Prévu</span>
+            <span class="right">Réel</span>
+            <span class="right">Reste</span>
+          </div>
+          @for (line of section.lines; track line.id) {
+            <button class="line" (click)="edit(line)" [attr.aria-label]="'Modifier ' + line.name">
+              <span class="name">
+                @if (line.parent_name) {
+                  <span class="muted small">{{ line.parent_name }} ›</span>
+                }
+                {{ line.name }}
+                @if (line.carried_minor !== 0) {
+                  <span class="carried" [class.negative]="line.carried_minor < 0">
+                    report {{ line.carried_minor | money: 'EUR' : { signed: true } }}
+                  </span>
+                }
+                @if (line.override_minor !== null && line.override_minor !== undefined) {
+                  <mat-icon class="badge" matTooltip="Montant modifié pour cette période"
+                    >edit_calendar</mat-icon
+                  >
+                }
+                @if (line.alert === 'OVER') {
+                  <mat-icon class="badge over" aria-label="Dépassé">warning</mat-icon>
+                }
+                @if (line.alert === 'REACHED') {
+                  <mat-icon class="badge reached" aria-label="Atteint">check_circle</mat-icon>
+                }
+                @if (line.alert === 'MISSED') {
+                  <mat-icon class="badge over" aria-label="Non atteint">error</mat-icon>
+                }
+              </span>
+              <span class="amount planned">
+                @if (line.periodicity === 'YEARLY') {
+                  <span class="muted small">{{ line.available_minor | money }}/an →</span>
+                }
+                {{ line.planned_minor | money }}
+              </span>
+              <span class="amount actual">
+                {{ line.actual_minor | money }}
+                @if (line.periodicity === 'YEARLY') {
+                  <span class="muted small">sur l'année</span>
+                }
+              </span>
+              <span class="amount remaining" [class.negative]="line.remaining_minor < 0">
+                @if (line.kind !== 'INCOME') {
+                  {{ line.remaining_minor | money }}
+                }
+              </span>
+              @if (line.kind !== 'INCOME') {
+                <app-budget-gauge
+                  class="gauge"
+                  [actual]="line.actual_minor"
+                  [available]="line.available_minor"
+                  [alert]="line.alert"
+                  [label]="'Consommation de ' + line.name"
+                />
+              }
+            </button>
+          }
+        </section>
+      }
+
+      @if (
+        b.off_budget.length > 0 ||
+        b.uncategorized_out_minor > 0 ||
+        b.uncategorized_in_minor > 0 ||
+        b.excluded_projects_minor !== 0 ||
+        b.off_budget_income_minor !== 0
+      ) {
+        <section class="card section others">
+          <h2>Hors lignes</h2>
+          @for (item of b.off_budget; track item.category_id) {
+            <button class="other" (click)="drill(item.category_id)">
+              <span>
+                @if (item.parent_name) {
+                  <span class="muted small">{{ item.parent_name }} ›</span>
+                }
+                {{ item.name }} <span class="muted small">hors budget</span>
+              </span>
+              <span class="amount">{{ item.amount_minor | money }}</span>
+            </button>
+          }
+          @if (b.off_budget_income_minor !== 0) {
+            <div class="other">
+              <span>Autres revenus <span class="muted small">hors budget</span></span>
+              <span class="amount">{{ b.off_budget_income_minor | money }}</span>
+            </div>
+          }
+          @if (b.uncategorized_out_minor > 0 || b.uncategorized_in_minor > 0) {
+            <button class="other" (click)="drill(null, true)">
+              <span>Non catégorisé</span>
+              <span class="amount">
+                {{ b.uncategorized_out_minor | money }}
+                @if (b.uncategorized_in_minor > 0) {
+                  <span class="muted small">
+                    (et {{ b.uncategorized_in_minor | money }} d'entrées)</span
+                  >
+                }
+              </span>
+            </button>
+          }
+          @if (b.excluded_projects_minor !== 0) {
+            <a class="other" routerLink="/budget/projets">
+              <span>Projets</span>
+              <span class="amount">{{ b.excluded_projects_minor | money }}</span>
+            </a>
+          }
+        </section>
+      }
+    }
+  }
+</div>

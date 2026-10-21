@@ -60,6 +60,27 @@ export const routes: Routes = [
           import('./features/import/import-review').then((m) => m.ImportReviewPage),
       },
       {
+        path: 'budget',
+        title: 'Budget — Cashflow',
+        loadComponent: () => import('./features/budget/budget').then((m) => m.BudgetPage),
+      },
+      {
+        path: 'budget/assistant',
+        title: 'Assistant de budget — Cashflow',
+        loadComponent: () =>
+          import('./features/budget/assistant').then((m) => m.BudgetAssistantPage),
+      },
+      {
+        path: 'budget/projets',
+        title: 'Projets — Cashflow',
+        loadComponent: () => import('./features/budget/projects').then((m) => m.ProjectsPage),
+      },
+      {
+        path: 'budget/projets/:id',
+        title: 'Projet — Cashflow',
+        loadComponent: () => import('./features/budget/projects').then((m) => m.ProjectPage),
+      },
+      {
         path: 'analyses',
         title: 'Analyses — Cashflow',
         loadComponent: () => import('./features/analyses/analyses').then((m) => m.AnalysesPage),

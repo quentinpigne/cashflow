@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -18,7 +18,7 @@ import { parseMoney, parsePercent, toEditable } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AccountsStore } from '../../shared/stores';
+import { AccountsStore, ProjectsStore } from '../../shared/stores';
 
 export interface RuleFormData {
   rule: RuleView | null;
@@ -77,6 +77,12 @@ export class RuleFormDialog {
   protected readonly setLabel = signal(this.source.actions?.set_label ?? '');
   protected readonly transferTo = signal<string>(this.source.actions?.mark_transfer_to ?? '');
   protected readonly note = signal(this.source.actions?.set_note ?? '');
+  /** Action `set_project` (BUD-06). */
+  protected readonly project = signal<string>(this.source.actions?.set_project ?? '');
+  private readonly projects = inject(ProjectsStore);
+  protected readonly projectOptions = computed(() =>
+    this.projects.list().filter((p) => p.active || p.id === this.project()),
+  );
   protected readonly shares = signal<Share[]>(this.initialShares());
   protected readonly stop = signal(this.source.stop_processing ?? true);
   protected readonly active = signal(this.source.active ?? true);
@@ -142,6 +148,7 @@ export class RuleFormDialog {
           weight: parsePercent(s.percent) ?? 0,
         })),
         mark_transfer_to: this.transferTo() || null,
+        set_project: this.transferTo() ? null : this.project() || null,
         set_note: this.note().trim() || null,
       },
       stop_processing: this.stop(),
