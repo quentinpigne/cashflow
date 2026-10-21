@@ -10,6 +10,7 @@ pub mod export;
 pub mod imports;
 pub mod institutions;
 pub mod rules;
+pub mod savings;
 pub mod settings;
 pub mod transactions;
 

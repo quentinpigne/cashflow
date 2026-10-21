@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT schedule_id, effective_from AS \"effective_from: Date\", annual_rate FROM rate_period\n           ORDER BY schedule_id, effective_from",
+  "describe": {
+    "columns": [
+      {
+        "name": "schedule_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rate_period",
+            "name": "schedule_id"
+          }
+        }
+      },
+      {
+        "name": "effective_from: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rate_period",
+            "name": "effective_from"
+          }
+        }
+      },
+      {
+        "name": "annual_rate",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rate_period",
+            "name": "annual_rate"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7596d6f099e808b7035ab3b51128219d002214cd4da6f79bf9f594684c1e4e72"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO rate_period (id, schedule_id, effective_from, annual_rate, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?5)\n         ON CONFLICT (schedule_id, effective_from) DO UPDATE SET annual_rate = excluded.annual_rate,\n                                                                updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "1a9a0b98349e86e2f76340600e50125071466b894ff3104578e46340d2038061"
+}

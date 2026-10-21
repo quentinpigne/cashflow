@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM valuation WHERE id = ? AND account_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "389ea738eeb00b8f3a0cf87c9986e6f81b695f88fd2054dc719239b52b90c93a"
+}

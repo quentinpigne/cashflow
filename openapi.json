@@ -373,6 +373,162 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/interest": {
+      "get": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Intérêts d'une année : quinzaines, courus, attendus, versés, plafond (EPA-02 à EPA-04).",
+        "operationId": "getInterest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "description": "Année civile ; l'année en cours par défaut.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/interest/{year}": {
+      "post": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Inscrit les intérêts calculés d'une année finie (R-EPA-10).",
+        "operationId": "recordInterest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterestRecorded"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/performance": {
+      "get": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Valeur, capital investi, plus-value, TRI et TWR (EPA-05, EPA-06).",
+        "operationId": "getPerformance",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Début de la période choisie ; l'ouverture par défaut.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Fin de la période choisie ; aujourd'hui par défaut.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}/reopen": {
       "post": {
         "tags": [
@@ -396,6 +552,91 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/terms": {
+      "get": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Conditions d'épargne d'un compte à taux déterminé (CPT-05).",
+        "operationId": "getSavingsTerms",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "savings"
+        ],
+        "operationId": "updateSavingsTerms",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TermsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -530,6 +771,135 @@
               }
             }
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/valuations": {
+      "get": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Valorisations d'un compte à rendement variable ou d'un prêt (CPT-06).",
+        "operationId": "listValuations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ValuationView"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "savings"
+        ],
+        "operationId": "saveValuation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValuationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ValuationView"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/valuations/{valuation_id}": {
+      "delete": {
+        "tags": [
+          "savings"
+        ],
+        "operationId": "deleteValuation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "valuation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ValuationId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
           "404": {
             "content": {
               "application/json": {
@@ -2278,6 +2648,131 @@
         }
       }
     },
+    "/api/v1/rate-schedules": {
+      "get": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Barèmes de taux et leur historique (EPA-01).",
+        "operationId": "listRateSchedules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rate-schedules/{id}/rates": {
+      "post": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Ajoute un taux daté à un barème, ou corrige celui de la même date (R-EPA-11).",
+        "operationId": "setRate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/RateScheduleId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatePeriodInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleView"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rate-schedules/{id}/rates/{from}": {
+      "delete": {
+        "tags": [
+          "savings"
+        ],
+        "operationId": "deleteRate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/RateScheduleId"
+            }
+          },
+          {
+            "name": "from",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reconciliation/health": {
       "get": {
         "tags": [
@@ -2602,6 +3097,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/savings/overview": {
+      "get": {
+        "tags": [
+          "savings"
+        ],
+        "summary": "Synthèse de l'épargne pour l'accueil (TDB-05).",
+        "operationId": "savingsOverview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavingsOverview"
                 }
               }
             }
@@ -4376,6 +4891,15 @@
           }
         }
       },
+      "Capitalization": {
+        "type": "string",
+        "description": "Rythme de capitalisation des intérêts (spec 06).",
+        "enum": [
+          "ANNUAL",
+          "MONTHLY",
+          "AT_MATURITY"
+        ]
+      },
       "CategorizationRuleId": {
         "type": "string",
         "format": "uuid"
@@ -5021,6 +5545,50 @@
           "PDF_OCR"
         ]
       },
+      "FixedSummary": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "name",
+          "balance_minor",
+          "rate_ppm",
+          "accrued_minor",
+          "expected_minor",
+          "interest_to_record",
+          "cap_exceeded"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "accrued_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cap_exceeded": {
+            "type": "boolean"
+          },
+          "expected_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interest_to_record": {
+            "type": "boolean",
+            "description": "Intérêts de l'an dernier à inscrire (R-EPA-10)."
+          },
+          "name": {
+            "type": "string"
+          },
+          "rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "FlowsView": {
         "type": "object",
         "required": [
@@ -5068,6 +5636,38 @@
           "uncategorized_out_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "FortnightView": {
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "balance_minor",
+          "rate_ppm",
+          "interest"
+        ],
+        "properties": {
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
+          },
+          "interest": {
+            "type": "string",
+            "description": "Intérêt de la quinzaine, en centimes, avec quatre décimales (affichage seulement)."
+          },
+          "rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -5478,6 +6078,119 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "InterestMethod": {
+        "type": "string",
+        "description": "Méthode de calcul des intérêts (spec 06).",
+        "enum": [
+          "FORTNIGHTLY",
+          "DAILY",
+          "MONTHLY"
+        ]
+      },
+      "InterestProposal": {
+        "type": "string",
+        "description": "État de la transaction d'intérêts d'une année (R-EPA-10).",
+        "enum": [
+          "NOT_YET",
+          "AVAILABLE",
+          "RECORDED"
+        ]
+      },
+      "InterestRecorded": {
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "InterestView": {
+        "type": "object",
+        "required": [
+          "year",
+          "supported",
+          "fortnights",
+          "accrued_minor",
+          "expected_minor",
+          "proposal",
+          "capital_minor"
+        ],
+        "properties": {
+          "accrued_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Intérêts courus au jour (quinzaines terminées), ou de l'année entière si elle est finie."
+          },
+          "booked_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Intérêts effectivement inscrits pour l'année (transactions d'intérêts autour du 31/12)."
+          },
+          "cap_exceeded_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Premier versement qui fait dépasser le plafond, s'il y en a un."
+          },
+          "capital_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital versé (hors intérêts capitalisés) et plafond (R-EPA-9)."
+          },
+          "deposit_cap_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "expected_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Intérêts attendus au 31/12 si aucun mouvement n'intervient d'ici là (EPA-02)."
+          },
+          "fortnights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FortnightView"
+            }
+          },
+          "interest_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/InterestProposal"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "Méthode prise en charge en V1 (quinzaines) ; les autres arrivent en V2 (EPA-07)."
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -6026,6 +6739,107 @@
           }
         }
       },
+      "PerformanceView": {
+        "type": "object",
+        "required": [
+          "value_minor",
+          "estimated",
+          "invested_minor",
+          "gain_minor",
+          "from",
+          "to",
+          "period_gain_minor",
+          "years"
+        ],
+        "properties": {
+          "estimated": {
+            "type": "boolean",
+            "description": "La dernière valorisation a plus de 90 jours (R-CPT-6)."
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "description": "Période choisie."
+          },
+          "gain_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "gain_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Plus-value rapportée au capital investi."
+          },
+          "invested_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital investi (R-EPA-25)."
+          },
+          "irr_since_opening_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "irr_year_to_date_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "period_gain_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "period_irr_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "period_twr_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "twr_since_opening_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "value_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearPerformanceView"
+            }
+          }
+        }
+      },
       "Periodicity": {
         "type": "string",
         "enum": [
@@ -6498,6 +7312,44 @@
           }
         }
       },
+      "RatePeriodInput": {
+        "type": "object",
+        "required": [
+          "effective_from",
+          "rate_ppm"
+        ],
+        "properties": {
+          "effective_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RatePeriodView": {
+        "type": "object",
+        "required": [
+          "effective_from",
+          "rate_ppm"
+        ],
+        "properties": {
+          "effective_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RateScheduleId": {
+        "type": "string",
+        "format": "uuid"
+      },
       "ReadInput": {
         "type": "object",
         "properties": {
@@ -6678,6 +7530,110 @@
           },
           "stop_processing": {
             "type": "boolean"
+          }
+        }
+      },
+      "SavingsOverview": {
+        "type": "object",
+        "required": [
+          "interest_accrued_minor",
+          "interest_expected_minor",
+          "fixed",
+          "variable",
+          "variable_value_minor",
+          "variable_invested_minor",
+          "emergency_fund_minor",
+          "average_expenses_minor"
+        ],
+        "properties": {
+          "average_expenses_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "emergency_fund_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Épargne de précaution (R-TDB-9) : Σ des comptes concernés, dépenses mensuelles moyennes et nombre\nde mois couverts (en dixièmes)."
+          },
+          "emergency_months_tenths": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "fixed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FixedSummary"
+            }
+          },
+          "interest_accrued_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Σ des intérêts courus depuis le 1er janvier (R-TDB-11)."
+          },
+          "interest_expected_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "variable": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariableSummary"
+            }
+          },
+          "variable_invested_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "variable_irr_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "TRI global depuis l'ouverture des comptes variables (R-TDB-12)."
+          },
+          "variable_value_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valeur et capital investi cumulés des comptes à rendement variable."
+          }
+        }
+      },
+      "ScheduleView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "shared",
+          "periods",
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Comptes qui l'utilisent."
+          },
+          "id": {
+            "$ref": "#/components/schemas/RateScheduleId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RatePeriodView"
+            }
+          },
+          "shared": {
+            "type": "boolean",
+            "description": "Barème réglementé partagé entre comptes (R-EPA-11)."
           }
         }
       },
@@ -6908,6 +7864,113 @@
           },
           "version": {
             "type": "string"
+          }
+        }
+      },
+      "TermsInput": {
+        "type": "object",
+        "required": [
+          "rate_schedule_id",
+          "interest_method",
+          "capitalization"
+        ],
+        "properties": {
+          "capitalization": {
+            "$ref": "#/components/schemas/Capitalization"
+          },
+          "deposit_cap_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "interest_category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interest_method": {
+            "$ref": "#/components/schemas/InterestMethod"
+          },
+          "maturity_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "rate_schedule_id": {
+            "$ref": "#/components/schemas/RateScheduleId"
+          },
+          "round_each_fortnight": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TermsView": {
+        "type": "object",
+        "required": [
+          "rate_schedule_id",
+          "schedule_name",
+          "shared",
+          "interest_method",
+          "capitalization",
+          "round_each_fortnight",
+          "current_rate_ppm"
+        ],
+        "properties": {
+          "capitalization": {
+            "$ref": "#/components/schemas/Capitalization"
+          },
+          "current_rate_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux en vigueur aujourd'hui, en millionièmes."
+          },
+          "deposit_cap_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "interest_category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interest_method": {
+            "$ref": "#/components/schemas/InterestMethod"
+          },
+          "maturity_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "rate_schedule_id": {
+            "$ref": "#/components/schemas/RateScheduleId"
+          },
+          "round_each_fortnight": {
+            "type": "boolean"
+          },
+          "schedule_name": {
+            "type": "string"
+          },
+          "shared": {
+            "type": "boolean"
           }
         }
       },
@@ -7509,6 +8572,154 @@
             "description": "Réglages CSV/XLSX, en JSON (schéma `ProfileSettings`)."
           }
         }
+      },
+      "ValuationId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ValuationInput": {
+        "type": "object",
+        "required": [
+          "date",
+          "value_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "Remplacer la valorisation de la même date, après confirmation (CPT-06)."
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valeur du compte ; pour un prêt, le capital restant dû en négatif (R-CPT-12)."
+          }
+        }
+      },
+      "ValuationView": {
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "value_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ValuationId"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "VariableSummary": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "name",
+          "value_minor",
+          "estimated",
+          "invested_minor",
+          "gain_minor"
+        ],
+        "properties": {
+          "account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "estimated": {
+            "type": "boolean"
+          },
+          "gain_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "invested_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "irr_since_opening_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "irr_year_to_date_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "YearPerformanceView": {
+        "type": "object",
+        "required": [
+          "year"
+        ],
+        "properties": {
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "gain_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Absent : données insuffisantes (pas de valorisation à ±15 jours du 31/12, R-EPA-24)."
+          },
+          "irr_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -7548,6 +8759,10 @@
     {
       "name": "budgets",
       "description": "Budgets, projets et notifications (spec 05)"
+    },
+    {
+      "name": "savings",
+      "description": "Épargne : intérêts, valorisations, performance (spec 06)"
     },
     {
       "name": "dashboard",

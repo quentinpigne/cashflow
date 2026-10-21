@@ -1,0 +1,134 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.account_id, t.rate_schedule_id, s.name AS schedule_name, s.shared AS \"shared: bool\",\n                  t.interest_method, t.capitalization, t.deposit_cap, t.maturity_date AS \"maturity_date: Date\",\n                  t.interest_category_id, t.round_each_fortnight AS \"round_each_fortnight: bool\"\n           FROM fixed_savings_terms t JOIN rate_schedule s ON s.id = t.rate_schedule_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "rate_schedule_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "rate_schedule_id"
+          }
+        }
+      },
+      {
+        "name": "schedule_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "rate_schedule",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "shared: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "rate_schedule",
+            "name": "shared"
+          }
+        }
+      },
+      {
+        "name": "interest_method",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "interest_method"
+          }
+        }
+      },
+      {
+        "name": "capitalization",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "capitalization"
+          }
+        }
+      },
+      {
+        "name": "deposit_cap",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "deposit_cap"
+          }
+        }
+      },
+      {
+        "name": "maturity_date: Date",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "maturity_date"
+          }
+        }
+      },
+      {
+        "name": "interest_category_id",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "interest_category_id"
+          }
+        }
+      },
+      {
+        "name": "round_each_fortnight: bool",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "fixed_savings_terms",
+            "name": "round_each_fortnight"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "7d45f5ba37e32ab38fe264aec977e8f5fc916dbb2b6c49aef989c0a7e1bd1c2b"
+}

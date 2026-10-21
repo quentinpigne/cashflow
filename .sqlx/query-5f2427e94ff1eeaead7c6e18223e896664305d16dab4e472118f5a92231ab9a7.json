@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE fixed_savings_terms SET rate_schedule_id = ?, interest_method = ?, capitalization = ?, deposit_cap = ?,\n                maturity_date = ?, interest_category_id = ?, round_each_fortnight = ?, updated_at = ?\n         WHERE account_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "5f2427e94ff1eeaead7c6e18223e896664305d16dab4e472118f5a92231ab9a7"
+}

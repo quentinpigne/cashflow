@@ -1,0 +1,76 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id, coalesce(t.value_date, t.bank_date, t.date) AS \"interest_date!: Date\",\n                  t.balance_date AS \"balance_date!: Date\", t.amount AS \"amount!: i64\", t.origin AS \"origin!\",\n                  EXISTS (SELECT 1 FROM split s WHERE s.transaction_id = t.id AND s.category_id = ?2) AS \"is_interest!: bool\"\n           FROM ledger_transaction t WHERE t.account_id = ?1 ORDER BY t.balance_date, t.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "interest_date!: Date",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "balance_date!: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "balance_date"
+          }
+        }
+      },
+      {
+        "name": "amount!: i64",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "origin!",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "name": "is_interest!: bool",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "2ebe93b05ec6837d39120d2cf5d2d2643b0b11903432bad4f4716c9d4e585594"
+}

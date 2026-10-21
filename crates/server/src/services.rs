@@ -14,6 +14,7 @@ pub mod institutions;
 pub mod reconciliation;
 pub mod reports;
 pub mod rules;
+pub mod savings;
 pub mod seed;
 pub mod transactions;
 pub mod transfers;
@@ -56,5 +57,7 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
 mod budget_tests;
 #[cfg(test)]
 mod import_tests;
+#[cfg(test)]
+mod savings_tests;
 #[cfg(test)]
 mod tests;

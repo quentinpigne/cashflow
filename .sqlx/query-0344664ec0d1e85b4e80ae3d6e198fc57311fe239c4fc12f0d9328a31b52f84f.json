@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM rate_period WHERE schedule_id = ? AND effective_from = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "0344664ec0d1e85b4e80ae3d6e198fc57311fe239c4fc12f0d9328a31b52f84f"
+}

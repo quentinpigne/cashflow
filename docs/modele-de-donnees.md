@@ -123,6 +123,7 @@ erDiagram
 | `deposit_cap` | `Money` | optionnel |
 | `maturity_date` | `Date` | optionnel (compte à terme, PEL) |
 | `interest_category_id` | `Id` → Category | catégorie des transactions d'intérêts générées |
+| `round_each_fortnight` | `bool` | défaut `false` : arrondir l'intérêt de chaque quinzaine plutôt que le total (R-EPA-6) |
 
 ### RateSchedule / RatePeriod
 

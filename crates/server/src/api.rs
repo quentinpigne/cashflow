@@ -10,6 +10,7 @@ mod institutions;
 mod reconciliation;
 mod reports;
 mod rules;
+mod savings;
 mod system;
 mod transactions;
 
@@ -41,6 +42,7 @@ use crate::state::AppState;
         (name = "reconciliation", description = "Rapprochement (spec 04)"),
         (name = "rules", description = "Règles de catégorisation (spec 03)"),
         (name = "budgets", description = "Budgets, projets et notifications (spec 05)"),
+        (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
         (name = "dashboard", description = "Tableau de bord (spec 08)"),
         (name = "system", description = "Export, sauvegardes, version"),
     )
@@ -114,6 +116,16 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(budgets::attach))
         .routes(routes!(budgets::notifications))
         .routes(routes!(budgets::mark_read))
+        .routes(routes!(savings::get_terms, savings::update_terms))
+        .routes(routes!(savings::schedules))
+        .routes(routes!(savings::set_rate))
+        .routes(routes!(savings::delete_rate))
+        .routes(routes!(savings::interest))
+        .routes(routes!(savings::record_interest))
+        .routes(routes!(savings::valuations, savings::save_valuation))
+        .routes(routes!(savings::delete_valuation))
+        .routes(routes!(savings::performance))
+        .routes(routes!(savings::overview))
         .routes(routes!(system::info))
         .routes(routes!(system::export))
 }

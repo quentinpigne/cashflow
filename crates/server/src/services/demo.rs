@@ -14,7 +14,8 @@ use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
 use super::{
-    accounts, auth, budgets, categories, imports, institutions, reconciliation, rules, seed, transactions, transfers,
+    accounts, auth, budgets, categories, imports, institutions, reconciliation, rules, savings, seed, transactions,
+    transfers,
 };
 use crate::db::Db;
 
@@ -133,8 +134,8 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     let life =
         account(db, "Assurance vie", AccountKind::LifeInsurance, Some("Boursorama Banque"), start, 1_200_000, today)
             .await?;
-    account(db, "PEA", AccountKind::Pea, Some("Boursorama Banque"), start, 650_000, today).await?;
-    account(db, "Prêt immobilier", AccountKind::Mortgage, Some("LCL"), start, -14_500_000, today).await?;
+    let pea = account(db, "PEA", AccountKind::Pea, Some("Boursorama Banque"), start, 650_000, today).await?;
+    let loan = account(db, "Prêt immobilier", AccountKind::Mortgage, Some("LCL"), start, -14_500_000, today).await?;
 
     let c = Categories::load(db).await?;
     let mut rng = Lcg(20_261_020);
@@ -385,6 +386,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     imports::save_profile(db, None, &profile).await.map_err(|e| anyhow::anyhow!("{e}"))?;
 
     budget(db, &c, start, today, livret_a, life, checking).await?;
+    valuations(db, start, today, life, pea, loan).await?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
     for (offset, amount, label) in
@@ -393,6 +395,40 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         let date = today.checked_sub_days(Days::new(offset)).filter(|d| *d >= start);
         if let Some(date) = date {
             spend(db, checking, date, amount, label, None).await?;
+        }
+    }
+    Ok(())
+}
+
+/// Valorisations trimestrielles (CPT-06) : l'assurance vie progresse d'environ 3 % par an, le PEA de 6 % avec
+/// un trimestre de baisse, le prêt s'amortit (R-CPT-12).
+async fn valuations(
+    db: &Db,
+    start: Date,
+    today: Date,
+    life: AccountId,
+    pea: AccountId,
+    loan: AccountId,
+) -> anyhow::Result<()> {
+    let mut quarter = 0_i64;
+    let pea_moves = [15, 12, -20, 18];
+    let mut pea_value = 650_000_i64;
+    loop {
+        quarter += 1;
+        let Some(next) = start.checked_add_months(Months::new(u32::try_from(quarter * 3).unwrap_or(3))) else {
+            break;
+        };
+        let date = next.pred_opt().context("fin de trimestre")?;
+        if date > today {
+            break;
+        }
+        // Valeur de l'assurance vie : capital versé à date, plus 0,75 % par trimestre écoulé.
+        let invested = accounts::get(db, life, date).await.map_err(|e| anyhow::anyhow!("{e}"))?.balance_minor;
+        let life_value = invested + invested * 75 * quarter / 10_000;
+        pea_value += pea_value * pea_moves[usize::try_from((quarter - 1) % 4).unwrap_or(0)] / 1_000;
+        for (account, value) in [(life, life_value), (pea, pea_value), (loan, -14_500_000 + 150_000 * quarter)] {
+            let input = savings::ValuationInput { date, value_minor: value, note: None, replace: true };
+            savings::save_valuation(db, account, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
         }
     }
     Ok(())
