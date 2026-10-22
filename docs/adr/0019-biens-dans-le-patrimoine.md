@@ -1,6 +1,6 @@
 # ADR-0019 — Biens (immobilier, véhicules) dans le patrimoine
 
-- **Statut** : Proposé
+- **Statut** : Accepté
 - **Date** : 2026-10-22
 - **Concerne** : spec 01, spec 02, spec 04, spec 05, spec 07, spec 08, modèle de données, glossaire, écrans
 

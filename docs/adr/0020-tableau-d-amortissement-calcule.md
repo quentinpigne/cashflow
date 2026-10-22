@@ -1,6 +1,6 @@
 # ADR-0020 — Tableau d'amortissement calculé à partir des conditions du prêt
 
-- **Statut** : Proposé
+- **Statut** : Accepté
 - **Date** : 2026-10-22
 - **Concerne** : vision, spec 01, spec 02, spec 03, spec 07, modèle de données, glossaire, écrans, feuille de route
 

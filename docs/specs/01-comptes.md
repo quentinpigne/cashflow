@@ -94,12 +94,15 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
   La fiche du prêt montre, à toute date, le **capital restant dû théorique** du tableau à côté de la
   valeur du compte (R-CPT-6) et signale un écart.
 - **R-CPT-17** — **Ventilation d'une échéance.** Une transaction du compte payeur dont le montant égale
-  l'échéance totale (mensualité + assurance), datée à ±5 jours d'une échéance pas encore payée, est
+  l'échéance totale (mensualité + assurance) à **±1 €** près, datée à ±5 jours d'une échéance pas encore
+  payée, est
   proposée comme paiement de cette échéance : à l'import (R-IMP-22) ou à la demande depuis la
   transaction. Accepter remplace ses ventilations par trois : une **ventilation de virement** du
   capital vers le compte de prêt (ADR-0021), dont la jambe entrante est créée sur le prêt (`CLEARED`,
   R-TRX-36), et deux dépenses, intérêts et assurance, sur les catégories des conditions (sans
-  ventilation d'assurance si elle est nulle). Une échéance n'est payée qu'une fois. On peut aussi
+  ventilation d'assurance si elle est nulle). Un écart de montant (au plus 1 €) est porté par la
+  ventilation d'assurance, ou par celle des intérêts sans assurance : le capital versé reste celui du
+  tableau. Une échéance n'est payée qu'une fois. On peut aussi
   ventiler ainsi, en une fois, les mensualités passées déjà enregistrées.
 
 ## Features

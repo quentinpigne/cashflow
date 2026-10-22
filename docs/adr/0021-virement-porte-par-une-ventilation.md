@@ -1,6 +1,6 @@
 # ADR-0021 — Virement porté par une ventilation
 
-- **Statut** : Proposé
+- **Statut** : Accepté
 - **Date** : 2026-10-22
 - **Concerne** : ADR-0004, ADR-0020, spec 02, spec 03, spec 05, spec 08, modèle de données, glossaire
 
