@@ -7,6 +7,7 @@ mod categories;
 mod dashboard;
 mod imports;
 mod institutions;
+mod loans;
 mod projections;
 mod reconciliation;
 mod reports;
@@ -43,6 +44,7 @@ use crate::state::AppState;
         (name = "reconciliation", description = "Rapprochement (spec 04)"),
         (name = "rules", description = "Règles de catégorisation (spec 03)"),
         (name = "budgets", description = "Budgets, projets et notifications (spec 05)"),
+        (name = "loans", description = "Prêts : conditions et tableau d'amortissement (spec 01, ADR-0020)"),
         (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
         (name = "projections", description = "Récurrences, scénarios et projections (spec 02, spec 07)"),
         (name = "dashboard", description = "Tableau de bord (spec 08)"),
@@ -120,6 +122,8 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(budgets::notifications))
         .routes(routes!(budgets::mark_read))
         .routes(routes!(savings::get_terms, savings::update_terms))
+        .routes(routes!(loans::get, loans::save, loans::delete))
+        .routes(routes!(loans::preview))
         .routes(routes!(savings::schedules))
         .routes(routes!(savings::set_rate))
         .routes(routes!(savings::delete_rate))

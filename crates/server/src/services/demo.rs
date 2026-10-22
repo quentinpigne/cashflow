@@ -7,9 +7,10 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, bail};
-use cashflow_domain::Date;
 use cashflow_domain::accounts::AccountKind;
+use cashflow_domain::loans::{self, Insurance, LoanTerms};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId};
+use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
@@ -22,6 +23,22 @@ use crate::db::Db;
 /// Mot de passe du compte de démonstration.
 pub const DEMO_PASSWORD: &str = "demo-cashflow";
 const MONTHS: u32 = 12;
+const SALARY: i64 = 340_000;
+/// Échéance du prêt de démonstration : mensualité de 1 109,20 € et assurance de 50 € (CPT-09).
+const LOAN_INSTALLMENT: i64 = 115_920;
+
+/// Prêt de démonstration : 200 000 € à 3 % sur 20 ans, assurance 0,30 % du capital, première échéance
+/// 84 mois avant le début du jeu.
+fn demo_loan(start: Date) -> anyhow::Result<LoanTerms> {
+    let first = start.with_day(5).and_then(|d| d.checked_sub_months(Months::new(84))).context("première échéance")?;
+    Ok(LoanTerms {
+        principal: Money::from_minor(20_000_000),
+        annual_rate: Rate::from_ppm(30_000),
+        duration_months: 240,
+        first_installment: first,
+        insurance: Insurance::RateOnPrincipal { rate_ppm: 3_000 },
+    })
+}
 
 /// Générateur pseudo-aléatoire minimal, pour un jeu reproductible.
 struct Lcg(u64);
@@ -135,7 +152,13 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         account(db, "Assurance vie", AccountKind::LifeInsurance, Some("Boursorama Banque"), start, 1_200_000, today)
             .await?;
     let pea = account(db, "PEA", AccountKind::Pea, Some("Boursorama Banque"), start, 650_000, today).await?;
-    let loan = account(db, "Prêt immobilier", AccountKind::Mortgage, Some("LCL"), start, -14_500_000, today).await?;
+    // Prêt de 200 000 € à 3 % sur 20 ans, remboursé depuis 7 ans (CPT-09) : le compte s'ouvre au capital
+    // restant dû du tableau d'amortissement.
+    let loan_terms = demo_loan(start)?;
+    let schedule = loans::schedule(&loan_terms)?;
+    let opening_debt = loans::outstanding_at(&loan_terms, &schedule, start);
+    let loan =
+        account(db, "Prêt immobilier", AccountKind::Mortgage, Some("LCL"), start, -opening_debt.minor(), today).await?;
     // Le logement financé par le prêt, au prix d'achat : apport et capital emprunté (R-CPT-14).
     account(db, "Appartement", AccountKind::RealEstate, None, start, 25_000_000, today).await?;
 
@@ -148,7 +171,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
             spend(db, checking, d, -89_000, "LOYER APPARTEMENT", c.get("Logement", "Loyer")).await?;
         }
         if let Some(d) = day(5) {
-            spend(db, checking, d, -72_000, "ECHEANCE PRET IMMO", c.get("Prêts", "")).await?;
+            spend(db, checking, d, -LOAN_INSTALLMENT, "ECHEANCE PRET IMMO", c.get("Prêts", "")).await?;
         }
         if let Some(d) = day(6) {
             spend(db, checking, d, -2_999, "BOX INTERNET", c.get("Abonnements", "Internet")).await?;
@@ -168,7 +191,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
             spend(db, checking, d, -1_299, "FORFAIT MOBILE", c.get("Abonnements", "Téléphone")).await?;
         }
         if let Some(d) = day(27) {
-            spend(db, checking, d, 285_000, "VIREMENT SALAIRE", c.get("Salaires", "")).await?;
+            spend(db, checking, d, SALARY, "VIREMENT SALAIRE", c.get("Salaires", "")).await?;
         }
         // Courses, restaurants, carburant : fréquences et montants variables.
         for week in 0..4 {
@@ -388,7 +411,20 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     imports::save_profile(db, None, &profile).await.map_err(|e| anyhow::anyhow!("{e}"))?;
 
     budget(db, &c, start, today, livret_a, life, checking).await?;
-    valuations(db, start, today, life, pea, loan).await?;
+    let c_loans = (c.get("Prêts", "Intérêts"), c.get("Prêts", "Assurance emprunteur"));
+    let (Some(interest), Some(insurance)) = c_loans else { bail!("catégories de prêt absentes") };
+    let input = super::loans::LoanTermsInput {
+        principal_minor: loan_terms.principal.minor(),
+        annual_rate_ppm: loan_terms.annual_rate.ppm(),
+        duration_months: loan_terms.duration_months,
+        first_installment_date: loan_terms.first_installment,
+        insurance: loan_terms.insurance,
+        payer_account_id: checking,
+        interest_category_id: interest,
+        insurance_category_id: Some(insurance),
+    };
+    super::loans::save_terms(db, loan, &input, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    valuations(db, start, today, life, pea, (loan, &loan_terms, &schedule)).await?;
     recurrences(db, &c, start, today, checking, livret_a, life).await?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
@@ -416,11 +452,11 @@ async fn recurrences(
     use cashflow_domain::recurrence::Frequency;
     let rules = [
         ("Loyer", 3, -89_000, c.get("Logement", "Loyer"), None, 0),
-        ("Échéance prêt immobilier", 5, -72_000, c.get("Prêts", ""), None, 0),
+        ("Échéance prêt immobilier", 5, -LOAN_INSTALLMENT, c.get("Prêts", ""), None, 0),
         ("Box internet", 6, -2_999, c.get("Abonnements", "Internet"), None, 0),
         ("Forfait mobile", 15, -1_299, c.get("Abonnements", "Téléphone"), None, 0),
         ("Électricité et gaz", 10, -8_000, c.get("Logement", "Gaz, électricité, eau"), None, 1_700),
-        ("Salaire", 27, 285_000, c.get("Salaires", ""), None, 0),
+        ("Salaire", 27, SALARY, c.get("Salaires", ""), None, 0),
         ("Épargne Livret A", 2, -20_000, None, Some(livret_a), 0),
         ("Versement assurance vie", 16, -10_000, None, Some(life), 0),
     ];
@@ -448,14 +484,14 @@ async fn recurrences(
 }
 
 /// Valorisations trimestrielles (CPT-06) : l'assurance vie progresse d'environ 3 % par an, le PEA de 6 % avec
-/// un trimestre de baisse, le prêt s'amortit (R-CPT-12).
+/// un trimestre de baisse, le prêt suit son tableau d'amortissement (R-CPT-12, R-CPT-16).
 async fn valuations(
     db: &Db,
     start: Date,
     today: Date,
     life: AccountId,
     pea: AccountId,
-    loan: AccountId,
+    (loan, terms, schedule): (AccountId, &LoanTerms, &[loans::Installment]),
 ) -> anyhow::Result<()> {
     let mut quarter = 0_i64;
     let pea_moves = [15, 12, -20, 18];
@@ -473,7 +509,8 @@ async fn valuations(
         let invested = accounts::get(db, life, date).await.map_err(|e| anyhow::anyhow!("{e}"))?.balance_minor;
         let life_value = invested + invested * 75 * quarter / 10_000;
         pea_value += pea_value * pea_moves[usize::try_from((quarter - 1) % 4).unwrap_or(0)] / 1_000;
-        for (account, value) in [(life, life_value), (pea, pea_value), (loan, -14_500_000 + 150_000 * quarter)] {
+        let debt = loans::outstanding_at(terms, schedule, date);
+        for (account, value) in [(life, life_value), (pea, pea_value), (loan, -debt.minor())] {
             let input = savings::ValuationInput { date, value_minor: value, note: None, replace: true };
             savings::save_valuation(db, account, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
         }
@@ -505,7 +542,7 @@ async fn budget(
         alert_thresholds: None,
     };
     let mut lines = vec![
-        line(BudgetKind::Income, c.get("Salaires", ""), 285_000, false),
+        line(BudgetKind::Income, c.get("Salaires", ""), SALARY, false),
         // Budget fixe : pas d'alerte (R-BUD-60).
         budgets::BudgetLineInput {
             alert_thresholds: Some(Vec::new()),
@@ -519,7 +556,7 @@ async fn budget(
         // Budget fixe : pas d'alerte (R-BUD-60).
         budgets::BudgetLineInput {
             alert_thresholds: Some(Vec::new()),
-            ..line(BudgetKind::Expense, c.get("Prêts", ""), 72_000, false)
+            ..line(BudgetKind::Expense, c.get("Prêts", ""), LOAN_INSTALLMENT, false)
         },
         budgets::BudgetLineInput {
             periodicity: Periodicity::Yearly,

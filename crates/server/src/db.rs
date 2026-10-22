@@ -9,6 +9,7 @@ pub mod codec;
 pub mod export;
 pub mod imports;
 pub mod institutions;
+pub mod loans;
 pub mod projections;
 pub mod recurring;
 pub mod rules;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO loan_terms (account_id, principal, annual_rate, duration_months, first_installment_date,\n                                 insurance_mode, insurance_amount, insurance_rate, payer_account_id,\n                                 interest_category_id, insurance_category_id, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (account_id) DO UPDATE SET\n             principal = excluded.principal, annual_rate = excluded.annual_rate,\n             duration_months = excluded.duration_months, first_installment_date = excluded.first_installment_date,\n             insurance_mode = excluded.insurance_mode, insurance_amount = excluded.insurance_amount,\n             insurance_rate = excluded.insurance_rate, payer_account_id = excluded.payer_account_id,\n             interest_category_id = excluded.interest_category_id,\n             insurance_category_id = excluded.insurance_category_id, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "c6be2c3d8cfe4f5fa3d9e0436daf99f50bc931cf835cd50a3575c5e63a13f003"
+}

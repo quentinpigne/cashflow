@@ -11,6 +11,7 @@ pub mod demo;
 pub mod export;
 pub mod imports;
 pub mod institutions;
+pub mod loans;
 pub mod projections;
 pub mod reconciliation;
 pub mod recurring;
@@ -59,6 +60,8 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
 mod budget_tests;
 #[cfg(test)]
 mod import_tests;
+#[cfg(test)]
+mod loan_tests;
 #[cfg(test)]
 mod projection_tests;
 #[cfg(test)]

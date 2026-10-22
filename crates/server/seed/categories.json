@@ -15,7 +15,7 @@
     { "name": "Animaux", "children": [] },
     { "name": "Dons", "children": [] },
     { "name": "Frais bancaires", "children": [] },
-    { "name": "Prêts", "children": [] }
+    { "name": "Prêts", "children": ["Intérêts", "Assurance emprunteur"] }
   ],
   "income": [
     { "name": "Salaires", "children": [] },

@@ -59,6 +59,14 @@ export type { DeleteRate$Params as DeleteRate$Params } from './fn/savings/delete
 export { deleteRate as deleteRate } from './fn/savings/delete-rate';
 export type { SavingsOverview$Params as SavingsOverview$Params } from './fn/savings/savings-overview';
 export { savingsOverview as savingsOverview } from './fn/savings/savings-overview';
+export type { GetLoan$Params as GetLoan$Params } from './fn/loans/get-loan';
+export { getLoan as getLoan } from './fn/loans/get-loan';
+export type { SaveLoanTerms$Params as SaveLoanTerms$Params } from './fn/loans/save-loan-terms';
+export { saveLoanTerms as saveLoanTerms } from './fn/loans/save-loan-terms';
+export type { DeleteLoanTerms$Params as DeleteLoanTerms$Params } from './fn/loans/delete-loan-terms';
+export { deleteLoanTerms as deleteLoanTerms } from './fn/loans/delete-loan-terms';
+export type { PreviewLoan$Params as PreviewLoan$Params } from './fn/loans/preview-loan';
+export { previewLoan as previewLoan } from './fn/loans/preview-loan';
 export type { AccountProjection$Params as AccountProjection$Params } from './fn/projections/account-projection';
 export { accountProjection as accountProjection } from './fn/projections/account-projection';
 export type { CashProjection$Params as CashProjection$Params } from './fn/projections/cash-projection';

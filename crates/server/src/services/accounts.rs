@@ -400,6 +400,12 @@ pub async fn delete(db: &Db, id: AccountId) -> AppResult<()> {
     {
         return Err(DomainError::AccountNotEmpty.into());
     }
+    if db::loans::is_payer(&db.read, id).await? {
+        return Err(AppError::invalid(
+            "ACCOUNT_IS_LOAN_PAYER",
+            "ce compte paie les mensualités d'un prêt : changer d'abord le compte payeur du prêt (R-CPT-15)",
+        ));
+    }
     let mut tx = db.write.begin().await?;
     db::accounts::delete_terms(&mut tx, id).await?;
     db::accounts::delete(&mut *tx, id).await?;

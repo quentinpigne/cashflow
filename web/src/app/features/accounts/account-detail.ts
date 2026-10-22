@@ -40,6 +40,7 @@ import { AccountForm } from './account-form';
 import { CloseAccountDialog } from './close-dialog';
 import { InterestPanel } from '../savings/interest-panel';
 import { ValuationPanel } from '../savings/valuation-panel';
+import { LoanPanel } from './loan-panel';
 import { ReconciliationPanel } from './reconciliation-panel';
 
 interface Filters {
@@ -87,6 +88,7 @@ const PAGE = 200;
     ReconciliationPanel,
     InterestPanel,
     ValuationPanel,
+    LoanPanel,
     MoneyPipe,
     FrDatePipe,
     TransactionDetailView,

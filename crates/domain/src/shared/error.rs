@@ -25,6 +25,14 @@ pub enum DomainError {
     AccountNotEmpty,
     #[error("le compte est clôturé")]
     AccountClosed,
+    #[error(
+        "conditions de prêt invalides : capital positif, taux et assurance positifs ou nuls, durée de 1 à 600 mois"
+    )]
+    InvalidLoanTerms,
+    #[error("le montant ne correspond pas à l'échéance, à 1 € près")]
+    InstallmentMismatch,
+    #[error("cette échéance est déjà payée")]
+    InstallmentAlreadyPaid,
     #[error("ce champ n'est pas modifiable après la création du compte")]
     AccountFieldLocked,
 
@@ -119,6 +127,9 @@ impl DomainError {
             ClosingBalanceNotZero { .. } => "CLOSING_BALANCE_NOT_ZERO",
             AccountNotEmpty => "ACCOUNT_NOT_EMPTY",
             AccountClosed => "ACCOUNT_CLOSED",
+            InvalidLoanTerms => "INVALID_LOAN_TERMS",
+            InstallmentMismatch => "INSTALLMENT_MISMATCH",
+            InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
             AccountFieldLocked => "ACCOUNT_FIELD_LOCKED",
             AmountZero => "AMOUNT_ZERO",
             NoSplit => "NO_SPLIT",
@@ -164,6 +175,8 @@ impl DomainError {
             DateOutsideAccountPeriod { .. } | AccountClosed => "R-CPT-3",
             ClosingBeforeOpening | ClosingBalanceNotZero { .. } => "R-CPT-5",
             AccountNotEmpty => "R-CPT-7",
+            InvalidLoanTerms => "R-CPT-15",
+            InstallmentMismatch | InstallmentAlreadyPaid => "R-CPT-17",
             AmountZero => "R-TRX-1",
             BankLabelImmutable => "R-TRX-2",
             TransactionLocked => "R-TRX-3",

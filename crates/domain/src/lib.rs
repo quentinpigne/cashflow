@@ -7,6 +7,7 @@ pub mod accounts;
 pub mod budgeting;
 pub mod import;
 pub mod ledger;
+pub mod loans;
 pub mod projection;
 pub mod reconciliation;
 pub mod recurrence;

@@ -58,7 +58,7 @@ impl Schedule {
 }
 
 /// `date` + `months` mois, en gardant le jour d'origine quand il existe.
-fn add_months_clamped(date: Date, months: u32) -> Option<Date> {
+pub(crate) fn add_months_clamped(date: Date, months: u32) -> Option<Date> {
     // `checked_add_months` de chrono ramène déjà au dernier jour du mois quand le jour n'existe pas.
     date.checked_add_months(Months::new(months))
 }

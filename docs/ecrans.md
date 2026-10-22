@@ -225,14 +225,16 @@ Formulaire `[mat-dialog]` sur ordinateur, plein écran sur mobile.
 3. **Date d'ouverture** et **solde d'ouverture** (requis, défaut 0). Pour un prêt, le capital restant dû
    est saisi en positif et enregistré en négatif (R-CPT-12), ce que le libellé du champ indique. Pour un
    bien, le champ s'intitule « Valeur du bien » et suggère le prix d'achat (R-CPT-14).
-6. **Conditions du prêt**, section repliée, pour un prêt seulement (R-CPT-15) : capital emprunté, taux
-   nominal, durée en mois, date de la première échéance, assurance (aucune, montant mensuel ou taux),
-   compte payeur, catégories des intérêts et de l'assurance (« Prêts › Intérêts », « Prêts ›
-   Assurance emprunteur » par défaut). La mensualité calculée s'affiche pendant la saisie.
 4. **Coordonnées bancaires**, section repliée : IBAN (validé à la saisie, R-CPT-8), numéro de compte.
 5. **Options**, section repliée, préremplies selon la nature : compter dans le patrimoine, dans
    l'épargne de précaution (R-CPT-13), dans les budgets (R-CPT-11). Devise (EUR par défaut, non
    modifiable après création). Note.
+
+Pour un prêt, les **conditions** (R-CPT-15) se saisissent ensuite depuis sa fiche
+([E3](#e3--fiche-dun-prêt--tableau-damortissement-cpt-09-cpt-10)), dans une popup : capital emprunté,
+taux nominal, durée en mois, date de la première échéance, assurance (aucune, montant mensuel ou taux
+annuel sur le capital), compte payeur, catégories des intérêts et de l'assurance (« Prêts › Intérêts »,
+« Prêts › Assurance emprunteur » par défaut). La mensualité calculée s'affiche pendant la saisie.
 
 Compte d'épargne à taux fixe (Livret A, LDDS…) : ses conditions d'épargne (R-CPT-9) sont créées
 **préremplies** selon la nature, sans être affichées en phase 1. Leur écran (CPT-05) arrive avec
@@ -532,14 +534,16 @@ Pour un prêt qui a des conditions (R-CPT-15) :
 
 - **Résumé** : mensualité (hors assurance et totale), capital restant dû selon le compte et selon le
   tableau, avec l'écart s'il y en a un ; coût total du crédit (intérêts + assurance) ; date de fin.
-- **Tableau d'amortissement** `[mat-table]` : n°, date, mensualité, capital, intérêts, assurance,
-  capital restant dû ; les échéances payées sont marquées et mènent à leur transaction ; la prochaine
-  est mise en évidence. Sur mobile, une ligne par échéance avec date, mensualité et capital restant dû.
+- **Tableau d'amortissement**, une année à la fois (l'année de la prochaine échéance par défaut) : n°,
+  date, mensualité, capital, intérêts, assurance, capital restant dû ; les échéances payées sont
+  marquées et mènent à leur transaction ; la prochaine est mise en évidence. Sur mobile : n°, date,
+  mensualité et capital restant dû.
+- Actions : « Conditions » (popup de saisie) et retrait des conditions, après confirmation : le prêt
+  revient au suivi par valorisations.
 - Action « Ventiler les mensualités passées » : propose en une liste les transactions du compte payeur
   qui correspondent à des échéances non payées (R-CPT-17), à cocher puis valider.
 
-Sans conditions, un bouton « Saisir les conditions du prêt » ouvre la section correspondante du
-formulaire ([E4](#e4--créer-ou-modifier-un-compte-cpt-01-cpt-04)).
+Sans conditions, un bouton « Saisir les conditions du prêt » ouvre la popup de saisie.
 
 ## E22 — Barèmes de taux (EPA-01)
 

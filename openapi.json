@@ -470,6 +470,121 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/loan": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Conditions et tableau d'amortissement d'un prêt (CPT-09).",
+        "operationId": "getLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Crée ou remplace les conditions d'un prêt (R-CPT-15).",
+        "operationId": "saveLoanTerms",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanTermsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Retire les conditions d'un prêt : il revient au suivi par valorisations (R-CPT-12).",
+        "operationId": "deleteLoanTerms",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}/performance": {
       "get": {
         "tags": [
@@ -2576,6 +2691,45 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Institution"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/preview": {
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Mensualité calculée pendant la saisie des conditions (R-CPT-16).",
+        "operationId": "previewLoan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanPreviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPreview"
                 }
               }
             }
@@ -6895,6 +7049,57 @@
         "type": "string",
         "format": "uuid"
       },
+      "InstallmentView": {
+        "type": "object",
+        "required": [
+          "number",
+          "date",
+          "payment_minor",
+          "principal_minor",
+          "interest_minor",
+          "insurance_minor",
+          "total_minor",
+          "remaining_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interest_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "payment_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Mensualité hors assurance."
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remaining_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital restant dû après l'échéance."
+          },
+          "total_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant prélevé : mensualité + assurance."
+          }
+        }
+      },
       "Institution": {
         "type": "object",
         "required": [
@@ -6955,6 +7160,65 @@
             "type": "string"
           }
         }
+      },
+      "Insurance": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "NONE"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Montant mensuel fixe.",
+            "required": [
+              "amount_minor",
+              "mode"
+            ],
+            "properties": {
+              "amount_minor": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "FIXED"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Taux annuel appliqué au capital emprunté.",
+            "required": [
+              "rate_ppm",
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "RATE_ON_PRINCIPAL"
+                ]
+              },
+              "rate_ppm": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "description": "Assurance emprunteur (R-CPT-15)."
       },
       "InterestMethod": {
         "type": "string",
@@ -7220,6 +7484,238 @@
           },
           "rollover": {
             "type": "boolean"
+          }
+        }
+      },
+      "LoanPreview": {
+        "type": "object",
+        "required": [
+          "monthly_payment_minor",
+          "monthly_insurance_minor",
+          "monthly_total_minor"
+        ],
+        "properties": {
+          "monthly_insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthly_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthly_total_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoanPreviewInput": {
+        "type": "object",
+        "description": "Mensualité calculée pendant la saisie des conditions (E4).",
+        "required": [
+          "principal_minor",
+          "annual_rate_ppm",
+          "duration_months",
+          "insurance"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoanTermsInput": {
+        "type": "object",
+        "required": [
+          "principal_minor",
+          "annual_rate_ppm",
+          "duration_months",
+          "first_installment_date",
+          "insurance",
+          "payer_account_id",
+          "interest_category_id"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux nominal annuel hors assurance, en millionièmes."
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "first_installment_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "insurance_category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Requise si l'assurance n'est pas nulle."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interest_category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "payer_account_id": {
+            "$ref": "#/components/schemas/AccountId",
+            "description": "Compte de liquidités qui paie les mensualités."
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital emprunté, positif."
+          }
+        }
+      },
+      "LoanTermsView": {
+        "type": "object",
+        "required": [
+          "principal_minor",
+          "annual_rate_ppm",
+          "duration_months",
+          "first_installment_date",
+          "insurance",
+          "payer_account_id",
+          "interest_category_id",
+          "monthly_payment_minor",
+          "monthly_insurance_minor"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "first_installment_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "insurance_category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interest_category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "monthly_insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthly_payment_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Mensualité hors assurance (R-CPT-16)."
+          },
+          "payer_account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoanView": {
+        "type": "object",
+        "description": "Fiche d'un prêt qui a des conditions (E3, CPT-09).",
+        "required": [
+          "terms",
+          "installments",
+          "outstanding_minor",
+          "theoretical_outstanding_minor",
+          "gap_minor",
+          "total_interest_minor",
+          "total_insurance_minor",
+          "total_cost_minor",
+          "end_date"
+        ],
+        "properties": {
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "gap_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Écart signalé sur la fiche : capital restant dû du compte − celui du tableau."
+          },
+          "installments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallmentView"
+            }
+          },
+          "next_installment": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Prochaine échéance, après aujourd'hui.",
+            "minimum": 0
+          },
+          "outstanding_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital restant dû selon le compte (R-CPT-6), positif."
+          },
+          "terms": {
+            "$ref": "#/components/schemas/LoanTermsView"
+          },
+          "theoretical_outstanding_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital restant dû selon le tableau, aujourd'hui (R-CPT-16), positif."
+          },
+          "total_cost_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_interest_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Coût du crédit : intérêts et assurance de toutes les échéances."
           }
         }
       },
@@ -10196,6 +10692,10 @@
     {
       "name": "budgets",
       "description": "Budgets, projets et notifications (spec 05)"
+    },
+    {
+      "name": "loans",
+      "description": "Prêts : conditions et tableau d'amortissement (spec 01, ADR-0020)"
     },
     {
       "name": "savings",

@@ -21,6 +21,7 @@ pub const TABLES: &[&str] = &[
     "rate_schedule",
     "rate_period",
     "fixed_savings_terms",
+    "loan_terms",
     "valuation",
     "recurring_rule",
     "project",

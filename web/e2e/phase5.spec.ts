@@ -77,3 +77,24 @@ test('E2 : un bien compte dans le patrimoine, en face de son prêt (R-CPT-14, R-
   await page.getByText('Options', { exact: true }).click();
   await expect(page.getByRole('checkbox', { name: /épargne de précaution/ })).toBeDisabled();
 });
+
+test('E3 : tableau d’amortissement d’un prêt et conditions (CPT-09)', async ({ page }) => {
+  await login(page);
+  await openAccount(page, 'Prêt immobilier');
+  const panel = page.locator('app-loan-panel');
+  await expect(panel.getByRole('heading', { name: "Tableau d'amortissement" })).toBeVisible();
+  await expect(panel.getByText('1 109,20 €').first()).toBeVisible();
+  // Une année à la fois : douze échéances, la prochaine mise en évidence.
+  await expect(panel.locator('tbody tr')).toHaveCount(12);
+  await expect(panel.locator('tbody tr.next')).toHaveCount(1);
+  await panel.getByRole('button', { name: 'Année suivante' }).click();
+  await expect(panel.locator('tbody tr')).toHaveCount(12);
+
+  // Les conditions se modifient ; la mensualité se recalcule pendant la saisie.
+  await panel.getByRole('button', { name: /Conditions/ }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('.preview')).toContainText('1 109,20 €');
+  await dialog.getByLabel('Durée').fill('180');
+  await expect(dialog.locator('.preview')).toContainText('1 381,16 €');
+  await dialog.getByRole('button', { name: 'Annuler' }).click();
+});
