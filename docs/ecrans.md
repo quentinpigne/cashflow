@@ -128,8 +128,11 @@ en cours à gauche, comptes à droite, « à catégoriser » et alertes en desso
 
 **Dernières saisies.** Encadré des 5, 10 ou 15 dernières transactions **saisies** (ordre de
 création, quelle que soit leur date d'opération) : date, compte, libellé (en italique si en attente),
-catégorie, ventilation ou virement, montant ; un clic ouvre la transaction (E7). Le nombre affiché est
-gardé dans le navigateur.
+catégorie, ventilation ou virement, montant ; un clic ouvre la transaction (E7). Le nombre affiché se
+choisit dans le menu de réglages de l'encadré et est gardé dans le navigateur.
+
+**Réglages d'un encadré.** Un encadré qui a des options (« Dernières saisies » pour l'instant) porte, à
+côté de sa poignée, un bouton de réglages discret qui ouvre un menu.
 
 **Disposition personnalisable.** Chaque encadré porte une poignée (⋮⋮, en haut à droite) : on le fait
 glisser pour le réordonner dans sa colonne, ou le changer de colonne. La disposition est gardée dans le

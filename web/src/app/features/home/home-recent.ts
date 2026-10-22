@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
 
 import { RecentTransaction } from '../../api/models/recent-transaction';
@@ -9,6 +10,7 @@ import { DataVersion } from '../../core/data-version';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CategoriesStore } from '../../shared/stores';
+import { WidgetMenu } from './widget-menu';
 
 const COUNTS = [5, 10, 15] as const;
 type Count = (typeof COUNTS)[number];
@@ -26,27 +28,17 @@ function storedCount(): Count {
 /**
  * Dernières saisies sur l'accueil (TDB-01) : les transactions les plus récemment créées, quelle que soit
  * leur date d'opération, pour revenir d'un clic sur celle qu'on vient d'enregistrer. Le nombre affiché
- * (5, 10 ou 15) est gardé dans le navigateur.
+ * (5, 10 ou 15), choisi dans le menu de réglages de l'encadré, est gardé dans le navigateur.
  */
 @Component({
   selector: 'app-home-recent',
-  imports: [RouterLink, MatButtonToggleModule, FrDatePipe, MoneyPipe],
+  imports: [RouterLink, MatIconModule, MatMenuModule, WidgetMenu, FrDatePipe, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card">
       <header>
         <h2>Dernières saisies</h2>
-        <mat-button-toggle-group
-          class="counts"
-          hideSingleSelectionIndicator
-          [value]="count()"
-          (change)="setCount($event.value)"
-          aria-label="Nombre de transactions affichées"
-        >
-          @for (n of counts; track n) {
-            <mat-button-toggle [value]="n">{{ n }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
+        <app-widget-menu label="Dernières saisies" [menu]="settings" />
       </header>
       @for (t of recent.value() ?? []; track t.id) {
         <a
@@ -69,6 +61,19 @@ function storedCount(): Count {
         }
       }
       <a class="all" routerLink="/transactions">Toutes les transactions</a>
+      <mat-menu #settings xPosition="before">
+        @for (n of counts; track n) {
+          <button
+            mat-menu-item
+            role="menuitemradio"
+            [attr.aria-checked]="count() === n"
+            (click)="setCount(n)"
+          >
+            <mat-icon>{{ count() === n ? 'check' : '' }}</mat-icon>
+            <span>{{ n }} transactions</span>
+          </button>
+        }
+      </mat-menu>
     </section>
   `,
   styles: `
@@ -87,10 +92,6 @@ function storedCount(): Count {
         margin: 0;
         font: var(--mat-sys-title-medium);
       }
-    }
-    .counts {
-      --mat-standard-button-toggle-height: 1.75rem;
-      font: var(--mat-sys-label-small);
     }
     .row {
       display: flex;

@@ -43,7 +43,8 @@ test('E1 : dernières saisies, la plus récente en tête (TDB-01)', async ({ pag
   await login(page);
   const widget = page.locator('app-home-recent');
   await expect(widget.locator('a.row')).toHaveCount(5);
-  await widget.getByRole('radio', { name: '10' }).click();
+  await widget.getByRole('button', { name: 'Réglages de l’encadré Dernières saisies' }).click();
+  await page.getByRole('menuitemradio', { name: '10 transactions' }).click();
   await expect(widget.locator('a.row')).toHaveCount(10);
   // Le choix est gardé dans le navigateur.
   await page.reload();
