@@ -11,6 +11,8 @@ export const WIDGETS = [
   'budget',
   'savings',
   'accounts',
+  'assets',
+  'loans',
 ] as const;
 
 export type Widget = (typeof WIDGETS)[number];
@@ -26,6 +28,8 @@ export const WIDGET_LABELS: Record<Widget, string> = {
   budget: 'Budget du mois',
   savings: 'Épargne',
   accounts: 'Comptes',
+  assets: 'Biens',
+  loans: 'Prêts',
 };
 
 /** Nombre de colonnes, d'après la largeur disponible : une sur mobile, jusqu'à quatre sur grand écran. */
@@ -59,22 +63,24 @@ const DEFAULTS: Record<number, Widget[][]> = {
       'budget',
       'savings',
       'accounts',
+      'assets',
+      'loans',
     ],
   ],
   2: [
     ['net-worth', 'month', 'recent', 'alerts', 'missed', 'uncategorized'],
-    ['budget', 'savings', 'accounts'],
+    ['budget', 'savings', 'accounts', 'assets', 'loans'],
   ],
   3: [
     ['net-worth', 'month', 'alerts', 'missed'],
     ['recent', 'uncategorized', 'savings'],
-    ['budget', 'accounts'],
+    ['budget', 'accounts', 'assets', 'loans'],
   ],
   4: [
     ['net-worth', 'month', 'alerts', 'missed'],
     ['recent', 'uncategorized'],
     ['budget', 'savings'],
-    ['accounts'],
+    ['accounts', 'assets', 'loans'],
   ],
 };
 

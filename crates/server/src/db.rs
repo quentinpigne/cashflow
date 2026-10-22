@@ -1,6 +1,7 @@
 //! Accès à la base SQLite (ADR-0017) : connexion, migrations et requêtes, par module.
 
 pub mod accounts;
+pub mod assets;
 pub mod auth;
 pub mod budgets;
 pub mod categories;
@@ -115,20 +116,19 @@ mod tests {
         partial.run(&db.write).await.expect("migrations partielles");
     }
 
-    /// La migration de la famille « Bien » recrée la table des comptes (ADR-0017, ADR-0019) : les comptes et
-    /// tout ce qui les référence sont conservés, et les clés étrangères restent actives.
-    #[tokio::test]
-    async fn adr_0019_account_table_recreation_keeps_data_and_foreign_keys() {
-        let dir = tempfile::tempdir().unwrap();
-        let db = Db::connect(&dir.path().join("test.db")).await.unwrap();
-        migrate_until(&db, 20261022000001).await;
-        let id = "0192f000-0000-7000-8000-000000000001";
+    /// Insère un compte d'une nature donnée, avec une valorisation, dans une base au schéma d'avant la migration des
+    /// biens et des prêts.
+    async fn legacy_account(db: &Db, n: u32, kind: &str, opening: i64, valuation: i64) {
         let now = "2026-10-22T00:00:00Z";
+        let id = format!("0192f000-0000-7000-8000-{n:012}");
         sqlx::query(
             "INSERT INTO account (id, name, kind, opening_date, opening_balance, created_at, updated_at)
-             VALUES (?, 'Prêt', 'MORTGAGE', '2026-01-01', -13900000, ?, ?)",
+             VALUES (?, ?, ?, '2026-01-01', ?, ?, ?)",
         )
-        .bind(id)
+        .bind(&id)
+        .bind(kind)
+        .bind(kind)
+        .bind(opening)
         .bind(now)
         .bind(now)
         .execute(&db.write)
@@ -136,44 +136,80 @@ mod tests {
         .unwrap();
         sqlx::query(
             "INSERT INTO valuation (id, account_id, date, value, source, created_at, updated_at)
-             VALUES ('0192f000-0000-7000-8000-000000000002', ?, '2026-06-30', -13500000, 'MANUAL', ?, ?)",
+             VALUES (?, ?, '2026-06-30', ?, 'MANUAL', ?, ?)",
         )
-        .bind(id)
+        .bind(format!("0192f000-0000-7000-8000-{:012}", n + 100))
+        .bind(&id)
+        .bind(valuation)
         .bind(now)
         .bind(now)
         .execute(&db.write)
         .await
         .unwrap();
+    }
+
+    /// Les comptes de bien et de prêt deviennent des biens et des prêts (ADR-0019) : valorisations reprises, rubriques
+    /// activées, clés étrangères intactes.
+    #[tokio::test]
+    async fn adr_0019_property_and_loan_accounts_become_assets_and_loans() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::connect(&dir.path().join("test.db")).await.unwrap();
+        migrate_until(&db, 20261022000005).await;
+        legacy_account(&db, 1, "REAL_ESTATE", 25_000_000, 26_000_000).await;
+        legacy_account(&db, 2, "MORTGAGE", -13_900_000, -13_500_000).await;
+        legacy_account(&db, 3, "CHECKING", 100_000, 0).await;
 
         db.migrate().await.unwrap();
 
-        let kind: String =
-            sqlx::query_scalar("SELECT kind FROM account WHERE id = ?").bind(id).fetch_one(&db.write).await.unwrap();
-        assert_eq!(kind, "MORTGAGE");
+        let accounts: Vec<(String,)> = sqlx::query_as("SELECT kind FROM account").fetch_all(&db.write).await.unwrap();
+        assert_eq!(accounts, [("CHECKING".to_owned(),)]);
+        let asset: (i64, i64) =
+            sqlx::query_as("SELECT a.purchase_price, v.value FROM asset a JOIN asset_valuation v ON v.asset_id = a.id")
+                .fetch_one(&db.write)
+                .await
+                .unwrap();
+        assert_eq!(asset, (25_000_000, 26_000_000));
+        let loan: (String, i64, i64) = sqlx::query_as(
+            "SELECT l.mode, l.principal, b.outstanding FROM loan l JOIN loan_balance b ON b.loan_id = l.id",
+        )
+        .fetch_one(&db.write)
+        .await
+        .unwrap();
+        assert_eq!(loan, ("MANUAL".to_owned(), 13_900_000, 13_500_000));
+        let features: i64 = sqlx::query_scalar("SELECT count(*) FROM app_setting WHERE key LIKE 'features.%'")
+            .fetch_one(&db.write)
+            .await
+            .unwrap();
+        assert_eq!(features, 2);
         let broken: Vec<(String,)> = sqlx::query_as("PRAGMA foreign_key_check").fetch_all(&db.write).await.unwrap();
         assert!(broken.is_empty());
         let enforced: i64 = sqlx::query_scalar("PRAGMA foreign_keys").fetch_one(&db.write).await.unwrap();
         assert_eq!(enforced, 1);
-        // La nouvelle nature est acceptée, et la valorisation pointe toujours sur le compte.
+    }
+
+    /// Une donnée que la migration ne sait pas convertir (ici une transaction ordinaire sur un compte de prêt) la fait
+    /// échouer, sans rien modifier (ADR-0019).
+    #[tokio::test]
+    async fn adr_0019_migration_stops_on_unconvertible_data() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::connect(&dir.path().join("test.db")).await.unwrap();
+        migrate_until(&db, 20261022000005).await;
+        legacy_account(&db, 2, "MORTGAGE", -13_900_000, -13_500_000).await;
+        let now = "2026-10-22T00:00:00Z";
         sqlx::query(
-            "INSERT INTO account (id, name, kind, opening_date, opening_balance, created_at, updated_at)
-             VALUES ('0192f000-0000-7000-8000-000000000003', 'Maison', 'REAL_ESTATE', '2026-01-01', 25000000, ?, ?)",
+            "INSERT INTO ledger_transaction (id, account_id, date, amount, label, clearing_status, origin,
+                                             created_at, updated_at)
+             VALUES ('0192f000-0000-7000-8000-000000000999', '0192f000-0000-7000-8000-000000000002', '2026-03-01',
+                     1000, 'Remboursement', 'CLEARED', 'MANUAL', ?, ?)",
         )
         .bind(now)
         .bind(now)
         .execute(&db.write)
         .await
         .unwrap();
-        let orphan = sqlx::query(
-            "INSERT INTO valuation (id, account_id, date, value, source, created_at, updated_at)
-             VALUES ('0192f000-0000-7000-8000-000000000004', '0192f000-0000-7000-8000-00000000ffff', '2026-06-30', 1,
-                     'MANUAL', ?, ?)",
-        )
-        .bind(now)
-        .bind(now)
-        .execute(&db.write)
-        .await;
-        assert!(orphan.is_err());
+        assert!(db.migrate().await.is_err());
+        let accounts: i64 = sqlx::query_scalar("SELECT count(*) FROM account").fetch_one(&db.write).await.unwrap();
+        assert_eq!(accounts, 1, "rien n'a été modifié");
     }
 
     /// La migration des virements les rattache à l'unique ventilation de chaque jambe (ADR-0021) ; supprimer une

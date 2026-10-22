@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO asset (id, name, kind, purchase_date, purchase_price, sold_on, sale_price, include_in_net_worth,\n                            notes, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (id) DO UPDATE SET\n             name = excluded.name, kind = excluded.kind, purchase_date = excluded.purchase_date,\n             purchase_price = excluded.purchase_price, sold_on = excluded.sold_on, sale_price = excluded.sale_price,\n             include_in_net_worth = excluded.include_in_net_worth, notes = excluded.notes,\n             updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "e8b767d6c6b500318ef110e51289a1e849e8d99be1e70471a088878a669b8b7a"
+}

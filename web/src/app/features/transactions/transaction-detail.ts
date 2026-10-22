@@ -34,11 +34,12 @@ import { errorMessage } from '../../core/http-errors';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
 import { ORIGIN_LABELS, STATUS_LABELS } from '../../core/labels';
 import { abs, negate, parseMoney, toEditable } from '../../core/money';
+import { decodeAttachment, encodeAttachment } from '../../core/attachments';
 import { CategoryPicker } from '../../shared/category-picker';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { CategoriesStore, ProjectsStore } from '../../shared/stores';
+import { AttachmentsStore, CategoriesStore, ProjectsStore } from '../../shared/stores';
 import { MarkTransferDialog } from './mark-transfer';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
@@ -135,6 +136,22 @@ export class TransactionDetailView {
   protected readonly value = computed(() => (this.detail.hasValue() ? this.detail.value() : null));
   protected readonly splits = computed(() => this.pendingSplits() ?? this.value()?.splits ?? []);
   protected readonly isSplit = computed(() => this.splits().length > 1);
+  private readonly attachments = inject(AttachmentsStore);
+
+  /** Libellé d'une ventilation : catégorie, remboursement d'un prêt ou acquisition d'un bien (R-TRX-37). */
+  protected splitLabel(split: {
+    category_id?: string | null;
+    loan_id?: string | null;
+    asset_id?: string | null;
+  }): string {
+    const value =
+      'loan_id' in split || 'asset_id' in split ? encodeAttachment(split) : split.category_id;
+    const attachment = value ? this.attachments.byValue().get(value) : undefined;
+    if (attachment) return attachment.label;
+    if (value?.startsWith('loan:')) return 'Remboursement de prêt';
+    if (value?.startsWith('asset:')) return 'Acquisition de bien';
+    return this.categories.label(value);
+  }
 
   constructor() {
     // Le formulaire reprend la transaction à chaque chargement.
@@ -150,7 +167,7 @@ export class TransactionDetailView {
         note: t.note ?? '',
       });
       this.direction.set(t.amount_minor < 0 ? 'out' : 'in');
-      this.category.set(t.splits.length === 1 ? (t.splits[0].category_id ?? null) : null);
+      this.category.set(t.splits.length === 1 ? encodeAttachment(t.splits[0]) : null);
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       this.pendingSplits.set(null);
       // Rapprochée : montant et date de solde verrouillés (R-TRX-3).
@@ -183,7 +200,7 @@ export class TransactionDetailView {
     }
     const current = this.splits().map((s) => ({
       amount_minor: s.amount_minor,
-      category_id: s.category_id ?? null,
+      category_id: encodeAttachment(s),
       note: s.note ?? null,
     }));
     // Une ventilation unique suit le montant saisi (R-TRX-4).
@@ -232,7 +249,7 @@ export class TransactionDetailView {
     ) {
       splits = t.splits.map((s) => ({
         amount_minor: s.amount_minor,
-        category_id: s.category_id ?? null,
+        category_id: encodeAttachment(s),
         note: s.note ?? null,
       }));
     }
@@ -248,7 +265,12 @@ export class TransactionDetailView {
             amount_minor: amount,
             label: value.label,
             note: value.note || null,
-            splits: splits?.map((s) => ({ ...s, project_id: this.project() })) ?? null,
+            splits:
+              splits?.map((s) => ({
+                ...s,
+                ...decodeAttachment(s.category_id),
+                project_id: this.project(),
+              })) ?? null,
           },
         }),
       );
@@ -276,7 +298,7 @@ export class TransactionDetailView {
     try {
       await firstValueFrom(
         this.loans.payLoanInstallments({
-          id: p.loan_account_id,
+          id: p.loan_id,
           body: [{ transaction_id: p.transaction_id, installment_number: p.installment_number }],
         }),
       );
@@ -302,7 +324,7 @@ export class TransactionDetailView {
     try {
       await firstValueFrom(
         this.loans.unpayLoanInstallment({
-          id: payment.loan_account_id,
+          id: payment.loan_id,
           number: payment.installment_number,
         }),
       );
@@ -361,6 +383,8 @@ export class TransactionDetailView {
             splits: t.splits.map((s) => ({
               amount_minor: s.amount_minor,
               category_id: s.category_id ?? null,
+              loan_id: s.loan_id ?? null,
+              asset_id: s.asset_id ?? null,
               note: s.note ?? null,
               project_id: this.keptProject(s.project_id),
             })),
@@ -385,6 +409,8 @@ export class TransactionDetailView {
             : t.splits.map((s) => ({
                 amount_minor: s.amount_minor,
                 category_id: s.category_id ?? null,
+                loan_id: s.loan_id ?? null,
+                asset_id: s.asset_id ?? null,
                 note: s.note ?? null,
                 project_id: this.keptProject(s.project_id),
               })),

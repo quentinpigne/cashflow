@@ -14,19 +14,12 @@ pub enum AccountFamily {
     Cash,
     FixedSavings,
     VariableSavings,
-    Liability,
-    /// Bien possédé (logement, véhicule), valorisé comme l'épargne variable (R-CPT-14, ADR-0019).
-    Property,
 }
 
 impl AccountFamily {
-    pub const ALL: [AccountFamily; 5] = [
-        AccountFamily::Cash,
-        AccountFamily::FixedSavings,
-        AccountFamily::VariableSavings,
-        AccountFamily::Property,
-        AccountFamily::Liability,
-    ];
+    /// Les biens et les prêts ne sont pas des comptes (ADR-0019, spec 09).
+    pub const ALL: [AccountFamily; 3] =
+        [AccountFamily::Cash, AccountFamily::FixedSavings, AccountFamily::VariableSavings];
 
     /// Le solde se calcule à partir des transactions (R-CPT-4) ; sinon c'est une valeur (R-CPT-6).
     pub fn has_computed_balance(self) -> bool {
@@ -72,12 +65,6 @@ account_kinds! {
     EmployeeSavings => VariableSavings,
     Crypto => VariableSavings,
     VariableOther => VariableSavings,
-    Mortgage => Liability,
-    ConsumerLoan => Liability,
-    LoanOther => Liability,
-    RealEstate => Property,
-    Vehicle => Property,
-    PropertyOther => Property,
 }
 
 impl AccountKind {
@@ -94,11 +81,11 @@ impl AccountKind {
 
     /// Les drapeaux qui ne peuvent pas être activés pour cette nature.
     pub fn allows_emergency_fund(self) -> bool {
-        !matches!(self.family(), AccountFamily::Liability | AccountFamily::Property)
+        true
     }
 
     pub fn allows_budget(self) -> bool {
-        !matches!(self.family(), AccountFamily::VariableSavings | AccountFamily::Liability | AccountFamily::Property)
+        self.family() != AccountFamily::VariableSavings
     }
 
     /// Conditions d'épargne préremplies d'un compte à taux déterminé (R-CPT-9).
@@ -225,9 +212,7 @@ mod tests {
         assert_eq!(AccountKind::Checking.family(), AccountFamily::Cash);
         assert_eq!(AccountKind::LivretA.family(), AccountFamily::FixedSavings);
         assert_eq!(AccountKind::Pea.family(), AccountFamily::VariableSavings);
-        assert_eq!(AccountKind::Mortgage.family(), AccountFamily::Liability);
-        assert_eq!(AccountKind::RealEstate.family(), AccountFamily::Property);
-        assert_eq!(AccountKind::ALL.len(), 25);
+        assert_eq!(AccountKind::ALL.len(), 19);
     }
 
     #[test]
@@ -235,7 +220,6 @@ mod tests {
         assert!(AccountKind::Checking.default_in_emergency_fund());
         assert!(AccountKind::LivretJeune.default_in_emergency_fund());
         assert!(!AccountKind::Pel.default_in_emergency_fund());
-        assert!(!AccountKind::Mortgage.allows_emergency_fund());
     }
 
     #[test]
@@ -243,15 +227,6 @@ mod tests {
         assert!(AccountKind::Checking.default_in_budget());
         assert!(!AccountKind::LivretA.default_in_budget());
         assert!(!AccountKind::Pea.allows_budget());
-    }
-
-    #[test]
-    fn r_cpt_14_property_is_outside_emergency_fund_and_budgets() {
-        for kind in [AccountKind::RealEstate, AccountKind::Vehicle, AccountKind::PropertyOther] {
-            assert!(!kind.default_in_emergency_fund() && !kind.allows_emergency_fund());
-            assert!(!kind.default_in_budget() && !kind.allows_budget());
-            assert!(!kind.family().has_computed_balance());
-        }
     }
 
     #[test]

@@ -326,7 +326,7 @@ pub async fn materialize(db: &Db, id: RecurringRuleId, input: &MaterializeInput)
         fingerprint: None,
     };
     let splits: Vec<NewSplit<'_>> = if rule.split_template.is_empty() {
-        vec![NewSplit { amount: rule.amount, category_id: None, note: None, project_id: None }]
+        vec![NewSplit { amount: rule.amount, category_id: None, note: None, project_id: None, ..Default::default() }]
     } else {
         rule.split_template
             .iter()
@@ -335,6 +335,7 @@ pub async fn materialize(db: &Db, id: RecurringRuleId, input: &MaterializeInput)
                 category_id: s.category_id,
                 note: None,
                 project_id: None,
+                ..Default::default()
             })
             .collect()
     };

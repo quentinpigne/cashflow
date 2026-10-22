@@ -9,6 +9,9 @@ import { AccountsService } from '../api/services/accounts.service';
 import { BudgetsService } from '../api/services/budgets.service';
 import { CategoriesService } from '../api/services/categories.service';
 import { InstitutionsService } from '../api/services/institutions.service';
+import { AssetsService } from '../api/services/assets.service';
+import { LoansService } from '../api/services/loans.service';
+import { SystemService } from '../api/services/system.service';
 import { DataVersion } from '../core/data-version';
 
 /** Une catégorie à plat, avec son libellé complet « Parent › Enfant ». */
@@ -109,4 +112,68 @@ export class ProjectsStore {
   /** On ne rattache de nouvelles transactions qu'à un projet en cours (R-BUD-24). */
   readonly active = computed(() => this.list().filter((p) => p.active));
   readonly byId = computed(() => new Map(this.list().map((p) => [p.id, p])));
+}
+
+/** Rubriques activées (R-BIE-7, R-PRE-12), pour le menu, l'accueil et les formulaires. */
+@Injectable({ providedIn: 'root' })
+export class FeaturesStore {
+  private readonly api = inject(SystemService);
+  private readonly version = inject(DataVersion);
+
+  readonly features = rxResource({
+    params: () => this.version.value(),
+    stream: () => this.api.getFeatures(),
+  });
+  readonly assets = computed(() => this.features.value()?.assets ?? false);
+  readonly loans = computed(() => this.features.value()?.loans ?? false);
+}
+
+/** Un rattachement possible d'une ventilation, à la place d'une catégorie (R-TRX-37). */
+export interface AttachmentOption {
+  /** `loan:<id>` ou `asset:<id>`. */
+  value: string;
+  group: 'Remboursement' | 'Acquisition';
+  name: string;
+  label: string;
+}
+
+/**
+ * Prêts et biens auxquels rattacher une ventilation : remboursement (R-PRE-7) et acquisition (R-BIE-8), seulement
+ * si la rubrique est activée.
+ */
+@Injectable({ providedIn: 'root' })
+export class AttachmentsStore {
+  private readonly loansApi = inject(LoansService);
+  private readonly assetsApi = inject(AssetsService);
+  private readonly version = inject(DataVersion);
+  private readonly features = inject(FeaturesStore);
+
+  private readonly loans = rxResource({
+    params: () => (this.features.loans() ? this.version.value() : undefined),
+    stream: () => this.loansApi.listLoans(),
+  });
+  private readonly assets = rxResource({
+    params: () => (this.features.assets() ? this.version.value() : undefined),
+    stream: () => this.assetsApi.listAssets(),
+  });
+
+  readonly options = computed<AttachmentOption[]>(() => [
+    ...(this.features.loans() ? (this.loans.value() ?? []) : [])
+      .filter((l) => !l.closed_on)
+      .map((l) => ({
+        value: `loan:${l.id}`,
+        group: 'Remboursement' as const,
+        name: l.name,
+        label: `Remboursement › ${l.name}`,
+      })),
+    ...(this.features.assets() ? (this.assets.value() ?? []) : [])
+      .filter((a) => !a.sold_on)
+      .map((a) => ({
+        value: `asset:${a.id}`,
+        group: 'Acquisition' as const,
+        name: a.name,
+        label: `Acquisition › ${a.name}`,
+      })),
+  ]);
+  readonly byValue = computed(() => new Map(this.options().map((o) => [o.value, o])));
 }

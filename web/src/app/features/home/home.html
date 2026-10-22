@@ -69,10 +69,20 @@
                         <dl class="detail">
                           <dt>Actif brut</dt>
                           <dd class="amount">{{ d.net_worth.assets_minor | money }}</dd>
+                          @if (d.net_worth.asset_values_minor > 0) {
+                            <dt class="sub">dont biens</dt>
+                            <dd class="amount sub">{{ d.net_worth.asset_values_minor | money }}</dd>
+                          }
                           <dt>Dettes</dt>
                           <dd class="amount negative">
                             {{ d.net_worth.liabilities_minor | money }}
                           </dd>
+                          @if (d.net_worth.loans_outstanding_minor > 0) {
+                            <dt class="sub">dont prêts</dt>
+                            <dd class="amount sub">
+                              {{ d.net_worth.loans_outstanding_minor | money }}
+                            </dd>
+                          }
                         </dl>
                       }
                     </section>
@@ -233,6 +243,44 @@
                         </div>
                       }
                     </section>
+                  }
+                  @case ('assets') {
+                    @if (d.assets.length > 0) {
+                      <section class="card assets">
+                        <h2 class="widget-title"><a routerLink="/biens">Biens</a></h2>
+                        <app-widget-menu widget="assets" />
+                        @for (a of d.assets; track a.id) {
+                          <a class="account" [routerLink]="['/biens', a.id]">
+                            <span>{{ a.name }}</span>
+                            <span class="amount">{{ a.value_minor ?? 0 | money }}</span>
+                          </a>
+                        }
+                      </section>
+                    }
+                  }
+                  @case ('loans') {
+                    @if (d.loans.length > 0) {
+                      <section class="card loans">
+                        <h2 class="widget-title"><a routerLink="/prets">Prêts</a></h2>
+                        <app-widget-menu widget="loans" />
+                        @for (l of d.loans; track l.id) {
+                          <a class="account loan" [routerLink]="['/prets', l.id]">
+                            <span class="loan-name">
+                              <span>{{ l.name }}</span>
+                              @if (l.next_installment; as n) {
+                                <span class="muted small"
+                                  >{{ n.total_minor | money }} le
+                                  {{ n.date | frDate: 'short' }}</span
+                                >
+                              }
+                            </span>
+                            <span class="amount negative">{{
+                              l.outstanding_minor ?? 0 | money
+                            }}</span>
+                          </a>
+                        }
+                      </section>
+                    }
                   }
                 }
               }

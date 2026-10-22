@@ -375,7 +375,13 @@ pub async fn record_interest(db: &Db, account: AccountId, year: i32, today: Date
         recurring_rule_id: None,
         fingerprint: None,
     };
-    let split = NewSplit { amount, category_id: c.terms.interest_category_id, note: None, project_id: None };
+    let split = NewSplit {
+        amount,
+        category_id: c.terms.interest_category_id,
+        note: None,
+        project_id: None,
+        ..Default::default()
+    };
     super::transactions::insert_validated(&mut tx, &new, &[split]).await?;
     tx.commit().await?;
     Ok(InterestRecorded { transaction_id: id, amount_minor: amount.minor() })
@@ -426,15 +432,7 @@ pub async fn valuations(db: &Db, account: AccountId) -> AppResult<Vec<ValuationV
 pub async fn save_valuation(db: &Db, account: AccountId, input: &ValuationInput) -> AppResult<Vec<ValuationView>> {
     let row = valued_account(db, account).await?;
     super::transactions::period(&row).check(input.date)?;
-    let liability = row.kind.family() == AccountFamily::Liability;
-    if liability && input.value_minor > 0 {
-        return Err(AppError::invalid_field(
-            "LIABILITY_VALUE_POSITIVE",
-            "value_minor",
-            "le capital restant dû d'un prêt est négatif (R-CPT-12)",
-        ));
-    }
-    if !liability && input.value_minor < 0 {
+    if input.value_minor < 0 {
         return Err(AppError::invalid_field("NEGATIVE_VALUE", "value_minor", "une valorisation est positive"));
     }
     let exists = db::savings::valuations(&db.read, account).await?.iter().any(|v| v.date == input.date);
@@ -736,7 +734,7 @@ pub async fn overview(db: &Db, today: Date) -> AppResult<SavingsOverview> {
             date: f.date,
             amount: f.amount,
             category_kind: f.category_kind,
-            is_transfer: f.is_transfer,
+            is_movement: f.is_movement,
             is_eur: f.currency == Currency::EUR.code(),
         })
         .collect();

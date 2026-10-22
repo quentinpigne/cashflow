@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE split SET asset_id = NULL, updated_at = ? WHERE asset_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "4b4e8a957672434baaec1545cfa084418347c5011274b6db8e687d0d776ecbd4"
+}

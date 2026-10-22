@@ -4,7 +4,7 @@
 import { Insurance } from '../models/insurance';
 
 /**
- * Mensualité calculée pendant la saisie des conditions (E4).
+ * Mensualité calculée pendant la saisie des conditions (E28).
  */
 export interface LoanPreviewInput {
   annual_rate_ppm: number;

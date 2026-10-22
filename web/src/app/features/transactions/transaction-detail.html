@@ -85,25 +85,19 @@
             <span>
               <mat-icon>account_balance</mat-icon>
               Échéance n° {{ lp.installment_number }} du prêt
-              <a [routerLink]="['/comptes', lp.loan_account_id]">{{ lp.loan_name }}</a>
+              <a [routerLink]="['/prets', lp.loan_id]">{{ lp.loan_name }}</a>
             </span>
             <button mat-button type="button" (click)="unpayInstallment(t)">
               Annuler la ventilation
             </button>
           </div>
-          @if (lp.is_payment) {
-            @for (split of t.splits; track split.id) {
-              <div class="split">
-                <span>{{
-                  split.category_id ? categories.label(split.category_id) : 'Capital remboursé'
-                }}</span>
-                <span class="amount" [class.negative]="split.amount_minor < 0">{{
-                  split.amount_minor | money: t.currency
-                }}</span>
-              </div>
-            }
-          } @else {
-            <p class="muted">Part de capital de la mensualité, qui réduit la dette.</p>
+          @for (split of t.splits; track split.id) {
+            <div class="split">
+              <span>{{ split.loan_id ? 'Remboursement' : splitLabel(split) }}</span>
+              <span class="amount" [class.negative]="split.amount_minor < 0">{{
+                split.amount_minor | money: t.currency
+              }}</span>
+            </div>
           }
         </div>
       } @else if (t.transfer; as transfer) {
@@ -126,7 +120,7 @@
           @for (split of splits(); track $index) {
             <div class="split">
               <span
-                >{{ categories.label(split.category_id) }}
+                >{{ splitLabel(split) }}
                 @if (split.note) {
                   · <span class="muted">{{ split.note }}</span>
                 }
@@ -143,6 +137,7 @@
       } @else {
         <app-category-picker
           [value]="category()"
+          [attachments]="true"
           (valueChange)="category.set($event)"
           [kind]="direction() === 'out' ? 'EXPENSE' : 'INCOME'"
         />

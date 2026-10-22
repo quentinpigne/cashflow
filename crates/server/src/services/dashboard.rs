@@ -2,13 +2,15 @@
 
 use cashflow_domain::accounts::AccountFamily;
 use cashflow_domain::ledger::ClearingStatus;
-use cashflow_domain::reporting::{self, AccountValue, Flows, Period, SplitFact};
+use cashflow_domain::reporting::{self, Flows, HoldingValue, Period, SplitFact};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, SplitId, TransactionId};
 use cashflow_domain::{Currency, Date, Money};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use super::accounts::{self, Account};
+use super::assets::{AssetBook, AssetSummary};
+use super::loans::{LoanBook, LoanSummary};
 use crate::db::{self, Db};
 use crate::error::AppResult;
 
@@ -17,9 +19,15 @@ const UNCATEGORIZED_SHOWN: i64 = 5;
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct NetWorthView {
+    /// Actif brut : comptes et biens.
     pub assets_minor: i64,
+    /// Dettes : prêts et comptes à découvert, négatives.
     pub liabilities_minor: i64,
     pub total_minor: i64,
+    /// Dont valeur des biens (R-BIE-2).
+    pub asset_values_minor: i64,
+    /// Dont capital restant dû des prêts (R-PRE-4), positif.
+    pub loans_outstanding_minor: i64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -90,36 +98,75 @@ pub struct Dashboard {
     /// Mois précédent, à la même date.
     pub previous_month: FlowsView,
     pub families: Vec<FamilyGroup>,
+    /// Biens possédés, si la rubrique est activée (TDB-08).
+    pub assets: Vec<AssetSummary>,
+    /// Prêts en cours, si la rubrique est activée (TDB-08).
+    pub loans: Vec<LoanSummary>,
     pub uncategorized: UncategorizedView,
     /// Comptes qui demandent une action : écart de rapprochement ou transactions en attente anciennes (R-TDB-10).
     pub alerts: Vec<super::reconciliation::AccountHealth>,
 }
 
-fn values(rows: &[db::accounts::AccountRow], ledger: &accounts::Ledger, at: Date) -> Vec<AccountValue> {
-    rows.iter()
-        .filter(|row| row.opening_date <= at)
-        .map(|row| {
-            let (value, _) = ledger.value(row, at);
-            // Un compte clôturé compte dans le patrimoine jusqu'à sa date de clôture (CPT-04).
-            let open = row.closed_on.is_none_or(|closed| closed >= at);
-            AccountValue {
-                family: row.kind.family(),
-                include_in_net_worth: row.include_in_net_worth && open,
-                is_eur: row.currency == Currency::EUR,
-                value,
-            }
+/// Ce qui compte dans le patrimoine à une date (R-TDB-1) : comptes, biens possédés, prêts en cours.
+pub(crate) fn holdings(
+    rows: &[db::accounts::AccountRow],
+    ledger: &accounts::Ledger,
+    assets: &AssetBook,
+    loans: &LoanBook,
+    at: Date,
+) -> Vec<HoldingValue> {
+    let accounts = rows.iter().filter(|row| row.opening_date <= at).map(|row| {
+        let (value, _) = ledger.value(row, at);
+        // Un compte clôturé compte dans le patrimoine jusqu'à sa date de clôture (CPT-04).
+        let open = row.closed_on.is_none_or(|closed| closed >= at);
+        HoldingValue {
+            include_in_net_worth: row.include_in_net_worth && open,
+            is_eur: row.currency == Currency::EUR,
+            value,
+        }
+    });
+    let goods = assets.assets.iter().filter_map(|a| {
+        assets.value(a, at).map(|value| HoldingValue {
+            include_in_net_worth: a.include_in_net_worth,
+            is_eur: true,
+            value,
         })
-        .collect()
+    });
+    let debts = loans.loans.iter().filter_map(|l| {
+        loans.outstanding(l, at).map(|debt| HoldingValue {
+            include_in_net_worth: l.include_in_net_worth,
+            is_eur: true,
+            value: -debt,
+        })
+    });
+    accounts.chain(goods).chain(debts).collect()
 }
 
 pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
     let accounts = accounts::list(db, today).await?;
     let rows = db::accounts::list(&db.read).await?;
     let ledger = accounts::Ledger::load(db).await?;
+    let asset_book = AssetBook::load(db).await?;
+    let loan_book = LoanBook::load(db).await?;
 
-    let net_worth = reporting::net_worth(&values(&rows, &ledger, today));
+    let net_worth = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, today));
     let previous_end = reporting::end_of_previous_month(today);
-    let previous = reporting::net_worth(&values(&rows, &ledger, previous_end));
+    let previous = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, previous_end));
+    let asset_values: Money =
+        asset_book.assets.iter().filter(|a| a.include_in_net_worth).filter_map(|a| asset_book.value(a, today)).sum();
+    let loans_outstanding: Money =
+        loan_book.loans.iter().filter(|l| l.include_in_net_worth).filter_map(|l| loan_book.outstanding(l, today)).sum();
+    let features = super::features::get(db).await?;
+    let assets = if features.assets {
+        super::assets::list(db, today).await?.into_iter().filter(|a| a.value_minor.is_some()).collect()
+    } else {
+        Vec::new()
+    };
+    let loans = if features.loans {
+        super::loans::list(db, today).await?.into_iter().filter(|l| l.outstanding_minor.is_some()).collect()
+    } else {
+        Vec::new()
+    };
 
     let (current, previous_period) = reporting::month_to_date(today);
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, previous_period.from, current.to)
@@ -129,7 +176,7 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
             date: f.date,
             amount: f.amount,
             category_kind: f.category_kind,
-            is_transfer: f.is_transfer,
+            is_movement: f.is_movement,
             is_eur: f.currency == Currency::EUR.code(),
         })
         .collect();
@@ -176,6 +223,8 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
             assets_minor: net_worth.assets.minor(),
             liabilities_minor: net_worth.liabilities.minor(),
             total_minor: net_worth.total.minor(),
+            asset_values_minor: asset_values.minor(),
+            loans_outstanding_minor: loans_outstanding.minor(),
         },
         previous_net_worth_minor: previous.total.minor(),
         net_worth_variation_minor: variation.minor(),
@@ -183,6 +232,8 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
         month: flows_view(current, month),
         previous_month: flows_view(previous_period, previous_month),
         families,
+        assets,
+        loans,
         uncategorized,
         alerts: super::reconciliation::health(db, today)
             .await?

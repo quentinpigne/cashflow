@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id AS \"transaction_id!\", t.date AS \"date!: Date\", t.label AS \"label!\", s.amount, s.loan_id,\n                  s.asset_id\n           FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id\n           WHERE s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n           ORDER BY t.date DESC, t.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "transaction_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date!: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "label!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "loan_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "loan_id"
+          }
+        }
+      },
+      {
+        "name": "asset_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "asset_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "1c7b0699b991a2016170b9b6536a675d6ba412cf4483083bad0b77e27c7e44d8"
+}

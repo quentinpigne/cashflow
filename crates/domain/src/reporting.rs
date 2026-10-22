@@ -4,14 +4,13 @@ use chrono::{Datelike, Months, NaiveDate};
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
 
-use crate::accounts::AccountFamily;
 use crate::ledger::category::CategoryKind;
 use crate::shared::{Date, Money, Rate};
 
-/// Valeur d'un compte à une date, et ce qu'il faut savoir pour l'agréger.
+/// Ce qui compte dans le patrimoine à une date (R-TDB-1) : un compte, un bien (valeur positive) ou un prêt
+/// (capital restant dû, négatif).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AccountValue {
-    pub family: AccountFamily,
+pub struct HoldingValue {
     pub include_in_net_worth: bool,
     /// Les comptes hors euro sont exclus des agrégats (R-CPT-2).
     pub is_eur: bool,
@@ -25,14 +24,14 @@ pub struct NetWorth {
     pub total: Money,
 }
 
-/// Patrimoine net (R-TDB-1) : actif brut et dettes séparés.
-pub fn net_worth(accounts: &[AccountValue]) -> NetWorth {
+/// Patrimoine net (R-TDB-1) : actif brut (comptes et biens) et dettes (prêts, découverts) séparés.
+pub fn net_worth(holdings: &[HoldingValue]) -> NetWorth {
     let mut result = NetWorth::default();
-    for account in accounts.iter().filter(|a| a.include_in_net_worth && a.is_eur) {
-        if account.family == AccountFamily::Liability || account.value.is_negative() {
-            result.liabilities += account.value;
+    for holding in holdings.iter().filter(|h| h.include_in_net_worth && h.is_eur) {
+        if holding.value.is_negative() {
+            result.liabilities += holding.value;
         } else {
-            result.assets += account.value;
+            result.assets += holding.value;
         }
     }
     result.total = result.assets + result.liabilities;
@@ -47,7 +46,7 @@ pub struct SplitFact {
     pub amount: Money,
     /// `None` : non catégorisée.
     pub category_kind: Option<CategoryKind>,
-    pub is_transfer: bool,
+    pub is_movement: bool,
     pub is_eur: bool,
 }
 
@@ -72,7 +71,7 @@ pub fn flows(splits: &[SplitFact], from: Date, to: Date) -> Flows {
     let mut expense_splits = Money::ZERO;
     let mut uncategorized_in = Money::ZERO;
     let mut uncategorized_out = Money::ZERO;
-    for split in splits.iter().filter(|s| s.is_eur && !s.is_transfer && s.date >= from && s.date <= to) {
+    for split in splits.iter().filter(|s| s.is_eur && !s.is_movement && s.date >= from && s.date <= to) {
         match split.category_kind {
             Some(CategoryKind::Income) => income += split.amount,
             Some(CategoryKind::Expense) => expense_splits += split.amount,
@@ -169,7 +168,7 @@ pub struct CategorizedFact<C> {
     /// Catégorie de la ventilation ; `None` : non catégorisée.
     pub category: Option<C>,
     pub kind: Option<CategoryKind>,
-    pub is_transfer: bool,
+    pub is_movement: bool,
     pub is_eur: bool,
 }
 
@@ -181,7 +180,7 @@ pub fn by_category<C: Copy + Eq + std::hash::Hash>(
     period: Period,
 ) -> std::collections::HashMap<Option<C>, Money> {
     let mut totals = std::collections::HashMap::new();
-    for fact in facts.iter().filter(|f| f.is_eur && !f.is_transfer && f.date >= period.from && f.date <= period.to) {
+    for fact in facts.iter().filter(|f| f.is_eur && !f.is_movement && f.date >= period.from && f.date <= period.to) {
         let counts = match (fact.kind, kind) {
             (Some(k), _) => k == kind,
             // Non catégorisé : sorties avec les dépenses, entrées avec les revenus.
@@ -208,8 +207,8 @@ mod tests {
         Money::from_minor(minor)
     }
 
-    fn split(amount: i64, kind: Option<CategoryKind>, is_transfer: bool) -> SplitFact {
-        SplitFact { date: d("2026-03-15"), amount: m(amount), category_kind: kind, is_transfer, is_eur: true }
+    fn split(amount: i64, kind: Option<CategoryKind>, is_movement: bool) -> SplitFact {
+        SplitFact { date: d("2026-03-15"), amount: m(amount), category_kind: kind, is_movement, is_eur: true }
     }
 
     /// Critère d'acceptation de TDB-01.
@@ -233,45 +232,29 @@ mod tests {
 
     #[test]
     fn tdb_01_transfer_does_not_change_net_worth() {
-        let account =
-            |family, value| AccountValue { family, include_in_net_worth: true, is_eur: true, value: m(value) };
-        let before = [account(AccountFamily::Cash, 100_000), account(AccountFamily::FixedSavings, 0)];
-        let after = [account(AccountFamily::Cash, 50_000), account(AccountFamily::FixedSavings, 50_000)];
+        let account = |value| HoldingValue { include_in_net_worth: true, is_eur: true, value: m(value) };
+        let before = [account(100_000), account(0)];
+        let after = [account(50_000), account(50_000)];
         assert_eq!(net_worth(&before).total, net_worth(&after).total);
     }
 
     #[test]
     fn r_tdb_1_net_worth_separates_debts_and_excludes_non_eur() {
         let accounts = [
-            AccountValue { family: AccountFamily::Cash, include_in_net_worth: true, is_eur: true, value: m(200_000) },
-            AccountValue {
-                family: AccountFamily::Liability,
-                include_in_net_worth: true,
-                is_eur: true,
-                value: m(-150_000),
-            },
-            AccountValue { family: AccountFamily::Cash, include_in_net_worth: true, is_eur: false, value: m(999) },
-            AccountValue { family: AccountFamily::Cash, include_in_net_worth: false, is_eur: true, value: m(777) },
+            HoldingValue { include_in_net_worth: true, is_eur: true, value: m(200_000) },
+            HoldingValue { include_in_net_worth: true, is_eur: true, value: m(-150_000) },
+            HoldingValue { include_in_net_worth: true, is_eur: false, value: m(999) },
+            HoldingValue { include_in_net_worth: false, is_eur: true, value: m(777) },
         ];
         assert_eq!(net_worth(&accounts), NetWorth { assets: m(200_000), liabilities: m(-150_000), total: m(50_000) });
     }
 
     #[test]
     fn r_tdb_1_property_counts_as_an_asset_against_its_loan() {
-        // Logement acheté 250 000 € (R-CPT-14), prêt dont il reste 139 000 € à rembourser.
+        // Logement acheté 250 000 € (R-BIE-2), prêt dont il reste 139 000 € à rembourser (R-PRE-4).
         let accounts = [
-            AccountValue {
-                family: AccountFamily::Property,
-                include_in_net_worth: true,
-                is_eur: true,
-                value: m(25_000_000),
-            },
-            AccountValue {
-                family: AccountFamily::Liability,
-                include_in_net_worth: true,
-                is_eur: true,
-                value: m(-13_900_000),
-            },
+            HoldingValue { include_in_net_worth: true, is_eur: true, value: m(25_000_000) },
+            HoldingValue { include_in_net_worth: true, is_eur: true, value: m(-13_900_000) },
         ];
         assert_eq!(
             net_worth(&accounts),
@@ -306,12 +289,12 @@ mod tests {
 
     #[test]
     fn tdb_02_by_category_deducts_refunds_and_ignores_transfers() {
-        let fact = |amount: i64, category: Option<u8>, kind: Option<CategoryKind>, is_transfer: bool| CategorizedFact {
+        let fact = |amount: i64, category: Option<u8>, kind: Option<CategoryKind>, is_movement: bool| CategorizedFact {
             date: d("2026-03-10"),
             amount: m(amount),
             category,
             kind,
-            is_transfer,
+            is_movement,
             is_eur: true,
         };
         use CategoryKind::*;

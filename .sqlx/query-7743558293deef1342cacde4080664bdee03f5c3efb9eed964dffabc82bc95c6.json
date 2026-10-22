@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO loan_balance (id, loan_id, date, outstanding, note, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (loan_id, date) DO UPDATE SET outstanding = excluded.outstanding, note = excluded.note,\n                                                   updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "7743558293deef1342cacde4080664bdee03f5c3efb9eed964dffabc82bc95c6"
+}

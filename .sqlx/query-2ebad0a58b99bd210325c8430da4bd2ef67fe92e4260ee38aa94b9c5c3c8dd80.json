@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, kind, purchase_date AS \"purchase_date: Date\", purchase_price,\n                  sold_on AS \"sold_on: Date\", sale_price, include_in_net_worth AS \"include_in_net_worth: bool\", notes\n           FROM asset ORDER BY purchase_date, name",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "purchase_date: Date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "purchase_date"
+          }
+        }
+      },
+      {
+        "name": "purchase_price",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "purchase_price"
+          }
+        }
+      },
+      {
+        "name": "sold_on: Date",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "sold_on"
+          }
+        }
+      },
+      {
+        "name": "sale_price",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "sale_price"
+          }
+        }
+      },
+      {
+        "name": "include_in_net_worth: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "include_in_net_worth"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset",
+            "name": "notes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "2ebad0a58b99bd210325c8430da4bd2ef67fe92e4260ee38aa94b9c5c3c8dd80"
+}

@@ -308,7 +308,7 @@ pub struct BudgetFactRow {
     pub project_id: Option<ProjectId>,
     pub project_excluded: bool,
     pub in_budget: bool,
-    pub is_transfer: bool,
+    pub is_movement: bool,
     pub currency: String,
 }
 
@@ -318,8 +318,9 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
         r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, s.project_id,
                   coalesce(p.exclude_from_period_budgets, 0) AS "project_excluded!: bool",
                   a.include_in_budget AS "in_budget!: bool", a.currency,
-                  EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
-                      AS "is_transfer!: bool"
+                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
+                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))
+                      AS "is_movement!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
@@ -339,7 +340,7 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
                 project_id: opt_id_from_db(r.project_id.as_deref())?,
                 project_excluded: r.project_excluded,
                 in_budget: r.in_budget,
-                is_transfer: r.is_transfer,
+                is_movement: r.is_movement,
                 currency: r.currency,
             })
         })

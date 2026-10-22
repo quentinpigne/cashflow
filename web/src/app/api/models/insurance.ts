@@ -3,7 +3,7 @@
 
 
 /**
- * Assurance emprunteur (R-CPT-15).
+ * Assurance emprunteur (R-PRE-2).
  */
 export type Insurance = ({
 'mode': 'NONE';

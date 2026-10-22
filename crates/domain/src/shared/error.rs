@@ -29,12 +29,20 @@ pub enum DomainError {
         "conditions de prêt invalides : capital positif, taux et assurance positifs ou nuls, durée de 1 à 600 mois"
     )]
     InvalidLoanTerms,
+    #[error("bien invalide : prix d'achat positif, vente postérieure à l'achat, prix de vente seulement si vendu")]
+    InvalidAsset,
+    #[error("une estimation est positive et datée entre l'achat et la vente du bien")]
+    InvalidAssetValuation,
+    #[error("prêt invalide : capital positif, première échéance après le déblocage, soldé après le déblocage")]
+    InvalidLoan,
+    #[error("une ventilation a au plus un rattachement : une catégorie, un prêt ou un bien")]
+    SplitAttachmentConflict,
     #[error("le montant ne correspond pas à l'échéance, à 1 € près")]
     InstallmentMismatch,
     #[error("cette échéance est déjà payée")]
     InstallmentAlreadyPaid,
     #[error(
-        "une mensualité ventilée selon le tableau d'amortissement ne change ni de montant ni de compte : annuler d'abord sa ventilation depuis la fiche du prêt"
+        "une mensualité ventilée selon le tableau d'amortissement ne change ni de montant ni de ventilation : annuler d'abord sa ventilation"
     )]
     InstallmentPaymentLocked,
     #[error("ce champ n'est pas modifiable après la création du compte")]
@@ -132,6 +140,10 @@ impl DomainError {
             AccountNotEmpty => "ACCOUNT_NOT_EMPTY",
             AccountClosed => "ACCOUNT_CLOSED",
             InvalidLoanTerms => "INVALID_LOAN_TERMS",
+            InvalidAsset => "INVALID_ASSET",
+            InvalidAssetValuation => "INVALID_ASSET_VALUATION",
+            InvalidLoan => "INVALID_LOAN",
+            SplitAttachmentConflict => "SPLIT_ATTACHMENT_CONFLICT",
             InstallmentMismatch => "INSTALLMENT_MISMATCH",
             InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
             InstallmentPaymentLocked => "INSTALLMENT_PAYMENT_LOCKED",
@@ -180,8 +192,13 @@ impl DomainError {
             DateOutsideAccountPeriod { .. } | AccountClosed => "R-CPT-3",
             ClosingBeforeOpening | ClosingBalanceNotZero { .. } => "R-CPT-5",
             AccountNotEmpty => "R-CPT-7",
-            InvalidLoanTerms => "R-CPT-15",
-            InstallmentMismatch | InstallmentAlreadyPaid | InstallmentPaymentLocked => "R-CPT-17",
+            InvalidLoanTerms => "R-PRE-2",
+            InvalidLoan => "R-PRE-1",
+            InvalidAsset => "R-BIE-1",
+            InvalidAssetValuation => "R-BIE-3",
+            SplitAttachmentConflict => "R-TRX-37",
+            InstallmentMismatch | InstallmentAlreadyPaid => "R-PRE-6",
+            InstallmentPaymentLocked => "R-PRE-8",
             AmountZero => "R-TRX-1",
             BankLabelImmutable => "R-TRX-2",
             TransactionLocked => "R-TRX-3",

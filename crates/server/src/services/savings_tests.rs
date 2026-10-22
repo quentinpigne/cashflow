@@ -140,14 +140,3 @@ async fn epa_06_valuations_and_performance() {
     assert_eq!(overview.variable.len(), 1);
     assert_eq!(overview.variable_invested_minor, 1_200_000);
 }
-
-#[tokio::test]
-async fn r_cpt_12_loan_valuations_are_negative() {
-    let (db, _dir) = setup().await;
-    let loan = open(&db, "Prêt", AccountKind::Mortgage, "2025-01-01", -10_000_000).await;
-    let positive = ValuationInput { date: d("2025-06-30"), value_minor: 9_500_000, note: None, replace: false };
-    assert!(savings::save_valuation(&db, loan, &positive).await.is_err());
-    let negative = ValuationInput { value_minor: -9_500_000, ..positive };
-    savings::save_valuation(&db, loan, &negative).await.unwrap();
-    assert_eq!(accounts::get(&db, loan, d("2025-07-01")).await.unwrap().balance_minor, -9_500_000);
-}

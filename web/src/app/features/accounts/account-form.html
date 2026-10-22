@@ -50,16 +50,8 @@
         <mat-datepicker #opening />
       </mat-form-field>
       <mat-form-field>
-        <mat-label>{{
-          loan() ? 'Capital restant dû' : property() ? 'Valeur du bien' : "Solde d'ouverture"
-        }}</mat-label>
+        <mat-label>Solde d'ouverture</mat-label>
         <input matInput formControlName="openingBalance" inputmode="decimal" class="amount" />
-        @if (loan()) {
-          <mat-hint>En positif : il sera enregistré comme une dette.</mat-hint>
-        }
-        @if (property()) {
-          <mat-hint>Le prix d'achat : apport et capital emprunté, hors frais.</mat-hint>
-        }
         @if (form.controls.openingBalance.touched && form.controls.openingBalance.invalid) {
           <mat-error>Montant invalide</mat-error>
         }

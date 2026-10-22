@@ -7,11 +7,11 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { AccountId } from '../../models/account-id';
+import { LoanId } from '../../models/loan-id';
 import { LoanPaymentProposal } from '../../models/loan-payment-proposal';
 
 export interface LoanPaymentProposals$Params {
-  id: AccountId;
+  id: LoanId;
 }
 
 export function loanPaymentProposals(http: HttpClient, rootUrl: string, params: LoanPaymentProposals$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<LoanPaymentProposal>>> {
@@ -30,4 +30,4 @@ export function loanPaymentProposals(http: HttpClient, rootUrl: string, params: 
   );
 }
 
-loanPaymentProposals.PATH = '/api/v1/accounts/{id}/loan/proposals';
+loanPaymentProposals.PATH = '/api/v1/loans/{id}/proposals';

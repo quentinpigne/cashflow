@@ -1,0 +1,190 @@
+<div class="page">
+  @if (loan.value(); as l) {
+    <header class="head">
+      <div class="title">
+        <a mat-icon-button routerLink="/prets" aria-label="Retour aux prêts"
+          ><mat-icon>arrow_back</mat-icon></a
+        >
+        <h1>{{ l.summary.name }}</h1>
+        <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Actions sur le prêt">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu>
+          <button mat-menu-item (click)="edit(l)"><mat-icon>edit</mat-icon>Modifier</button>
+          <button mat-menu-item (click)="remove(l)"><mat-icon>delete</mat-icon>Supprimer</button>
+        </mat-menu>
+      </div>
+      <p class="muted meta">
+        {{ kindLabels[l.summary.kind]
+        }}{{ l.summary.institution_name ? ' · ' + l.summary.institution_name : '' }}
+        @if (l.summary.closed_on) {
+          · soldé le {{ l.summary.closed_on | frDate }}
+        }
+      </p>
+      <div class="balance">
+        <span class="muted">Capital restant dû</span>
+        <strong class="amount negative">{{ l.summary.outstanding_minor ?? 0 | money }}</strong>
+      </div>
+    </header>
+
+    <section class="card panel">
+      <dl class="figures">
+        <dt>Capital emprunté</dt>
+        <dd class="amount">{{ l.summary.principal_minor | money }}</dd>
+        <dt>Déblocage</dt>
+        <dd>{{ l.start_date | frDate }}</dd>
+        @if (l.summary.asset_id) {
+          <dt>Bien financé</dt>
+          <dd>
+            <a [routerLink]="['/biens', l.summary.asset_id]">{{ l.asset_name }}</a>
+          </dd>
+        }
+        <dt>Suivi</dt>
+        <dd>{{ l.schedule ? "Avec tableau d'amortissement" : 'Suivi simple' }}</dd>
+        @if (l.schedule; as s) {
+          <dt>Mensualité</dt>
+          <dd class="amount">
+            {{ s.monthly_payment_minor | money }}
+            @if (s.monthly_insurance_minor > 0) {
+              <span class="muted small">+ {{ s.monthly_insurance_minor | money }} d'assurance</span>
+            }
+          </dd>
+          <dt>Coût du crédit</dt>
+          <dd class="amount">
+            {{ s.total_cost_minor | money }}
+            <span class="muted small">dont {{ s.total_insurance_minor | money }} d'assurance</span>
+          </dd>
+          <dt>Fin du prêt</dt>
+          <dd>{{ s.end_date | frDate }}</dd>
+        }
+      </dl>
+      @if (l.notes) {
+        <p class="muted">{{ l.notes }}</p>
+      }
+    </section>
+
+    @if (l.schedule) {
+      <section class="card panel">
+        <header>
+          <h2>Tableau d'amortissement</h2>
+        </header>
+        @if (proposals.value()?.length) {
+          <p class="pending">
+            <mat-icon>info</mat-icon>
+            <span
+              >{{ proposals.value()?.length }} mensualité(s) déjà enregistrée(s) correspondent à des
+              échéances non ventilées.</span
+            >
+            <button mat-stroked-button (click)="payPast()">Ventiler les mensualités passées</button>
+          </p>
+        }
+        <div class="year">
+          <button
+            mat-icon-button
+            aria-label="Année précédente"
+            [disabled]="year() <= firstYear()"
+            (click)="year.set(year() - 1)"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span>{{ year() }}</span>
+          <button
+            mat-icon-button
+            aria-label="Année suivante"
+            [disabled]="year() >= lastYear()"
+            (click)="year.set(year() + 1)"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th><span class="cdk-visually-hidden">Payée</span></th>
+              <th>N°</th>
+              <th>Date</th>
+              <th class="right">Mensualité</th>
+              <th class="right wide">Capital</th>
+              <th class="right wide">Intérêts</th>
+              <th class="right wide">Assurance</th>
+              <th class="right">Restant dû</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (i of rows(); track i.number) {
+              <tr [class.next]="i.number === l.summary.next_installment?.number">
+                <td class="state">
+                  @if (i.paid_transaction_id; as paid) {
+                    <button
+                      mat-icon-button
+                      [matMenuTriggerFor]="paidMenu"
+                      [attr.aria-label]="'Échéance ' + i.number + ' payée'"
+                      matTooltip="Mensualité ventilée"
+                    >
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                    <mat-menu #paidMenu>
+                      <a mat-menu-item [routerLink]="['/transactions', paid]">
+                        <mat-icon>open_in_new</mat-icon>Voir la mensualité
+                      </a>
+                      <button mat-menu-item (click)="unpay(i.number)">
+                        <mat-icon>undo</mat-icon>Annuler la ventilation
+                      </button>
+                    </mat-menu>
+                  }
+                </td>
+                <td>{{ i.number }}</td>
+                <td>{{ i.date | frDate: 'short' }}</td>
+                <td class="right amount">{{ i.total_minor | money }}</td>
+                <td class="right amount wide">{{ i.principal_minor | money }}</td>
+                <td class="right amount wide">{{ i.interest_minor | money }}</td>
+                <td class="right amount wide">{{ i.insurance_minor | money }}</td>
+                <td class="right amount">{{ i.remaining_minor | money }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    } @else {
+      <section class="card panel">
+        <header>
+          <h2>Capitaux restants dus</h2>
+          <button mat-stroked-button (click)="addBalance()"><mat-icon>add</mat-icon>Ajouter</button>
+        </header>
+        @for (b of l.balances; track b.date) {
+          <div class="row">
+            <span>{{ b.date | frDate }}</span>
+            <span class="muted small">{{ b.note }}</span>
+            <span class="amount">{{ b.outstanding_minor | money }}</span>
+            <button
+              mat-icon-button
+              [attr.aria-label]="'Supprimer le capital restant dû du ' + b.date"
+              (click)="removeBalance(b.date)"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        } @empty {
+          <p class="muted">Aucune saisie : le capital restant dû est le capital emprunté.</p>
+        }
+      </section>
+    }
+
+    @if (l.repayments.length > 0) {
+      <section class="card panel">
+        <header><h2>Remboursements enregistrés</h2></header>
+        @for (r of l.repayments; track r.transaction_id) {
+          <a class="row link" [routerLink]="['/transactions', r.transaction_id]">
+            <span>{{ r.date | frDate: 'short' }}</span>
+            <span>{{ r.label }}</span>
+            <span class="amount">{{ r.amount_minor | money }}</span>
+          </a>
+        }
+      </section>
+    }
+  } @else if (loan.isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  } @else {
+    <p class="empty">Prêt introuvable.</p>
+  }
+</div>

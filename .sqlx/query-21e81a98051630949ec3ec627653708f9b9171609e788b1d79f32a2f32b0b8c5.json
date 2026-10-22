@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO asset_valuation (id, asset_id, date, value, note, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (asset_id, date) DO UPDATE SET value = excluded.value, note = excluded.note,\n                                                    updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "21e81a98051630949ec3ec627653708f9b9171609e788b1d79f32a2f32b0b8c5"
+}

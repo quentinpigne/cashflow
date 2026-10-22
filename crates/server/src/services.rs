@@ -2,6 +2,7 @@
 //! domaine et écrivent le résultat (ADR-0013). Aucun calcul métier ici.
 
 pub mod accounts;
+pub mod assets;
 pub mod auth;
 pub mod backup;
 pub mod budgets;
@@ -9,6 +10,7 @@ pub mod categories;
 pub mod dashboard;
 pub mod demo;
 pub mod export;
+pub mod features;
 pub mod imports;
 pub mod institutions;
 pub mod loans;

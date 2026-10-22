@@ -92,10 +92,7 @@
       @if (a.family === 'FIXED_SAVINGS') {
         <app-interest-panel [accountId]="a.id" />
       }
-      @if (a.family === 'VARIABLE_SAVINGS' || a.family === 'LIABILITY' || a.family === 'PROPERTY') {
-        @if (a.family === 'LIABILITY') {
-          <app-loan-panel [accountId]="a.id" />
-        }
+      @if (a.family === 'VARIABLE_SAVINGS') {
         <app-valuation-panel [accountId]="a.id" [family]="a.family" />
       }
       <div class="filter-bar">

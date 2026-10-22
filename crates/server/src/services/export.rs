@@ -104,8 +104,15 @@ mod tests {
                         category_id: Some(category),
                         note: None,
                         project_id: None,
+                        ..Default::default()
                     },
-                    transactions::SplitInput { amount_minor: -2_500, category_id: None, note: None, project_id: None },
+                    transactions::SplitInput {
+                        amount_minor: -2_500,
+                        category_id: None,
+                        note: None,
+                        project_id: None,
+                        ..Default::default()
+                    },
                 ]),
             },
         )

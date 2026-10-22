@@ -310,11 +310,11 @@ export class ImportReviewPage {
   /** Ventile les mensualités de prêt reconnues dans le lot, chacune selon son échéance (R-IMP-22). */
   protected async payLoans(): Promise<void> {
     const proposals = this.result()?.loan_payments ?? [];
-    const loans = [...new Set(proposals.map((p) => p.loan_account_id))];
+    const loans = [...new Set(proposals.map((p) => p.loan_id))];
     try {
       for (const loan of loans) {
         const body = proposals
-          .filter((p) => p.loan_account_id === loan)
+          .filter((p) => p.loan_id === loan)
           .map((p) => ({
             transaction_id: p.transaction_id,
             installment_number: p.installment_number,

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -9,6 +9,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { Session } from '../../core/auth';
 import { Layout } from '../../core/layout';
+import { FeaturesStore } from '../../shared/stores';
 import { QuickEntry } from '../transactions/quick-entry';
 import { NotificationsButton } from './notifications';
 
@@ -44,24 +45,34 @@ export class Shell {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
 
-  /** Menu latéral (ordinateur). */
-  protected readonly items: NavItem[] = [
+  protected readonly features = inject(FeaturesStore);
+
+  /** Menu latéral (ordinateur) ; Biens et Prêts seulement si la rubrique est activée (spec 09). */
+  protected readonly items = computed<NavItem[]>(() => [
     { path: '/', label: 'Accueil', icon: 'home', exact: true },
     { path: '/comptes', label: 'Comptes', icon: 'account_balance', exact: false },
+    ...(this.features.assets()
+      ? [{ path: '/biens', label: 'Biens', icon: 'home_work', exact: false }]
+      : []),
+    ...(this.features.loans()
+      ? [{ path: '/prets', label: 'Prêts', icon: 'real_estate_agent', exact: false }]
+      : []),
     { path: '/transactions', label: 'Transactions', icon: 'receipt_long', exact: true },
     { path: '/budget', label: 'Budget', icon: 'savings', exact: false },
     { path: '/import', label: 'Import', icon: 'upload_file', exact: false },
     { path: '/analyses', label: 'Analyses', icon: 'insights', exact: false },
     { path: '/projections', label: 'Projections', icon: 'timeline', exact: false },
     { path: '/reglages', label: 'Réglages', icon: 'settings', exact: false },
-  ];
+  ]);
 
   /**
    * Barre du bas (mobile), cinq entrées : l'import s'ouvre depuis un compte ou les réglages, et les
-   * réglages depuis le menu du haut (ecrans.md).
+   * réglages, les biens et les prêts depuis le menu du haut (ecrans.md).
    */
-  protected readonly mobileItems = this.items.filter(
-    (i) => !['/import', '/reglages', '/projections'].includes(i.path),
+  protected readonly mobileItems = computed(() =>
+    this.items().filter(
+      (i) => !['/import', '/reglages', '/projections', '/biens', '/prets'].includes(i.path),
+    ),
   );
 
   protected newTransaction(): void {

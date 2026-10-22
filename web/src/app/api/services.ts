@@ -4,9 +4,9 @@
 export { AccountsService } from './services/accounts.service';
 export { ReconciliationService } from './services/reconciliation.service';
 export { SavingsService } from './services/savings.service';
-export { LoansService } from './services/loans.service';
 export { ProjectionsService } from './services/projections.service';
 export { TransactionsService } from './services/transactions.service';
+export { AssetsService } from './services/assets.service';
 export { AuthService } from './services/auth.service';
 export { BudgetsService } from './services/budgets.service';
 export { CategoriesService } from './services/categories.service';
@@ -14,4 +14,5 @@ export { DashboardService } from './services/dashboard.service';
 export { SystemService } from './services/system.service';
 export { ImportsService } from './services/imports.service';
 export { InstitutionsService } from './services/institutions.service';
+export { LoansService } from './services/loans.service';
 export { RulesService } from './services/rules.service';

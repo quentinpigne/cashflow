@@ -32,7 +32,9 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { CategoryKind } from '../../api/models/category-kind';
+import { SplitInput } from '../../api/models/split-input';
 import { TransactionsService } from '../../api/services/transactions.service';
+import { decodeAttachment, isAttachment } from '../../core/attachments';
 import { DataVersion } from '../../core/data-version';
 import { toIsoDate } from '../../core/dates';
 import { errorMessage, problemOf } from '../../core/http-errors';
@@ -223,6 +225,16 @@ export class QuickEntryForm {
     this.dialogRef?.close();
   }
 
+  /**
+   * Ventilations envoyées à l'API : un remboursement ou une acquisition choisi comme « catégorie » devient une
+   * ventilation rattachée (R-TRX-37).
+   */
+  private apiSplits(splits: SplitDraft[] | null, amount: number): SplitInput[] | null {
+    const lines = splits ?? [{ amount_minor: amount, category_id: this.category(), note: null }];
+    if (!splits && !isAttachment(this.category())) return null;
+    return lines.map((s) => ({ ...s, ...decodeAttachment(s.category_id), project_id: null }));
+  }
+
   protected async save(): Promise<void> {
     this.form.markAllAsTouched();
     const amount = this.signedAmount();
@@ -266,8 +278,8 @@ export class QuickEntryForm {
               amount_minor: amount,
               label: value.label,
               note: value.note || null,
-              category_id: splits ? null : this.category(),
-              splits: splits?.map((s) => ({ ...s, project_id: null })) ?? null,
+              category_id: splits || isAttachment(this.category()) ? null : this.category(),
+              splits: this.apiSplits(splits, amount),
             },
           }),
         );

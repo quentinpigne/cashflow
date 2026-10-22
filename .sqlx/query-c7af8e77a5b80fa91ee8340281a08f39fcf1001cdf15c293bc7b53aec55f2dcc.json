@@ -1,0 +1,254 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, kind, institution_id, start_date AS \"start_date: Date\", principal, mode, annual_rate,\n                  duration_months, first_installment_date AS \"first_installment_date: Date\", insurance_mode,\n                  insurance_amount, insurance_rate, payer_account_id, interest_category_id, insurance_category_id,\n                  asset_id, closed_on AS \"closed_on: Date\", include_in_net_worth AS \"include_in_net_worth: bool\",\n                  notes\n           FROM loan ORDER BY start_date, name",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "institution_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "institution_id"
+          }
+        }
+      },
+      {
+        "name": "start_date: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "start_date"
+          }
+        }
+      },
+      {
+        "name": "principal",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "principal"
+          }
+        }
+      },
+      {
+        "name": "mode",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "mode"
+          }
+        }
+      },
+      {
+        "name": "annual_rate",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "annual_rate"
+          }
+        }
+      },
+      {
+        "name": "duration_months",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "duration_months"
+          }
+        }
+      },
+      {
+        "name": "first_installment_date: Date",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "first_installment_date"
+          }
+        }
+      },
+      {
+        "name": "insurance_mode",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "insurance_mode"
+          }
+        }
+      },
+      {
+        "name": "insurance_amount",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "insurance_amount"
+          }
+        }
+      },
+      {
+        "name": "insurance_rate",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "insurance_rate"
+          }
+        }
+      },
+      {
+        "name": "payer_account_id",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "payer_account_id"
+          }
+        }
+      },
+      {
+        "name": "interest_category_id",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "interest_category_id"
+          }
+        }
+      },
+      {
+        "name": "insurance_category_id",
+        "ordinal": 15,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "insurance_category_id"
+          }
+        }
+      },
+      {
+        "name": "asset_id",
+        "ordinal": 16,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "asset_id"
+          }
+        }
+      },
+      {
+        "name": "closed_on: Date",
+        "ordinal": 17,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "closed_on"
+          }
+        }
+      },
+      {
+        "name": "include_in_net_worth: bool",
+        "ordinal": 18,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "include_in_net_worth"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 19,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan",
+            "name": "notes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "c7af8e77a5b80fa91ee8340281a08f39fcf1001cdf15c293bc7b53aec55f2dcc"
+}

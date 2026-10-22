@@ -12,12 +12,17 @@ import { StrictHttpResponse } from '../strict-http-response';
 
 import { exportAll } from '../fn/system/export-all';
 import { ExportAll$Params } from '../fn/system/export-all';
+import { Features } from '../models/features';
+import { getFeatures } from '../fn/system/get-features';
+import { GetFeatures$Params } from '../fn/system/get-features';
 import { health } from '../fn/system/health';
 import { Health } from '../models/health';
 import { Health$Params } from '../fn/system/health';
 import { systemInfo } from '../fn/system/system-info';
 import { SystemInfo } from '../models/system-info';
 import { SystemInfo$Params } from '../fn/system/system-info';
+import { updateFeatures } from '../fn/system/update-features';
+import { UpdateFeatures$Params } from '../fn/system/update-features';
 
 
 /**
@@ -96,6 +101,76 @@ export class SystemService extends BaseService {
     const resp = this.health$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Health>): Health => r.body)
+    );
+  }
+
+  /** Path part for operation `getFeatures()` */
+  static readonly GetFeaturesPath = '/api/v1/settings/features';
+
+  /**
+   * Rubriques activées (R-BIE-7, R-PRE-12).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `getFeatures()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  getFeatures$Response(params?: GetFeatures$Params, context?: HttpContext): Observable<StrictHttpResponse<Features>> {
+    const obs = getFeatures(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Rubriques activées (R-BIE-7, R-PRE-12).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `getFeatures$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  getFeatures(params?: GetFeatures$Params, context?: HttpContext): Observable<Features> {
+    const resp = this.getFeatures$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Features>): Features => r.body)
+    );
+  }
+
+  /** Path part for operation `updateFeatures()` */
+  static readonly UpdateFeaturesPath = '/api/v1/settings/features';
+
+  /**
+   * Active ou désactive une rubrique ; une rubrique ne se désactive que vide.
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `updateFeatures()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  updateFeatures$Response(params: UpdateFeatures$Params, context?: HttpContext): Observable<StrictHttpResponse<Features>> {
+    const obs = updateFeatures(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Active ou désactive une rubrique ; une rubrique ne se désactive que vide.
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `updateFeatures$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  updateFeatures(params: UpdateFeatures$Params, context?: HttpContext): Observable<Features> {
+    const resp = this.updateFeatures$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Features>): Features => r.body)
     );
   }
 

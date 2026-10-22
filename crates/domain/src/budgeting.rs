@@ -200,7 +200,7 @@ pub struct BudgetSplit<C, P> {
     /// Le compte de la transaction est dans le périmètre du budget (R-BUD-1, R-BUD-2).
     pub in_budget: bool,
     /// Jambe de virement interne : n'alimente aucune ligne de dépense ou de revenu (R-BUD-2).
-    pub is_transfer: bool,
+    pub is_movement: bool,
 }
 
 /// Un virement interne vu par les objectifs d'épargne (R-BUD-31).
@@ -242,7 +242,7 @@ pub fn destination<L: Copy, C: Copy + Eq + Hash, A, P>(
     lines: &[&LineVersion<L, C, A>],
     parents: &HashMap<C, C>,
 ) -> Destination<L> {
-    if !split.in_budget || split.is_transfer {
+    if !split.in_budget || split.is_movement {
         return Destination::Ignored;
     }
     if split.project.as_ref().is_some_and(|(_, excluded)| *excluded) {
@@ -591,7 +591,7 @@ mod tests {
             category: Some(category),
             project: None,
             in_budget: true,
-            is_transfer: false,
+            is_movement: false,
         }
     }
 

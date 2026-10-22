@@ -9,7 +9,5 @@ import { AccountFamily } from './account-family';
 export const ACCOUNT_FAMILY: AccountFamily[] = [
   'CASH',
   'FIXED_SAVINGS',
-  'VARIABLE_SAVINGS',
-  'LIABILITY',
-  'PROPERTY'
+  'VARIABLE_SAVINGS'
 ];

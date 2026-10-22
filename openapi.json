@@ -470,256 +470,6 @@
         }
       }
     },
-    "/api/v1/accounts/{id}/loan": {
-      "get": {
-        "tags": [
-          "loans"
-        ],
-        "summary": "Conditions et tableau d'amortissement d'un prêt (CPT-09).",
-        "operationId": "getLoan",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoanView"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "loans"
-        ],
-        "summary": "Crée ou remplace les conditions d'un prêt (R-CPT-15).",
-        "operationId": "saveLoanTerms",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoanTermsInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoanView"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "loans"
-        ],
-        "summary": "Retire les conditions d'un prêt : il revient au suivi par valorisations (R-CPT-12).",
-        "operationId": "deleteLoanTerms",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          }
-        ],
-        "responses": {
-          "204": {},
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/accounts/{id}/loan/payments": {
-      "post": {
-        "tags": [
-          "loans"
-        ],
-        "summary": "Ventile des mensualités selon leurs échéances (CPT-10, R-CPT-17).",
-        "operationId": "payLoanInstallments",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/LoanPaymentInput"
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoanPaymentResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/accounts/{id}/loan/payments/{number}": {
-      "delete": {
-        "tags": [
-          "loans"
-        ],
-        "summary": "Annule la ventilation d'une échéance (R-CPT-17).",
-        "operationId": "unpayLoanInstallment",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          },
-          {
-            "name": "number",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
-            }
-          }
-        ],
-        "responses": {
-          "204": {},
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/accounts/{id}/loan/proposals": {
-      "get": {
-        "tags": [
-          "loans"
-        ],
-        "summary": "Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-CPT-17).",
-        "operationId": "loanPaymentProposals",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LoanPaymentProposal"
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/accounts/{id}/performance": {
       "get": {
         "tags": [
@@ -1273,6 +1023,265 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/ValuationId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets": {
+      "get": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Biens (E25, BIE-01).",
+        "operationId": "listAssets",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssetSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "assets"
+        ],
+        "operationId": "createAsset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{id}": {
+      "get": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Fiche d'un bien : estimations, prêts, valeur nette, acquisition (E26).",
+        "operationId": "getAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "assets"
+        ],
+        "operationId": "updateAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "assets"
+        ],
+        "operationId": "deleteAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{id}/valuations": {
+      "post": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Ajoute ou remplace l'estimation d'une date (R-BIE-3).",
+        "operationId": "saveAssetValuation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetValuationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{id}/valuations/{valuation_id}": {
+      "delete": {
+        "tags": [
+          "assets"
+        ],
+        "operationId": "deleteAssetValuation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetId"
+            }
+          },
+          {
+            "name": "valuation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetValuationId"
             }
           }
         ],
@@ -2842,12 +2851,71 @@
         }
       }
     },
+    "/api/v1/loans": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Prêts (E27, PRE-01).",
+        "operationId": "listLoans",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "operationId": "createLoan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/loans/preview": {
       "post": {
         "tags": [
           "loans"
         ],
-        "summary": "Mensualité calculée pendant la saisie des conditions (R-CPT-16).",
+        "summary": "Mensualité calculée pendant la saisie des conditions (R-PRE-3).",
         "operationId": "previewLoan",
         "requestBody": {
           "content": {
@@ -2870,6 +2938,343 @@
             }
           },
           "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Fiche d'un prêt : tableau d'amortissement ou capitaux restants dus saisis (E28).",
+        "operationId": "getLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "loans"
+        ],
+        "operationId": "updateLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Supprime un prêt ; ses mensualités ventilées redeviennent non catégorisées (R-PRE-11).",
+        "operationId": "deleteLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/balances": {
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Saisit un capital restant dû (suivi simple, R-PRE-5).",
+        "operationId": "saveLoanBalance",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BalanceInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/balances/{date}": {
+      "delete": {
+        "tags": [
+          "loans"
+        ],
+        "operationId": "deleteLoanBalance",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          },
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/payments": {
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Ventile des mensualités selon leurs échéances (PRE-03, R-PRE-6).",
+        "operationId": "payLoanInstallments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LoanPaymentInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/payments/{number}": {
+      "delete": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Annule la ventilation d'une échéance (R-PRE-8).",
+        "operationId": "unpayLoanInstallment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/proposals": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-PRE-6).",
+        "operationId": "loanPaymentProposals",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanPaymentProposal"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3998,6 +4403,63 @@
         }
       }
     },
+    "/api/v1/settings/features": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Rubriques activées (R-BIE-7, R-PRE-12).",
+        "operationId": "getFeatures",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Features"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Active ou désactive une rubrique ; une rubrique ne se désactive que vide.",
+        "operationId": "updateFeatures",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeaturesInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Features"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/splits/{id}/category": {
       "put": {
         "tags": [
@@ -4455,7 +4917,7 @@
         "tags": [
           "loans"
         ],
-        "summary": "L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-CPT-17).",
+        "summary": "L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-PRE-6).",
         "operationId": "transactionLoanProposal",
         "parameters": [
           {
@@ -4810,9 +5272,7 @@
         "enum": [
           "CASH",
           "FIXED_SAVINGS",
-          "VARIABLE_SAVINGS",
-          "LIABILITY",
-          "PROPERTY"
+          "VARIABLE_SAVINGS"
         ]
       },
       "AccountHealth": {
@@ -4975,13 +5435,7 @@
           "SECURITIES",
           "EMPLOYEE_SAVINGS",
           "CRYPTO",
-          "VARIABLE_OTHER",
-          "MORTGAGE",
-          "CONSUMER_LOAN",
-          "LOAN_OTHER",
-          "REAL_ESTATE",
-          "VEHICLE",
-          "PROPERTY_OTHER"
+          "VARIABLE_OTHER"
         ]
       },
       "AccountProjectionView": {
@@ -5065,6 +5519,33 @@
           "start_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "AcquisitionView": {
+        "type": "object",
+        "description": "Une transaction ventilée en acquisition de ce bien (R-BIE-8).",
+        "required": [
+          "transaction_id",
+          "date",
+          "label",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Part payée, positive."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
           }
         }
       },
@@ -5275,6 +5756,234 @@
           }
         }
       },
+      "AssetId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AssetInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "purchase_date",
+          "purchase_price_minor"
+        ],
+        "properties": {
+          "include_in_net_worth": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssetKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "purchase_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "purchase_price_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Prix d'achat, positif : apport et capital emprunté, hors frais (R-BIE-1)."
+          },
+          "sale_price_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "sold_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "AssetKind": {
+        "type": "string",
+        "description": "Type d'un bien (R-BIE-1).",
+        "enum": [
+          "REAL_ESTATE",
+          "VEHICLE",
+          "OTHER"
+        ]
+      },
+      "AssetSummary": {
+        "type": "object",
+        "description": "Un bien dans la liste (E25) et sur l'accueil.",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "purchase_date",
+          "purchase_price_minor",
+          "include_in_net_worth"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/AssetId"
+          },
+          "include_in_net_worth": {
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssetKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "purchase_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "purchase_price_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sold_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "value_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Valeur aujourd'hui (R-BIE-2) ; absente une fois vendu."
+          }
+        }
+      },
+      "AssetValuationId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "AssetValuationInput": {
+        "type": "object",
+        "required": [
+          "date",
+          "value_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AssetValuationView": {
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "value_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AssetValuationId"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AssetView": {
+        "type": "object",
+        "description": "Fiche d'un bien (E26).",
+        "required": [
+          "summary",
+          "valuations",
+          "loans",
+          "acquisitions",
+          "acquisitions_total_minor"
+        ],
+        "properties": {
+          "acquisitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcquisitionView"
+            }
+          },
+          "acquisitions_total_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancingLoan"
+            }
+          },
+          "net_value_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Valeur − capital restant dû des prêts qui le financent (R-PRE-10)."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sale_price_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AssetSummary"
+          },
+          "valuations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetValuationView"
+            },
+            "description": "Estimations, la plus récente d'abord."
+          }
+        }
+      },
       "Assumptions": {
         "type": "object",
         "properties": {
@@ -5379,6 +6088,53 @@
           "password_set": {
             "type": "boolean",
             "description": "Faux tant que `cashflow set-password` n'a pas été lancé sur le serveur."
+          }
+        }
+      },
+      "BalanceInput": {
+        "type": "object",
+        "required": [
+          "date",
+          "outstanding_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outstanding_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital restant dû, positif ou nul."
+          }
+        }
+      },
+      "BalanceView": {
+        "type": "object",
+        "required": [
+          "date",
+          "outstanding_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outstanding_minor": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -6600,6 +7356,8 @@
           "month",
           "previous_month",
           "families",
+          "assets",
+          "loans",
           "uncategorized",
           "alerts"
         ],
@@ -6611,11 +7369,25 @@
             },
             "description": "Comptes qui demandent une action : écart de rapprochement ou transactions en attente anciennes (R-TDB-10)."
           },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetSummary"
+            },
+            "description": "Biens possédés, si la rubrique est activée (TDB-08)."
+          },
           "families": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FamilyGroup"
             }
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanSummary"
+            },
+            "description": "Prêts en cours, si la rubrique est activée (TDB-08)."
           },
           "market_effect_minor": {
             "type": "integer",
@@ -6735,6 +7507,49 @@
           }
         }
       },
+      "Features": {
+        "type": "object",
+        "required": [
+          "assets",
+          "loans",
+          "asset_count",
+          "loan_count"
+        ],
+        "properties": {
+          "asset_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Nombre de biens : la rubrique ne se désactive que vide."
+          },
+          "assets": {
+            "type": "boolean"
+          },
+          "loan_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loans": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FeaturesInput": {
+        "type": "object",
+        "properties": {
+          "assets": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "loans": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
       "FileFormat": {
         "type": "string",
         "description": "Format d'un fichier de relevé (modèle de données, `ImportProfile.format`).",
@@ -6744,6 +7559,29 @@
           "OFX",
           "PDF_OCR"
         ]
+      },
+      "FinancingLoan": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/LoanId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "outstanding_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Capital restant dû aujourd'hui (R-PRE-4)."
+          }
+        }
       },
       "FixedSummary": {
         "type": "object",
@@ -7263,7 +8101,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/TransactionId",
-                "description": "Mensualité ventilée selon cette échéance (R-CPT-17)."
+                "description": "Mensualité ventilée selon cette échéance (R-PRE-6)."
               },
               {
                 "type": "null"
@@ -7409,7 +8247,7 @@
             }
           }
         ],
-        "description": "Assurance emprunteur (R-CPT-15)."
+        "description": "Assurance emprunteur (R-PRE-2)."
       },
       "InterestMethod": {
         "type": "string",
@@ -7678,6 +8516,104 @@
           }
         }
       },
+      "LoanId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "LoanInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "start_date",
+          "principal_minor"
+        ],
+        "properties": {
+          "asset_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssetId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "include_in_net_worth": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Capital emprunté, positif."
+          },
+          "schedule": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ScheduleInput",
+                "description": "Conditions si le prêt est suivi avec tableau ; absent en suivi simple (R-PRE-1)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date de déblocage."
+          }
+        }
+      },
+      "LoanKind": {
+        "type": "string",
+        "description": "Type d'un prêt (R-PRE-1).",
+        "enum": [
+          "MORTGAGE",
+          "CONSUMER",
+          "OTHER"
+        ]
+      },
+      "LoanMode": {
+        "type": "string",
+        "description": "Mode de suivi d'un prêt (R-PRE-1) : avec tableau d'amortissement, ou capital restant dû saisi.",
+        "enum": [
+          "SCHEDULE",
+          "MANUAL"
+        ]
+      },
       "LoanPaymentInput": {
         "type": "object",
         "required": [
@@ -7697,9 +8633,9 @@
       },
       "LoanPaymentProposal": {
         "type": "object",
-        "description": "Un débit du compte payeur qui correspond à une échéance pas encore payée (R-CPT-17).",
+        "description": "Un débit du compte payeur qui correspond à une échéance pas encore payée (R-PRE-6).",
         "required": [
-          "loan_account_id",
+          "loan_id",
           "loan_name",
           "installment_number",
           "installment_date",
@@ -7741,8 +8677,8 @@
           "label": {
             "type": "string"
           },
-          "loan_account_id": {
-            "$ref": "#/components/schemas/AccountId"
+          "loan_id": {
+            "$ref": "#/components/schemas/LoanId"
           },
           "loan_name": {
             "type": "string"
@@ -7759,10 +8695,9 @@
       "LoanPaymentRef": {
         "type": "object",
         "required": [
-          "loan_account_id",
+          "loan_id",
           "loan_name",
-          "installment_number",
-          "is_payment"
+          "installment_number"
         ],
         "properties": {
           "installment_number": {
@@ -7770,12 +8705,8 @@
             "format": "int32",
             "minimum": 0
           },
-          "is_payment": {
-            "type": "boolean",
-            "description": "Vrai pour la mensualité du compte payeur, faux pour la jambe du capital sur le prêt."
-          },
-          "loan_account_id": {
-            "$ref": "#/components/schemas/AccountId"
+          "loan_id": {
+            "$ref": "#/components/schemas/LoanId"
           },
           "loan_name": {
             "type": "string"
@@ -7819,7 +8750,7 @@
       },
       "LoanPreviewInput": {
         "type": "object",
-        "description": "Mensualité calculée pendant la saisie des conditions (E4).",
+        "description": "Mensualité calculée pendant la saisie des conditions (E28).",
         "required": [
           "principal_minor",
           "annual_rate_ppm",
@@ -7845,64 +8776,9 @@
           }
         }
       },
-      "LoanTermsInput": {
+      "LoanScheduleView": {
         "type": "object",
         "required": [
-          "principal_minor",
-          "annual_rate_ppm",
-          "duration_months",
-          "first_installment_date",
-          "insurance",
-          "payer_account_id",
-          "interest_category_id"
-        ],
-        "properties": {
-          "annual_rate_ppm": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Taux nominal annuel hors assurance, en millionièmes."
-          },
-          "duration_months": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "first_installment_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "insurance": {
-            "$ref": "#/components/schemas/Insurance"
-          },
-          "insurance_category_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CategoryId",
-                "description": "Requise si l'assurance n'est pas nulle."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "interest_category_id": {
-            "$ref": "#/components/schemas/CategoryId"
-          },
-          "payer_account_id": {
-            "$ref": "#/components/schemas/AccountId",
-            "description": "Compte de liquidités qui paie les mensualités."
-          },
-          "principal_minor": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Capital emprunté, positif."
-          }
-        }
-      },
-      "LoanTermsView": {
-        "type": "object",
-        "required": [
-          "principal_minor",
           "annual_rate_ppm",
           "duration_months",
           "first_installment_date",
@@ -7910,7 +8786,12 @@
           "payer_account_id",
           "interest_category_id",
           "monthly_payment_minor",
-          "monthly_insurance_minor"
+          "monthly_insurance_minor",
+          "total_interest_minor",
+          "total_insurance_minor",
+          "total_cost_minor",
+          "end_date",
+          "installments"
         ],
         "properties": {
           "annual_rate_ppm": {
@@ -7922,9 +8803,19 @@
             "format": "int32",
             "minimum": 0
           },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
           "first_installment_date": {
             "type": "string",
             "format": "date"
+          },
+          "installments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallmentView"
+            }
           },
           "insurance": {
             "$ref": "#/components/schemas/Insurance"
@@ -7949,10 +8840,93 @@
           "monthly_payment_minor": {
             "type": "integer",
             "format": "int64",
-            "description": "Mensualité hors assurance (R-CPT-16)."
+            "description": "Mensualité hors assurance (R-PRE-3)."
           },
           "payer_account_id": {
             "$ref": "#/components/schemas/AccountId"
+          },
+          "total_cost_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Coût du crédit : intérêts et assurance de toutes les échéances."
+          },
+          "total_insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_interest_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoanSummary": {
+        "type": "object",
+        "description": "Un prêt dans la liste (E27) et sur l'accueil.",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "mode",
+          "principal_minor",
+          "include_in_net_worth"
+        ],
+        "properties": {
+          "asset_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssetId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/LoanId"
+          },
+          "include_in_net_worth": {
+            "type": "boolean"
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanKind"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/LoanMode"
+          },
+          "name": {
+            "type": "string"
+          },
+          "next_installment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NextInstallment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outstanding_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Capital restant dû aujourd'hui (R-PRE-4) ; absent s'il n'est pas encore débloqué ou déjà soldé."
           },
           "principal_minor": {
             "type": "integer",
@@ -7962,68 +8936,65 @@
       },
       "LoanView": {
         "type": "object",
-        "description": "Fiche d'un prêt qui a des conditions (E3, CPT-09).",
+        "description": "Fiche d'un prêt (E28).",
         "required": [
-          "terms",
-          "installments",
-          "outstanding_minor",
-          "theoretical_outstanding_minor",
-          "gap_minor",
-          "total_interest_minor",
-          "total_insurance_minor",
-          "total_cost_minor",
-          "end_date"
+          "summary",
+          "start_date",
+          "balances",
+          "repayments"
         ],
         "properties": {
-          "end_date": {
+          "asset_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BalanceView"
+            },
+            "description": "Capitaux restants dus saisis (suivi simple), le plus récent d'abord."
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepaymentView"
+            }
+          },
+          "schedule": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanScheduleView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
             "type": "string",
             "format": "date"
           },
-          "gap_minor": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Écart signalé sur la fiche : capital restant dû du compte − celui du tableau."
-          },
-          "installments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InstallmentView"
-            }
-          },
-          "next_installment": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Prochaine échéance, après aujourd'hui.",
-            "minimum": 0
-          },
-          "outstanding_minor": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Capital restant dû selon le compte (R-CPT-6), positif."
-          },
-          "terms": {
-            "$ref": "#/components/schemas/LoanTermsView"
-          },
-          "theoretical_outstanding_minor": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Capital restant dû selon le tableau, aujourd'hui (R-CPT-16), positif."
-          },
-          "total_cost_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "total_insurance_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "total_interest_minor": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Coût du crédit : intérêts et assurance de toutes les échéances."
+          "summary": {
+            "$ref": "#/components/schemas/LoanSummary"
           }
         }
       },
@@ -8326,10 +9297,15 @@
           "cash_minor",
           "fixed_savings_minor",
           "variable_savings_minor",
-          "liabilities_minor",
-          "property_minor"
+          "assets_minor",
+          "liabilities_minor"
         ],
         "properties": {
+          "assets_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Biens (R-BIE-2)."
+          },
           "cash_minor": {
             "type": "integer",
             "format": "int64"
@@ -8344,11 +9320,8 @@
           },
           "liabilities_minor": {
             "type": "integer",
-            "format": "int64"
-          },
-          "property_minor": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Prêts : capital restant dû, négatif (R-PRE-4)."
           },
           "total_minor": {
             "type": "integer",
@@ -8397,16 +9370,53 @@
         "required": [
           "assets_minor",
           "liabilities_minor",
-          "total_minor"
+          "total_minor",
+          "asset_values_minor",
+          "loans_outstanding_minor"
         ],
         "properties": {
+          "asset_values_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Dont valeur des biens (R-BIE-2)."
+          },
           "assets_minor": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Actif brut : comptes et biens."
           },
           "liabilities_minor": {
             "type": "integer",
+            "format": "int64",
+            "description": "Dettes : prêts et comptes à découvert, négatives."
+          },
+          "loans_outstanding_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Dont capital restant dû des prêts (R-PRE-4), positif."
+          },
+          "total_minor": {
+            "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "NextInstallment": {
+        "type": "object",
+        "required": [
+          "number",
+          "date",
+          "total_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "total_minor": {
             "type": "integer",
@@ -9513,6 +10523,33 @@
           }
         }
       },
+      "RepaymentView": {
+        "type": "object",
+        "description": "Une transaction ventilée en remboursement de ce prêt (R-PRE-7).",
+        "required": [
+          "transaction_id",
+          "date",
+          "label",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Part remboursée, positive."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
       "RowFilter": {
         "type": "object",
         "description": "Ligne ignorée si la colonne correspond au motif (soldes, totaux…).",
@@ -9803,6 +10840,54 @@
           }
         }
       },
+      "ScheduleInput": {
+        "type": "object",
+        "required": [
+          "annual_rate_ppm",
+          "duration_months",
+          "first_installment_date",
+          "insurance",
+          "payer_account_id",
+          "interest_category_id"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux nominal annuel hors assurance, en millionièmes."
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "first_installment_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "insurance_category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Requise si l'assurance n'est pas nulle."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interest_category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "payer_account_id": {
+            "$ref": "#/components/schemas/AccountId",
+            "description": "Compte de liquidités qui paie les mensualités."
+          }
+        }
+      },
       "ScheduleView": {
         "type": "object",
         "required": [
@@ -9856,6 +10941,17 @@
             "type": "integer",
             "format": "int64"
           },
+          "asset_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssetId",
+                "description": "Ventilation d'acquisition d'un bien (R-BIE-8)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "category_id": {
             "oneOf": [
               {
@@ -9868,6 +10964,17 @@
           },
           "id": {
             "$ref": "#/components/schemas/SplitId"
+          },
+          "loan_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanId",
+                "description": "Ventilation de remboursement d'un prêt (R-PRE-7)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "note": {
             "type": [
@@ -9901,10 +11008,32 @@
             "type": "integer",
             "format": "int64"
           },
+          "asset_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssetId",
+                "description": "Acquisition d'un bien, à la place d'une catégorie (R-BIE-8)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "category_id": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "loan_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanId",
+                "description": "Remboursement d'un prêt, à la place d'une catégorie (R-PRE-7)."
               },
               {
                 "type": "null"
@@ -10289,7 +11418,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/LoanPaymentRef",
-                "description": "Échéance de prêt payée par cette transaction, ou dont elle est la jambe du capital (R-CPT-17)."
+                "description": "Échéance de prêt payée par cette transaction (R-PRE-6)."
               },
               {
                 "type": "null"
@@ -11013,8 +12142,12 @@
       "description": "Budgets, projets et notifications (spec 05)"
     },
     {
+      "name": "assets",
+      "description": "Biens (spec 09)"
+    },
+    {
       "name": "loans",
-      "description": "Prêts : conditions et tableau d'amortissement (spec 01, ADR-0020)"
+      "description": "Prêts : suivi, tableau d'amortissement, mensualités (spec 09)"
     },
     {
       "name": "savings",

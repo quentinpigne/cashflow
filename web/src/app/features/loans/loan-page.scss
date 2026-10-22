@@ -1,0 +1,141 @@
+.head {
+  margin-bottom: 1rem;
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    h1 {
+      flex: 1;
+      margin: 0;
+      font: var(--mat-sys-headline-small);
+    }
+  }
+
+  .meta {
+    margin: 0.25rem 0 0.75rem;
+  }
+
+  .balance {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+
+    strong {
+      font: var(--mat-sys-headline-medium);
+    }
+  }
+}
+
+.panel {
+  margin-bottom: 1rem;
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    h2 {
+      margin: 0;
+      font: var(--mat-sys-title-medium);
+    }
+  }
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  margin: 0;
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}
+
+.pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-surface-container);
+
+  span {
+    flex: 1;
+  }
+}
+
+.year {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font: var(--mat-sys-title-small);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.5rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  color: inherit;
+  text-decoration: none;
+
+  &.link:hover {
+    background: var(--mat-sys-surface-container);
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.25rem;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    text-align: left;
+  }
+
+  th {
+    font: var(--mat-sys-label-medium);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .right {
+    text-align: right;
+  }
+
+  .state {
+    width: 2.5rem;
+    padding: 0;
+
+    mat-icon {
+      color: var(--mat-sys-primary);
+    }
+  }
+
+  tr.next td {
+    background: var(--mat-sys-secondary-container);
+    font-weight: 500;
+  }
+
+  @media (max-width: 599.98px) {
+    .wide {
+      display: none;
+    }
+  }
+}

@@ -40,7 +40,7 @@ import {
   defaultFlags,
 } from '../../core/labels';
 import { Layout } from '../../core/layout';
-import { negate, parseMoney, toEditable } from '../../core/money';
+import { parseMoney, toEditable } from '../../core/money';
 import { InstitutionsStore } from '../../shared/stores';
 
 const NEW_INSTITUTION = '__new__';
@@ -103,7 +103,6 @@ export class AccountFormDialog {
   protected readonly creatingInstitution = signal(false);
 
   private readonly fb = inject(FormBuilder).nonNullable;
-  private readonly isLoan = (kind: AccountKind) => KIND_FAMILY[kind] === 'LIABILITY';
   protected readonly form = this.fb.group({
     kind: [this.account?.kind ?? ('CHECKING' as AccountKind), Validators.required],
     name: [this.account?.name ?? '', [Validators.required, Validators.maxLength(80)]],
@@ -114,14 +113,7 @@ export class AccountFormDialog {
       Validators.required,
     ],
     openingBalance: [
-      this.account
-        ? toEditable(
-            this.isLoan(this.account.kind)
-              ? negate(this.account.opening_balance_minor)
-              : this.account.opening_balance_minor,
-            this.account.currency,
-          )
-        : '0',
+      this.account ? toEditable(this.account.opening_balance_minor, this.account.currency) : '0',
       [
         Validators.required,
         (c: { value: string }) => (parseMoney(c.value) === null ? { amount: true } : null),
@@ -143,8 +135,6 @@ export class AccountFormDialog {
     initialValue: this.form.controls.kind.value,
   });
   protected readonly family = computed(() => KIND_FAMILY[this.kind()]);
-  protected readonly loan = computed(() => this.family() === 'LIABILITY');
-  protected readonly property = computed(() => this.family() === 'PROPERTY');
 
   constructor() {
     if (this.account?.has_activity) {
@@ -173,10 +163,7 @@ export class AccountFormDialog {
     this.applyAllowed(kind);
   }
 
-  /**
-   * Un prêt ou un bien ne compte jamais dans l'épargne de précaution ; épargne variable, prêts et biens, jamais
-   * dans les budgets (R-CPT-13, R-CPT-14).
-   */
+  /** L'épargne variable ne compte jamais dans les budgets (R-BUD-1). */
   private applyAllowed(kind: AccountKind): void {
     const family = KIND_FAMILY[kind];
     const toggle = (control: typeof this.form.controls.emergency, allowed: boolean) => {
@@ -187,7 +174,6 @@ export class AccountFormDialog {
         control.disable({ emitEvent: false });
       }
     };
-    toggle(this.form.controls.emergency, family !== 'LIABILITY' && family !== 'PROPERTY');
     toggle(this.form.controls.budget, family === 'CASH' || family === 'FIXED_SAVINGS');
   }
 
@@ -224,7 +210,7 @@ export class AccountFormDialog {
         currency: value.currency.toUpperCase(),
         opening_date: toIsoDate(value.openingDate),
         // Prêt : capital restant dû saisi en positif, enregistré en négatif (R-CPT-12).
-        opening_balance_minor: this.isLoan(value.kind) ? negate(balance) : balance,
+        opening_balance_minor: balance,
         // L'IBAN n'est renvoyé que masqué : vide, il est conservé tel quel à la modification.
         iban: value.iban.trim() || (this.account ? undefined : null),
         account_number: value.accountNumber || null,

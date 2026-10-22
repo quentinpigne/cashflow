@@ -1,8 +1,8 @@
-//! Prêts : conditions et tableau d'amortissement (spec 01, R-CPT-15 à R-CPT-17, ADR-0020).
+//! Prêts : conditions, tableau d'amortissement et capital restant dû (spec 09, R-PRE-1 à R-PRE-6, ADR-0020).
 //!
 //! Cas couvert : prêt amortissable à taux fixe et mensualités constantes. Le tableau est calculé à la
 //! volée, jamais stocké. Les montants sont en unités mineures (centimes) ; les calculs intermédiaires
-//! sont décimaux et arrondis au centime, demi vers le haut (ADR-0001), aux points fixés par R-CPT-16.
+//! sont décimaux et arrondis au centime, demi vers le haut (ADR-0001), aux points fixés par R-PRE-3.
 
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
@@ -13,12 +13,12 @@ use crate::shared::{Date, DomainError, Money, Rate};
 
 /// Durée maximale d'un prêt, en mois (50 ans).
 pub const MAX_DURATION_MONTHS: u32 = 600;
-/// Écart de montant toléré entre une mensualité payée et l'échéance (R-CPT-17) : 1 €.
+/// Écart de montant toléré entre une mensualité payée et l'échéance (R-PRE-6) : 1 €.
 pub const AMOUNT_TOLERANCE: Money = Money::from_minor(100);
-/// Écart de date toléré entre une mensualité payée et l'échéance (R-CPT-17).
+/// Écart de date toléré entre une mensualité payée et l'échéance (R-PRE-6).
 pub const DATE_TOLERANCE_DAYS: i64 = 5;
 
-/// Assurance emprunteur (R-CPT-15).
+/// Assurance emprunteur (R-PRE-2).
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "mode", rename_all = "SCREAMING_SNAKE_CASE")]
@@ -34,6 +34,72 @@ pub enum Insurance {
     },
 }
 
+/// Type d'un prêt (R-PRE-1).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LoanKind {
+    Mortgage,
+    Consumer,
+    Other,
+}
+
+/// Mode de suivi d'un prêt (R-PRE-1) : avec tableau d'amortissement, ou capital restant dû saisi.
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LoanMode {
+    Schedule,
+    Manual,
+}
+
+/// Comment se connaît le capital restant dû d'un prêt (R-PRE-4).
+#[derive(Debug, Clone, Copy)]
+pub enum Tracking<'a> {
+    /// Selon le tableau d'amortissement.
+    Schedule(&'a [Installment]),
+    /// Selon les capitaux restants dus saisis, datés.
+    Manual(&'a [(Date, Money)]),
+}
+
+/// Période d'un prêt : du déblocage jusqu'à la date où il est soldé (exclue).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LoanPeriod {
+    pub principal: Money,
+    pub start_date: Date,
+    pub closed_on: Option<Date>,
+}
+
+impl LoanPeriod {
+    /// Vérifie le capital et les dates d'un prêt (R-PRE-1).
+    pub fn validate(&self, first_installment: Option<Date>) -> Result<(), DomainError> {
+        if !self.principal.is_positive()
+            || self.closed_on.is_some_and(|d| d < self.start_date)
+            || first_installment.is_some_and(|d| d < self.start_date)
+        {
+            return Err(DomainError::InvalidLoan);
+        }
+        Ok(())
+    }
+
+    /// Capital restant dû à une date (R-PRE-4), positif ; rien avant le déblocage ni une fois soldé.
+    pub fn outstanding_at(&self, tracking: Tracking<'_>, date: Date) -> Option<Money> {
+        if date < self.start_date || self.closed_on.is_some_and(|closed| date >= closed) {
+            return None;
+        }
+        Some(match tracking {
+            Tracking::Schedule(schedule) => {
+                schedule.iter().take_while(|i| i.date <= date).last().map_or(self.principal, |i| i.remaining)
+            }
+            Tracking::Manual(balances) => balances
+                .iter()
+                .filter(|(d, _)| *d <= date)
+                .max_by_key(|(d, _)| *d)
+                .map_or(self.principal, |(_, outstanding)| *outstanding),
+        })
+    }
+}
+
 /// Conditions d'un prêt, ce qui détermine son tableau d'amortissement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LoanTerms {
@@ -47,7 +113,7 @@ pub struct LoanTerms {
 }
 
 impl LoanTerms {
-    /// Vérifie les conditions (R-CPT-15).
+    /// Vérifie les conditions (R-PRE-2).
     pub fn validate(&self) -> Result<(), DomainError> {
         let insurance_ok = match self.insurance {
             Insurance::None => true,
@@ -70,7 +136,7 @@ impl LoanTerms {
         self.annual_rate.to_fraction() / Decimal::from(12)
     }
 
-    /// Mensualité hors assurance (R-CPT-16) : `P·t / (1 − (1 + t)^−n)`, ou `P / n` si le taux est nul.
+    /// Mensualité hors assurance (R-PRE-3) : `P·t / (1 − (1 + t)^−n)`, ou `P / n` si le taux est nul.
     pub fn monthly_payment(&self) -> Money {
         let principal = Decimal::from(self.principal.minor());
         let months = Decimal::from(self.duration_months);
@@ -85,7 +151,7 @@ impl LoanTerms {
         round(principal * t * growth / (growth - Decimal::ONE))
     }
 
-    /// Assurance de chaque échéance (R-CPT-16).
+    /// Assurance de chaque échéance (R-PRE-3).
     pub fn monthly_insurance(&self) -> Money {
         match self.insurance {
             Insurance::None => Money::ZERO,
@@ -124,7 +190,7 @@ fn round(value: Decimal) -> Money {
     Money::from_minor(rounded.to_i64().unwrap_or_default())
 }
 
-/// Tableau d'amortissement (R-CPT-16). La dernière échéance solde le capital restant dû : sa mensualité
+/// Tableau d'amortissement (R-PRE-3). La dernière échéance solde le capital restant dû : sa mensualité
 /// absorbe l'écart d'arrondi.
 pub fn schedule(terms: &LoanTerms) -> Result<Vec<Installment>, DomainError> {
     terms.validate()?;
@@ -156,13 +222,13 @@ pub fn schedule(terms: &LoanTerms) -> Result<Vec<Installment>, DomainError> {
     Ok(result)
 }
 
-/// Capital restant dû théorique à une date (R-CPT-16) : après la dernière échéance datée au plus tard
+/// Capital restant dû théorique à une date (R-PRE-3) : après la dernière échéance datée au plus tard
 /// ce jour-là ; le capital emprunté avant la première.
 pub fn outstanding_at(terms: &LoanTerms, schedule: &[Installment], date: Date) -> Money {
     schedule.iter().take_while(|i| i.date <= date).last().map_or(terms.principal, |i| i.remaining)
 }
 
-/// Échéance à laquelle correspond un débit du compte payeur (R-CPT-17) : montant égal à l'échéance totale
+/// Échéance à laquelle correspond un débit du compte payeur (R-PRE-6) : montant égal à l'échéance totale
 /// à ±1 €, date à ±5 jours, pas encore payée. La plus proche en date l'emporte.
 pub fn matching_installment<'a>(
     schedule: &'a [Installment],
@@ -179,18 +245,7 @@ pub fn matching_installment<'a>(
         .min_by_key(|i| (i.date - date).num_days().abs())
 }
 
-/// Dette projetée en fin de chaque période (R-PRJ-40) : la valeur actuelle du compte (négative), diminuée des
-/// parts de capital des échéances datées après aujourd'hui et au plus tard à cette date.
-pub fn projected_debt(current: Money, schedule: &[Installment], today: Date, ends: &[Date]) -> Vec<Money> {
-    ends.iter()
-        .map(|end| {
-            let repaid: Money = schedule.iter().filter(|i| i.date > today && i.date <= *end).map(|i| i.principal).sum();
-            (current + repaid).min(Money::ZERO)
-        })
-        .collect()
-}
-
-/// Répartition d'une mensualité payée (R-CPT-17). Montants positifs, de somme égale au montant payé.
+/// Répartition d'une mensualité payée (R-PRE-6). Montants positifs, de somme égale au montant payé.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PaymentParts {
     pub principal: Money,
@@ -199,7 +254,7 @@ pub struct PaymentParts {
 }
 
 /// Répartit un débit selon une échéance : le capital est celui du tableau ; l'écart de montant (au plus
-/// 1 €) est porté par l'assurance, ou par les intérêts sans assurance (R-CPT-17).
+/// 1 €) est porté par l'assurance, ou par les intérêts sans assurance (R-PRE-6).
 pub fn payment_parts(installment: &Installment, debit: Money) -> Result<PaymentParts, DomainError> {
     let amount = -debit;
     let gap = amount - installment.total();
@@ -234,7 +289,7 @@ mod tests {
         Money::from_minor(minor)
     }
 
-    /// Prêt de la spec (CPT-09) : 200 000 € à 3 % sur 240 mois, assurance 0,30 % du capital.
+    /// Prêt de la spec (PRE-02) : 200 000 € à 3 % sur 240 mois, assurance 0,30 % du capital.
     fn reference() -> LoanTerms {
         LoanTerms {
             principal: m(20_000_000),
@@ -246,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn cpt_09_r_cpt_16_reference_schedule() {
+    fn pre_02_r_pre_3_reference_schedule() {
         let terms = reference();
         assert_eq!(terms.monthly_payment(), m(110_920));
         let rows = schedule(&terms).unwrap();
@@ -260,7 +315,7 @@ mod tests {
     }
 
     #[test]
-    fn r_cpt_16_principal_sums_to_amount_borrowed_and_last_installment_settles() {
+    fn r_pre_3_principal_sums_to_amount_borrowed_and_last_installment_settles() {
         let terms = reference();
         let rows = schedule(&terms).unwrap();
         assert_eq!(rows.iter().map(|i| i.principal).sum::<Money>(), terms.principal);
@@ -272,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn r_cpt_16_zero_rate_and_fixed_insurance() {
+    fn r_pre_3_zero_rate_and_fixed_insurance() {
         let terms = LoanTerms {
             principal: m(1_000_000),
             annual_rate: Rate::ZERO,
@@ -288,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    fn r_cpt_15_invalid_terms_are_refused() {
+    fn r_pre_2_invalid_terms_are_refused() {
         let mut terms = reference();
         terms.duration_months = 0;
         assert_eq!(schedule(&terms), Err(DomainError::InvalidLoanTerms));
@@ -301,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn r_cpt_16_outstanding_principal_at_a_date() {
+    fn r_pre_4_outstanding_principal_at_a_date() {
         let terms = reference();
         let rows = schedule(&terms).unwrap();
         assert_eq!(outstanding_at(&terms, &rows, d("2026-01-04")), m(20_000_000));
@@ -311,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn r_cpt_17_matching_tolerates_one_euro_and_five_days() {
+    fn r_pre_6_matching_tolerates_one_euro_and_five_days() {
         let rows = schedule(&reference()).unwrap();
         let found = matching_installment(&rows, &[], m(-115_920), d("2026-02-07")).unwrap();
         assert_eq!(found.number, 2);
@@ -323,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn cpt_10_r_cpt_17_payment_parts_and_gap_on_insurance() {
+    fn pre_03_r_pre_6_payment_parts_and_gap_on_insurance() {
         let rows = schedule(&reference()).unwrap();
         let parts = payment_parts(&rows[0], m(-115_920)).unwrap();
         assert_eq!(parts, PaymentParts { principal: m(60_920), interest: m(50_000), insurance: m(5_000) });
@@ -334,20 +389,22 @@ mod tests {
     }
 
     #[test]
-    fn r_prj_40_debt_follows_the_schedule() {
+    fn pre_02_r_pre_4_outstanding_in_both_modes() {
         let rows = schedule(&reference()).unwrap();
-        let today = d("2026-01-20");
-        let current = -rows[0].remaining;
-        let ends = [d("2026-01-31"), d("2026-02-28"), d("2026-03-31"), d("2050-12-31")];
-        let projected = projected_debt(current, &rows, today, &ends);
-        assert_eq!(projected[0], current);
-        assert_eq!(projected[1], current + rows[1].principal);
-        assert_eq!(projected[2], current + rows[1].principal + rows[2].principal);
-        assert_eq!(projected[3], Money::ZERO);
+        let period = LoanPeriod { principal: m(20_000_000), start_date: d("2025-12-15"), closed_on: None };
+        assert_eq!(period.outstanding_at(Tracking::Schedule(&rows), d("2025-12-14")), None);
+        assert_eq!(period.outstanding_at(Tracking::Schedule(&rows), d("2026-01-04")), Some(m(20_000_000)));
+        assert_eq!(period.outstanding_at(Tracking::Schedule(&rows), d("2026-01-05")), Some(m(19_939_080)));
+        let balances = [(d("2026-03-31"), m(15_000_000))];
+        assert_eq!(period.outstanding_at(Tracking::Manual(&balances), d("2026-03-30")), Some(m(20_000_000)));
+        assert_eq!(period.outstanding_at(Tracking::Manual(&balances), d("2026-04-01")), Some(m(15_000_000)));
+        let closed = LoanPeriod { closed_on: Some(d("2026-06-01")), ..period };
+        assert_eq!(closed.outstanding_at(Tracking::Manual(&balances), d("2026-06-01")), None);
+        assert_eq!(period.validate(Some(d("2025-12-01"))), Err(DomainError::InvalidLoan));
     }
 
     #[test]
-    fn r_cpt_17_gap_on_interest_without_insurance() {
+    fn r_pre_6_gap_on_interest_without_insurance() {
         let mut terms = reference();
         terms.insurance = Insurance::None;
         let rows = schedule(&terms).unwrap();

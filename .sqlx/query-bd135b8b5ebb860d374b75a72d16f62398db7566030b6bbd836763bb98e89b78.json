@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT loan_id, installment_number, transaction_id FROM loan_payment WHERE transaction_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "loan_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "loan_id"
+          }
+        }
+      },
+      {
+        "name": "installment_number",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "installment_number"
+          }
+        }
+      },
+      {
+        "name": "transaction_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "transaction_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bd135b8b5ebb860d374b75a72d16f62398db7566030b6bbd836763bb98e89b78"
+}

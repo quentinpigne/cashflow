@@ -2,6 +2,8 @@
 
 import { AccountFamily } from '../api/models/account-family';
 import { AccountKind } from '../api/models/account-kind';
+import { AssetKind } from '../api/models/asset-kind';
+import { LoanKind } from '../api/models/loan-kind';
 import { BatchStatus } from '../api/models/batch-status';
 import { ClearingStatus } from '../api/models/clearing-status';
 import { ImportDecision } from '../api/models/import-decision';
@@ -11,17 +13,9 @@ export const FAMILY_LABELS: Record<AccountFamily, string> = {
   CASH: 'Liquidités',
   FIXED_SAVINGS: 'Épargne à taux fixe',
   VARIABLE_SAVINGS: 'Épargne variable',
-  PROPERTY: 'Biens',
-  LIABILITY: 'Passifs',
 };
 
-export const FAMILY_ORDER: AccountFamily[] = [
-  'CASH',
-  'FIXED_SAVINGS',
-  'VARIABLE_SAVINGS',
-  'PROPERTY',
-  'LIABILITY',
-];
+export const FAMILY_ORDER: AccountFamily[] = ['CASH', 'FIXED_SAVINGS', 'VARIABLE_SAVINGS'];
 
 export const KIND_LABELS: Record<AccountKind, string> = {
   CHECKING: 'Compte courant',
@@ -43,12 +37,20 @@ export const KIND_LABELS: Record<AccountKind, string> = {
   EMPLOYEE_SAVINGS: 'Épargne salariale',
   CRYPTO: 'Crypto-actifs',
   VARIABLE_OTHER: 'Autre épargne variable',
-  MORTGAGE: 'Prêt immobilier',
-  CONSUMER_LOAN: 'Prêt à la consommation',
-  LOAN_OTHER: 'Autre prêt',
+};
+
+/** Types de biens (R-BIE-1). */
+export const ASSET_KIND_LABELS: Record<AssetKind, string> = {
   REAL_ESTATE: 'Bien immobilier',
   VEHICLE: 'Véhicule',
-  PROPERTY_OTHER: 'Autre bien',
+  OTHER: 'Autre bien',
+};
+
+/** Types de prêts (R-PRE-1). */
+export const LOAN_KIND_LABELS: Record<LoanKind, string> = {
+  MORTGAGE: 'Prêt immobilier',
+  CONSUMER: 'Prêt à la consommation',
+  OTHER: 'Autre prêt',
 };
 
 /** Famille de chaque nature (spec 01), pour grouper la liste des natures. */
@@ -72,12 +74,6 @@ export const KIND_FAMILY: Record<AccountKind, AccountFamily> = {
   EMPLOYEE_SAVINGS: 'VARIABLE_SAVINGS',
   CRYPTO: 'VARIABLE_SAVINGS',
   VARIABLE_OTHER: 'VARIABLE_SAVINGS',
-  MORTGAGE: 'LIABILITY',
-  CONSUMER_LOAN: 'LIABILITY',
-  LOAN_OTHER: 'LIABILITY',
-  REAL_ESTATE: 'PROPERTY',
-  VEHICLE: 'PROPERTY',
-  PROPERTY_OTHER: 'PROPERTY',
 };
 
 export const STATUS_LABELS: Record<ClearingStatus, string> = {

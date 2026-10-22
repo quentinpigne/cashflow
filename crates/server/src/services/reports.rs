@@ -118,7 +118,7 @@ pub async fn categories(db: &Db, query: &CategoryReportQuery, today: Date) -> Ap
             amount: f.amount,
             category: f.category_id,
             kind: f.category_kind,
-            is_transfer: f.is_transfer,
+            is_movement: f.is_movement,
             is_eur: f.currency == Currency::EUR.code(),
         })
         .collect();
@@ -197,7 +197,7 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
             date: f.date,
             amount: f.amount,
             category_kind: f.category_kind,
-            is_transfer: f.is_transfer,
+            is_movement: f.is_movement,
             is_eur: f.currency == Currency::EUR.code(),
         })
         .collect();

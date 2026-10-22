@@ -59,7 +59,7 @@ pub(super) async fn category(db: &Db, name: &str, kind: CategoryKind, parent: Op
 }
 
 pub(super) fn split(amount: i64, category: Option<CategoryId>) -> SplitInput {
-    SplitInput { amount_minor: amount, category_id: category, note: None, project_id: None }
+    SplitInput { amount_minor: amount, category_id: category, ..Default::default() }
 }
 
 pub(super) fn tx(account: AccountId, date: &str, amount: i64, category: Option<CategoryId>) -> TransactionInput {

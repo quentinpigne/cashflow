@@ -7,10 +7,10 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { AccountId } from '../../models/account-id';
+import { LoanId } from '../../models/loan-id';
 
 export interface UnpayLoanInstallment$Params {
-  id: AccountId;
+  id: LoanId;
   number: number;
 }
 
@@ -31,4 +31,4 @@ export function unpayLoanInstallment(http: HttpClient, rootUrl: string, params: 
   );
 }
 
-unpayLoanInstallment.PATH = '/api/v1/accounts/{id}/loan/payments/{number}';
+unpayLoanInstallment.PATH = '/api/v1/loans/{id}/payments/{number}';

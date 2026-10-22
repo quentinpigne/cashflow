@@ -323,7 +323,7 @@ impl Loaded {
                 category: f.category_id,
                 project: f.project_id.map(|p| (p, f.project_excluded)),
                 in_budget: f.in_budget,
-                is_transfer: f.is_transfer,
+                is_movement: f.is_movement,
             })
             .collect();
         let moves = db::budgets::savings_moves(&db.read, start, end)
@@ -743,7 +743,7 @@ pub async fn suggestions(db: &Db, today: Date) -> AppResult<Suggestions> {
     let mut amounts: HashMap<(CategoryId, Month), Money> = HashMap::new();
     for fact in facts
         .iter()
-        .filter(|f| f.in_budget && !f.is_transfer && !f.project_excluded && f.currency == Currency::EUR.code())
+        .filter(|f| f.in_budget && !f.is_movement && !f.project_excluded && f.currency == Currency::EUR.code())
     {
         let Some(category) = fact.category_id.and_then(|c| by_id.get(&c)) else { continue };
         let signed = if category.kind == CategoryKind::Expense { -fact.amount } else { fact.amount };
@@ -878,7 +878,7 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                     category: s.category_id,
                     project: Some((p.id, p.exclude_from_period_budgets)),
                     in_budget: true,
-                    is_transfer: false,
+                    is_movement: false,
                 })
                 .collect();
             let by_category = budgeting::project_actual(&facts, p.id);

@@ -8,8 +8,9 @@ use std::collections::HashMap;
 
 use anyhow::{Context, bail};
 use cashflow_domain::accounts::AccountKind;
-use cashflow_domain::loans::{self, Insurance, LoanTerms};
-use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId};
+use cashflow_domain::assets::AssetKind;
+use cashflow_domain::loans::{Insurance, LoanKind, LoanTerms};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId};
 use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Days, Months};
 
@@ -26,6 +27,57 @@ const MONTHS: u32 = 12;
 const SALARY: i64 = 340_000;
 /// Échéance du prêt de démonstration : mensualité de 1 109,20 € et assurance de 50 € (CPT-09).
 const LOAN_INSTALLMENT: i64 = 115_920;
+
+/// L'appartement (acheté 250 000 €) et le prêt qui l'a financé, rubriques activées (spec 09).
+async fn assets_and_loan(
+    db: &Db,
+    c: &Categories,
+    terms: &LoanTerms,
+    checking: AccountId,
+    today: Date,
+) -> anyhow::Result<LoanId> {
+    super::features::update(db, &super::features::FeaturesInput { assets: Some(true), loans: Some(true) })
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let purchase = terms.first_installment.checked_sub_months(Months::new(1)).context("date d'achat")?;
+    let flat = super::assets::AssetInput {
+        name: "Appartement".into(),
+        kind: AssetKind::RealEstate,
+        purchase_date: purchase,
+        // Prix d'achat : apport et capital emprunté (R-BIE-1).
+        purchase_price_minor: 25_000_000,
+        sold_on: None,
+        sale_price_minor: None,
+        include_in_net_worth: None,
+        notes: None,
+    };
+    let flat = super::assets::create(db, &flat, today).await.map_err(|e| anyhow::anyhow!("{e}"))?.summary.id;
+    let (Some(interest), Some(insurance)) = (c.get("Prêts", "Intérêts"), c.get("Prêts", "Assurance emprunteur"))
+    else {
+        bail!("catégories de prêt absentes");
+    };
+    let loan = super::loans::LoanInput {
+        name: "Prêt immobilier".into(),
+        kind: LoanKind::Mortgage,
+        institution_id: institution(db, "LCL").await?,
+        start_date: purchase,
+        principal_minor: terms.principal.minor(),
+        schedule: Some(super::loans::ScheduleInput {
+            annual_rate_ppm: terms.annual_rate.ppm(),
+            duration_months: terms.duration_months,
+            first_installment_date: terms.first_installment,
+            insurance: terms.insurance,
+            payer_account_id: checking,
+            interest_category_id: interest,
+            insurance_category_id: Some(insurance),
+        }),
+        asset_id: Some(flat),
+        closed_on: None,
+        include_in_net_worth: None,
+        notes: None,
+    };
+    Ok(super::loans::create(db, &loan, today).await.map_err(|e| anyhow::anyhow!("{e}"))?.summary.id)
+}
 
 /// Prêt de démonstration : 200 000 € à 3 % sur 20 ans, assurance 0,30 % du capital, première échéance
 /// 84 mois avant le début du jeu.
@@ -152,15 +204,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         account(db, "Assurance vie", AccountKind::LifeInsurance, Some("Boursorama Banque"), start, 1_200_000, today)
             .await?;
     let pea = account(db, "PEA", AccountKind::Pea, Some("Boursorama Banque"), start, 650_000, today).await?;
-    // Prêt de 200 000 € à 3 % sur 20 ans, remboursé depuis 7 ans (CPT-09) : le compte s'ouvre au capital
-    // restant dû du tableau d'amortissement.
     let loan_terms = demo_loan(start)?;
-    let schedule = loans::schedule(&loan_terms)?;
-    let opening_debt = loans::outstanding_at(&loan_terms, &schedule, start);
-    let loan =
-        account(db, "Prêt immobilier", AccountKind::Mortgage, Some("LCL"), start, -opening_debt.minor(), today).await?;
-    // Le logement financé par le prêt, au prix d'achat : apport et capital emprunté (R-CPT-14).
-    account(db, "Appartement", AccountKind::RealEstate, None, start, 25_000_000, today).await?;
 
     let c = Categories::load(db).await?;
     let mut rng = Lcg(20_261_020);
@@ -250,18 +294,21 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
                         category_id: c.get("Alimentation & restauration", "Supermarché / épicerie"),
                         note: None,
                         project_id: None,
+                        ..Default::default()
                     },
                     SplitInput {
                         amount_minor: -1_500,
                         category_id: c.get("Logement", "Autres"),
                         note: Some("Entretien".into()),
                         project_id: None,
+                        ..Default::default()
                     },
                     SplitInput {
                         amount_minor: -1_000,
                         category_id: c.get("Achats & shopping", "Autres"),
                         note: Some("Cadeau".into()),
                         project_id: None,
+                        ..Default::default()
                     },
                 ]),
             };
@@ -411,19 +458,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     imports::save_profile(db, None, &profile).await.map_err(|e| anyhow::anyhow!("{e}"))?;
 
     budget(db, &c, start, today, livret_a, life, checking).await?;
-    let c_loans = (c.get("Prêts", "Intérêts"), c.get("Prêts", "Assurance emprunteur"));
-    let (Some(interest), Some(insurance)) = c_loans else { bail!("catégories de prêt absentes") };
-    let input = super::loans::LoanTermsInput {
-        principal_minor: loan_terms.principal.minor(),
-        annual_rate_ppm: loan_terms.annual_rate.ppm(),
-        duration_months: loan_terms.duration_months,
-        first_installment_date: loan_terms.first_installment,
-        insurance: loan_terms.insurance,
-        payer_account_id: checking,
-        interest_category_id: interest,
-        insurance_category_id: Some(insurance),
-    };
-    super::loans::save_terms(db, loan, &input, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    let loan = assets_and_loan(db, &c, &loan_terms, checking, today).await?;
     // Chaque mensualité est ventilée selon son échéance : la dette baisse du capital remboursé (CPT-10).
     let payments: Vec<super::loans::LoanPaymentInput> = super::loans::proposals(db, loan, today)
         .await
@@ -612,6 +647,7 @@ async fn budget(
                 category_id: category,
                 note: None,
                 project_id: Some(project.id),
+                ..Default::default()
             }]),
         };
         transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -630,9 +666,9 @@ mod tests {
         let today: Date = "2026-10-20".parse().unwrap();
         load(&db, today).await.unwrap();
         let accounts = accounts::list(&db, today).await.unwrap();
-        assert_eq!(accounts.len(), 8);
+        assert_eq!(accounts.len(), 6);
         // Les comptes d'actif restent positifs : le jeu reste vraisemblable.
-        for account in accounts.iter().filter(|a| a.kind != AccountKind::Mortgage) {
+        for account in &accounts {
             assert!(account.balance_minor > 0, "{} : {}", account.name, account.balance_minor);
         }
         let dashboard = super::super::dashboard::get(&db, today).await.unwrap();
@@ -642,16 +678,18 @@ mod tests {
         let budget = budgets::month(&db, &budgets::MonthQuery { month: None }, today).await.unwrap();
         assert!(budget.lines.len() >= 10);
         assert_eq!(budgets::projects(&db).await.unwrap()[0].actual_minor, 40_200);
-        // Les mensualités ventilées amortissent le prêt exactement comme son tableau (CPT-10).
-        let loan = accounts.iter().find(|a| a.kind == AccountKind::Mortgage).unwrap();
+        // Les mensualités de la démo sont ventilées selon leurs échéances (PRE-03).
+        let loan = &super::super::loans::list(&db, today).await.unwrap()[0];
         let view = super::super::loans::get(&db, loan.id, today).await.unwrap();
-        assert_eq!(view.gap_minor, 0);
+        let schedule = view.schedule.unwrap();
         assert!(
-            view.installments
+            schedule
+                .installments
                 .iter()
                 .filter(|i| i.date <= today && i.number >= 85)
                 .all(|i| i.paid_transaction_id.is_some())
         );
+        assert!(dashboard.net_worth.total_minor > 0, "le bien compense le prêt (R-TDB-1)");
         assert!(load(&db, today).await.is_err(), "le jeu ne se charge que dans une base vide");
     }
 }

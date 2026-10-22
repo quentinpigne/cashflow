@@ -10,30 +10,39 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
-import { deleteLoanTerms } from '../fn/loans/delete-loan-terms';
-import { DeleteLoanTerms$Params } from '../fn/loans/delete-loan-terms';
+import { createLoan } from '../fn/loans/create-loan';
+import { CreateLoan$Params } from '../fn/loans/create-loan';
+import { deleteLoan } from '../fn/loans/delete-loan';
+import { DeleteLoan$Params } from '../fn/loans/delete-loan';
+import { deleteLoanBalance } from '../fn/loans/delete-loan-balance';
+import { DeleteLoanBalance$Params } from '../fn/loans/delete-loan-balance';
 import { getLoan } from '../fn/loans/get-loan';
 import { GetLoan$Params } from '../fn/loans/get-loan';
+import { listLoans } from '../fn/loans/list-loans';
+import { ListLoans$Params } from '../fn/loans/list-loans';
 import { LoanPaymentProposal } from '../models/loan-payment-proposal';
 import { loanPaymentProposals } from '../fn/loans/loan-payment-proposals';
 import { LoanPaymentProposals$Params } from '../fn/loans/loan-payment-proposals';
 import { LoanPaymentResult } from '../models/loan-payment-result';
 import { LoanPreview } from '../models/loan-preview';
+import { LoanSummary } from '../models/loan-summary';
 import { LoanView } from '../models/loan-view';
 import { payLoanInstallments } from '../fn/loans/pay-loan-installments';
 import { PayLoanInstallments$Params } from '../fn/loans/pay-loan-installments';
 import { previewLoan } from '../fn/loans/preview-loan';
 import { PreviewLoan$Params } from '../fn/loans/preview-loan';
-import { saveLoanTerms } from '../fn/loans/save-loan-terms';
-import { SaveLoanTerms$Params } from '../fn/loans/save-loan-terms';
+import { saveLoanBalance } from '../fn/loans/save-loan-balance';
+import { SaveLoanBalance$Params } from '../fn/loans/save-loan-balance';
 import { transactionLoanProposal } from '../fn/loans/transaction-loan-proposal';
 import { TransactionLoanProposal$Params } from '../fn/loans/transaction-loan-proposal';
 import { unpayLoanInstallment } from '../fn/loans/unpay-loan-installment';
 import { UnpayLoanInstallment$Params } from '../fn/loans/unpay-loan-installment';
+import { updateLoan } from '../fn/loans/update-loan';
+import { UpdateLoan$Params } from '../fn/loans/update-loan';
 
 
 /**
- * Prêts : conditions et tableau d'amortissement (spec 01, ADR-0020)
+ * Prêts : suivi, tableau d'amortissement, mensualités (spec 09)
  */
 @Injectable({ providedIn: 'root' })
 export class LoansService extends BaseService {
@@ -41,11 +50,108 @@ export class LoansService extends BaseService {
     super(config, http);
   }
 
-  /** Path part for operation `getLoan()` */
-  static readonly GetLoanPath = '/api/v1/accounts/{id}/loan';
+  /** Path part for operation `listLoans()` */
+  static readonly ListLoansPath = '/api/v1/loans';
 
   /**
-   * Conditions et tableau d'amortissement d'un prêt (CPT-09).
+   * Prêts (E27, PRE-01).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `listLoans()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listLoans$Response(params?: ListLoans$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<LoanSummary>>> {
+    const obs = listLoans(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Prêts (E27, PRE-01).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `listLoans$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listLoans(params?: ListLoans$Params, context?: HttpContext): Observable<Array<LoanSummary>> {
+    const resp = this.listLoans$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<LoanSummary>>): Array<LoanSummary> => r.body)
+    );
+  }
+
+  /** Path part for operation `createLoan()` */
+  static readonly CreateLoanPath = '/api/v1/loans';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `createLoan()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  createLoan$Response(params: CreateLoan$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanView>> {
+    const obs = createLoan(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `createLoan$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  createLoan(params: CreateLoan$Params, context?: HttpContext): Observable<LoanView> {
+    const resp = this.createLoan$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<LoanView>): LoanView => r.body)
+    );
+  }
+
+  /** Path part for operation `previewLoan()` */
+  static readonly PreviewLoanPath = '/api/v1/loans/preview';
+
+  /**
+   * Mensualité calculée pendant la saisie des conditions (R-PRE-3).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `previewLoan()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  previewLoan$Response(params: PreviewLoan$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanPreview>> {
+    const obs = previewLoan(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Mensualité calculée pendant la saisie des conditions (R-PRE-3).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `previewLoan$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  previewLoan(params: PreviewLoan$Params, context?: HttpContext): Observable<LoanPreview> {
+    const resp = this.previewLoan$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<LoanPreview>): LoanPreview => r.body)
+    );
+  }
+
+  /** Path part for operation `getLoan()` */
+  static readonly GetLoanPath = '/api/v1/loans/{id}';
+
+  /**
+   * Fiche d'un prêt : tableau d'amortissement ou capitaux restants dus saisis (E28).
    *
    *
    *
@@ -60,7 +166,7 @@ export class LoansService extends BaseService {
   }
 
   /**
-   * Conditions et tableau d'amortissement d'un prêt (CPT-09).
+   * Fiche d'un prêt : tableau d'amortissement ou capitaux restants dus saisis (E28).
    *
    *
    *
@@ -76,81 +182,135 @@ export class LoansService extends BaseService {
     );
   }
 
-  /** Path part for operation `saveLoanTerms()` */
-  static readonly SaveLoanTermsPath = '/api/v1/accounts/{id}/loan';
+  /** Path part for operation `updateLoan()` */
+  static readonly UpdateLoanPath = '/api/v1/loans/{id}';
 
   /**
-   * Crée ou remplace les conditions d'un prêt (R-CPT-15).
-   *
-   *
-   *
    * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `saveLoanTerms()` instead.
+   * To access only the response body, use `updateLoan()` instead.
    *
    * This method sends `application/json` and handles request body of type `application/json`.
    */
-  saveLoanTerms$Response(params: SaveLoanTerms$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanView>> {
-    const obs = saveLoanTerms(this.http, this.rootUrl, params, context);
+  updateLoan$Response(params: UpdateLoan$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanView>> {
+    const obs = updateLoan(this.http, this.rootUrl, params, context);
     return obs;
   }
 
   /**
-   * Crée ou remplace les conditions d'un prêt (R-CPT-15).
-   *
-   *
-   *
    * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `saveLoanTerms$Response()` instead.
+   * To access the full response (for headers, for example), `updateLoan$Response()` instead.
    *
    * This method sends `application/json` and handles request body of type `application/json`.
    */
-  saveLoanTerms(params: SaveLoanTerms$Params, context?: HttpContext): Observable<LoanView> {
-    const resp = this.saveLoanTerms$Response(params, context);
+  updateLoan(params: UpdateLoan$Params, context?: HttpContext): Observable<LoanView> {
+    const resp = this.updateLoan$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<LoanView>): LoanView => r.body)
     );
   }
 
-  /** Path part for operation `deleteLoanTerms()` */
-  static readonly DeleteLoanTermsPath = '/api/v1/accounts/{id}/loan';
+  /** Path part for operation `deleteLoan()` */
+  static readonly DeleteLoanPath = '/api/v1/loans/{id}';
 
   /**
-   * Retire les conditions d'un prêt : il revient au suivi par valorisations (R-CPT-12).
+   * Supprime un prêt ; ses mensualités ventilées redeviennent non catégorisées (R-PRE-11).
    *
    *
    *
    * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `deleteLoanTerms()` instead.
+   * To access only the response body, use `deleteLoan()` instead.
    *
    * This method doesn't expect any request body.
    */
-  deleteLoanTerms$Response(params: DeleteLoanTerms$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
-    const obs = deleteLoanTerms(this.http, this.rootUrl, params, context);
+  deleteLoan$Response(params: DeleteLoan$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = deleteLoan(this.http, this.rootUrl, params, context);
     return obs;
   }
 
   /**
-   * Retire les conditions d'un prêt : il revient au suivi par valorisations (R-CPT-12).
+   * Supprime un prêt ; ses mensualités ventilées redeviennent non catégorisées (R-PRE-11).
    *
    *
    *
    * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `deleteLoanTerms$Response()` instead.
+   * To access the full response (for headers, for example), `deleteLoan$Response()` instead.
    *
    * This method doesn't expect any request body.
    */
-  deleteLoanTerms(params: DeleteLoanTerms$Params, context?: HttpContext): Observable<void> {
-    const resp = this.deleteLoanTerms$Response(params, context);
+  deleteLoan(params: DeleteLoan$Params, context?: HttpContext): Observable<void> {
+    const resp = this.deleteLoan$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `saveLoanBalance()` */
+  static readonly SaveLoanBalancePath = '/api/v1/loans/{id}/balances';
+
+  /**
+   * Saisit un capital restant dû (suivi simple, R-PRE-5).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `saveLoanBalance()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveLoanBalance$Response(params: SaveLoanBalance$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanView>> {
+    const obs = saveLoanBalance(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Saisit un capital restant dû (suivi simple, R-PRE-5).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `saveLoanBalance$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveLoanBalance(params: SaveLoanBalance$Params, context?: HttpContext): Observable<LoanView> {
+    const resp = this.saveLoanBalance$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<LoanView>): LoanView => r.body)
+    );
+  }
+
+  /** Path part for operation `deleteLoanBalance()` */
+  static readonly DeleteLoanBalancePath = '/api/v1/loans/{id}/balances/{date}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `deleteLoanBalance()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteLoanBalance$Response(params: DeleteLoanBalance$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = deleteLoanBalance(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `deleteLoanBalance$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteLoanBalance(params: DeleteLoanBalance$Params, context?: HttpContext): Observable<void> {
+    const resp = this.deleteLoanBalance$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );
   }
 
   /** Path part for operation `payLoanInstallments()` */
-  static readonly PayLoanInstallmentsPath = '/api/v1/accounts/{id}/loan/payments';
+  static readonly PayLoanInstallmentsPath = '/api/v1/loans/{id}/payments';
 
   /**
-   * Ventile des mensualités selon leurs échéances (CPT-10, R-CPT-17).
+   * Ventile des mensualités selon leurs échéances (PRE-03, R-PRE-6).
    *
    *
    *
@@ -165,7 +325,7 @@ export class LoansService extends BaseService {
   }
 
   /**
-   * Ventile des mensualités selon leurs échéances (CPT-10, R-CPT-17).
+   * Ventile des mensualités selon leurs échéances (PRE-03, R-PRE-6).
    *
    *
    *
@@ -182,10 +342,10 @@ export class LoansService extends BaseService {
   }
 
   /** Path part for operation `unpayLoanInstallment()` */
-  static readonly UnpayLoanInstallmentPath = '/api/v1/accounts/{id}/loan/payments/{number}';
+  static readonly UnpayLoanInstallmentPath = '/api/v1/loans/{id}/payments/{number}';
 
   /**
-   * Annule la ventilation d'une échéance (R-CPT-17).
+   * Annule la ventilation d'une échéance (R-PRE-8).
    *
    *
    *
@@ -200,7 +360,7 @@ export class LoansService extends BaseService {
   }
 
   /**
-   * Annule la ventilation d'une échéance (R-CPT-17).
+   * Annule la ventilation d'une échéance (R-PRE-8).
    *
    *
    *
@@ -217,10 +377,10 @@ export class LoansService extends BaseService {
   }
 
   /** Path part for operation `loanPaymentProposals()` */
-  static readonly LoanPaymentProposalsPath = '/api/v1/accounts/{id}/loan/proposals';
+  static readonly LoanPaymentProposalsPath = '/api/v1/loans/{id}/proposals';
 
   /**
-   * Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-CPT-17).
+   * Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-PRE-6).
    *
    *
    *
@@ -235,7 +395,7 @@ export class LoansService extends BaseService {
   }
 
   /**
-   * Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-CPT-17).
+   * Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-PRE-6).
    *
    *
    *
@@ -251,46 +411,11 @@ export class LoansService extends BaseService {
     );
   }
 
-  /** Path part for operation `previewLoan()` */
-  static readonly PreviewLoanPath = '/api/v1/loans/preview';
-
-  /**
-   * Mensualité calculée pendant la saisie des conditions (R-CPT-16).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `previewLoan()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  previewLoan$Response(params: PreviewLoan$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanPreview>> {
-    const obs = previewLoan(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Mensualité calculée pendant la saisie des conditions (R-CPT-16).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `previewLoan$Response()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  previewLoan(params: PreviewLoan$Params, context?: HttpContext): Observable<LoanPreview> {
-    const resp = this.previewLoan$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<LoanPreview>): LoanPreview => r.body)
-    );
-  }
-
   /** Path part for operation `transactionLoanProposal()` */
   static readonly TransactionLoanProposalPath = '/api/v1/transactions/{id}/loan-proposal';
 
   /**
-   * L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-CPT-17).
+   * L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-PRE-6).
    *
    *
    *
@@ -305,7 +430,7 @@ export class LoansService extends BaseService {
   }
 
   /**
-   * L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-CPT-17).
+   * L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-PRE-6).
    *
    *
    *

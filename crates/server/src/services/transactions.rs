@@ -6,7 +6,9 @@ use cashflow_domain::accounts::AccountPeriod;
 use cashflow_domain::ledger::balance::{self, DatedAmount};
 use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::{self, BalanceAffectingChange, ClearingStatus, TransactionOrigin};
-use cashflow_domain::shared::ids::{AccountId, CategoryId, ProjectId, SplitId, TransactionId, TransferId};
+use cashflow_domain::shared::ids::{
+    AccountId, AssetId, CategoryId, LoanId, ProjectId, SplitId, TransactionId, TransferId,
+};
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
 use sqlx::SqliteConnection;
@@ -27,6 +29,10 @@ pub struct Split {
     pub category_id: Option<CategoryId>,
     pub note: Option<String>,
     pub project_id: Option<ProjectId>,
+    /// Ventilation de remboursement d'un prêt (R-PRE-7).
+    pub loan_id: Option<LoanId>,
+    /// Ventilation d'acquisition d'un bien (R-BIE-8).
+    pub asset_id: Option<AssetId>,
 }
 
 impl From<SplitRow> for Split {
@@ -37,6 +43,8 @@ impl From<SplitRow> for Split {
             category_id: r.category_id,
             note: r.note,
             project_id: r.project_id,
+            loan_id: r.loan_id,
+            asset_id: r.asset_id,
         }
     }
 }
@@ -99,7 +107,7 @@ pub struct TransactionDetail {
     pub origin: TransactionOrigin,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
-    /// Échéance de prêt payée par cette transaction, ou dont elle est la jambe du capital (R-CPT-17).
+    /// Échéance de prêt payée par cette transaction (R-PRE-6).
     pub loan_payment: Option<LoanPaymentRef>,
     /// Rapprochée : montant, compte et date de solde sont verrouillés (R-TRX-3).
     pub locked: bool,
@@ -107,19 +115,23 @@ pub struct TransactionDetail {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct LoanPaymentRef {
-    pub loan_account_id: AccountId,
+    pub loan_id: LoanId,
     pub loan_name: String,
     pub installment_number: u32,
-    /// Vrai pour la mensualité du compte payeur, faux pour la jambe du capital sur le prêt.
-    pub is_payment: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, ToSchema)]
 pub struct SplitInput {
     pub amount_minor: i64,
     pub category_id: Option<CategoryId>,
     pub note: Option<String>,
     pub project_id: Option<ProjectId>,
+    /// Remboursement d'un prêt, à la place d'une catégorie (R-PRE-7).
+    #[serde(default)]
+    pub loan_id: Option<LoanId>,
+    /// Acquisition d'un bien, à la place d'une catégorie (R-BIE-8).
+    #[serde(default)]
+    pub asset_id: Option<AssetId>,
 }
 
 /// Saisie d'une transaction (TRX-01). Sans `splits`, une ventilation unique sur `category_id`.
@@ -278,12 +290,14 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
     let splits = db::transactions::splits_of(&db.write, id).await?.into_iter().map(Into::into).collect();
     let names = account_names(db).await?;
     let transfer = db::transactions::transfer_of(&db.write, id).await?.map(|side| transfer_summary(&side, &names));
-    let loan_payment = db::loans::payment_involving(&db.write, id).await?.map(|p| LoanPaymentRef {
-        loan_account_id: p.loan_account_id,
-        loan_name: names.get(&p.loan_account_id).cloned().unwrap_or_default(),
-        installment_number: p.installment_number,
-        is_payment: p.transaction_id == id,
-    });
+    let loan_payment = match db::loans::payment_of(&db.write, id).await? {
+        Some(p) => Some(LoanPaymentRef {
+            loan_id: p.loan_id,
+            loan_name: db::loans::find(&db.write, p.loan_id).await?.map(|l| l.name).unwrap_or_default(),
+            installment_number: p.installment_number,
+        }),
+        None => None,
+    };
     Ok(TransactionDetail {
         id: t.id,
         account_id: t.account_id,
@@ -316,6 +330,17 @@ pub(crate) fn period(account: &AccountRow) -> AccountPeriod {
 /// qui y sont déjà rattachées (`kept`), mais n'en reçoit pas de nouvelles (R-BUD-24).
 async fn check_references(conn: &mut SqliteConnection, splits: &[SplitInput], kept: &[ProjectId]) -> AppResult<()> {
     for s in splits {
+        split::check_attachment(s.category_id.is_some(), s.loan_id.is_some(), s.asset_id.is_some())?;
+        if let Some(loan) = s.loan_id
+            && db::loans::find(&mut *conn, loan).await?.is_none()
+        {
+            return Err(AppError::NotFound("prêt"));
+        }
+        if let Some(asset) = s.asset_id
+            && db::assets::find(&mut *conn, asset).await?.is_none()
+        {
+            return Err(AppError::NotFound("bien"));
+        }
         if let Some(category) = s.category_id
             && db::categories::find(&mut *conn, category).await?.is_none()
         {
@@ -338,6 +363,8 @@ fn new_splits(splits: &[SplitInput]) -> Vec<NewSplit<'_>> {
             category_id: s.category_id,
             note: s.note.as_deref().map(str::trim).filter(|n| !n.is_empty()),
             project_id: s.project_id,
+            loan_id: s.loan_id,
+            asset_id: s.asset_id,
         })
         .collect()
 }
@@ -357,6 +384,7 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
             category_id: input.category_id,
             note: None,
             project_id: None,
+            ..Default::default()
         }]
     });
     split::check_splits(amount, &amounts(&splits))?;
@@ -419,7 +447,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
     let existing = db::transactions::splits_of(&mut *tx, id).await?;
     // Une mensualité ventilée selon son échéance, et la jambe du capital sur le prêt, ne changent ni de montant,
     // ni de compte, ni de ventilation (R-CPT-17) : seuls le libellé, la note et la date se modifient.
-    if db::loans::payment_involving(&mut *tx, id).await?.is_some() {
+    if db::loans::payment_of(&mut *tx, id).await?.is_some() {
         let same_splits = input.splits.as_ref().is_none_or(|splits| {
             splits.len() == existing.len()
                 && splits
@@ -452,6 +480,8 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
             category_id: existing[0].category_id,
             note: existing[0].note.clone(),
             project_id: existing[0].project_id,
+            loan_id: existing[0].loan_id,
+            asset_id: existing[0].asset_id,
         }],
         None => existing
             .iter()
@@ -460,6 +490,8 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 category_id: s.category_id,
                 note: s.note.clone(),
                 project_id: s.project_id,
+                loan_id: s.loan_id,
+                asset_id: s.asset_id,
             })
             .collect(),
     };
@@ -531,24 +563,16 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
     Ok(())
 }
 
-/// Supprime une transaction. Une jambe de virement supprimée délie l'autre, qui reste (R-TRX-34). Une mensualité
-/// ventilée emporte la jambe du capital créée sur le prêt ; cette jambe ne se supprime pas seule (R-CPT-17).
+/// Supprime une transaction. Une jambe de virement supprimée délie l'autre, qui reste (R-TRX-34) ; une mensualité
+/// supprimée libère son échéance (R-PRE-8).
 pub async fn delete(db: &Db, id: TransactionId) -> AppResult<()> {
     let current = db::transactions::find(&db.read, id).await?.ok_or(AppError::NotFound("transaction"))?;
     if current.clearing_status == ClearingStatus::Reconciled {
         return Err(DomainError::TransactionLocked.into());
     }
-    let payment = db::loans::payment_involving(&db.read, id).await?;
-    if payment.is_some_and(|p| p.transaction_id != id) {
-        return Err(DomainError::InstallmentPaymentLocked.into());
-    }
-    let mut tx = db.write.begin().await?;
-    reconciliation::lock(&mut tx, current.account_id).await?.check(current.balance_date)?;
-    if let Some(leg) = payment.and_then(|p| p.leg_transaction_id) {
-        db::transactions::delete(&mut *tx, leg).await?;
-    }
-    db::transactions::delete(&mut *tx, id).await?;
-    tx.commit().await?;
+    let mut conn = db.write.acquire().await?;
+    reconciliation::lock(&mut conn, current.account_id).await?.check(current.balance_date)?;
+    db::transactions::delete(&mut *conn, id).await?;
     Ok(())
 }
 

@@ -1,6 +1,7 @@
 //! API REST sous `/api/v1`, décrite par utoipa (ADR-0016).
 
 mod accounts;
+mod assets;
 mod auth;
 mod budgets;
 mod categories;
@@ -44,7 +45,8 @@ use crate::state::AppState;
         (name = "reconciliation", description = "Rapprochement (spec 04)"),
         (name = "rules", description = "Règles de catégorisation (spec 03)"),
         (name = "budgets", description = "Budgets, projets et notifications (spec 05)"),
-        (name = "loans", description = "Prêts : conditions et tableau d'amortissement (spec 01, ADR-0020)"),
+        (name = "assets", description = "Biens (spec 09)"),
+        (name = "loans", description = "Prêts : suivi, tableau d'amortissement, mensualités (spec 09)"),
         (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
         (name = "projections", description = "Récurrences, scénarios et projections (spec 02, spec 07)"),
         (name = "dashboard", description = "Tableau de bord (spec 08)"),
@@ -122,12 +124,20 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(budgets::notifications))
         .routes(routes!(budgets::mark_read))
         .routes(routes!(savings::get_terms, savings::update_terms))
-        .routes(routes!(loans::get, loans::save, loans::delete))
+        .routes(routes!(loans::list, loans::create))
+        .routes(routes!(loans::get, loans::update, loans::delete))
+        .routes(routes!(loans::save_balance))
+        .routes(routes!(loans::delete_balance))
         .routes(routes!(loans::preview))
         .routes(routes!(loans::proposals))
         .routes(routes!(loans::pay))
         .routes(routes!(loans::unpay))
         .routes(routes!(loans::transaction_proposal))
+        .routes(routes!(assets::list, assets::create))
+        .routes(routes!(assets::get, assets::update, assets::delete))
+        .routes(routes!(assets::save_valuation))
+        .routes(routes!(assets::delete_valuation))
+        .routes(routes!(assets::get_features, assets::update_features))
         .routes(routes!(savings::schedules))
         .routes(routes!(savings::set_rate))
         .routes(routes!(savings::delete_rate))

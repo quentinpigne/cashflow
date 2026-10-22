@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM loan_balance WHERE loan_id = ? AND date = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "97c5add96cd3152853cbc44f30b910e3c30f8139899d60b1f70d52472eb37fd4"
+}

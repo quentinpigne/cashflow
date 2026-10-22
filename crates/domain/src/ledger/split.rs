@@ -49,6 +49,15 @@ pub fn allocate(total: Money, weights: &[u64]) -> Result<Vec<Money>, DomainError
     Ok(parts)
 }
 
+/// Une ventilation a au plus un rattachement : une catégorie, un prêt (remboursement) ou un bien
+/// (acquisition) (R-TRX-37).
+pub fn check_attachment(category: bool, loan: bool, asset: bool) -> Result<(), DomainError> {
+    if [category, loan, asset].iter().filter(|x| **x).count() > 1 {
+        return Err(DomainError::SplitAttachmentConflict);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
@@ -103,5 +112,14 @@ mod tests {
             prop_assert_eq!(parts.iter().sum::<Money>(), m(total));
             prop_assert_eq!(parts.len(), weights.len());
         }
+    }
+
+    #[test]
+    fn r_trx_37_one_attachment_at_most() {
+        assert!(check_attachment(false, false, false).is_ok());
+        assert!(check_attachment(true, false, false).is_ok());
+        assert!(check_attachment(false, true, false).is_ok());
+        assert_eq!(check_attachment(true, true, false), Err(DomainError::SplitAttachmentConflict));
+        assert_eq!(check_attachment(false, true, true), Err(DomainError::SplitAttachmentConflict));
     }
 }

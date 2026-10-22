@@ -30,6 +30,26 @@ export const routes: Routes = [
           import('./features/accounts/account-detail').then((m) => m.AccountDetailPage),
       },
       {
+        path: 'biens',
+        title: 'Biens — Cashflow',
+        loadComponent: () => import('./features/assets/assets').then((m) => m.AssetsPage),
+      },
+      {
+        path: 'biens/:id',
+        title: 'Bien — Cashflow',
+        loadComponent: () => import('./features/assets/assets').then((m) => m.AssetPage),
+      },
+      {
+        path: 'prets',
+        title: 'Prêts — Cashflow',
+        loadComponent: () => import('./features/loans/loans').then((m) => m.LoansPage),
+      },
+      {
+        path: 'prets/:id',
+        title: 'Prêt — Cashflow',
+        loadComponent: () => import('./features/loans/loans').then((m) => m.LoanPage),
+      },
+      {
         path: 'transactions/:id',
         title: 'Transaction — Cashflow',
         loadComponent: () =>

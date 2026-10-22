@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE split SET loan_id = NULL, updated_at = ? WHERE loan_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "47f75417f9f28071fa2af9e76ff52610a1488af55d4b133f2abe6d00eeecdf49"
+}

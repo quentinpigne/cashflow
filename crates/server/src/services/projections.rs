@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use super::accounts::Ledger;
+use super::assets::AssetBook;
+use super::loans::LoanBook;
 use super::recurring;
 use crate::db::accounts::AccountRow;
 use crate::db::codec::enum_to_db;
@@ -340,7 +342,7 @@ pub async fn cash(db: &Db, account: AccountId, query: &CashQuery, today: Date) -
         let recurring = recurring::honoring(db, first, last, today).await?;
         // Les mensualités ventilées sont projetées à part, par leurs échéances.
         let installments: HashSet<TransactionId> =
-            db::loans::payment_transactions(&db.read).await?.into_iter().collect();
+            db::loans::payments(&db.read).await?.into_iter().map(|p| p.transaction_id).collect();
         let spent: Money = db::projections::expenses(&db.read, account, first, last)
             .await?
             .into_iter()
@@ -601,17 +603,7 @@ async fn project_account(
         deposit_cap_minor: None,
         points: Vec::new(),
     };
-    let loan_terms = match row.kind.family() {
-        AccountFamily::Liability => db::loans::find(&db.read, row.id).await?,
-        _ => None,
-    };
     match row.kind.family() {
-        // Prêt avec conditions : la dette suit le tableau d'amortissement (R-PRJ-40).
-        AccountFamily::Liability if let Some(terms) = &loan_terms => {
-            let schedule = cashflow_domain::loans::schedule(&terms.terms)?;
-            let values = cashflow_domain::loans::projected_debt(current, &schedule, today, &ends);
-            view.points = points(ends.into_iter().zip(values).collect(), scenario);
-        }
         AccountFamily::FixedSavings => {
             let parts = fixed_parts(db, ctx, row, scenario, contribution, today, &ends).await?;
             let (rates, terms) = (&parts.rates, ctx.terms.get(&row.id));
@@ -644,10 +636,8 @@ async fn project_account(
             let values = projection::variable(current, assumption, months);
             view.points = points(ends.into_iter().zip(values).collect(), scenario);
         }
-        AccountFamily::Cash | AccountFamily::Liability | AccountFamily::Property => {
+        AccountFamily::Cash => {
             // Liquidités : solde constant, moins les virements programmés vers l'épargne (R-PRJ-40, R-PRJ-41).
-            // Prêts : dernière valeur, constante faute de tableau d'amortissement. Biens : dernière valeur,
-            // sans plus-value ni dépréciation supposées (ADR-0019).
             let start = today.checked_add_days(Days::new(1)).unwrap_or(today);
             // Virements programmés, par compte de contrepartie : (date, montant signé sur ce compte).
             let mut flows: HashMap<AccountId, Vec<(Date, Money)>> = HashMap::new();
@@ -757,12 +747,27 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
         .into_iter()
         .filter(|a| a.include_in_net_worth && a.closed_on.is_none_or(|c| c > today) && a.opening_date <= today)
         .collect();
-    let start: Money = rows.iter().map(|r| ctx.ledger.value(r, today).0).sum();
+    // Biens et prêts (spec 09) : un bien garde sa dernière valeur (R-BIE-5), un prêt suit son tableau ou garde son
+    // dernier capital restant dû (R-PRE-9), sous tous les scénarios.
+    let assets = AssetBook::load(db).await?;
+    let loans = LoanBook::load(db).await?;
+    let others = |at: Date, value_at: Date| -> Money {
+        let goods: Money = assets
+            .assets
+            .iter()
+            .filter(|a| a.include_in_net_worth)
+            .filter_map(|a| assets.value(a, today).filter(|_| assets.value(a, at).is_some()))
+            .sum();
+        let debts: Money =
+            loans.loans.iter().filter(|l| l.include_in_net_worth).filter_map(|l| loans.outstanding(l, value_at)).sum();
+        goods - debts
+    };
+    let start: Money = rows.iter().map(|r| ctx.ledger.value(r, today).0).sum::<Money>() + others(today, today);
     let mut series = Vec::new();
     let mut estimated = Vec::new();
     for scenario in &all {
         let mut totals: Vec<(Date, Money)> =
-            projection::month_ends(today, months).into_iter().map(|d| (d, Money::ZERO)).collect();
+            projection::month_ends(today, months).into_iter().map(|d| (d, others(d, d))).collect();
         for row in &rows {
             let p = project_account(db, &ctx, row, scenario, months, today).await?;
             if p.estimated && scenario.is_default {
@@ -796,14 +801,18 @@ pub struct NetWorthPoint {
     pub cash_minor: i64,
     pub fixed_savings_minor: i64,
     pub variable_savings_minor: i64,
+    /// Biens (R-BIE-2).
+    pub assets_minor: i64,
+    /// Prêts : capital restant dû, négatif (R-PRE-4).
     pub liabilities_minor: i64,
-    pub property_minor: i64,
 }
 
-/// Historique du patrimoine par famille de comptes, en fin de mois puis aujourd'hui (TDB-04).
+/// Historique du patrimoine par famille de comptes, biens et prêts, en fin de mois puis aujourd'hui (TDB-04).
 pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Vec<NetWorthPoint>> {
     let count = query.months.unwrap_or(24).clamp(1, 240);
     let ledger = Ledger::load(db).await?;
+    let assets = AssetBook::load(db).await?;
+    let loans = LoanBook::load(db).await?;
     let rows: Vec<AccountRow> =
         db::accounts::list(&db.read).await?.into_iter().filter(|a| a.include_in_net_worth).collect();
     let first_opening = rows.iter().map(|r| r.opening_date).min();
@@ -820,8 +829,8 @@ pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Ve
                 cash_minor: 0,
                 fixed_savings_minor: 0,
                 variable_savings_minor: 0,
+                assets_minor: 0,
                 liabilities_minor: 0,
-                property_minor: 0,
             };
             for row in rows.iter().filter(|r| r.opening_date <= date && r.closed_on.is_none_or(|c| c > date)) {
                 let value = ledger.value(row, date).0.minor();
@@ -830,10 +839,23 @@ pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Ve
                     AccountFamily::Cash => point.cash_minor += value,
                     AccountFamily::FixedSavings => point.fixed_savings_minor += value,
                     AccountFamily::VariableSavings => point.variable_savings_minor += value,
-                    AccountFamily::Liability => point.liabilities_minor += value,
-                    AccountFamily::Property => point.property_minor += value,
                 }
             }
+            point.assets_minor = assets
+                .assets
+                .iter()
+                .filter(|a| a.include_in_net_worth)
+                .filter_map(|a| assets.value(a, date))
+                .sum::<Money>()
+                .minor();
+            point.liabilities_minor = -loans
+                .loans
+                .iter()
+                .filter(|l| l.include_in_net_worth)
+                .filter_map(|l| loans.outstanding(l, date))
+                .sum::<Money>()
+                .minor();
+            point.total_minor += point.assets_minor + point.liabilities_minor;
             point
         })
         .collect())

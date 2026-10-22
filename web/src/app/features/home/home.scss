@@ -68,6 +68,17 @@
 
 .detail {
   grid-template-columns: 1fr auto;
+
+  .sub {
+    padding-left: 0.75rem;
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.loan .loan-name {
+  display: flex;
+  flex-direction: column;
 }
 
 .month dl {

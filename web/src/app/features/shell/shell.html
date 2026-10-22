@@ -8,6 +8,12 @@
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #mobileMenu>
+        @if (features.assets()) {
+          <a mat-menu-item routerLink="/biens"><mat-icon>home_work</mat-icon> Biens</a>
+        }
+        @if (features.loans()) {
+          <a mat-menu-item routerLink="/prets"><mat-icon>real_estate_agent</mat-icon> Prêts</a>
+        }
         <a mat-menu-item routerLink="/projections"><mat-icon>timeline</mat-icon> Projections</a>
         <a mat-menu-item routerLink="/recurrences"><mat-icon>event_repeat</mat-icon> Récurrences</a>
         <a mat-menu-item routerLink="/reglages"><mat-icon>settings</mat-icon> Réglages</a>
@@ -22,7 +28,7 @@
       <mat-icon>add</mat-icon>
     </button>
     <nav class="bottom-nav" aria-label="Navigation principale">
-      @for (item of mobileItems; track item.path) {
+      @for (item of mobileItems(); track item.path) {
         <a
           [routerLink]="item.path"
           routerLinkActive="active"
@@ -48,7 +54,7 @@
         Nouvelle transaction
       </button>
       <mat-nav-list>
-        @for (item of items; track item.path) {
+        @for (item of items(); track item.path) {
           <a
             mat-list-item
             [routerLink]="item.path"

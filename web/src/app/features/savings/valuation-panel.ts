@@ -40,7 +40,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data.liability ? 'Capital restant dû' : 'Nouvelle valorisation' }}</h2>
+    <h2 mat-dialog-title>Nouvelle valorisation</h2>
     <mat-dialog-content class="form">
       <mat-form-field>
         <mat-label>Date</mat-label>
@@ -54,7 +54,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
         <mat-datepicker #picker />
       </mat-form-field>
       <mat-form-field>
-        <mat-label>{{ data.liability ? 'Capital restant dû' : 'Valeur du compte' }}</mat-label>
+        <mat-label>Valeur du compte</mat-label>
         <input
           matInput
           inputmode="decimal"
@@ -89,7 +89,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
   `,
 })
 export class ValuationDialog {
-  protected readonly data = inject<{ accountId: string; liability: boolean }>(MAT_DIALOG_DATA);
+  protected readonly data = inject<{ accountId: string }>(MAT_DIALOG_DATA);
   private readonly api = inject(SavingsService);
   private readonly dialog = inject(MatDialog);
   private readonly ref = inject(MatDialogRef<ValuationDialog>);
@@ -111,7 +111,7 @@ export class ValuationDialog {
           body: {
             date: toIsoDate(date),
             // Saisie toujours positive ; un capital restant dû s'enregistre en négatif (R-CPT-12).
-            value_minor: this.data.liability ? -Math.abs(amount) : amount,
+            value_minor: amount,
             note: this.note() || null,
             replace,
           },
@@ -214,9 +214,7 @@ export class ValuationDialog {
     }
     <section class="card panel">
       <header>
-        <h2>
-          {{ liability() ? 'Capital restant dû' : variable() ? 'Valorisations' : 'Valeur du bien' }}
-        </h2>
+        <h2>Valorisations</h2>
         <button mat-stroked-button (click)="add()"><mat-icon>add</mat-icon>Ajouter</button>
       </header>
       @for (v of valuations.value() ?? []; track v.id) {
@@ -316,7 +314,6 @@ export class ValuationPanel {
   readonly accountId = input.required<string>();
   readonly family = input.required<AccountFamily>();
   protected readonly variable = computed(() => this.family() === 'VARIABLE_SAVINGS');
-  protected readonly liability = computed(() => this.family() === 'LIABILITY');
 
   protected readonly valuations = rxResource({
     params: () => ({ id: this.accountId(), version: this.version.value() }),
@@ -334,7 +331,7 @@ export class ValuationPanel {
 
   protected async add(): Promise<void> {
     const ref = this.dialog.open(ValuationDialog, {
-      data: { accountId: this.accountId(), liability: this.liability() },
+      data: { accountId: this.accountId() },
     });
     if (await firstValueFrom(ref.afterClosed())) {
       this.version.bump();

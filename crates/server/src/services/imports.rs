@@ -1081,6 +1081,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                         category_id: s.category_id,
                         note: s.note.as_deref(),
                         project_id: project,
+                        ..Default::default()
                     })
                     .collect();
                 super::transactions::insert_validated(&mut tx, &new, &new_splits).await?;
@@ -1102,7 +1103,13 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                             db::transactions::replace_splits(
                                 &mut tx,
                                 leg.id,
-                                &[NewSplit { amount: leg.amount, category_id: None, note: None, project_id: None }],
+                                &[NewSplit {
+                                    amount: leg.amount,
+                                    category_id: None,
+                                    note: None,
+                                    project_id: None,
+                                    ..Default::default()
+                                }],
                             )
                             .await?;
                             leg
@@ -1130,7 +1137,13 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                             super::transactions::insert_validated(
                                 &mut tx,
                                 &leg,
-                                &[NewSplit { amount: -amount, category_id: None, note: None, project_id: None }],
+                                &[NewSplit {
+                                    amount: -amount,
+                                    category_id: None,
+                                    note: None,
+                                    project_id: None,
+                                    ..Default::default()
+                                }],
                             )
                             .await?;
                             review.created_counterpart_id = Some(created);

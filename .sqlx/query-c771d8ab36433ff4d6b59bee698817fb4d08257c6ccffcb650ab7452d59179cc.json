@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT loan_id, date AS \"date: Date\", outstanding, note FROM loan_balance ORDER BY loan_id, date",
+  "describe": {
+    "columns": [
+      {
+        "name": "loan_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_balance",
+            "name": "loan_id"
+          }
+        }
+      },
+      {
+        "name": "date: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_balance",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "outstanding",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_balance",
+            "name": "outstanding"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_balance",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "c771d8ab36433ff4d6b59bee698817fb4d08257c6ccffcb650ab7452d59179cc"
+}

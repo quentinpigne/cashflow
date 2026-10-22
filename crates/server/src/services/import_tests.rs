@@ -334,13 +334,13 @@ async fn r_imp_1_cancel_review_changes_nothing() {
 /// Une mensualité de prêt importée est proposée en fin d'import, pour être ventilée en un clic (R-IMP-22).
 #[tokio::test]
 async fn r_imp_22_loan_payment_is_proposed_after_import() {
-    use cashflow_domain::loans::Insurance;
+    use cashflow_domain::loans::{Insurance, LoanKind};
 
-    use super::loans::{self, LoanTermsInput};
+    use super::features::{self, FeaturesInput};
+    use super::loans::{self, LoanInput, ScheduleInput};
 
     let (db, data, _dir) = setup().await;
     let checking = account(&db, "Courant", AccountKind::Checking, 500_000).await;
-    let loan = account(&db, "Prêt", AccountKind::Mortgage, -20_000_000).await;
     let interest = categories::create(
         &db,
         &categories::CategoryInput {
@@ -355,17 +355,28 @@ async fn r_imp_22_loan_payment_is_proposed_after_import() {
     )
     .await
     .unwrap();
-    let terms = LoanTermsInput {
+    features::update(&db, &FeaturesInput { assets: None, loans: Some(true) }).await.unwrap();
+    let loan = LoanInput {
+        name: "Prêt".into(),
+        kind: LoanKind::Mortgage,
+        institution_id: None,
+        start_date: d("2026-02-05"),
         principal_minor: 20_000_000,
-        annual_rate_ppm: 30_000,
-        duration_months: 240,
-        first_installment_date: d("2026-03-05"),
-        insurance: Insurance::None,
-        payer_account_id: checking,
-        interest_category_id: interest,
-        insurance_category_id: None,
+        schedule: Some(ScheduleInput {
+            annual_rate_ppm: 30_000,
+            duration_months: 240,
+            first_installment_date: d("2026-03-05"),
+            insurance: Insurance::None,
+            payer_account_id: checking,
+            interest_category_id: interest,
+            insurance_category_id: None,
+        }),
+        asset_id: None,
+        closed_on: None,
+        include_in_net_worth: None,
+        notes: None,
     };
-    loans::save_terms(&db, loan, &terms, d(TODAY)).await.unwrap();
+    loans::create(&db, &loan, d(TODAY)).await.unwrap();
     let batch = import(
         &db,
         &data,

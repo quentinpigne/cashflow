@@ -27,6 +27,7 @@
       <app-category-picker
         class="category"
         [value]="line.category"
+        [attachments]="true"
         (valueChange)="update(i, { category: $event })"
         [kind]="data.kind"
       />

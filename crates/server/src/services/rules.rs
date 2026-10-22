@@ -204,6 +204,7 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
                     category_id: s.category_id,
                     note: None,
                     project_id: rule.actions.set_project,
+                    ..Default::default()
                 })
                 .collect();
             db::transactions::replace_splits(&mut tx, t.id, &splits).await?;

@@ -7,12 +7,12 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { AccountId } from '../../models/account-id';
+import { LoanId } from '../../models/loan-id';
 import { LoanPaymentInput } from '../../models/loan-payment-input';
 import { LoanPaymentResult } from '../../models/loan-payment-result';
 
 export interface PayLoanInstallments$Params {
-  id: AccountId;
+  id: LoanId;
       body: Array<LoanPaymentInput>
 }
 
@@ -33,4 +33,4 @@ export function payLoanInstallments(http: HttpClient, rootUrl: string, params: P
   );
 }
 
-payLoanInstallments.PATH = '/api/v1/accounts/{id}/loan/payments';
+payLoanInstallments.PATH = '/api/v1/loans/{id}/payments';
