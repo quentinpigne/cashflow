@@ -33,6 +33,9 @@ html {
       density: 0,
     )
   );
+  // Champs de formulaire compacts (44 px de haut au lieu de 56), partout ; boutons, cases à cocher et
+  // menus gardent la densité par défaut.
+  @include mat.form-field-density(-3);
 }
 
 body {
