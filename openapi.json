@@ -4485,7 +4485,8 @@
           "CASH",
           "FIXED_SAVINGS",
           "VARIABLE_SAVINGS",
-          "LIABILITY"
+          "LIABILITY",
+          "PROPERTY"
         ]
       },
       "AccountHealth": {
@@ -4651,7 +4652,10 @@
           "VARIABLE_OTHER",
           "MORTGAGE",
           "CONSUMER_LOAN",
-          "LOAN_OTHER"
+          "LOAN_OTHER",
+          "REAL_ESTATE",
+          "VEHICLE",
+          "PROPERTY_OTHER"
         ]
       },
       "AccountProjectionView": {
@@ -7518,7 +7522,8 @@
           "cash_minor",
           "fixed_savings_minor",
           "variable_savings_minor",
-          "liabilities_minor"
+          "liabilities_minor",
+          "property_minor"
         ],
         "properties": {
           "cash_minor": {
@@ -7534,6 +7539,10 @@
             "format": "int64"
           },
           "liabilities_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "property_minor": {
             "type": "integer",
             "format": "int64"
           },

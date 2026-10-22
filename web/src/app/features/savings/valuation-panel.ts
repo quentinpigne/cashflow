@@ -134,7 +134,7 @@ export class ValuationDialog {
 }
 
 /**
- * Valorisations d'un compte à rendement variable ou d'un prêt (CPT-06) ; pour l'épargne variable, valeur,
+ * Valorisations d'un compte à rendement variable, d'un prêt ou d'un bien (CPT-06) ; pour l'épargne variable, valeur,
  * capital investi, plus-value et performance (EPA-05, EPA-06).
  */
 @Component({
@@ -214,7 +214,9 @@ export class ValuationDialog {
     }
     <section class="card panel">
       <header>
-        <h2>{{ variable() ? 'Valorisations' : 'Capital restant dû' }}</h2>
+        <h2>
+          {{ liability() ? 'Capital restant dû' : variable() ? 'Valorisations' : 'Valeur du bien' }}
+        </h2>
         <button mat-stroked-button (click)="add()"><mat-icon>add</mat-icon>Ajouter</button>
       </header>
       @for (v of valuations.value() ?? []; track v.id) {
@@ -314,6 +316,7 @@ export class ValuationPanel {
   readonly accountId = input.required<string>();
   readonly family = input.required<AccountFamily>();
   protected readonly variable = computed(() => this.family() === 'VARIABLE_SAVINGS');
+  protected readonly liability = computed(() => this.family() === 'LIABILITY');
 
   protected readonly valuations = rxResource({
     params: () => ({ id: this.accountId(), version: this.version.value() }),
@@ -331,7 +334,7 @@ export class ValuationPanel {
 
   protected async add(): Promise<void> {
     const ref = this.dialog.open(ValuationDialog, {
-      data: { accountId: this.accountId(), liability: this.family() === 'LIABILITY' },
+      data: { accountId: this.accountId(), liability: this.liability() },
     });
     if (await firstValueFrom(ref.afterClosed())) {
       this.version.bump();

@@ -10,5 +10,6 @@ export const ACCOUNT_FAMILY: AccountFamily[] = [
   'CASH',
   'FIXED_SAVINGS',
   'VARIABLE_SAVINGS',
-  'LIABILITY'
+  'LIABILITY',
+  'PROPERTY'
 ];

@@ -136,6 +136,8 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
             .await?;
     let pea = account(db, "PEA", AccountKind::Pea, Some("Boursorama Banque"), start, 650_000, today).await?;
     let loan = account(db, "Prêt immobilier", AccountKind::Mortgage, Some("LCL"), start, -14_500_000, today).await?;
+    // Le logement financé par le prêt, au prix d'achat : apport et capital emprunté (R-CPT-14).
+    account(db, "Appartement", AccountKind::RealEstate, None, start, 25_000_000, today).await?;
 
     let c = Categories::load(db).await?;
     let mut rng = Lcg(20_261_020);
@@ -588,7 +590,7 @@ mod tests {
         let today: Date = "2026-10-20".parse().unwrap();
         load(&db, today).await.unwrap();
         let accounts = accounts::list(&db, today).await.unwrap();
-        assert_eq!(accounts.len(), 7);
+        assert_eq!(accounts.len(), 8);
         // Les comptes d'actif restent positifs : le jeu reste vraisemblable.
         for account in accounts.iter().filter(|a| a.kind != AccountKind::Mortgage) {
             assert!(account.balance_minor > 0, "{} : {}", account.name, account.balance_minor);

@@ -5,5 +5,5 @@
 /**
  * Famille d'un compte : fixe son comportement dans l'application (spec 01).
  */
-export type AccountFamily = 'CASH' | 'FIXED_SAVINGS' | 'VARIABLE_SAVINGS' | 'LIABILITY';
+export type AccountFamily = 'CASH' | 'FIXED_SAVINGS' | 'VARIABLE_SAVINGS' | 'LIABILITY' | 'PROPERTY';
 

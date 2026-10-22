@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 
-use cashflow_domain::accounts::AccountFamily;
 use cashflow_domain::ledger::ClearingStatus;
 use cashflow_domain::reconciliation::{self, CheckpointState, GapTransaction, Lock};
 use cashflow_domain::shared::ids::{AccountId, CheckpointId, ImportBatchId, TransactionId};
@@ -329,11 +328,8 @@ pub async fn health(db: &Db, today: Date) -> AppResult<Vec<AccountHealth>> {
     let all = db::checkpoints::list_all(&db.read).await?;
     let old = today - chrono::Days::new(OLD_PENDING_DAYS);
     let mut result = Vec::new();
-    for account in accounts.iter().filter(|a| {
-        a.closed_on.is_none()
-            && a.kind.family() != AccountFamily::VariableSavings
-            && a.kind.family() != AccountFamily::Liability
-    }) {
+    // Comptes valorisés (épargne variable, prêts, biens) : pas de point de contrôle (R-RAP-10).
+    for account in accounts.iter().filter(|a| a.closed_on.is_none() && a.kind.family().has_computed_balance()) {
         let rows: Vec<CheckpointRow> = all.iter().filter(|c| c.account_id == account.id).cloned().collect();
         let points = views(rows, account, &ledger);
         let last_reconciled = points.iter().filter(|c| c.reconciled).map(|c| c.date).max();

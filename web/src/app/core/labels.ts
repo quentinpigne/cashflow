@@ -11,6 +11,7 @@ export const FAMILY_LABELS: Record<AccountFamily, string> = {
   CASH: 'Liquidités',
   FIXED_SAVINGS: 'Épargne à taux fixe',
   VARIABLE_SAVINGS: 'Épargne variable',
+  PROPERTY: 'Biens',
   LIABILITY: 'Passifs',
 };
 
@@ -18,6 +19,7 @@ export const FAMILY_ORDER: AccountFamily[] = [
   'CASH',
   'FIXED_SAVINGS',
   'VARIABLE_SAVINGS',
+  'PROPERTY',
   'LIABILITY',
 ];
 
@@ -44,6 +46,9 @@ export const KIND_LABELS: Record<AccountKind, string> = {
   MORTGAGE: 'Prêt immobilier',
   CONSUMER_LOAN: 'Prêt à la consommation',
   LOAN_OTHER: 'Autre prêt',
+  REAL_ESTATE: 'Bien immobilier',
+  VEHICLE: 'Véhicule',
+  PROPERTY_OTHER: 'Autre bien',
 };
 
 /** Famille de chaque nature (spec 01), pour grouper la liste des natures. */
@@ -70,6 +75,9 @@ export const KIND_FAMILY: Record<AccountKind, AccountFamily> = {
   MORTGAGE: 'LIABILITY',
   CONSUMER_LOAN: 'LIABILITY',
   LOAN_OTHER: 'LIABILITY',
+  REAL_ESTATE: 'PROPERTY',
+  VEHICLE: 'PROPERTY',
+  PROPERTY_OTHER: 'PROPERTY',
 };
 
 export const STATUS_LABELS: Record<ClearingStatus, string> = {

@@ -257,6 +257,29 @@ mod tests {
     }
 
     #[test]
+    fn r_tdb_1_property_counts_as_an_asset_against_its_loan() {
+        // Logement acheté 250 000 € (R-CPT-14), prêt dont il reste 139 000 € à rembourser.
+        let accounts = [
+            AccountValue {
+                family: AccountFamily::Property,
+                include_in_net_worth: true,
+                is_eur: true,
+                value: m(25_000_000),
+            },
+            AccountValue {
+                family: AccountFamily::Liability,
+                include_in_net_worth: true,
+                is_eur: true,
+                value: m(-13_900_000),
+            },
+        ];
+        assert_eq!(
+            net_worth(&accounts),
+            NetWorth { assets: m(25_000_000), liabilities: m(-13_900_000), total: m(11_100_000) }
+        );
+    }
+
+    #[test]
     fn r_tdb_5_uncategorized_split_in_and_out() {
         let result = flows(&[split(1_000, None, false), split(-400, None, false)], d("2026-03-01"), d("2026-03-31"));
         assert_eq!(result.uncategorized_in, m(1_000));

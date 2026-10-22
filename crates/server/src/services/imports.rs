@@ -6,7 +6,6 @@
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
-use cashflow_domain::accounts::AccountFamily;
 use cashflow_domain::import::fingerprint::{self, LineKey, normalize_label};
 use cashflow_domain::import::matcher::{self, AUTO_MATCH_SCORE, Candidate, LineToMatch};
 use cashflow_domain::import::rules::{Subject, evaluate};
@@ -1160,7 +1159,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
 
     // Points de contrôle du relevé (R-IMP-16, R-RAP-2).
     let mut checkpoints = Vec::new();
-    if account.kind.family() != AccountFamily::VariableSavings && account.kind.family() != AccountFamily::Liability {
+    if account.kind.family().has_computed_balance() {
         if let (Some(balance), Some(date)) = (batch.statement_closing_balance, batch.period_end) {
             checkpoints.push(
                 reconciliation::upsert(

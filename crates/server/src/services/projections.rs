@@ -611,9 +611,10 @@ async fn project_account(
             let values = projection::variable(current, assumption, months);
             view.points = points(ends.into_iter().zip(values).collect(), scenario);
         }
-        AccountFamily::Cash | AccountFamily::Liability => {
+        AccountFamily::Cash | AccountFamily::Liability | AccountFamily::Property => {
             // Liquidités : solde constant, moins les virements programmés vers l'épargne (R-PRJ-40, R-PRJ-41).
-            // Prêts : dernière valeur, constante faute de tableau d'amortissement.
+            // Prêts : dernière valeur, constante faute de tableau d'amortissement. Biens : dernière valeur,
+            // sans plus-value ni dépréciation supposées (ADR-0019).
             let start = today.checked_add_days(Days::new(1)).unwrap_or(today);
             // Virements programmés, par compte de contrepartie : (date, montant signé sur ce compte).
             let mut flows: HashMap<AccountId, Vec<(Date, Money)>> = HashMap::new();
@@ -763,6 +764,7 @@ pub struct NetWorthPoint {
     pub fixed_savings_minor: i64,
     pub variable_savings_minor: i64,
     pub liabilities_minor: i64,
+    pub property_minor: i64,
 }
 
 /// Historique du patrimoine par famille de comptes, en fin de mois puis aujourd'hui (TDB-04).
@@ -786,6 +788,7 @@ pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Ve
                 fixed_savings_minor: 0,
                 variable_savings_minor: 0,
                 liabilities_minor: 0,
+                property_minor: 0,
             };
             for row in rows.iter().filter(|r| r.opening_date <= date && r.closed_on.is_none_or(|c| c > date)) {
                 let value = ledger.value(row, date).0.minor();
@@ -795,6 +798,7 @@ pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Ve
                     AccountFamily::FixedSavings => point.fixed_savings_minor += value,
                     AccountFamily::VariableSavings => point.variable_savings_minor += value,
                     AccountFamily::Liability => point.liabilities_minor += value,
+                    AccountFamily::Property => point.property_minor += value,
                 }
             }
             point

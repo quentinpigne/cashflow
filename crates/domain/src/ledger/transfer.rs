@@ -44,7 +44,7 @@ pub fn dates_far_apart(outflow: Date, inflow: Date) -> bool {
 pub fn opposite_leg_status(counterpart_family: AccountFamily) -> ClearingStatus {
     match counterpart_family {
         AccountFamily::Cash | AccountFamily::FixedSavings => ClearingStatus::Pending,
-        AccountFamily::VariableSavings | AccountFamily::Liability => ClearingStatus::Cleared,
+        AccountFamily::VariableSavings | AccountFamily::Liability | AccountFamily::Property => ClearingStatus::Cleared,
     }
 }
 
@@ -129,6 +129,7 @@ mod tests {
     fn r_trx_36_opposite_leg_status_depends_on_family() {
         assert_eq!(opposite_leg_status(AccountFamily::Cash), ClearingStatus::Pending);
         assert_eq!(opposite_leg_status(AccountFamily::VariableSavings), ClearingStatus::Cleared);
+        assert_eq!(opposite_leg_status(AccountFamily::Property), ClearingStatus::Cleared);
     }
 
     #[test]

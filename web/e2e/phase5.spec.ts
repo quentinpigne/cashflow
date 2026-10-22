@@ -56,3 +56,24 @@ test('accueil : bloc épargne (TDB-05)', async ({ page }) => {
   await expect(page.getByText('Épargne de précaution').first()).toBeVisible();
   await expect(page.getByText(/TRI global/)).toBeVisible();
 });
+
+test('E2 : un bien compte dans le patrimoine, en face de son prêt (R-CPT-14, R-TDB-1)', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto('/comptes');
+  await expect(page.getByText('Biens', { exact: true })).toBeVisible();
+  await openAccount(page, 'Appartement');
+  await expect(page.getByRole('heading', { name: 'Valeur du bien' })).toBeVisible();
+  // Pas de performance pour un bien : elle est propre à l'épargne variable.
+  await expect(page.getByRole('heading', { name: 'Performance' })).toHaveCount(0);
+
+  // Le formulaire propose la nature « Bien immobilier » et son libellé de valeur.
+  await page.goto('/comptes');
+  await page.getByRole('button', { name: /Nouveau compte/ }).click();
+  await page.getByRole('combobox', { name: 'Nature' }).click();
+  await page.getByRole('option', { name: 'Bien immobilier' }).click();
+  await expect(page.getByLabel('Valeur du bien')).toBeVisible();
+  await page.getByText('Options', { exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: /épargne de précaution/ })).toBeDisabled();
+});

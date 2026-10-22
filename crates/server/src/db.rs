@@ -100,3 +100,78 @@ pub async fn test_db() -> (Db, tempfile::TempDir) {
     db.migrate().await.expect("migrations");
     (db, dir)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::borrow::Cow;
+
+    use super::*;
+
+    /// Applique les migrations dont la version est inférieure à `before`.
+    async fn migrate_until(db: &Db, before: i64) {
+        let migrations: Vec<_> = MIGRATOR.iter().filter(|m| m.version < before).cloned().collect();
+        let partial = Migrator { migrations: Cow::Owned(migrations), ..Migrator::DEFAULT };
+        partial.run(&db.write).await.expect("migrations partielles");
+    }
+
+    /// La migration de la famille « Bien » recrée la table des comptes (ADR-0017, ADR-0019) : les comptes et
+    /// tout ce qui les référence sont conservés, et les clés étrangères restent actives.
+    #[tokio::test]
+    async fn adr_0019_account_table_recreation_keeps_data_and_foreign_keys() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::connect(&dir.path().join("test.db")).await.unwrap();
+        migrate_until(&db, 20261022000001).await;
+        let id = "0192f000-0000-7000-8000-000000000001";
+        let now = "2026-10-22T00:00:00Z";
+        sqlx::query(
+            "INSERT INTO account (id, name, kind, opening_date, opening_balance, created_at, updated_at)
+             VALUES (?, 'Prêt', 'MORTGAGE', '2026-01-01', -13900000, ?, ?)",
+        )
+        .bind(id)
+        .bind(now)
+        .bind(now)
+        .execute(&db.write)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO valuation (id, account_id, date, value, source, created_at, updated_at)
+             VALUES ('0192f000-0000-7000-8000-000000000002', ?, '2026-06-30', -13500000, 'MANUAL', ?, ?)",
+        )
+        .bind(id)
+        .bind(now)
+        .bind(now)
+        .execute(&db.write)
+        .await
+        .unwrap();
+
+        db.migrate().await.unwrap();
+
+        let kind: String =
+            sqlx::query_scalar("SELECT kind FROM account WHERE id = ?").bind(id).fetch_one(&db.write).await.unwrap();
+        assert_eq!(kind, "MORTGAGE");
+        let broken: Vec<(String,)> = sqlx::query_as("PRAGMA foreign_key_check").fetch_all(&db.write).await.unwrap();
+        assert!(broken.is_empty());
+        let enforced: i64 = sqlx::query_scalar("PRAGMA foreign_keys").fetch_one(&db.write).await.unwrap();
+        assert_eq!(enforced, 1);
+        // La nouvelle nature est acceptée, et la valorisation pointe toujours sur le compte.
+        sqlx::query(
+            "INSERT INTO account (id, name, kind, opening_date, opening_balance, created_at, updated_at)
+             VALUES ('0192f000-0000-7000-8000-000000000003', 'Maison', 'REAL_ESTATE', '2026-01-01', 25000000, ?, ?)",
+        )
+        .bind(now)
+        .bind(now)
+        .execute(&db.write)
+        .await
+        .unwrap();
+        let orphan = sqlx::query(
+            "INSERT INTO valuation (id, account_id, date, value, source, created_at, updated_at)
+             VALUES ('0192f000-0000-7000-8000-000000000004', '0192f000-0000-7000-8000-00000000ffff', '2026-06-30', 1,
+                     'MANUAL', ?, ?)",
+        )
+        .bind(now)
+        .bind(now)
+        .execute(&db.write)
+        .await;
+        assert!(orphan.is_err());
+    }
+}

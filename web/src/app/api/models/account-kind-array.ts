@@ -28,5 +28,8 @@ export const ACCOUNT_KIND: AccountKind[] = [
   'VARIABLE_OTHER',
   'MORTGAGE',
   'CONSUMER_LOAN',
-  'LOAN_OTHER'
+  'LOAN_OTHER',
+  'REAL_ESTATE',
+  'VEHICLE',
+  'PROPERTY_OTHER'
 ];

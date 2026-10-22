@@ -6,6 +6,7 @@ export interface NetWorthPoint {
   date: string;
   fixed_savings_minor: number;
   liabilities_minor: number;
+  property_minor: number;
   total_minor: number;
   variable_savings_minor: number;
 }

@@ -144,6 +144,7 @@ export class AccountFormDialog {
   });
   protected readonly family = computed(() => KIND_FAMILY[this.kind()]);
   protected readonly loan = computed(() => this.family() === 'LIABILITY');
+  protected readonly property = computed(() => this.family() === 'PROPERTY');
 
   constructor() {
     if (this.account?.has_activity) {
@@ -172,7 +173,10 @@ export class AccountFormDialog {
     this.applyAllowed(kind);
   }
 
-  /** Un prêt ne compte jamais dans l'épargne de précaution ; épargne variable et prêts, jamais dans les budgets. */
+  /**
+   * Un prêt ou un bien ne compte jamais dans l'épargne de précaution ; épargne variable, prêts et biens, jamais
+   * dans les budgets (R-CPT-13, R-CPT-14).
+   */
   private applyAllowed(kind: AccountKind): void {
     const family = KIND_FAMILY[kind];
     const toggle = (control: typeof this.form.controls.emergency, allowed: boolean) => {
@@ -183,7 +187,7 @@ export class AccountFormDialog {
         control.disable({ emitEvent: false });
       }
     };
-    toggle(this.form.controls.emergency, family !== 'LIABILITY');
+    toggle(this.form.controls.emergency, family !== 'LIABILITY' && family !== 'PROPERTY');
     toggle(this.form.controls.budget, family === 'CASH' || family === 'FIXED_SAVINGS');
   }
 
