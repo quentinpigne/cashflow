@@ -2,6 +2,8 @@
 //! (PRJ-04), patrimoine (PRJ-05) et son historique (TDB-04). Rien n'est écrit : ce sont des calculs purs
 //! sur l'état réel du jour (R-PRJ-1).
 
+mod capacity;
+
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountFamily;
@@ -26,6 +28,10 @@ use crate::db::projections::ScenarioRow;
 use crate::db::recurring::RuleRow;
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
+pub use capacity::{
+    CapacityAssumptions, CapacityBaseView, CapacitySeries, SalaryProjection, SalaryProjectionQuery, salary,
+};
+use capacity::{CapacityBase, CapacityPlan};
 
 // ---------------------------------------------------------------- Scénarios (PRJ-03)
 
@@ -67,6 +73,9 @@ pub struct Assumptions {
     /// Trajectoire de taux par barème (identifiant), au-delà du dernier taux connu.
     #[serde(default)]
     pub rate_paths: BTreeMap<String, Vec<RateStep>>,
+    /// Capacité d'épargne et hausse des salaires (R-PRJ-42 à R-PRJ-47, R-SAL-12).
+    #[serde(default)]
+    pub capacity: CapacityAssumptions,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -118,6 +127,7 @@ pub async fn save_scenario(db: &Db, id: Option<ScenarioId>, input: &ScenarioInpu
     {
         return Err(AppError::NotFound("scénario"));
     }
+    capacity::validate(db, &input.assumptions.capacity).await?;
     let row = ScenarioRow {
         id: id.unwrap_or_else(ScenarioId::new),
         name,
@@ -153,12 +163,12 @@ pub async fn ensure_default_scenarios(db: &Db) -> anyhow::Result<()> {
         return Ok(());
     }
     let defaults = [
-        ("Prudent", 15_000, 20_000, 20_000, false),
-        ("Médian", 25_000, 50_000, 40_000, true),
-        ("Optimiste", 35_000, 70_000, 60_000, false),
+        ("Prudent", 15_000, 20_000, 20_000, 10_000, false),
+        ("Médian", 25_000, 50_000, 40_000, 20_000, true),
+        ("Optimiste", 35_000, 70_000, 60_000, 30_000, false),
     ];
     let mut tx = db.write.begin().await?;
-    for (name, life, equities, per, is_default) in defaults {
+    for (name, life, equities, per, salaries, is_default) in defaults {
         let y = |ppm| Yield { annual_return_ppm: ppm, annual_fees_ppm: 0 };
         let mut assumptions = Assumptions::default();
         assumptions.by_family.insert("VARIABLE_SAVINGS".into(), y(life));
@@ -167,6 +177,8 @@ pub async fn ensure_default_scenarios(db: &Db) -> anyhow::Result<()> {
             assumptions.by_kind.insert(kind.into(), y(equities));
         }
         assumptions.by_kind.insert("PER".into(), y(per));
+        // Hausse des salaires : 1 %, 2 %, 3 % (R-SAL-12) ; hausse des dépenses : 2 % (R-PRJ-44).
+        assumptions.capacity.salary_growth_ppm = salaries;
         let row = ScenarioRow {
             id: ScenarioId::new(),
             name: name.into(),
@@ -381,7 +393,7 @@ pub async fn cash(db: &Db, account: AccountId, query: &CashQuery, today: Date) -
 
 // ---------------------------------------------------------------- Comptes d'épargne (PRJ-02, PRJ-04)
 
-#[derive(Debug, Deserialize, IntoParams)]
+#[derive(Debug, Default, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ProjectionQuery {
     /// Scénario ; celui par défaut sinon.
@@ -484,6 +496,7 @@ fn monthly_equivalent(rules: &[RuleRow], account: AccountId) -> Money {
 }
 
 struct Context {
+    capacity: CapacityBase,
     ledger: Ledger,
     rules: Vec<RuleRow>,
     terms: HashMap<AccountId, db::savings::TermsRow>,
@@ -491,8 +504,9 @@ struct Context {
 }
 
 impl Context {
-    async fn load(db: &Db) -> AppResult<Self> {
+    async fn load(db: &Db, today: Date) -> AppResult<Self> {
         Ok(Context {
+            capacity: CapacityBase::load(db, today).await?,
             ledger: Ledger::load(db).await?,
             rules: db::recurring::list(&db.read).await?,
             terms: db::savings::all_terms(&db.read).await?.into_iter().map(|t| (t.account_id, t)).collect(),
@@ -582,7 +596,9 @@ async fn project_account(
     scenario: &ScenarioView,
     months: u32,
     today: Date,
+    plan: Option<&CapacityPlan>,
 ) -> AppResult<AccountProjectionView> {
+    let surplus = plan.filter(|p| p.surplus == Some(row.id));
     let ends = projection::month_ends(today, months);
     let horizon = ends.last().copied().unwrap_or(today);
     let (current, valuation_date) = ctx.ledger.value(row, today);
@@ -605,7 +621,11 @@ async fn project_account(
     };
     match row.kind.family() {
         AccountFamily::FixedSavings => {
-            let parts = fixed_parts(db, ctx, row, scenario, contribution, today, &ends).await?;
+            let mut parts = fixed_parts(db, ctx, row, scenario, contribution, today, &ends).await?;
+            // Reste de la capacité d'épargne affecté au compte, déjà borné par le plafond (R-PRJ-45).
+            if let Some(plan) = surplus {
+                parts.deposits.extend(plan.surplus_deposits());
+            }
             let (rates, terms) = (&parts.rates, ctx.terms.get(&row.id));
             let input = FixedInput {
                 movements: &parts.movements,
@@ -633,7 +653,8 @@ async fn project_account(
             view.annual_return_ppm = Some(yields.annual_return_ppm);
             view.annual_fees_ppm = Some(yields.annual_fees_ppm);
             view.monthly_contribution_minor = monthly.minor();
-            let values = projection::variable(current, assumption, months);
+            let extra = surplus.map(|p| p.moved.clone()).unwrap_or_default();
+            let values = projection::variable_with(current, assumption, months, &extra);
             view.points = points(ends.into_iter().zip(values).collect(), scenario);
         }
         AccountFamily::Cash => {
@@ -673,9 +694,13 @@ async fn project_account(
                     );
                 }
             }
+            // Compte de versement : la capacité d'épargne s'y ajoute, moins le reste affecté (R-PRJ-40, R-PRJ-45).
+            let received = plan.filter(|p| p.payroll == Some(row.id)).map(CapacityPlan::payroll_cumulative);
             let values = ends
                 .iter()
-                .map(|end| {
+                .enumerate()
+                .map(|(i, end)| {
+                    let capacity = received.as_ref().and_then(|r| r.get(i).copied()).unwrap_or(Money::ZERO);
                     let moved: Money = flows
                         .iter()
                         .map(|(other, list)| {
@@ -693,7 +718,7 @@ async fn project_account(
                             out + inflow
                         })
                         .sum();
-                    (*end, current + moved)
+                    (*end, current + moved + capacity)
                 })
                 .collect();
             view.points = points(values, scenario);
@@ -706,8 +731,9 @@ pub async fn account(db: &Db, id: AccountId, query: &ProjectionQuery, today: Dat
     let row = db::accounts::find(&db.read, id).await?.ok_or(AppError::NotFound("compte"))?;
     let scenario = scenario(db, query.scenario_id).await?;
     let months = query.months.unwrap_or(scenario.horizon_months).clamp(1, 600);
-    let ctx = Context::load(db).await?;
-    project_account(db, &ctx, &row, &scenario, months, today).await
+    let ctx = Context::load(db, today).await?;
+    let plan = capacity::plan(db, &ctx, &scenario, months, today).await?;
+    project_account(db, &ctx, &row, &scenario, months, today, plan.as_ref()).await
 }
 
 // ---------------------------------------------------------------- Patrimoine (PRJ-05, TDB-04)
@@ -725,6 +751,8 @@ pub struct ScenarioSeries {
     pub name: String,
     pub is_default: bool,
     pub points: Vec<ProjectionPoint>,
+    /// Capacité d'épargne, si le scénario l'active (R-PRJ-46).
+    pub capacity: Option<CapacitySeries>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -734,6 +762,8 @@ pub struct NetWorthProjection {
     /// Comptes partis d'une valorisation ancienne (R-PRJ-3).
     pub estimated_accounts: Vec<String>,
     pub scenarios: Vec<ScenarioSeries>,
+    /// Données de départ de la capacité d'épargne (R-PRJ-46).
+    pub capacity: CapacityBaseView,
 }
 
 /// Patrimoine projeté sous chaque scénario (R-PRJ-40, R-PRJ-41), pour les comparer (PRJ-05).
@@ -741,7 +771,7 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
     let all = scenarios(db).await?;
     let default_horizon = all.iter().find(|s| s.is_default).map_or(240, |s| s.horizon_months);
     let months = query.months.unwrap_or(default_horizon).clamp(1, 600);
-    let ctx = Context::load(db).await?;
+    let ctx = Context::load(db, today).await?;
     let rows: Vec<AccountRow> = db::accounts::list(&db.read)
         .await?
         .into_iter()
@@ -768,10 +798,15 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
     for scenario in &all {
         let mut totals: Vec<(Date, Money)> =
             projection::month_ends(today, months).into_iter().map(|d| (d, others(d, d))).collect();
+        let plan = capacity::plan(db, &ctx, scenario, months, today).await?;
+        let mut shortfall = None;
         for row in &rows {
-            let p = project_account(db, &ctx, row, scenario, months, today).await?;
+            let p = project_account(db, &ctx, row, scenario, months, today, plan.as_ref()).await?;
             if p.estimated && scenario.is_default {
                 estimated.push(p.name.clone());
+            }
+            if plan.as_ref().is_some_and(|plan| plan.payroll == Some(row.id)) {
+                shortfall = p.points.iter().find(|point| point.value_minor < 0).map(|point| point.date);
             }
             for (total, point) in totals.iter_mut().zip(&p.points) {
                 total.1 += Money::from_minor(point.value_minor);
@@ -782,9 +817,16 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
             name: scenario.name.clone(),
             is_default: scenario.is_default,
             points: points(totals, scenario),
+            capacity: plan.as_ref().map(|plan| capacity::series(plan, &ctx.capacity, shortfall)),
         });
     }
-    Ok(NetWorthProjection { today, start_minor: start.minor(), estimated_accounts: estimated, scenarios: series })
+    Ok(NetWorthProjection {
+        today,
+        start_minor: start.minor(),
+        estimated_accounts: estimated,
+        scenarios: series,
+        capacity: capacity::base_view(&ctx.capacity, today),
+    })
 }
 
 #[derive(Debug, Deserialize, IntoParams)]

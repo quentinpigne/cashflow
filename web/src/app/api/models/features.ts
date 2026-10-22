@@ -8,6 +8,13 @@ export interface Features {
    */
   asset_count: number;
   assets: boolean;
+  employment_count: number;
   loan_count: number;
   loans: boolean;
+  salaries: boolean;
+
+  /**
+   * Tolérance de l'écart entre salaire attendu et reçu, en millionièmes (R-SAL-9).
+   */
+  salary_gap_tolerance_ppm: number;
 }

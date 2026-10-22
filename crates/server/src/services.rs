@@ -19,6 +19,7 @@ pub mod reconciliation;
 pub mod recurring;
 pub mod reports;
 pub mod rules;
+pub mod salaries;
 pub mod savings;
 pub mod seed;
 pub mod transactions;
@@ -66,6 +67,8 @@ mod import_tests;
 mod loan_tests;
 #[cfg(test)]
 mod projection_tests;
+#[cfg(test)]
+mod salary_tests;
 #[cfg(test)]
 mod savings_tests;
 #[cfg(test)]

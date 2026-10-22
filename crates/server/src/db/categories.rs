@@ -242,6 +242,17 @@ pub async fn merge(conn: &mut SqliteConnection, source: CategoryId, target: Cate
     )
     .execute(&mut *conn)
     .await?;
+    sqlx::query!(
+        "UPDATE employment SET income_category_id = ?1, updated_at = ?2
+         WHERE income_category_id = ?3
+            OR (?4 AND income_category_id IN (SELECT id FROM category WHERE parent_id = ?3))",
+        target,
+        now,
+        source,
+        with_children
+    )
+    .execute(&mut *conn)
+    .await?;
     if !target_is_root {
         sqlx::query!("DELETE FROM category WHERE parent_id = ?", source).execute(&mut *conn).await?;
     }

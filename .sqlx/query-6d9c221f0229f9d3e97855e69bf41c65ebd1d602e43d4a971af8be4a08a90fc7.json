@@ -1,0 +1,119 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.account_id, s.amount, s.category_id, c.parent_id, c.kind AS \"category_kind?\", a.kind AS account_kind, a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))\n                      AS \"is_movement!: bool\",\n                  t.origin = 'INTEREST' AS \"is_interest!: bool\",\n                  EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id) AS \"is_installment!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "category_id"
+          }
+        }
+      },
+      {
+        "name": "parent_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "parent_id"
+          }
+        }
+      },
+      {
+        "name": "category_kind?",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "account_kind",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "currency",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "name": "is_movement!: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "is_interest!: bool",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "is_installment!: bool",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6d9c221f0229f9d3e97855e69bf41c65ebd1d602e43d4a971af8be4a08a90fc7"
+}

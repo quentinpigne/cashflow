@@ -6,7 +6,7 @@ use cashflow_domain::shared::ids::{AccountId, RecurringRuleId, ScenarioId};
 use crate::error::{AppResult, Problem};
 use crate::services::projections::{
     self, AccountProjectionView, CashProjectionView, CashQuery, HistoryQuery, NetWorthPoint, NetWorthProjection,
-    NetWorthQuery, ProjectionQuery, ScenarioInput, ScenarioView,
+    NetWorthQuery, ProjectionQuery, SalaryProjection, SalaryProjectionQuery, ScenarioInput, ScenarioView,
 };
 use crate::services::recurring::{
     self, MaterializeInput, Materialized, OccurrenceView, RecurringRuleInput, RecurringRuleView, ScheduleQuery,
@@ -156,6 +156,18 @@ pub async fn net_worth(
     Query(query): Query<NetWorthQuery>,
 ) -> AppResult<Json<NetWorthProjection>> {
     Ok(Json(projections::net_worth(&state.db, &query, state.clock.today()).await?))
+}
+
+/// Net annuel réel puis projeté par scénario (SAL-04).
+#[utoipa::path(
+    get, operation_id = "salaryProjection", path = "/projections/salary", tag = "projections",
+    params(SalaryProjectionQuery), responses((status = 200, body = SalaryProjection))
+)]
+pub async fn salary(
+    State(state): State<AppState>,
+    Query(query): Query<SalaryProjectionQuery>,
+) -> AppResult<Json<SalaryProjection>> {
+    Ok(Json(projections::salary(&state.db, &query, state.clock.today()).await?))
 }
 
 /// Historique du patrimoine par famille de comptes (TDB-04).

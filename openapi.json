@@ -2187,6 +2187,458 @@
         }
       }
     },
+    "/api/v1/employments": {
+      "post": {
+        "tags": [
+          "salaries"
+        ],
+        "operationId": "createEmployment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmploymentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}": {
+      "get": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Fiche d'un emploi : rémunérations, primes, revenu annuel, comparaison au reçu (E30).",
+        "operationId": "getEmployment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "salaries"
+        ],
+        "operationId": "updateEmployment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmploymentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Supprime un emploi, ses rémunérations et ses primes (R-SAL-6).",
+        "operationId": "deleteEmployment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/bonuses": {
+      "post": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Ajoute une prime (R-SAL-5).",
+        "operationId": "createBonus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BonusInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/bonuses/{bonus_id}": {
+      "put": {
+        "tags": [
+          "salaries"
+        ],
+        "operationId": "updateBonus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "bonus_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SalaryBonusId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BonusInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "salaries"
+        ],
+        "operationId": "deleteBonus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "bonus_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SalaryBonusId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/salaries": {
+      "post": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Ajoute une rémunération (R-SAL-2).",
+        "operationId": "createSalary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalaryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/salaries/{salary_id}": {
+      "put": {
+        "tags": [
+          "salaries"
+        ],
+        "operationId": "updateSalary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "salary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SalaryId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalaryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "salaries"
+        ],
+        "operationId": "deleteSalary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "salary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SalaryId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/export": {
       "get": {
         "tags": [
@@ -3368,6 +3820,39 @@
         }
       }
     },
+    "/api/v1/projections/salary": {
+      "get": {
+        "tags": [
+          "projections"
+        ],
+        "summary": "Net annuel réel puis projeté par scénario (SAL-04).",
+        "operationId": "salaryProjection",
+        "parameters": [
+          {
+            "name": "years",
+            "in": "query",
+            "description": "Années projetées après l'année en cours (10 par défaut).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalaryProjection"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects": {
       "get": {
         "tags": [
@@ -4242,6 +4727,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/salaries": {
+      "get": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Emplois et évolution annuelle du salaire (E29, SAL-01, SAL-02).",
+        "operationId": "salariesOverview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalariesOverview"
                 }
               }
             }
@@ -5729,6 +6234,61 @@
           "THIS_MONTH"
         ]
       },
+      "AnnualView": {
+        "type": "object",
+        "description": "Revenu annuel (R-SAL-7, R-SAL-8).",
+        "required": [
+          "year",
+          "net_minor",
+          "gross_minor",
+          "months",
+          "incomplete",
+          "gross_incomplete",
+          "provisional"
+        ],
+        "properties": {
+          "gross_change_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "gross_incomplete": {
+            "type": "boolean"
+          },
+          "gross_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incomplete": {
+            "type": "boolean"
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "net_change_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "net_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "provisional": {
+            "type": "boolean"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ApplyInput": {
         "type": "object",
         "required": [
@@ -6017,6 +6577,10 @@
               "type": "string"
             }
           },
+          "capacity": {
+            "$ref": "#/components/schemas/CapacityAssumptions",
+            "description": "Capacité d'épargne et hausse des salaires (R-PRJ-42 à R-PRJ-47, R-SAL-12)."
+          },
           "rate_paths": {
             "type": "object",
             "description": "Trajectoire de taux par barème (identifiant), au-delà du dernier taux connu.",
@@ -6283,6 +6847,111 @@
           "to_skip": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "BonusInput": {
+        "type": "object",
+        "required": [
+          "label",
+          "kind",
+          "paid_on",
+          "net_amount_minor"
+        ],
+        "properties": {
+          "gross_amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BonusKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "net_amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "recurring": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Oui par défaut pour un 13e mois, non sinon (R-SAL-5)."
+          }
+        }
+      },
+      "BonusKind": {
+        "type": "string",
+        "description": "Nature d'une prime (R-SAL-5).",
+        "enum": [
+          "THIRTEENTH_MONTH",
+          "BONUS",
+          "PROFIT_SHARING",
+          "OTHER"
+        ]
+      },
+      "BonusView": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "paid_on",
+          "net_amount_minor",
+          "recurring",
+          "planned"
+        ],
+        "properties": {
+          "gross_amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/SalaryBonusId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BonusKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "net_amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "planned": {
+            "type": "boolean"
+          },
+          "recurring": {
+            "type": "boolean"
           }
         }
       },
@@ -6719,6 +7388,183 @@
           },
           "label": {
             "type": "string"
+          }
+        }
+      },
+      "CapacityAssumptions": {
+        "type": "object",
+        "description": "Hypothèses de capacité d'épargne d'un scénario (R-PRJ-42 à R-PRJ-47).",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Activée par défaut ; désactivée, les liquidités ne bougent que des versements programmés (R-PRJ-47)."
+          },
+          "expense_growth_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux de hausse des dépenses, appliqué chaque 1er janvier (R-PRJ-44)."
+          },
+          "salary_growth_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux de hausse des salaires (R-SAL-12)."
+          },
+          "surplus_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId",
+                "description": "Compte d'épargne qui reçoit le reste de la capacité d'épargne (R-PRJ-45)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "CapacityBaseView": {
+        "type": "object",
+        "description": "Données de départ de la capacité d'épargne, communes aux scénarios (R-PRJ-46).",
+        "required": [
+          "months",
+          "other_income_minor",
+          "expenses_minor",
+          "unpaid_loans",
+          "job_ends",
+          "jobs_without_pay"
+        ],
+        "properties": {
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "job_ends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobEnd"
+            }
+          },
+          "jobs_without_pay": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Emplois en cours ou futurs sans rémunération déclarée (R-SAL-10)."
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Mois complets moyennés.",
+            "minimum": 0
+          },
+          "other_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payroll_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payroll_account_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unpaid_loans": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Prêts avec tableau dont des échéances récentes ne sont pas ventilées (R-PRJ-44)."
+          }
+        }
+      },
+      "CapacityPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "salaries_minor",
+          "other_income_minor",
+          "expenses_minor",
+          "loans_minor",
+          "total_minor",
+          "moved_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loans_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "moved_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reste viré vers le compte d'affectation."
+          },
+          "other_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "salaries_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CapacitySeries": {
+        "type": "object",
+        "description": "Capacité d'épargne d'un scénario.",
+        "required": [
+          "salary_growth_ppm",
+          "expense_growth_ppm",
+          "points"
+        ],
+        "properties": {
+          "expense_growth_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapacityPoint"
+            }
+          },
+          "salary_growth_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "shortfall_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Premier mois où le compte de versement passe sous zéro (R-PRJ-46)."
+          },
+          "surplus_account_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -7359,7 +8205,8 @@
           "assets",
           "loans",
           "uncategorized",
-          "alerts"
+          "alerts",
+          "salary_gaps"
         ],
         "properties": {
           "alerts": {
@@ -7415,6 +8262,13 @@
             "format": "int64",
             "description": "Patrimoine à la fin du mois précédent (R-TDB-2)."
           },
+          "salary_gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryGapAlert"
+            },
+            "description": "Écarts de salaire du dernier mois complet, si la rubrique est activée (R-SAL-9)."
+          },
           "today": {
             "type": "string",
             "format": "date"
@@ -7468,6 +8322,194 @@
           }
         }
       },
+      "EmploymentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "EmploymentInput": {
+        "type": "object",
+        "required": [
+          "employer",
+          "start_date",
+          "income_category_id"
+        ],
+        "properties": {
+          "employer": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "income_category_id": {
+            "$ref": "#/components/schemas/CategoryId",
+            "description": "Catégorie de revenu comparée au net attendu (R-SAL-9)."
+          },
+          "job_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_next_month": {
+            "type": "boolean"
+          },
+          "raise_month": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Mois des augmentations, de 1 à 12 (janvier par défaut).",
+            "minimum": 0
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "EmploymentSummary": {
+        "type": "object",
+        "description": "Un emploi dans la liste (E29).",
+        "required": [
+          "id",
+          "employer",
+          "start_date",
+          "income_category_id",
+          "ended"
+        ],
+        "properties": {
+          "current_net_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Net mensuel en vigueur ce mois-ci (R-SAL-3)."
+          },
+          "employer": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "ended": {
+            "type": "boolean",
+            "description": "L'emploi est terminé."
+          },
+          "id": {
+            "$ref": "#/components/schemas/EmploymentId"
+          },
+          "income_category_id": {
+            "$ref": "#/components/schemas/CategoryId"
+          },
+          "job_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "EmploymentView": {
+        "type": "object",
+        "description": "Fiche d'un emploi (E30).",
+        "required": [
+          "summary",
+          "raise_month",
+          "paid_next_month",
+          "income_category_name",
+          "salaries",
+          "bonuses",
+          "years",
+          "checks"
+        ],
+        "properties": {
+          "bonuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BonusView"
+            },
+            "description": "Primes, la plus récente d'abord."
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthCheck"
+            },
+            "description": "Les 12 derniers mois, mois en cours compris, le plus récent d'abord. L'attendu cumule les emplois de la\nmême catégorie."
+          },
+          "income_category_name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paid_next_month": {
+            "type": "boolean"
+          },
+          "raise_month": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "salaries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryView"
+            },
+            "description": "Rémunérations, la plus récente d'abord."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EmploymentSummary"
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnualView"
+            },
+            "description": "Revenu annuel, la plus récente année d'abord."
+          }
+        }
+      },
+      "EmploymentYear": {
+        "type": "object",
+        "description": "Net d'un emploi pour une année de l'évolution (E29).",
+        "required": [
+          "employment_id",
+          "net_minor"
+        ],
+        "properties": {
+          "employment_id": {
+            "$ref": "#/components/schemas/EmploymentId"
+          },
+          "net_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "Evolution": {
         "type": "object",
         "description": "Revenus, dépenses, épargne et taux d'épargne mois par mois (TDB-03).",
@@ -7512,8 +8554,11 @@
         "required": [
           "assets",
           "loans",
+          "salaries",
           "asset_count",
-          "loan_count"
+          "loan_count",
+          "employment_count",
+          "salary_gap_tolerance_ppm"
         ],
         "properties": {
           "asset_count": {
@@ -7524,12 +8569,24 @@
           "assets": {
             "type": "boolean"
           },
+          "employment_count": {
+            "type": "integer",
+            "format": "int64"
+          },
           "loan_count": {
             "type": "integer",
             "format": "int64"
           },
           "loans": {
             "type": "boolean"
+          },
+          "salaries": {
+            "type": "boolean"
+          },
+          "salary_gap_tolerance_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Tolérance de l'écart entre salaire attendu et reçu, en millionièmes (R-SAL-9)."
           }
         }
       },
@@ -7547,6 +8604,19 @@
               "boolean",
               "null"
             ]
+          },
+          "salaries": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "salary_gap_tolerance_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -8359,6 +9429,23 @@
           "year": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "JobEnd": {
+        "type": "object",
+        "description": "Un emploi qui prend fin dans le futur.",
+        "required": [
+          "employer",
+          "end_date"
+        ],
+        "properties": {
+          "employer": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -9222,6 +10309,52 @@
           }
         }
       },
+      "MonthCheck": {
+        "type": "object",
+        "description": "Attendu et reçu d'un mois (R-SAL-9).",
+        "required": [
+          "month",
+          "expected_minor",
+          "received_minor",
+          "gap_minor",
+          "flagged",
+          "partial",
+          "unknown",
+          "in_progress"
+        ],
+        "properties": {
+          "expected_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "flagged": {
+            "type": "boolean",
+            "description": "Écart au-delà de la tolérance, sur un mois complet et renseigné."
+          },
+          "gap_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "in_progress": {
+            "type": "boolean"
+          },
+          "month": {
+            "type": "string",
+            "format": "date",
+            "description": "Premier jour du mois."
+          },
+          "partial": {
+            "type": "boolean"
+          },
+          "received_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unknown": {
+            "type": "boolean"
+          }
+        }
+      },
       "MonthFlows": {
         "type": "object",
         "required": [
@@ -9339,9 +10472,14 @@
           "today",
           "start_minor",
           "estimated_accounts",
-          "scenarios"
+          "scenarios",
+          "capacity"
         ],
         "properties": {
+          "capacity": {
+            "$ref": "#/components/schemas/CapacityBaseView",
+            "description": "Données de départ de la capacité d'épargne (R-PRJ-46)."
+          },
           "estimated_accounts": {
             "type": "array",
             "items": {
@@ -9695,6 +10833,32 @@
           "MONTHLY",
           "YEARLY"
         ]
+      },
+      "PlannedPay": {
+        "type": "object",
+        "description": "Une rémunération ou une prime prévue (R-SAL-4).",
+        "required": [
+          "employer",
+          "label",
+          "date",
+          "net_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "employer": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "net_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "PreviewLine": {
         "type": "object",
@@ -10674,6 +11838,244 @@
           }
         }
       },
+      "SalariesOverview": {
+        "type": "object",
+        "description": "Rubrique Salaires (E29).",
+        "required": [
+          "employments",
+          "years"
+        ],
+        "properties": {
+          "employments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmploymentSummary"
+            }
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearTotal"
+            },
+            "description": "Années, de la plus ancienne à l'année en cours (et aux années de rémunérations prévues)."
+          }
+        }
+      },
+      "SalaryBonusId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "SalaryChangeReason": {
+        "type": "string",
+        "description": "Motif d'une nouvelle rémunération (R-SAL-2).",
+        "enum": [
+          "HIRE",
+          "RAISE",
+          "PROMOTION",
+          "TAX_RATE",
+          "OTHER"
+        ]
+      },
+      "SalaryGapAlert": {
+        "type": "object",
+        "description": "Écart signalé du dernier mois complet, pour les alertes de l'accueil (R-SAL-9).",
+        "required": [
+          "employment_id",
+          "employer",
+          "month",
+          "expected_minor",
+          "received_minor"
+        ],
+        "properties": {
+          "employer": {
+            "type": "string"
+          },
+          "employment_id": {
+            "$ref": "#/components/schemas/EmploymentId"
+          },
+          "expected_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string",
+            "format": "date"
+          },
+          "received_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SalaryId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "SalaryInput": {
+        "type": "object",
+        "required": [
+          "effective_month",
+          "annual_gross_minor",
+          "monthly_net_minor",
+          "reason"
+        ],
+        "properties": {
+          "annual_gross_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Brut annuel de base, hors primes."
+          },
+          "effective_month": {
+            "type": "string",
+            "format": "date",
+            "description": "Premier jour du mois d'effet."
+          },
+          "monthly_net_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Net mensuel versé, après prélèvement à la source."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/SalaryChangeReason"
+          }
+        }
+      },
+      "SalaryProjection": {
+        "type": "object",
+        "description": "Net annuel réel puis projeté par scénario, avec ses hypothèses (R-SAL-13).",
+        "required": [
+          "today",
+          "history",
+          "scenarios",
+          "planned",
+          "job_ends",
+          "jobs_without_pay"
+        ],
+        "properties": {
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearAmount"
+            },
+            "description": "Années passées, revenu annuel déclaré (R-SAL-7)."
+          },
+          "job_ends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobEnd"
+            }
+          },
+          "jobs_without_pay": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "planned": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlannedPay"
+            }
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalaryScenarioSeries"
+            }
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "SalaryScenarioSeries": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "name",
+          "is_default",
+          "salary_growth_ppm",
+          "years"
+        ],
+        "properties": {
+          "is_default": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "salary_growth_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scenario_id": {
+            "$ref": "#/components/schemas/ScenarioId"
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearAmount"
+            },
+            "description": "Année en cours (mois écoulés déclarés, mois à venir projetés) puis années suivantes."
+          }
+        }
+      },
+      "SalaryView": {
+        "type": "object",
+        "required": [
+          "id",
+          "effective_month",
+          "annual_gross_minor",
+          "monthly_net_minor",
+          "reason",
+          "planned"
+        ],
+        "properties": {
+          "annual_gross_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "effective_month": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/SalaryId"
+          },
+          "monthly_net_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "net_change_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Variation du net sur la rémunération précédente, en millionièmes."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "planned": {
+            "type": "boolean",
+            "description": "Mois d'effet futur (R-SAL-4)."
+          },
+          "reason": {
+            "$ref": "#/components/schemas/SalaryChangeReason"
+          }
+        }
+      },
       "SavingsOverview": {
         "type": "object",
         "required": [
@@ -10787,6 +12189,17 @@
           "points"
         ],
         "properties": {
+          "capacity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CapacitySeries",
+                "description": "Capacité d'épargne, si le scénario l'active (R-PRJ-46)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "is_default": {
             "type": "boolean"
           },
@@ -12044,6 +13457,23 @@
           }
         }
       },
+      "YearAmount": {
+        "type": "object",
+        "required": [
+          "year",
+          "net_minor"
+        ],
+        "properties": {
+          "net_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "YearPerformanceView": {
         "type": "object",
         "required": [
@@ -12078,6 +13508,62 @@
               "null"
             ],
             "format": "date"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "YearTotal": {
+        "type": "object",
+        "description": "Une année, tous emplois (R-SAL-8).",
+        "required": [
+          "year",
+          "net_minor",
+          "gross_minor",
+          "incomplete",
+          "gross_incomplete",
+          "provisional",
+          "employments"
+        ],
+        "properties": {
+          "employments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmploymentYear"
+            }
+          },
+          "gross_change_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "gross_incomplete": {
+            "type": "boolean"
+          },
+          "gross_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incomplete": {
+            "type": "boolean"
+          },
+          "net_change_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "net_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "provisional": {
+            "type": "boolean"
           },
           "year": {
             "type": "integer",
@@ -12148,6 +13634,10 @@
     {
       "name": "loans",
       "description": "Prêts : suivi, tableau d'amortissement, mensualités (spec 09)"
+    },
+    {
+      "name": "salaries",
+      "description": "Salaires : emplois, rémunérations, primes (spec 10)"
     },
     {
       "name": "savings",

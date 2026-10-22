@@ -328,8 +328,11 @@ async fn r_prj_40_net_worth_projection_includes_assets_and_amortizing_loans() {
     let schedule = loans::get(&db, id, today).await.unwrap().schedule.unwrap().installments;
     assert_eq!(worth.start_minor, 100_000 + 25_000_000 - schedule[0].remaining_minor);
     let default = worth.scenarios.iter().find(|s| s.is_default).unwrap();
-    // La dette baisse au fil des échéances : le patrimoine projeté monte.
-    assert!(default.points[2].value_minor > default.points[0].value_minor);
+    // L'échéance de février sort du compte payeur (R-PRJ-42) et réduit la dette de son capital : le patrimoine
+    // ne baisse que des intérêts et de l'assurance.
+    let february = &schedule[1];
+    assert_eq!(default.points[0].value_minor, worth.start_minor - february.interest_minor - february.insurance_minor);
+    assert_eq!(default.capacity.as_ref().unwrap().points[0].loans_minor, 115_920);
     assert!(assets::get(&db, asset, today).await.unwrap().summary.value_minor.is_some());
 }
 
@@ -395,10 +398,10 @@ async fn bie_02_pre_04_sections_turn_off_only_when_empty() {
     let f = fixture(&db).await;
     let initial = features::get(&db).await.unwrap();
     assert!(!initial.assets && !initial.loans, "désactivées sur une nouvelle installation");
-    let on = FeaturesInput { assets: Some(true), loans: Some(true) };
+    let on = FeaturesInput { assets: Some(true), loans: Some(true), ..Default::default() };
     features::update(&db, &on).await.unwrap();
     let id = create(&db, &f).await;
-    let off = FeaturesInput { assets: None, loans: Some(false) };
+    let off = FeaturesInput { assets: None, loans: Some(false), ..Default::default() };
     assert_eq!(code(features::update(&db, &off).await.unwrap_err()), "FEATURE_IN_USE");
     loans::delete(&db, id).await.unwrap();
     assert!(!features::update(&db, &off).await.unwrap().loans);

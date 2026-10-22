@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO salary_bonus (id, employment_id, label, kind, paid_on, net_amount, gross_amount, recurring, note,\n                                   created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (id) DO UPDATE SET\n             label = excluded.label, kind = excluded.kind, paid_on = excluded.paid_on,\n             net_amount = excluded.net_amount, gross_amount = excluded.gross_amount, recurring = excluded.recurring,\n             note = excluded.note, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "0bca258185d99d8154db509e00c04cea3cf513f9804faca9e92e9e55a78b5b4b"
+}

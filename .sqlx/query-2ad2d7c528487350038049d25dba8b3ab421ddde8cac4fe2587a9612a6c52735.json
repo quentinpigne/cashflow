@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, employment_id, label, kind, paid_on AS \"paid_on: Date\", net_amount, gross_amount,\n                  recurring AS \"recurring: bool\", note\n           FROM salary_bonus ORDER BY employment_id, paid_on",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "employment_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "employment_id"
+          }
+        }
+      },
+      {
+        "name": "label",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "paid_on: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "paid_on"
+          }
+        }
+      },
+      {
+        "name": "net_amount",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "net_amount"
+          }
+        }
+      },
+      {
+        "name": "gross_amount",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "gross_amount"
+          }
+        }
+      },
+      {
+        "name": "recurring: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "recurring"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary_bonus",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "2ad2d7c528487350038049d25dba8b3ab421ddde8cac4fe2587a9612a6c52735"
+}

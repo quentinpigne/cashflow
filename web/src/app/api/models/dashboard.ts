@@ -7,6 +7,7 @@ import { FamilyGroup } from '../models/family-group';
 import { FlowsView } from '../models/flows-view';
 import { LoanSummary } from '../models/loan-summary';
 import { NetWorthView } from '../models/net-worth-view';
+import { SalaryGapAlert } from '../models/salary-gap-alert';
 import { UncategorizedView } from '../models/uncategorized-view';
 export interface Dashboard {
 
@@ -51,6 +52,11 @@ export interface Dashboard {
    * Patrimoine à la fin du mois précédent (R-TDB-2).
    */
   previous_net_worth_minor: number;
+
+  /**
+   * Écarts de salaire du dernier mois complet, si la rubrique est activée (R-SAL-9).
+   */
+  salary_gaps: Array<SalaryGapAlert>;
   today: string;
   uncategorized: UncategorizedView;
 }

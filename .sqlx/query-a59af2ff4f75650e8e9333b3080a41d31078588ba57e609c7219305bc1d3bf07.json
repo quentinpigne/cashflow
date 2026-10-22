@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM salary_bonus WHERE employment_id = ? AND id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a59af2ff4f75650e8e9333b3080a41d31078588ba57e609c7219305bc1d3bf07"
+}

@@ -13,6 +13,7 @@ mod projections;
 mod reconciliation;
 mod reports;
 mod rules;
+mod salaries;
 mod savings;
 mod system;
 mod transactions;
@@ -47,6 +48,7 @@ use crate::state::AppState;
         (name = "budgets", description = "Budgets, projets et notifications (spec 05)"),
         (name = "assets", description = "Biens (spec 09)"),
         (name = "loans", description = "Prêts : suivi, tableau d'amortissement, mensualités (spec 09)"),
+        (name = "salaries", description = "Salaires : emplois, rémunérations, primes (spec 10)"),
         (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
         (name = "projections", description = "Récurrences, scénarios et projections (spec 02, spec 07)"),
         (name = "dashboard", description = "Tableau de bord (spec 08)"),
@@ -138,6 +140,13 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(assets::save_valuation))
         .routes(routes!(assets::delete_valuation))
         .routes(routes!(assets::get_features, assets::update_features))
+        .routes(routes!(salaries::overview))
+        .routes(routes!(salaries::create))
+        .routes(routes!(salaries::get, salaries::update, salaries::delete))
+        .routes(routes!(salaries::create_salary))
+        .routes(routes!(salaries::update_salary, salaries::delete_salary))
+        .routes(routes!(salaries::create_bonus))
+        .routes(routes!(salaries::update_bonus, salaries::delete_bonus))
         .routes(routes!(savings::schedules))
         .routes(routes!(savings::set_rate))
         .routes(routes!(savings::delete_rate))
@@ -156,6 +165,7 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(projections::cash))
         .routes(routes!(projections::account))
         .routes(routes!(projections::net_worth))
+        .routes(routes!(projections::salary))
         .routes(routes!(projections::history))
         .routes(routes!(system::info))
         .routes(routes!(system::export))

@@ -11,6 +11,7 @@ export { AuthService } from './services/auth.service';
 export { BudgetsService } from './services/budgets.service';
 export { CategoriesService } from './services/categories.service';
 export { DashboardService } from './services/dashboard.service';
+export { SalariesService } from './services/salaries.service';
 export { SystemService } from './services/system.service';
 export { ImportsService } from './services/imports.service';
 export { InstitutionsService } from './services/institutions.service';

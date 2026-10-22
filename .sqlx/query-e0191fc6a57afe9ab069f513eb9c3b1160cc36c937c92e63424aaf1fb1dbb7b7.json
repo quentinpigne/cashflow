@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO salary (id, employment_id, effective_month, annual_gross, monthly_net, reason, note, created_at,\n                             updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (id) DO UPDATE SET\n             effective_month = excluded.effective_month, annual_gross = excluded.annual_gross,\n             monthly_net = excluded.monthly_net, reason = excluded.reason, note = excluded.note,\n             updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "e0191fc6a57afe9ab069f513eb9c3b1160cc36c937c92e63424aaf1fb1dbb7b7"
+}

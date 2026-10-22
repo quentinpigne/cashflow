@@ -1,11 +1,13 @@
 //! Projections (spec 07) : scénarios et données de départ.
 
-use cashflow_domain::shared::ids::{AccountId, ScenarioId, TransactionId};
+use cashflow_domain::accounts::AccountKind;
+use cashflow_domain::ledger::category::CategoryKind;
+use cashflow_domain::shared::ids::{AccountId, CategoryId, ScenarioId, TransactionId};
 use cashflow_domain::{Date, Money, Rate};
 use serde_json::Value;
 use sqlx::{SqliteConnection, SqliteExecutor};
 
-use super::codec::id_from_db;
+use super::codec::{enum_from_db, id_from_db, opt_id_from_db};
 use crate::clock::timestamp;
 
 #[derive(Debug, Clone)]
@@ -122,6 +124,56 @@ pub async fn expenses(
     rows.into_iter()
         .map(|r| {
             Ok(DatedRow { id: id_from_db(&r.id)?, date: r.date, amount: Money::from_minor(r.amount), label: r.label })
+        })
+        .collect()
+}
+
+/// Une ventilation vue par la capacité d'épargne (R-PRJ-43, R-PRJ-44).
+pub struct CapacityFactRow {
+    pub account_id: AccountId,
+    pub amount: Money,
+    pub category_id: Option<CategoryId>,
+    pub parent_id: Option<CategoryId>,
+    pub category_kind: Option<CategoryKind>,
+    pub account_kind: AccountKind,
+    pub currency: String,
+    pub is_movement: bool,
+    pub is_interest: bool,
+    pub is_installment: bool,
+}
+
+pub async fn capacity_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<CapacityFactRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT t.account_id, s.amount, s.category_id, c.parent_id, c.kind AS "category_kind?", a.kind AS account_kind, a.currency,
+                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
+                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))
+                      AS "is_movement!: bool",
+                  t.origin = 'INTEREST' AS "is_interest!: bool",
+                  EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id) AS "is_installment!: bool"
+           FROM split s
+           JOIN ledger_transaction t ON t.id = s.transaction_id
+           JOIN account a ON a.id = t.account_id
+           LEFT JOIN category c ON c.id = s.category_id
+           WHERE t.date BETWEEN ? AND ?"#,
+        from,
+        to
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(CapacityFactRow {
+                account_id: id_from_db(&r.account_id)?,
+                amount: Money::from_minor(r.amount),
+                category_id: opt_id_from_db(r.category_id.as_deref())?,
+                parent_id: opt_id_from_db(r.parent_id.as_deref())?,
+                category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
+                account_kind: enum_from_db(&r.account_kind)?,
+                currency: r.currency,
+                is_movement: r.is_movement,
+                is_interest: r.is_interest,
+                is_installment: r.is_installment,
+            })
         })
         .collect()
 }

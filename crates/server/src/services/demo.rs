@@ -27,6 +27,57 @@ const MONTHS: u32 = 12;
 const SALARY: i64 = 340_000;
 /// Échéance du prêt de démonstration : mensualité de 1 109,20 € et assurance de 50 € (CPT-09).
 const LOAN_INSTALLMENT: i64 = 115_920;
+/// 13e mois net, versé en décembre.
+const THIRTEENTH_MONTH: i64 = 320_000;
+
+/// L'emploi de démonstration : embauche quatre ans avant le début du jeu, deux augmentations, la dernière en
+/// janvier de la première année du jeu, et un 13e mois récurrent (spec 10).
+async fn employment(db: &Db, c: &Categories, start: Date, thirteenth: Option<Date>, today: Date) -> anyhow::Result<()> {
+    use super::salaries::{BonusInput, EmploymentInput, SalaryInput};
+    use cashflow_domain::salaries::{BonusKind, SalaryChangeReason};
+    let category = c.get("Salaires", "").context("catégorie Salaires absente")?;
+    let hire = start.checked_sub_months(Months::new(48)).context("date d'embauche")?;
+    let input = EmploymentInput {
+        employer: "Acme Industries".into(),
+        job_title: Some("Ingénieure d'études".into()),
+        start_date: hire,
+        end_date: None,
+        income_category_id: category,
+        raise_month: Some(1),
+        paid_next_month: false,
+        notes: None,
+    };
+    let id = super::salaries::create(db, &input, today).await.map_err(|e| anyhow::anyhow!("{e}"))?.summary.id;
+    let january = |year: i32| Date::from_ymd_opt(year, 1, 1).context("janvier");
+    let pays = [
+        (hire, 4_400_000, 280_000, SalaryChangeReason::Hire),
+        (january(start.year() - 2)?, 4_800_000, 310_000, SalaryChangeReason::Raise),
+        (january(start.year())?, 5_200_000, SALARY, SalaryChangeReason::Promotion),
+    ];
+    for (month, gross, net, reason) in pays {
+        let pay = SalaryInput {
+            effective_month: month,
+            annual_gross_minor: gross,
+            monthly_net_minor: net,
+            reason,
+            note: None,
+        };
+        super::salaries::save_salary(db, id, None, &pay, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    if let Some(paid_on) = thirteenth {
+        let bonus = BonusInput {
+            label: "13e mois".into(),
+            kind: BonusKind::ThirteenthMonth,
+            paid_on,
+            net_amount_minor: THIRTEENTH_MONTH,
+            gross_amount_minor: Some(4_300_000 / 10),
+            recurring: None,
+            note: None,
+        };
+        super::salaries::save_bonus(db, id, None, &bonus, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    Ok(())
+}
 
 /// L'appartement (acheté 250 000 €) et le prêt qui l'a financé, rubriques activées (spec 09).
 async fn assets_and_loan(
@@ -36,9 +87,17 @@ async fn assets_and_loan(
     checking: AccountId,
     today: Date,
 ) -> anyhow::Result<LoanId> {
-    super::features::update(db, &super::features::FeaturesInput { assets: Some(true), loans: Some(true) })
-        .await
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    super::features::update(
+        db,
+        &super::features::FeaturesInput {
+            assets: Some(true),
+            loans: Some(true),
+            salaries: Some(true),
+            salary_gap_tolerance_ppm: None,
+        },
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("{e}"))?;
     let purchase = terms.first_installment.checked_sub_months(Months::new(1)).context("date d'achat")?;
     let flat = super::assets::AssetInput {
         name: "Appartement".into(),
@@ -209,6 +268,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     let c = Categories::load(db).await?;
     let mut rng = Lcg(20_261_020);
     let mut month = start;
+    let mut thirteenth = None;
     while month <= today {
         let day = |d: u32| month.with_day(d.min(28)).filter(|date| *date <= today);
         if let Some(d) = day(3) {
@@ -236,6 +296,12 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         }
         if let Some(d) = day(27) {
             spend(db, checking, d, SALARY, "VIREMENT SALAIRE", c.get("Salaires", "")).await?;
+        }
+        if month.month() == 12
+            && let Some(d) = day(20)
+        {
+            spend(db, checking, d, THIRTEENTH_MONTH, "PRIME 13E MOIS", c.get("Salaires", "")).await?;
+            thirteenth = Some(d);
         }
         // Courses, restaurants, carburant : fréquences et montants variables.
         for week in 0..4 {
@@ -459,6 +525,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
 
     budget(db, &c, start, today, livret_a, life, checking).await?;
     let loan = assets_and_loan(db, &c, &loan_terms, checking, today).await?;
+    employment(db, &c, start, thirteenth, today).await?;
     // Chaque mensualité est ventilée selon son échéance : la dette baisse du capital remboursé (CPT-10).
     let payments: Vec<super::loans::LoanPaymentInput> = super::loans::proposals(db, loan, today)
         .await

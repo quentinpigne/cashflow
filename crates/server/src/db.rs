@@ -14,6 +14,7 @@ pub mod loans;
 pub mod projections;
 pub mod recurring;
 pub mod rules;
+pub mod salaries;
 pub mod savings;
 pub mod settings;
 pub mod transactions;

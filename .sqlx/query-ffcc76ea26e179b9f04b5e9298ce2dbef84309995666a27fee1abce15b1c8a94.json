@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, employer, job_title, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\",\n                  income_category_id, raise_month, paid_next_month AS \"paid_next_month: bool\", notes\n           FROM employment ORDER BY start_date, employer",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "employer",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "employer"
+          }
+        }
+      },
+      {
+        "name": "job_title",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "name": "start_date: Date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "start_date"
+          }
+        }
+      },
+      {
+        "name": "end_date: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "end_date"
+          }
+        }
+      },
+      {
+        "name": "income_category_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "income_category_id"
+          }
+        }
+      },
+      {
+        "name": "raise_month",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "raise_month"
+          }
+        }
+      },
+      {
+        "name": "paid_next_month: bool",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "paid_next_month"
+          }
+        }
+      },
+      {
+        "name": "notes",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "notes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "ffcc76ea26e179b9f04b5e9298ce2dbef84309995666a27fee1abce15b1c8a94"
+}

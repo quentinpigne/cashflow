@@ -1,0 +1,98 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, employment_id, effective_month AS \"effective_month: Date\", annual_gross, monthly_net, reason, note\n           FROM salary ORDER BY employment_id, effective_month",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "employment_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "employment_id"
+          }
+        }
+      },
+      {
+        "name": "effective_month: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "effective_month"
+          }
+        }
+      },
+      {
+        "name": "annual_gross",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "annual_gross"
+          }
+        }
+      },
+      {
+        "name": "monthly_net",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "monthly_net"
+          }
+        }
+      },
+      {
+        "name": "reason",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "salary",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "573a896da9f48e50b90b0d936f59644dbb049aae0688fd61375727d85cc3210d"
+}

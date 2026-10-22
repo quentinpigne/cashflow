@@ -355,7 +355,7 @@ async fn r_imp_22_loan_payment_is_proposed_after_import() {
     )
     .await
     .unwrap();
-    features::update(&db, &FeaturesInput { assets: None, loans: Some(true) }).await.unwrap();
+    features::update(&db, &FeaturesInput { assets: None, loans: Some(true), ..Default::default() }).await.unwrap();
     let loan = LoanInput {
         name: "Prêt".into(),
         kind: LoanKind::Mortgage,

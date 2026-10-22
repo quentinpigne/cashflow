@@ -105,6 +105,8 @@ pub struct Dashboard {
     pub uncategorized: UncategorizedView,
     /// Comptes qui demandent une action : écart de rapprochement ou transactions en attente anciennes (R-TDB-10).
     pub alerts: Vec<super::reconciliation::AccountHealth>,
+    /// Écarts de salaire du dernier mois complet, si la rubrique est activée (R-SAL-9).
+    pub salary_gaps: Vec<super::salaries::SalaryGapAlert>,
 }
 
 /// Ce qui compte dans le patrimoine à une date (R-TDB-1) : comptes, biens possédés, prêts en cours.
@@ -162,6 +164,7 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
     } else {
         Vec::new()
     };
+    let salary_gaps = if features.salaries { super::salaries::alerts(db, today).await? } else { Vec::new() };
     let loans = if features.loans {
         super::loans::list(db, today).await?.into_iter().filter(|l| l.outstanding_minor.is_some()).collect()
     } else {
@@ -240,6 +243,7 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
             .into_iter()
             .filter(|h| h.old_pending > 0 || h.current_gap_minor.is_some_and(|g| g != 0))
             .collect(),
+        salary_gaps,
     })
 }
 

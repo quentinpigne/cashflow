@@ -38,6 +38,9 @@ import { NetWorthProjection } from '../models/net-worth-projection';
 import { NetWorthProjection$Params } from '../fn/projections/net-worth-projection';
 import { OccurrenceView } from '../models/occurrence-view';
 import { RecurringRuleView } from '../models/recurring-rule-view';
+import { salaryProjection } from '../fn/projections/salary-projection';
+import { SalaryProjection } from '../models/salary-projection';
+import { SalaryProjection$Params } from '../fn/projections/salary-projection';
 import { ScenarioView } from '../models/scenario-view';
 import { updateRecurringRule } from '../fn/projections/update-recurring-rule';
 import { UpdateRecurringRule$Params } from '../fn/projections/update-recurring-rule';
@@ -156,6 +159,41 @@ export class ProjectionsService extends BaseService {
     const resp = this.netWorthProjection$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<NetWorthProjection>): NetWorthProjection => r.body)
+    );
+  }
+
+  /** Path part for operation `salaryProjection()` */
+  static readonly SalaryProjectionPath = '/api/v1/projections/salary';
+
+  /**
+   * Net annuel réel puis projeté par scénario (SAL-04).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `salaryProjection()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  salaryProjection$Response(params?: SalaryProjection$Params, context?: HttpContext): Observable<StrictHttpResponse<SalaryProjection>> {
+    const obs = salaryProjection(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Net annuel réel puis projeté par scénario (SAL-04).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `salaryProjection$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  salaryProjection(params?: SalaryProjection$Params, context?: HttpContext): Observable<SalaryProjection> {
+    const resp = this.salaryProjection$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<SalaryProjection>): SalaryProjection => r.body)
     );
   }
 
