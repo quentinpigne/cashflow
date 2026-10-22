@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import {
   CdkDrag,
@@ -26,7 +34,6 @@ import { DataVersion } from '../../core/data-version';
 import { formatMonth } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { FAMILY_LABELS } from '../../core/labels';
-import { Layout } from '../../core/layout';
 import { formatRatePpm } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
@@ -34,7 +41,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { HomeBudget } from '../budget/home-budget';
 import { HomeMissed } from '../projections/home-missed';
 import { HomeSavings } from '../savings/home-savings';
-import { HomeLayout, Widget } from './home-layout';
+import { HomeLayout, Widget, columnCount } from './home-layout';
 import { HomeRecent } from './home-recent';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
@@ -104,14 +111,27 @@ export class HomePage {
   protected readonly showDetail = signal(false);
 
   protected readonly layout = inject(HomeLayout);
-  private readonly screen = inject(Layout);
   protected readonly labels = WIDGET_LABELS;
 
-  /** Deux colonnes sur ordinateur, une seule sur mobile : chacune a sa disposition. */
-  protected readonly columns = computed<Widget[][]>(() => {
-    const state = this.layout.state();
-    return this.screen.mobile() ? [state.mobile] : state.desktop;
-  });
+  /** Largeur disponible pour la grille (page moins ses marges), suivie au redimensionnement. */
+  private readonly width = signal(0);
+  /** Autant de colonnes que la largeur le permet ; chaque nombre de colonnes a sa disposition. */
+  protected readonly count = computed(() => columnCount(this.width()));
+  protected readonly columns = computed<Widget[][]>(() => this.layout.columns(this.count()));
+
+  constructor() {
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const observer = new ResizeObserver(([entry]) => {
+      const page = host.querySelector('.page');
+      const padding = page
+        ? parseFloat(getComputedStyle(page).paddingLeft) +
+          parseFloat(getComputedStyle(page).paddingRight)
+        : 0;
+      this.width.set(entry.contentRect.width - padding);
+    });
+    observer.observe(host);
+    inject(DestroyRef).onDestroy(() => observer.disconnect());
+  }
 
   protected drop(event: CdkDragDrop<number>): void {
     const columns = this.columns().map((c) => [...c]);
@@ -125,10 +145,7 @@ export class HomePage {
     } else {
       transferArrayItem(from, to, previous, event.currentIndex);
     }
-    const state = this.layout.state();
-    this.layout.save(
-      this.screen.mobile() ? { ...state, mobile: columns[0] } : { ...state, desktop: columns },
-    );
+    this.layout.save(this.count(), columns);
   }
 
   protected readonly monthLabel = computed(() =>

@@ -1,13 +1,13 @@
 <div class="page">
   @if (dashboard.value(); as d) {
     <div class="layout-bar">
-      @if (!layout.isDefault()) {
-        <button mat-button (click)="layout.reset()">
+      @if (!layout.isDefault(count())) {
+        <button mat-button (click)="layout.reset(count())">
           <mat-icon>restart_alt</mat-icon>Disposition par défaut
         </button>
       }
     </div>
-    <div class="grid" cdkDropListGroup>
+    <div class="grid" cdkDropListGroup [style.--columns]="count()">
       @for (column of columns(); track $index; let c = $index) {
         <div class="column" cdkDropList [cdkDropListData]="c" (cdkDropListDropped)="drop($event)">
           @for (id of column; track id) {

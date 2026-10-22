@@ -1,12 +1,17 @@
+// L'accueil prend toute la largeur ; le nombre de colonnes (--columns) suit la place disponible.
+:host {
+  display: block;
+}
+
+.page {
+  max-width: none;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(var(--columns, 1), minmax(0, 1fr));
+  align-items: start;
   gap: 1rem;
-
-  @media (min-width: 600px) {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
 }
 
 .column {

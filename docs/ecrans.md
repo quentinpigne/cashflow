@@ -93,8 +93,9 @@ Blocs, de haut en bas :
    **Bloc absent en phase 1** : toutes les transactions y sont saisies à la main et restent `PENDING`,
    l'alerte se déclencherait partout. Il apparaît en phase 2, avec le pointage par import.
 
-Sur ordinateur, les blocs se répartissent sur deux colonnes : patrimoine et mois en cours à gauche,
-comptes à droite, « à catégoriser » et alertes en dessous.
+Sur ordinateur, l'accueil prend toute la largeur et les blocs se répartissent sur autant de colonnes que
+la place le permet (une colonne d'au moins 22rem, quatre au plus). En deux colonnes : patrimoine et mois
+en cours à gauche, comptes à droite, « à catégoriser » et alertes en dessous.
 
 ```
 ┌──────────────────────────┐
@@ -131,10 +132,11 @@ catégorie, ventilation ou virement, montant ; un clic ouvre la transaction (E7)
 gardé dans le navigateur.
 
 **Disposition personnalisable.** Chaque encadré porte une poignée (⋮⋮, en haut à droite) : on le fait
-glisser pour le réordonner dans sa colonne, ou le changer de colonne sur ordinateur. La disposition est
-gardée dans le navigateur (`localStorage`), séparément pour l'ordinateur (deux colonnes) et pour le
-mobile (une colonne) ; « Disposition par défaut » apparaît dès qu'elle a été modifiée. Un encadré sans
-contenu (aucune alerte, rien à catégoriser) reste masqué à sa place.
+glisser pour le réordonner dans sa colonne, ou le changer de colonne. La disposition est gardée dans le
+navigateur (`localStorage`), séparément pour chaque nombre de colonnes (une sur mobile, jusqu'à quatre sur
+grand écran) ; « Disposition par défaut » apparaît dès que celle du nombre de colonnes affiché a été
+modifiée. Un encadré sans contenu (aucune alerte, rien à catégoriser) reste masqué à sa place.
+
 ## E2 — Comptes (CPT-01, CPT-03)
 
 Liste de tous les comptes, **groupés par famille** (Liquidités, Épargne à taux fixe, Épargne variable,
