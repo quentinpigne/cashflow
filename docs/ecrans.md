@@ -631,7 +631,7 @@ compter dans le patrimoine, note, et le **mode de suivi** :
 
 # Écrans — salaires (spec 10)
 
-Statut : **Revue** (2026-10-22)
+Statut : **Validée** (2026-10-22)
 
 Ce qui change dans les écrans existants :
 - **Navigation** : entrée **Salaires** (E29), après Prêts, seulement si la rubrique est activée ; sur mobile,

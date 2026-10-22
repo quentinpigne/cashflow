@@ -1,6 +1,6 @@
 # Spec 10 — Salaires
 
-Statut : **Revue** (2026-10-22)
+Statut : **Validée** (2026-10-22)
 Modèle : [Employment, Salary, SalaryBonus](../modele-de-donnees.md#salaires--spec-10)
 Décision : ADR-0022 (salaires déclarés et capacité d'épargne projetée)
 

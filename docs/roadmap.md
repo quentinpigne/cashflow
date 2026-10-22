@@ -79,7 +79,7 @@ mois, réimport sans doublon.
   (ADR-0019, ADR-0020, spec 09)
 - TDB-08 — encadrés Biens et Prêts sur l'accueil
 
-## Compléments V1 — salaires (proposé le 2026-10-22)
+## Compléments V1 — salaires (2026-10-22)
 
 - SAL-01 à SAL-05 — emplois, rémunérations et primes, évolution, comparaison au reçu, projection du salaire,
   activation (ADR-0022, spec 10)

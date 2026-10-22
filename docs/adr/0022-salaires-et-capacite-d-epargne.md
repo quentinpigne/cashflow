@@ -1,6 +1,6 @@
 # ADR-0022 — Salaires déclarés et capacité d'épargne projetée
 
-- **Statut** : Proposé
+- **Statut** : Accepté
 - **Date** : 2026-10-22
 - **Concerne** : vision, spec 07, spec 10, modèle de données, glossaire, écrans, feuille de route
 
