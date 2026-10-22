@@ -26,7 +26,10 @@ Répondre à trois questions :
 
 - **R-PRJ-10** — Solde projeté jour par jour = solde calculé aujourd'hui + transactions `PENDING`
   datées dans le futur + échéances prévues des récurrences (R-TRX-40) non encore honorées + échéances
-  futures des prêts dont c'est le compte payeur (R-CPT-16), non encore payées.
+  futures des prêts dont c'est le compte payeur (R-CPT-16), non encore payées. Une récurrence du compte
+  payeur dont le montant égale une échéance (à ±1 €) est alors ignorée : la mensualité ne compte qu'une
+  fois. Les mensualités déjà ventilées (R-CPT-17) n'entrent pas dans la dépense variable moyenne
+  (R-PRJ-11).
 - **R-PRJ-11** — Une dépense variable moyenne est **incluse par défaut**, et désactivable : moyenne
   des dépenses **non récurrentes** des 3 derniers mois complets, répartie uniformément sur les jours.
   Elle est affichée séparément des échéances connues.

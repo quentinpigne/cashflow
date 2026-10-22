@@ -244,3 +244,9 @@ pub async fn payable_debits(
         })
         .collect()
 }
+
+/// Toutes les mensualités ventilées, tous prêts confondus.
+pub async fn payment_transactions(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<TransactionId>> {
+    let rows = sqlx::query_scalar!("SELECT transaction_id FROM loan_payment").fetch_all(db).await?;
+    rows.iter().map(|id| id_from_db(id)).collect()
+}

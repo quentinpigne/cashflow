@@ -2,7 +2,7 @@
 //! (PRJ-04), patrimoine (PRJ-05) et son historique (TDB-04). Rien n'est écrit : ce sont des calculs purs
 //! sur l'état réel du jour (R-PRJ-1).
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountFamily;
 use cashflow_domain::ledger::TransactionOrigin;
@@ -10,7 +10,7 @@ use cashflow_domain::projection::{self, Assumption, CashEvent, FixedInput};
 use cashflow_domain::recurrence::{self, Occurrence};
 use cashflow_domain::reporting;
 use cashflow_domain::savings::{FortnightlyTerms, Movement, RatePoint};
-use cashflow_domain::shared::ids::{AccountId, ScenarioId};
+use cashflow_domain::shared::ids::{AccountId, ScenarioId, TransactionId};
 use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Days};
 use serde::{Deserialize, Serialize};
@@ -295,7 +295,27 @@ pub async fn cash(db: &Db, account: AccountId, query: &CashQuery, today: Date) -
             kind: CashEventKind::Pending,
         })
         .collect();
-    let rules = db::recurring::list(&db.read).await?;
+    // Échéances de prêt payées par ce compte (R-PRJ-10). Une récurrence du compte au montant de l'échéance (±1 €)
+    // est ignorée : la mensualité ne compte qu'une fois.
+    let upcoming = super::loans::upcoming_debits(db, account, today, horizon).await?;
+    let installment_amounts: Vec<Money> = upcoming.iter().map(|u| u.amount).collect();
+    let rules: Vec<_> = db::recurring::list(&db.read)
+        .await?
+        .into_iter()
+        .filter(|r| {
+            !(r.account_id == account
+                && r.target_account_id.is_none()
+                && installment_amounts
+                    .iter()
+                    .any(|a| (r.amount - *a).abs() <= cashflow_domain::loans::AMOUNT_TOLERANCE))
+        })
+        .collect();
+    events.extend(upcoming.into_iter().map(|u| CashEventView {
+        date: u.date,
+        label: u.label,
+        amount_minor: u.amount.minor(),
+        kind: CashEventKind::Scheduled,
+    }));
     let candidates = db::recurring::candidates(
         &db.read,
         today.checked_sub_days(Days::new(10)).unwrap_or(today),
@@ -318,10 +338,13 @@ pub async fn cash(db: &Db, account: AccountId, query: &CashQuery, today: Date) -
         let months = reporting::months_until(last, VARIABLE_MONTHS);
         let first = months.first().map_or(today, |p| p.from);
         let recurring = recurring::honoring(db, first, last, today).await?;
+        // Les mensualités ventilées sont projetées à part, par leurs échéances.
+        let installments: HashSet<TransactionId> =
+            db::loans::payment_transactions(&db.read).await?.into_iter().collect();
         let spent: Money = db::projections::expenses(&db.read, account, first, last)
             .await?
             .into_iter()
-            .filter(|e| !recurring.contains_key(&e.id))
+            .filter(|e| !recurring.contains_key(&e.id) && !installments.contains(&e.id))
             .map(|e| -e.amount)
             .sum();
         let months_with_data = i64::from(VARIABLE_MONTHS).max(1);
@@ -578,7 +601,17 @@ async fn project_account(
         deposit_cap_minor: None,
         points: Vec::new(),
     };
+    let loan_terms = match row.kind.family() {
+        AccountFamily::Liability => db::loans::find(&db.read, row.id).await?,
+        _ => None,
+    };
     match row.kind.family() {
+        // Prêt avec conditions : la dette suit le tableau d'amortissement (R-PRJ-40).
+        AccountFamily::Liability if let Some(terms) = &loan_terms => {
+            let schedule = cashflow_domain::loans::schedule(&terms.terms)?;
+            let values = cashflow_domain::loans::projected_debt(current, &schedule, today, &ends);
+            view.points = points(ends.into_iter().zip(values).collect(), scenario);
+        }
         AccountFamily::FixedSavings => {
             let parts = fixed_parts(db, ctx, row, scenario, contribution, today, &ends).await?;
             let (rates, terms) = (&parts.rates, ctx.terms.get(&row.id));

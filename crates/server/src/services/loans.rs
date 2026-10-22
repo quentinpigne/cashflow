@@ -475,3 +475,33 @@ pub async fn unpay(db: &Db, account: AccountId, number: u32) -> AppResult<()> {
     tx.commit().await?;
     Ok(())
 }
+
+// ---------------------------------------------------------------- Projections (R-PRJ-10, R-PRJ-40)
+
+/// Une échéance à venir, vue du compte payeur.
+pub struct UpcomingDebit {
+    pub date: Date,
+    /// Montant prélevé (mensualité + assurance), négatif.
+    pub amount: Money,
+    pub label: String,
+}
+
+/// Échéances non payées des prêts payés par ce compte, datées après `after` et au plus tard `until` (R-PRJ-10).
+pub async fn upcoming_debits(db: &Db, payer: AccountId, after: Date, until: Date) -> AppResult<Vec<UpcomingDebit>> {
+    let mut result = Vec::new();
+    for row in db::loans::list(&db.read).await?.into_iter().filter(|r| r.payer_account_id == payer) {
+        let Some(loan) = db::accounts::find(&db.read, row.account_id).await? else { continue };
+        let paid: HashSet<u32> =
+            db::loans::payments(&db.read, row.account_id).await?.iter().map(|p| p.installment_number).collect();
+        for i in loans::schedule(&row.terms)? {
+            if i.date > after && i.date <= until && !paid.contains(&i.number) {
+                result.push(UpcomingDebit {
+                    date: i.date,
+                    amount: -i.total(),
+                    label: format!("{} — échéance n° {}", loan.name, i.number),
+                });
+            }
+        }
+    }
+    Ok(result)
+}

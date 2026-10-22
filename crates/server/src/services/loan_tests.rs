@@ -234,3 +234,55 @@ async fn r_cpt_17_a_paid_installment_is_locked_until_its_split_is_undone() {
     assert_eq!(value(&db, f.loan, "2026-01-31").await, -20_000_000);
     assert!(loans::get(&db, f.loan, d("2026-01-31")).await.unwrap().installments[0].paid_transaction_id.is_none());
 }
+
+// ---------------------------------------------------------------- Projections (R-PRJ-10, R-PRJ-40)
+
+#[tokio::test]
+async fn r_prj_10_payer_cash_projection_counts_each_installment_once() {
+    use super::projections::{self, CashQuery};
+    use super::recurring::{self, RecurringRuleInput};
+    use cashflow_domain::recurrence::Frequency;
+
+    let (db, _dir) = setup().await;
+    let f = fixture(&db).await;
+    loans::save_terms(&db, f.loan, &input(&f), d("2026-01-31")).await.unwrap();
+    // Une récurrence du même montant que l'échéance, souvent saisie avant les conditions : ignorée.
+    let duplicate = RecurringRuleInput {
+        account_id: f.checking,
+        target_account_id: None,
+        label: "Prêt".into(),
+        amount_minor: -115_920,
+        amount_tolerance_minor: 0,
+        frequency: Frequency::Monthly,
+        interval: 1,
+        anchor_date: d("2026-01-05"),
+        end_date: None,
+        split_template: Vec::new(),
+        active: true,
+    };
+    recurring::save(&db, None, &duplicate, d("2026-01-31")).await.unwrap();
+    let query = CashQuery { days: Some(60), variable: Some(false), threshold_minor: None };
+    let view = projections::cash(&db, f.checking, &query, d("2026-01-31")).await.unwrap();
+    let installments: Vec<(cashflow_domain::Date, i64)> =
+        view.events.iter().filter(|e| e.amount_minor == -115_920).map(|e| (e.date, e.amount_minor)).collect();
+    assert_eq!(installments, [(d("2026-02-05"), -115_920), (d("2026-03-05"), -115_920)]);
+    assert!(view.events.iter().all(|e| e.label != "Prêt"));
+}
+
+#[tokio::test]
+async fn r_prj_40_loan_projection_follows_its_schedule() {
+    use super::projections::{self, ProjectionQuery};
+
+    let (db, _dir) = setup().await;
+    let f = fixture(&db).await;
+    loans::save_terms(&db, f.loan, &input(&f), d("2026-01-01")).await.unwrap();
+    let query = ProjectionQuery { scenario_id: None, months: Some(3) };
+    let view = projections::account(&db, f.loan, &query, d("2026-01-01")).await.unwrap();
+    let schedule = loans::get(&db, f.loan, d("2026-01-01")).await.unwrap().installments;
+    // À chaque fin de mois, la dette vaut le capital restant dû du tableau après les échéances passées.
+    assert_eq!(view.points.len(), 3);
+    for point in &view.points {
+        let remaining = schedule.iter().rfind(|i| i.date <= point.date).unwrap().remaining_minor;
+        assert_eq!(point.value_minor, -remaining, "{}", point.date);
+    }
+}

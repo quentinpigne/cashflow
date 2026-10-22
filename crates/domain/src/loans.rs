@@ -179,6 +179,17 @@ pub fn matching_installment<'a>(
         .min_by_key(|i| (i.date - date).num_days().abs())
 }
 
+/// Dette projetée en fin de chaque période (R-PRJ-40) : la valeur actuelle du compte (négative), diminuée des
+/// parts de capital des échéances datées après aujourd'hui et au plus tard à cette date.
+pub fn projected_debt(current: Money, schedule: &[Installment], today: Date, ends: &[Date]) -> Vec<Money> {
+    ends.iter()
+        .map(|end| {
+            let repaid: Money = schedule.iter().filter(|i| i.date > today && i.date <= *end).map(|i| i.principal).sum();
+            (current + repaid).min(Money::ZERO)
+        })
+        .collect()
+}
+
 /// Répartition d'une mensualité payée (R-CPT-17). Montants positifs, de somme égale au montant payé.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PaymentParts {
@@ -320,6 +331,19 @@ mod tests {
         let parts = payment_parts(&rows[0], m(-115_960)).unwrap();
         assert_eq!(parts, PaymentParts { principal: m(60_920), interest: m(50_000), insurance: m(5_040) });
         assert_eq!(payment_parts(&rows[0], m(-117_000)), Err(DomainError::InstallmentMismatch));
+    }
+
+    #[test]
+    fn r_prj_40_debt_follows_the_schedule() {
+        let rows = schedule(&reference()).unwrap();
+        let today = d("2026-01-20");
+        let current = -rows[0].remaining;
+        let ends = [d("2026-01-31"), d("2026-02-28"), d("2026-03-31"), d("2050-12-31")];
+        let projected = projected_debt(current, &rows, today, &ends);
+        assert_eq!(projected[0], current);
+        assert_eq!(projected[1], current + rows[1].principal);
+        assert_eq!(projected[2], current + rows[1].principal + rows[2].principal);
+        assert_eq!(projected[3], Money::ZERO);
     }
 
     #[test]

@@ -35,8 +35,8 @@
           </div>
           <p class="muted small">
             Départ : patrimoine du {{ w.today | frDate }}, {{ w.start_minor | money }}. Liquidités
-            constantes (moins les virements programmés vers l'épargne), prêts à leur dernière
-            valeur.
+            constantes (moins les virements programmés vers l'épargne), prêts selon leur tableau
+            d'amortissement (sinon à leur dernière valeur), biens à leur dernière valeur.
             {{ disclaimer }}
           </p>
           @if (w.estimated_accounts.length > 0) {

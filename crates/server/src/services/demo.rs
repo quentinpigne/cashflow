@@ -463,7 +463,6 @@ async fn recurrences(
     use cashflow_domain::recurrence::Frequency;
     let rules = [
         ("Loyer", 3, -89_000, c.get("Logement", "Loyer"), None, 0),
-        ("Échéance prêt immobilier", 5, -LOAN_INSTALLMENT, c.get("Prêts", ""), None, 0),
         ("Box internet", 6, -2_999, c.get("Abonnements", "Internet"), None, 0),
         ("Forfait mobile", 15, -1_299, c.get("Abonnements", "Téléphone"), None, 0),
         ("Électricité et gaz", 10, -8_000, c.get("Logement", "Gaz, électricité, eau"), None, 1_700),

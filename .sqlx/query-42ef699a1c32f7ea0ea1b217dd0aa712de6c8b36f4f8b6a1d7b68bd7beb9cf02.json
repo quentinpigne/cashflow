@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT transaction_id FROM loan_payment",
+  "describe": {
+    "columns": [
+      {
+        "name": "transaction_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "transaction_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "42ef699a1c32f7ea0ea1b217dd0aa712de6c8b36f4f8b6a1d7b68bd7beb9cf02"
+}
