@@ -17,6 +17,10 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Nature de compte | `AccountKind` | Sous-type précis d'un compte (`CHECKING`, `LIVRET_A`, `PEA`…). Détermine sa famille. |
 | Solde d'ouverture | `opening_balance` | Solde du compte à sa date d'ouverture dans l'application (pas forcément sa date d'ouverture réelle). |
 | Solde calculé | `computed balance` | Solde d'ouverture + somme des transactions jusqu'à une date. Jamais stocké comme vérité. |
+| Conditions de prêt | `LoanTerms` | Capital emprunté, taux, durée, première échéance, assurance et compte payeur d'un prêt (ADR-0020). |
+| Tableau d'amortissement | `AmortizationSchedule` | Échéances d'un prêt calculées à partir de ses conditions : capital, intérêts, assurance et capital restant dû de chacune. Jamais stocké. |
+| Échéance de prêt | `LoanInstallment` | Ligne du tableau d'amortissement. À distinguer de l'échéance prévue d'une récurrence. |
+| Capital restant dû | `outstanding principal` | Ce qu'il reste à rembourser d'un prêt. Valeur (négative) du compte de prêt ; le tableau en donne la valeur théorique. |
 | Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…) ou d'un bien, ou capital restant dû d'un prêt (valeur négative), à une date. |
 | Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |
 
@@ -34,7 +38,8 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Ventilation | `Split` | Part d'une transaction affectée à une catégorie. Toute transaction a au moins une ventilation. |
 | Catégorie | `Category` | Poste de classement d'une ventilation (« Alimentation > Restaurants »). Nature revenu ou dépense. |
 | Nature de catégorie | `CategoryKind` | `INCOME` (revenu) ou `EXPENSE` (dépense). |
-| Virement interne | `Transfer` | Lien entre deux transactions de sens opposé sur deux comptes suivis. Ni revenu ni dépense. |
+| Virement interne | `Transfer` | Lien entre deux ventilations de sens opposé, de deux transactions sur deux comptes suivis (ADR-0021). Ni revenu ni dépense. |
+| Ventilation de virement | `transfer split` | Ventilation reliée par un virement interne : sans catégorie, exclue des revenus, des dépenses et des budgets. |
 | Jambe (de virement) | `leg` | L'une des deux transactions d'un virement interne. |
 | Statut de pointage | `ClearingStatus` | `PENDING` (saisie, non vue en banque), `CLEARED` (vue sur un relevé), `RECONCILED` (couverte par un point de contrôle validé). |
 | Origine | `TransactionOrigin` | `MANUAL`, `IMPORT`, `RECURRING`, `INTEREST` (intérêts générés). |

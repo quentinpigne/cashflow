@@ -47,6 +47,7 @@ qui ne sont pas répétés ci-dessous.
 erDiagram
     Institution ||--o{ Account : "tient"
     Account ||--o| FixedSavingsTerms : "conditions (si épargne fixe)"
+    Account ||--o| LoanTerms : "conditions (si prêt)"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -54,8 +55,8 @@ erDiagram
     Transaction ||--|{ Split : "ventilée en"
     Category ||--o{ Split : "classe"
     Category ||--o{ Category : "parent de"
-    Transaction ||--o| Transfer : "jambe sortante"
-    Transaction ||--o| Transfer : "jambe entrante"
+    Split ||--o| Transfer : "jambe sortante"
+    Split ||--o| Transfer : "jambe entrante"
     Account ||--o{ RecurringRule : "échéancier"
     RecurringRule ||--o{ Transaction : "a généré"
     Account ||--o{ ImportBatch : "reçoit"
@@ -141,6 +142,24 @@ erDiagram
 
 Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu).
 
+### LoanTerms (0–1 avec un compte `LIABILITY`, ADR-0020)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `account_id` | `Id` → Account | clé primaire ; compte de famille `LIABILITY` |
+| `principal` | `Money` | requis, > 0 : capital emprunté |
+| `annual_rate` | `Rate` | requis, ≥ 0 : taux nominal annuel, hors assurance |
+| `duration_months` | entier | requis, 1 à 600 |
+| `first_installment_date` | `Date` | requis |
+| `insurance_mode` | enum | `NONE` \| `FIXED` \| `RATE_ON_PRINCIPAL` |
+| `insurance_amount` | `Money` | requis et ≥ 0 si `FIXED`, `null` sinon : assurance mensuelle |
+| `insurance_rate` | `Rate` | requis et ≥ 0 si `RATE_ON_PRINCIPAL`, `null` sinon : taux annuel sur le capital emprunté |
+| `payer_account_id` | `Id` → Account | requis ; compte de famille `CASH` qui paie les mensualités |
+| `interest_category_id` | `Id` → Category | requis ; catégorie de dépense |
+| `insurance_category_id` | `Id` → Category | requis si une assurance existe ; catégorie de dépense |
+
+Le tableau d'amortissement en découle (R-CPT-16) et n'est pas stocké.
+
 ### Valuation (comptes `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY`)
 
 | Champ | Type | Contraintes |
@@ -190,10 +209,10 @@ Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `
 |---|---|---|
 | `transaction_id` | `Id` → Transaction | requis, suppression en cascade |
 | `amount` | `Money` | requis, ≠ 0 |
-| `category_id` | `Id` → Category | optionnel (`null` = non catégorisé) ; **doit être `null`** sur une jambe de virement |
+| `category_id` | `Id` → Category | optionnel (`null` = non catégorisé) ; **doit être `null`** sur une ventilation de virement |
 | `note` | texte | optionnel |
 | `position` | entier | ordre d'affichage |
-| `project_id` | `Id` → Project | optionnel ; projet `ACTIVE` à l'affectation (R-BUD-24) |
+| `project_id` | `Id` → Project | optionnel ; projet `ACTIVE` à l'affectation (R-BUD-24) ; `null` sur une ventilation de virement |
 
 Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (ADR-0003).
 
@@ -201,11 +220,12 @@ Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (AD
 
 | Champ | Type | Contraintes |
 |---|---|---|
-| `outflow_transaction_id` | `Id` → Transaction | requis, unique, montant < 0 |
-| `inflow_transaction_id` | `Id` → Transaction | requis, unique, montant > 0 |
+| `outflow_split_id` | `Id` → Split | requis, unique, montant < 0 (ADR-0021) |
+| `inflow_split_id` | `Id` → Split | requis, unique, montant > 0 |
 | `note` | texte | optionnel |
 
-Invariants : comptes distincts, même devise, montants opposés (ADR-0004).
+Invariants : comptes distincts, même devise, montants des deux ventilations opposés (ADR-0004,
+ADR-0021) ; une transaction porte au plus une ventilation de virement.
 
 ### RecurringRule
 

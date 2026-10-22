@@ -25,7 +25,8 @@ Répondre à trois questions :
 ## Projection de trésorerie (comptes `CASH`)
 
 - **R-PRJ-10** — Solde projeté jour par jour = solde calculé aujourd'hui + transactions `PENDING`
-  datées dans le futur + échéances prévues des récurrences (R-TRX-40) non encore honorées.
+  datées dans le futur + échéances prévues des récurrences (R-TRX-40) non encore honorées + échéances
+  futures des prêts dont c'est le compte payeur (R-CPT-16), non encore payées.
 - **R-PRJ-11** — Une dépense variable moyenne est **incluse par défaut**, et désactivable : moyenne
   des dépenses **non récurrentes** des 3 derniers mois complets, répartie uniformément sur les jours.
   Elle est affichée séparément des échéances connues.
@@ -67,9 +68,10 @@ Répondre à trois questions :
 
 - **R-PRJ-40** — Patrimoine projeté = Σ projections des comptes inclus dans le patrimoine, sous un même
   scénario. Les comptes `CASH` sont projetés à leur solde actuel, constant au-delà de l'horizon de
-  trésorerie (pas de dérive spéculative). Les comptes `LIABILITY` sont projetés à leur dernière valeur,
-  constante, faute de tableau d'amortissement en V1. Les comptes `PROPERTY` aussi, sans plus-value ni
-  dépréciation supposées (ADR-0019).
+  trésorerie (pas de dérive spéculative). Un compte `LIABILITY` avec des conditions de prêt suit son
+  tableau d'amortissement (R-CPT-16) : sa valeur actuelle diminuée des parts de capital des échéances
+  futures. Sans conditions, il est projeté à sa dernière valeur, constante. Les comptes `PROPERTY` sont
+  projetés à leur dernière valeur, sans plus-value ni dépréciation supposées (ADR-0019).
 - **R-PRJ-41** — Les virements internes programmés sont pris en compte **des deux côtés** : ils
   réduisent le compte source et augmentent la cible. Le patrimoine n'est donc pas gonflé par les flux
   internes.

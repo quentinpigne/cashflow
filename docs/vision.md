@@ -72,6 +72,7 @@ Les données sont sensibles et ne doivent pas quitter mon contrôle sans action 
   est suivie par valorisations saisies ou importées (ADR-0010). Le suivi des lignes pourra venir en V2.
 - **Déclaration fiscale.** Les projections peuvent estimer un net de fiscalité, mais l'application
   ne remplace pas un conseil fiscal.
-- **Tableaux d'amortissement des prêts.** En V1, un prêt est suivi par son capital restant dû,
-  saisi périodiquement (spec 01) ; l'échéancier détaillé est à envisager après la V1.
+- **Prêts complexes.** La V1 calcule le tableau d'amortissement d'un prêt amortissable à taux fixe
+  (ADR-0020) ; le différé, le remboursement anticipé, le taux variable et le prêt in fine viendront
+  après la V1.
 - **Score financier synthétique** : trop arbitraire.

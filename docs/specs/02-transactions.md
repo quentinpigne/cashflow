@@ -18,7 +18,10 @@ Transaction  −120,00 €  « CARREFOUR MARKET 12/03 »
 ```
 
 Un **virement interne** relie deux transactions, l'une sortante et l'autre entrante, sur deux
-comptes suivis. Il n'est **ni un revenu ni une dépense** : il déplace de l'argent.
+comptes suivis. Il n'est **ni un revenu ni une dépense** : il déplace de l'argent. Le lien porte
+précisément sur une **ventilation** de chaque transaction (ADR-0021) : un virement ordinaire relie deux
+transactions à ventilation unique ; une mensualité de prêt porte une ventilation de virement (le
+capital) à côté de ses dépenses (intérêts, assurance).
 Un versement vers un compte **non suivi** (le livret d'un enfant dans une autre banque, par
 exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catégorisée.
 
@@ -79,13 +82,15 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
 
 ### Virements internes
 
-- **R-TRX-30** — Un virement relie exactement une transaction sortante (< 0) et une transaction
-  entrante (> 0), sur deux comptes **différents** de **même devise**, avec des montants **opposés**
-  (ADR-0004).
+- **R-TRX-30** — Un virement relie exactement une ventilation sortante (< 0) et une ventilation
+  entrante (> 0), de deux transactions sur deux comptes **différents** de **même devise**, avec des
+  montants **opposés** (ADR-0004, ADR-0021). Une transaction porte au plus une ventilation de virement.
 - **R-TRX-31** — Les deux jambes peuvent avoir des dates différentes (exécution à J+1, J+2). Un écart
   de plus de 7 jours est signalé.
-- **R-TRX-32** — Chaque jambe a une seule ventilation, **sans catégorie**. Un virement n'entre ni
-  dans les revenus, ni dans les dépenses, ni dans les budgets.
+- **R-TRX-32** — Une ventilation de virement n'a ni catégorie ni projet. Elle n'entre ni dans les
+  revenus, ni dans les dépenses, ni dans les budgets, ni dans le total non catégorisé. Une jambe de
+  virement a une seule ventilation, sauf la mensualité d'un prêt ventilée selon son tableau
+  d'amortissement (R-CPT-17), qui porte aussi des ventilations de dépense.
 - **R-TRX-33** — Créer un virement depuis la saisie crée les deux jambes d'un coup (statut `PENDING`).
   Lier deux transactions existantes (cas typique après import) remplace leurs ventilations par une
   ventilation sans catégorie, après confirmation si elles étaient catégorisées.

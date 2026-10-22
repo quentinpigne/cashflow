@@ -72,6 +72,12 @@ mois, réimport sans doublon.
 - PRJ-01 à PRJ-05
 - TDB-04
 
+## Compléments V1 (2026-10-22)
+
+- ADR-0019 — famille « Bien » (`PROPERTY`) dans le patrimoine
+- CPT-09 — conditions d'un prêt et tableau d'amortissement calculé (ADR-0020)
+- CPT-10 — ventilation des mensualités en capital, intérêts et assurance (ADR-0021)
+
 ## Phase 7 — V2 (à prioriser plus tard)
 
 - IMP-12 (PDF générique OCR), IMP-13
