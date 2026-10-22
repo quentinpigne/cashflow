@@ -4,6 +4,8 @@
 
 html {
   height: 100%;
+  // Espace entre deux champs de formulaire, verticalement comme horizontalement (ecrans.md, principes).
+  --field-gap: 1rem;
   @include mat.theme(
     (
       color: (
@@ -108,6 +110,17 @@ input.amount {
   background: var(--mat-sys-surface-container-low);
   border-radius: var(--mat-sys-corner-large);
   padding: 1rem;
+}
+
+// Contenu d'une popup : Material ne laisse aucun espace sous le titre ni au-dessus des boutons, et le
+// contenu, qui défile, rogne ce qui en dépasse (étiquette flottante du premier champ, ombre d'un
+// accordéon en bas). Sélecteurs préfixés pour l'emporter sur ceux de Material.
+.cdk-overlay-pane .mat-mdc-dialog-container .mat-mdc-dialog-title + .mat-mdc-dialog-content {
+  padding-top: 0.5rem;
+}
+
+.cdk-overlay-pane .mat-mdc-dialog-container-with-actions .mat-mdc-dialog-content {
+  padding-bottom: 0.5rem;
 }
 
 // Titre d'un encadré de l'accueil (E1) : le même pour tous, lien ou non. La marge de droite laisse la

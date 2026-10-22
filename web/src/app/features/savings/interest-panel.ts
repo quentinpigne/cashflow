@@ -113,7 +113,7 @@ const METHOD_LABELS: Record<InterestMethod, string> = {
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: var(--field-gap);
       min-width: min(26rem, 80vw);
     }
     .error {

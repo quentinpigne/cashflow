@@ -130,7 +130,7 @@ interface Draft {
     .editor {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-      gap: 0.5rem;
+      gap: var(--field-gap);
       margin-bottom: 1rem;
       .actions {
         grid-column: 1 / -1;

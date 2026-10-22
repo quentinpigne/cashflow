@@ -64,7 +64,7 @@ import { errorMessage, problemOf } from '../../core/http-errors';
     form {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--field-gap);
     }
     .error {
       color: var(--mat-sys-error);

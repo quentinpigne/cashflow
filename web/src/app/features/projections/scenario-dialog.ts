@@ -242,13 +242,13 @@ interface PathRow {
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       min-width: min(36rem, 85vw);
     }
     .line {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       > * {
         flex: 1;
         min-width: 8rem;

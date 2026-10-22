@@ -147,7 +147,7 @@ interface Draft {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       margin-top: 0.75rem;
     }
     .rate {

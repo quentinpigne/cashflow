@@ -118,12 +118,12 @@ import { BudgetGauge } from './gauge';
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       min-width: min(26rem, 80vw);
     }
     .dates {
       display: flex;
-      gap: 0.5rem;
+      gap: var(--field-gap);
     }
     .error {
       color: var(--mat-sys-error);

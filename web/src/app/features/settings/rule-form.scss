@@ -1,7 +1,7 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--field-gap);
 }
 
 h3 {
@@ -12,7 +12,7 @@ h3 {
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--field-gap);
   align-items: center;
 
   .grow {

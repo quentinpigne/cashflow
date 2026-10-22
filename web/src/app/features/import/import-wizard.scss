@@ -8,7 +8,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: 0.5rem 0.75rem;
+  gap: var(--field-gap);
   align-items: center;
 
   .wide {

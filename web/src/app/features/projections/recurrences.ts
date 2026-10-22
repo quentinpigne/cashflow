@@ -181,12 +181,12 @@ type Direction = 'out' | 'in' | 'transfer';
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       min-width: min(28rem, 80vw);
     }
     .row {
       display: flex;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       > * {
         flex: 1;
       }

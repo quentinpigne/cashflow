@@ -75,7 +75,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: var(--field-gap);
     }
     .warning {
       color: var(--mat-sys-tertiary);

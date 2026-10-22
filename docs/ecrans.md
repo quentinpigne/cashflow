@@ -22,8 +22,8 @@ composant visé, pour guider l'implémentation.
   sortie, sans signe `+` pour une entrée. Saisie toujours positive, le sens est choisi à part
   (dépense ou revenu).
 - **Champs** : tous de la même taille, compacts (densité -3 des champs Material, 44 px de haut), y
-  compris les montants ; texte des champs à 16 px (sous cette taille, Safari sur iPhone zoome à la
-  saisie).
+  compris les montants, et séparés partout du même écart (1rem, variable CSS `--field-gap`) ; texte
+  des champs à 16 px (sous cette taille, Safari sur iPhone zoome à la saisie).
 - **Dates** : `12 mars 2026` dans les listes, `12/03/2026` dans les champs `[mat-datepicker]`, locale
   `fr-FR`, semaine commençant le lundi.
 - **Erreurs métier** : le message de l'API (ADR-0016) s'affiche sous le champ concerné, ou dans une

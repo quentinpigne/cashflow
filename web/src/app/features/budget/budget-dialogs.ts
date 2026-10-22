@@ -164,7 +164,7 @@ export interface LineCreateData {
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: var(--field-gap);
       min-width: min(24rem, 80vw);
     }
     .error {
@@ -364,7 +364,7 @@ export interface LineEditData {
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: var(--field-gap);
       min-width: min(26rem, 80vw);
     }
     .scope {
@@ -373,7 +373,7 @@ export interface LineEditData {
     }
     .thresholds {
       display: flex;
-      gap: 0.5rem;
+      gap: var(--field-gap);
     }
     .secondary {
       display: flex;

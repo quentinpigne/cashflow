@@ -1,15 +1,13 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  // En bas, de la place pour l'ombre de l'accordéon : le contenu de la popup, qui défile, la rognerait.
-  padding: 0.5rem 0;
+  gap: var(--field-gap);
 }
 
 .pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: var(--field-gap);
 
   @media (max-width: 599.98px) {
     grid-template-columns: 1fr;

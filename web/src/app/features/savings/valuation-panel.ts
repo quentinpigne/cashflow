@@ -80,7 +80,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
     .form {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: var(--field-gap);
       min-width: min(22rem, 80vw);
     }
     .error {
