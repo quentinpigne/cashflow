@@ -16,8 +16,8 @@
   }
 }
 
+// Même taille que les autres champs ; seuls les chiffres sont à chasse fixe.
 .amount-field input {
-  font: var(--mat-sys-headline-medium);
   font-variant-numeric: tabular-nums;
 }
 
