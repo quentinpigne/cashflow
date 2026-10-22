@@ -97,8 +97,8 @@ erDiagram
 | `account_number` | texte ≤ 30 | optionnel |
 | `closed_on` | `Date` | optionnel, ≥ `opening_date` |
 | `include_in_net_worth` | booléen | défaut `true` |
-| `include_in_emergency_fund` | booléen | défaut `true` pour `CASH`, `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE` ; `false` sinon ; toujours `false` pour `LIABILITY` (R-CPT-13) |
-| `include_in_budget` | booléen | défaut `true` pour `CASH`, `false` sinon ; toujours `false` pour `VARIABLE_SAVINGS` et `LIABILITY` (R-BUD-1) |
+| `include_in_emergency_fund` | booléen | défaut `true` pour `CASH`, `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE` ; `false` sinon ; toujours `false` pour `LIABILITY` et `PROPERTY` (R-CPT-13) |
+| `include_in_budget` | booléen | défaut `true` pour `CASH`, `false` sinon ; toujours `false` pour `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY` (R-BUD-1) |
 | `display_order` | entier | défaut 0 |
 | `color` | texte | optionnel |
 | `notes` | texte | optionnel |
@@ -111,6 +111,7 @@ erDiagram
 | `FIXED_SAVINGS` | `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE`, `CEL`, `PEL`, `TERM_DEPOSIT`, `SAVINGS_OTHER` |
 | `VARIABLE_SAVINGS` | `LIFE_INSURANCE`, `PEA`, `PEA_PME`, `PER`, `SECURITIES`, `EMPLOYEE_SAVINGS`, `CRYPTO`, `VARIABLE_OTHER` |
 | `LIABILITY` | `MORTGAGE`, `CONSUMER_LOAN`, `LOAN_OTHER` |
+| `PROPERTY` | `REAL_ESTATE`, `VEHICLE`, `PROPERTY_OTHER` (ADR-0019) |
 
 ### FixedSavingsTerms (1–1 avec un compte `FIXED_SAVINGS`)
 
@@ -140,7 +141,7 @@ erDiagram
 
 Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu).
 
-### Valuation (comptes `VARIABLE_SAVINGS` et `LIABILITY`)
+### Valuation (comptes `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY`)
 
 | Champ | Type | Contraintes |
 |---|---|---|

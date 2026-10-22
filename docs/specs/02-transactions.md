@@ -99,7 +99,7 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
   - sinon, ou si l'utilisateur le demande, l'application **crée la jambe opposée** sur C : même date,
     montant opposé, même libellé, origine `MANUAL`, ventilation unique sans catégorie. Son statut est
     `PENDING` si C est de famille `CASH` ou `FIXED_SAVINGS` (un import ultérieur de C la pointera,
-    R-IMP-9, en renseignant sa `bank_date`) et `CLEARED` si C est de famille `VARIABLE_SAVINGS` ou `LIABILITY` (pas de
+    R-IMP-9, en renseignant sa `bank_date`) et `CLEARED` si C est de famille `VARIABLE_SAVINGS`, `LIABILITY` ou `PROPERTY` (pas de
     rapprochement sur ces comptes, R-RAP-10) ;
   - la création est refusée si la date est hors de la période d'ouverture de C (R-CPT-3), ou si elle
     tombe dans une période rapprochée de C (R-RAP-7).

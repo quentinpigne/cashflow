@@ -162,10 +162,10 @@ modifiée. Un encadré sans contenu (aucune alerte, rien à catégoriser) reste 
 ## E2 — Comptes (CPT-01, CPT-03)
 
 Liste de tous les comptes, **groupés par famille** (Liquidités, Épargne à taux fixe, Épargne variable,
-Passifs), avec le total de chaque groupe. Ordre dans un groupe : `display_order`, puis nom.
+Biens, Passifs), avec le total de chaque groupe. Ordre dans un groupe : `display_order`, puis nom.
 
-- Chaque ligne : nom, établissement, solde (CPT-03). Pour un compte d'épargne variable ou un prêt, la
-  valeur suit R-CPT-6 ; en phase 1, sans valorisation (CPT-06 en V1), c'est le solde d'ouverture plus
+- Chaque ligne : nom, établissement, solde (CPT-03). Pour un compte d'épargne variable, un bien ou un
+  prêt, la valeur suit R-CPT-6 ; en phase 1, sans valorisation (CPT-06 en V1), c'est le solde d'ouverture plus
   les flux.
 - Un compte en devise autre que l'euro porte la devise et la mention « hors totaux » (R-CPT-2).
 - Les **comptes clôturés** sont regroupés dans une section repliée en bas `[mat-expansion-panel]`.
@@ -223,7 +223,8 @@ Formulaire `[mat-dialog]` sur ordinateur, plein écran sur mobile.
 2. **Nom** (requis), **établissement** (optionnel, liste des établissements non archivés, R-CPT-10, avec
    « Nouvel établissement… » en bas de liste).
 3. **Date d'ouverture** et **solde d'ouverture** (requis, défaut 0). Pour un prêt, le capital restant dû
-   est saisi en positif et enregistré en négatif (R-CPT-12), ce que le libellé du champ indique.
+   est saisi en positif et enregistré en négatif (R-CPT-12), ce que le libellé du champ indique. Pour un
+   bien, le champ s'intitule « Valeur du bien » et suggère le prix d'achat (R-CPT-14).
 4. **Coordonnées bancaires**, section repliée : IBAN (validé à la saisie, R-CPT-8), numéro de compte.
 5. **Options**, section repliée, préremplies selon la nature : compter dans le patrimoine, dans
    l'épargne de précaution (R-CPT-13), dans les budgets (R-CPT-11). Devise (EUR par défaut, non
@@ -511,14 +512,14 @@ Ce qui change dans les écrans existants :
 - « Conditions » : barème (lien vers E22), méthode (seules les quinzaines sont calculées en V1),
   plafond, catégorie des intérêts, arrondi à chaque quinzaine (R-EPA-6).
 
-## E3 — Fiche d'un compte à rendement variable ou d'un prêt (CPT-06, EPA-05, EPA-06)
+## E3 — Fiche d'un compte à rendement variable, d'un bien ou d'un prêt (CPT-06, EPA-05, EPA-06)
 
 - **Performance** (épargne variable) : valeur (« estimée » si la dernière valorisation a plus de
   90 jours), capital investi, plus-value en € et en %, TRI depuis l'ouverture et depuis le 1er janvier,
   performance pondérée par le temps (signalée comme une approximation), tableau par année civile
   (« données insuffisantes » sans valorisation à ±15 jours du 31/12).
 - **Valorisations** (ou **Capital restant dû** pour un prêt, saisi en positif et enregistré en
-  négatif) : liste datée, « Ajouter », suppression ; une saisie à une date déjà valorisée demande de
+  négatif ; **Valeur du bien** pour un bien, sans bloc Performance) : liste datée, « Ajouter », suppression ; une saisie à une date déjà valorisée demande de
   confirmer le remplacement.
 
 ## E22 — Barèmes de taux (EPA-01)

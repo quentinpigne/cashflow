@@ -14,6 +14,7 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
 | `FIXED_SAVINGS` (épargne à taux déterminé) | Livret A, LDDS, LEP, Livret Jeune, CEL, PEL, compte à terme | Calculé (les intérêts sont des transactions) | Non, sauf intérêts | Intérêts calculés, projection déterministe |
 | `VARIABLE_SAVINGS` (épargne à rendement variable) | Assurance vie, PEA, PEA-PME, PER, compte-titres, épargne salariale, crypto | **Dernière valorisation** (cf. R-CPT-6) | Non | Valorisations, performance, projection par scénarios |
 | `LIABILITY` (passif) | Prêt immobilier, prêt à la consommation | **Dernier capital restant dû**, négatif (cf. R-CPT-6, R-CPT-12) | Non | — |
+| `PROPERTY` (bien) | Bien immobilier, véhicule | **Dernière valorisation** (cf. R-CPT-6, R-CPT-14) | Non | — |
 
 > « Taux fixe » au sens du produit : le taux est **connu à l'avance** pour chaque période,
 > même s'il change dans le temps (le taux du Livret A est révisé). Ce qui compte est qu'on
@@ -33,11 +34,11 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
   source de vérité (ADR-0002).
 - **R-CPT-5** — Un compte ne peut être clôturé que si son solde calculé à `closed_on` vaut 0,
   ou après confirmation explicite (cas d'un compte abandonné avec un solde résiduel).
-- **R-CPT-6** — La valeur d'un compte `VARIABLE_SAVINGS` ou `LIABILITY` à une date D est la dernière
+- **R-CPT-6** — La valeur d'un compte `VARIABLE_SAVINGS`, `LIABILITY` ou `PROPERTY` à une date D est la dernière
   valorisation V (date Dv ≤ D) **plus les flux nets** (transactions du compte) enregistrés entre Dv
   (exclu) et D (inclus). Sans aucune valorisation, la valeur est `opening_balance` + flux nets. La
   valeur est marquée « estimée » lorsque la dernière valorisation date de plus de **90 jours** (seuil
-  réglable).
+  réglable), sauf pour un bien (R-CPT-14).
 - **R-CPT-7** — Un compte qui a des transactions ne peut pas être supprimé, seulement clôturé.
   Supprimer un compte vide supprime aussi ses conditions, valorisations et points de contrôle.
 - **R-CPT-8** — Un IBAN saisi est validé (longueur par pays, clé modulo 97) et affiché masqué
@@ -59,7 +60,15 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
 - **R-CPT-13** — Le drapeau `include_in_emergency_fund` détermine si le solde du compte compte dans les
   liquidités disponibles de l'épargne de précaution (spec 08, R-TDB-9). Prérempli à `true` pour les
   comptes courants, les espèces et les livrets réglementés disponibles à tout moment (Livret A, LDDS,
-  LEP, Livret Jeune) ; modifiable ; toujours `false` pour un prêt.
+  LEP, Livret Jeune) ; modifiable ; toujours `false` pour un prêt et pour un bien.
+- **R-CPT-14** — **Biens** (`PROPERTY`, ADR-0019). Un bien (logement, véhicule…) est un actif positif,
+  valorisé comme un compte d'épargne variable (R-CPT-6). Valeur conseillée à la création : le **prix
+  d'achat** (apport + capital emprunté, hors frais), de sorte que le patrimoine compte l'apport et le
+  capital déjà remboursé du prêt qui l'a financé ; les valorisations permettent de l'ajuster. Sa valeur
+  est conventionnelle et n'est jamais marquée « estimée ». Il compte dans le patrimoine par défaut,
+  jamais dans l'épargne de précaution ni dans les budgets. Ses transactions éventuelles (apport par
+  virement interne, travaux) suivent les règles de l'épargne variable : pointées d'office, sans point de
+  contrôle (R-RAP-10). Aucun lien n'est fait avec le prêt qui l'a financé.
 
 ## Features
 
@@ -70,7 +79,7 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
 | CPT-03 | MVP | Solde calculé à aujourd'hui et à une date donnée |
 | CPT-04 | MVP | Clôturer un compte |
 | CPT-05 | V1 | Conditions d'épargne fixe : barème de taux, méthode, plafond, échéance |
-| CPT-06 | V1 | Saisir des valorisations pour un compte variable ou un prêt |
+| CPT-06 | V1 | Saisir des valorisations pour un compte variable, un prêt ou un bien |
 | CPT-07 | V1 | Ordonner et colorer les comptes, les regrouper par famille dans la vue liste |
 | CPT-08 | V2 | Importer des valorisations (CSV) |
 
@@ -106,3 +115,4 @@ Critères d'acceptation :
 - La valeur du compte suit R-CPT-6 ; le tableau de bord affiche « estimée » si la valorisation
   est ancienne.
 - Pour un prêt, la valorisation saisie est le capital restant dû, en négatif (R-CPT-12).
+- Pour un bien, la valorisation saisie est sa valeur, en positif (R-CPT-14).

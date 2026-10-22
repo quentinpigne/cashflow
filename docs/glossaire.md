@@ -11,12 +11,13 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 |---|---|---|
 | Établissement | `Institution` | Banque, assureur ou courtier qui tient un ou plusieurs comptes. |
 | Compte | `Account` | Tout contenant d'argent suivi par l'application : compte courant, livret, assurance vie… |
-| Famille de compte | `AccountFamily` | Regroupement qui détermine le comportement d'un compte : `CASH`, `FIXED_SAVINGS`, `VARIABLE_SAVINGS`, `LIABILITY`. |
+| Famille de compte | `AccountFamily` | Regroupement qui détermine le comportement d'un compte : `CASH`, `FIXED_SAVINGS`, `VARIABLE_SAVINGS`, `LIABILITY`, `PROPERTY`. |
 | Passif, dette | `LIABILITY` | Famille des prêts. Valeur négative égale au capital restant dû. |
+| Bien | `PROPERTY` | Famille des biens possédés (logement, véhicule). Valeur positive, saisie par valorisations (ADR-0019). |
 | Nature de compte | `AccountKind` | Sous-type précis d'un compte (`CHECKING`, `LIVRET_A`, `PEA`…). Détermine sa famille. |
 | Solde d'ouverture | `opening_balance` | Solde du compte à sa date d'ouverture dans l'application (pas forcément sa date d'ouverture réelle). |
 | Solde calculé | `computed balance` | Solde d'ouverture + somme des transactions jusqu'à une date. Jamais stocké comme vérité. |
-| Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…) ou capital restant dû d'un prêt (valeur négative), à une date. |
+| Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…) ou d'un bien, ou capital restant dû d'un prêt (valeur négative), à une date. |
 | Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |
 
 ## Transactions

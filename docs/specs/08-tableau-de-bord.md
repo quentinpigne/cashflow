@@ -16,7 +16,7 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
 
 | Indicateur | Définition | Règle |
 |---|---|---|
-| **Patrimoine** (net) | Σ des soldes calculés (comptes `CASH` et `FIXED_SAVINGS`) et des valeurs (comptes `VARIABLE_SAVINGS` et `LIABILITY`, ces derniers négatifs, R-CPT-6) des comptes `include_in_net_worth`, à la date D. Le détail affiche l'actif brut et les dettes séparément. | R-TDB-1 |
+| **Patrimoine** (net) | Σ des soldes calculés (comptes `CASH` et `FIXED_SAVINGS`) et des valeurs (comptes `VARIABLE_SAVINGS`, `PROPERTY` et `LIABILITY`, ces derniers négatifs, R-CPT-6) des comptes `include_in_net_worth`, à la date D. Le détail affiche l'actif brut (biens compris, R-CPT-14) et les dettes séparément. | R-TDB-1 |
 | **Variation de patrimoine** | Patrimoine(fin M) − patrimoine(fin M−1), décomposée en **épargne du mois** (flux) et **effet de marché + intérêts** (le reste) | R-TDB-2 |
 | **Revenus** | Σ des ventilations sur des catégories `INCOME` | R-TDB-3 |
 | **Dépenses** | −Σ des ventilations sur des catégories `EXPENSE` (les remboursements viennent en déduction) | R-TDB-4 |
