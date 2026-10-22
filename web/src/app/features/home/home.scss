@@ -1,10 +1,6 @@
-// L'accueil prend toute la largeur ; le nombre de colonnes (--columns) suit la place disponible.
+// Le nombre de colonnes (--columns) suit la largeur disponible.
 :host {
   display: block;
-}
-
-.page {
-  max-width: none;
 }
 
 .grid {

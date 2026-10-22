@@ -16,6 +16,8 @@ composant visé, pour guider l'implémentation.
   et garde la navigation visible en permanence (architecture.md, § Interface).
 - Deux mises en page, un seul composant par écran : la bascule se fait à **600 px** de large
   (`BreakpointObserver` du CDK).
+- **Largeur** : chaque écran prend toute la largeur disponible, avec les mêmes marges à gauche et à
+  droite (1rem sur mobile, 2rem sur ordinateur).
 - **Montants** : format français (`1 234,56 €`), alignés à droite dans les tableaux, en rouge pour une
   sortie, sans signe `+` pour une entrée. Saisie toujours positive, le sens est choisi à part
   (dépense ou revenu).
@@ -96,7 +98,7 @@ Blocs, de haut en bas :
    **Bloc absent en phase 1** : toutes les transactions y sont saisies à la main et restent `PENDING`,
    l'alerte se déclencherait partout. Il apparaît en phase 2, avec le pointage par import.
 
-Sur ordinateur, l'accueil prend toute la largeur et les blocs se répartissent sur autant de colonnes que
+Sur ordinateur, les blocs se répartissent sur autant de colonnes que
 la place le permet (une colonne d'au moins 22rem, quatre au plus). En deux colonnes : patrimoine et mois
 en cours à gauche, comptes à droite, « à catégoriser » et alertes en dessous.
 

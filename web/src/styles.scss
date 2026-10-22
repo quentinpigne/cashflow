@@ -80,11 +80,15 @@ input.amount {
   color: var(--mat-sys-on-surface-variant);
 }
 
+// Conteneur de chaque écran : toute la largeur disponible, avec les mêmes marges partout (plus larges
+// sur ordinateur).
 .page {
   box-sizing: border-box;
-  max-width: 72rem;
-  margin: 0 auto;
   padding: 1rem;
+
+  @media (min-width: 600px) {
+    padding: 1rem 2rem;
+  }
 }
 
 .page-header {
