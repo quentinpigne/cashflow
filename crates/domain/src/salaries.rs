@@ -158,7 +158,8 @@ impl AnnualIncome {
     }
 }
 
-/// Revenu annuel d'un emploi pour une année ; rien si l'emploi ne la touche pas (R-SAL-7).
+/// Revenu annuel d'un emploi pour une année ; rien si l'emploi ne la touche pas (R-SAL-7). Les mois à venir
+/// comptent la rémunération en vigueur ou prévue, les primes prévues et la répétition des primes récurrentes.
 pub fn annual(job: &Job, pays: &[Pay], bonuses: &[Bonus], year: i32, today: Date) -> Option<AnnualIncome> {
     let mut net = Money::ZERO;
     let mut gross = Decimal::ZERO;
@@ -178,8 +179,20 @@ pub fn annual(job: &Job, pays: &[Pay], bonuses: &[Bonus], year: i32, today: Date
     if months == 0 && paid.is_empty() {
         return None;
     }
+    // Mois à venir : les primes récurrentes se répètent, au montant de leur dernière occurrence.
+    let repeated: Vec<&Bonus> = bonuses
+        .iter()
+        .filter(|b| b.recurring && b.paid_on.year() < year)
+        .filter(|b| bonuses.iter().filter(|o| o.label == b.label).map(|o| o.paid_on).max() == Some(b.paid_on))
+        .filter(|b| {
+            let years = u32::try_from(year - b.paid_on.year()).unwrap_or(0);
+            b.paid_on.checked_add_months(Months::new(12 * years)).is_some_and(|date| {
+                date > today && date >= job.start_date && job.end_date.is_none_or(|end| date <= end)
+            })
+        })
+        .collect();
     let mut gross_incomplete = incomplete;
-    for bonus in paid {
+    for bonus in paid.into_iter().chain(repeated) {
         net += bonus.net;
         match bonus.gross {
             Some(g) => gross += Decimal::from(g.minor()),
@@ -430,7 +443,10 @@ mod tests {
         let y2022 = annual(&job, &pays, &bonuses, 2022, today).unwrap();
         assert_eq!((y2022.net, y2022.gross, y2022.months), (eur(9_600), Money::from_minor(1_266_667), 4));
         assert!(!y2022.incomplete && !y2022.comparable());
-        assert!(annual(&job, &pays, &bonuses, 2026, today).unwrap().provisional);
+        // Année en cours : le 13e mois récurrent de décembre est compté (R-SAL-7).
+        let y2026 = annual(&job, &pays, &bonuses, 2026, today).unwrap();
+        assert!(y2026.provisional);
+        assert_eq!(y2026.net, eur(12 * 2_700 + 2_600));
         assert_eq!(annual(&job, &pays, &bonuses, 2021, today), None);
     }
 

@@ -51,7 +51,7 @@ La rubrique est **facultative**, comme Biens et Prêts.
   - brut = Σ, sur les mêmes mois, du brut annuel en vigueur / 12 + Σ des bruts des primes versées en Y.
   L'année est **incomplète** si l'un de ses mois est non renseigné (R-SAL-3), son brut aussi si une de ses
   primes n'a pas de brut. L'année en cours est **prévisionnelle** : ses mois à venir comptent la rémunération
-  en vigueur ou prévue et les primes prévues.
+  en vigueur ou prévue, les primes prévues et les primes récurrentes (R-SAL-11), sans hausse automatique.
 - **R-SAL-8** — L'évolution affiche, année par année, le net et le brut annuels de chaque emploi et de tous
   les emplois, et leur variation en pourcentage sur l'année précédente. Une variation n'est pas calculée
   quand l'une des deux années est incomplète ou ne couvre pas 12 mois d'emploi.

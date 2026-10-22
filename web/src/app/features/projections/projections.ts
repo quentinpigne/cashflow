@@ -28,16 +28,19 @@ import { ProjectionsService } from '../../api/services/projections.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
 import { KIND_LABELS } from '../../core/labels';
-import { formatChartValue, formatRate, toChartValue } from '../../core/money';
+import { formatChartValue, formatRate, formatRatePpm, toChartValue } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AccountsStore } from '../../shared/stores';
+import { AccountsStore, FeaturesStore } from '../../shared/stores';
+import { formatChange } from '../salaries/salaries';
 import { ScenarioDialog } from './scenario-dialog';
 
 const axisMoney = (v: number) => formatChartValue(v, 'EUR', { bare: true }).replace(/,00$/, '');
 
-/** E24 — Projections (PRJ-01 à PRJ-05) et historique du patrimoine (TDB-04). */
+const NEGATIVE = '#c62828';
+
+/** E24 — Projections (PRJ-01 à PRJ-05, PRJ-10, SAL-04) et historique du patrimoine (TDB-04). */
 @Component({
   selector: 'app-projections',
   imports: [
@@ -65,6 +68,7 @@ export class ProjectionsPage {
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   protected readonly accounts = inject(AccountsStore);
+  protected readonly features = inject(FeaturesStore);
 
   protected readonly disclaimer =
     'Hypothèses par défaut, non des prévisions : les rendements futurs sont incertains.';
@@ -116,6 +120,127 @@ export class ProjectionsPage {
       name: s.name,
       value: s.points[s.points.length - 1]?.value_minor ?? 0,
       real: s.points[s.points.length - 1]?.real_value_minor ?? null,
+    })),
+  );
+
+  // ------------------------------------------------------------ Capacité d'épargne (PRJ-10)
+
+  protected readonly capacityScenarios = computed(() =>
+    (this.worth.value()?.scenarios ?? []).filter((s) => s.capacity),
+  );
+  protected readonly capacityScenarioId = linkedSignal(
+    () =>
+      (this.capacityScenarios().find((s) => s.is_default) ?? this.capacityScenarios()[0])
+        ?.scenario_id ?? null,
+  );
+  protected readonly capacity = computed(
+    () =>
+      this.capacityScenarios().find((s) => s.scenario_id === this.capacityScenarioId())?.capacity ??
+      null,
+  );
+  /** Capacité détaillée en revenus, dépenses et échéances de prêts (R-PRJ-46). */
+  protected readonly detailed = signal(false);
+
+  protected readonly capacityChart = computed<EChartsCoreOption | null>(() => {
+    const c = this.capacity();
+    if (!c) return null;
+    const dates = c.points.map((p) => p.date);
+    const bar = (name: string, values: number[], color?: string) => ({
+      name,
+      type: 'bar',
+      stack: 'capacity',
+      ...(color ? { itemStyle: { color } } : {}),
+      data: values.map((v, i) => [dates[i], v]),
+    });
+    const series = this.detailed()
+      ? [
+          bar(
+            'Salaires',
+            c.points.map((p) => toChartValue(p.salaries_minor)),
+          ),
+          bar(
+            'Autres revenus',
+            c.points.map((p) => toChartValue(p.other_income_minor)),
+          ),
+          bar(
+            'Dépenses',
+            c.points.map((p) => -toChartValue(p.expenses_minor)),
+          ),
+          bar(
+            'Échéances de prêts',
+            c.points.map((p) => -toChartValue(p.loans_minor)),
+          ),
+        ]
+      : [
+          {
+            name: "Capacité d'épargne",
+            type: 'bar',
+            data: c.points.map((p) => ({
+              value: [p.date, toChartValue(p.total_minor)],
+              itemStyle: p.total_minor < 0 ? { color: NEGATIVE } : undefined,
+            })),
+          },
+        ];
+    return {
+      grid: { left: 8, right: 16, top: this.detailed() ? 40 : 16, bottom: 8, containLabel: true },
+      legend: this.detailed() ? { top: 0 } : undefined,
+      tooltip: { trigger: 'axis', valueFormatter: (v: number) => formatChartValue(v) },
+      xAxis: { type: 'time' },
+      yAxis: { type: 'value', axisLabel: { formatter: axisMoney } },
+      series,
+    };
+  });
+
+  protected growth(ppm: number): string {
+    return formatRatePpm(ppm);
+  }
+
+  // ------------------------------------------------------------ Salaire (SAL-04)
+
+  protected readonly salaryYears = signal(10);
+  protected readonly salary = rxResource({
+    params: () =>
+      this.features.salaries()
+        ? { years: this.salaryYears(), version: this.version.value() }
+        : undefined,
+    stream: ({ params }) => this.api.salaryProjection({ years: params.years }),
+  });
+  protected readonly change = formatChange;
+
+  /** Net annuel réel, prolongé en pointillés par chaque scénario (R-SAL-13). */
+  protected readonly salaryChart = computed<EChartsCoreOption | null>(() => {
+    const p = this.salary.value();
+    if (!p) return null;
+    const history = p.history.map((y) => [String(y.year), toChartValue(y.net_minor)]);
+    const last = history[history.length - 1];
+    return {
+      grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+      legend: { top: 0 },
+      tooltip: { trigger: 'axis', valueFormatter: (v: number) => formatChartValue(v) },
+      xAxis: { type: 'category', boundaryGap: false },
+      yAxis: { type: 'value', axisLabel: { formatter: axisMoney } },
+      series: [
+        { name: 'Réel', type: 'line', data: history, lineStyle: { width: 3 } },
+        ...p.scenarios.map((s) => ({
+          name: s.name,
+          type: 'line',
+          showSymbol: false,
+          lineStyle: { type: 'dashed', width: s.is_default ? 3 : 2 },
+          data: [
+            ...(last ? [last] : []),
+            ...s.years.map((y) => [String(y.year), toChartValue(y.net_minor)]),
+          ],
+        })),
+      ],
+    };
+  });
+
+  protected readonly salaryFinals = computed(() =>
+    (this.salary.value()?.scenarios ?? []).map((s) => ({
+      name: s.name,
+      growth: s.salary_growth_ppm,
+      year: s.years[s.years.length - 1]?.year,
+      value: s.years[s.years.length - 1]?.net_minor ?? 0,
     })),
   );
 
@@ -258,6 +383,19 @@ export class ProjectionsPage {
         formatRate(y.annual_return_ppm) +
         (y.annual_fees_ppm ? ` (frais ${formatRate(y.annual_fees_ppm)})` : ''),
     }));
+  }
+
+  /** Hypothèses de capacité d'épargne d'un scénario, en une ligne (R-PRJ-3). */
+  protected capacityLine(s: ScenarioView): string {
+    const c = s.assumptions.capacity;
+    if (c?.enabled === false) return "Capacité d'épargne désactivée";
+    const surplus = c?.surplus_account_id
+      ? ` · reste vers ${this.accounts.byId().get(c.surplus_account_id)?.name ?? '—'}`
+      : '';
+    return (
+      `Salaires +${formatRate(c?.salary_growth_ppm ?? 20_000)}/an · ` +
+      `dépenses +${formatRate(c?.expense_growth_ppm ?? 20_000)}/an${surplus}`
+    );
   }
 
   protected rate(ppm: number | null | undefined): string {

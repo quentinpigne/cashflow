@@ -14,6 +14,9 @@
         @if (features.loans()) {
           <a mat-menu-item routerLink="/prets"><mat-icon>real_estate_agent</mat-icon> Prêts</a>
         }
+        @if (features.salaries()) {
+          <a mat-menu-item routerLink="/salaires"><mat-icon>work</mat-icon> Salaires</a>
+        }
         <a mat-menu-item routerLink="/projections"><mat-icon>timeline</mat-icon> Projections</a>
         <a mat-menu-item routerLink="/recurrences"><mat-icon>event_repeat</mat-icon> Récurrences</a>
         <a mat-menu-item routerLink="/reglages"><mat-icon>settings</mat-icon> Réglages</a>

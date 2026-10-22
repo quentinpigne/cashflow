@@ -114,7 +114,7 @@ export class ProjectsStore {
   readonly byId = computed(() => new Map(this.list().map((p) => [p.id, p])));
 }
 
-/** Rubriques activées (R-BIE-7, R-PRE-12), pour le menu, l'accueil et les formulaires. */
+/** Rubriques activées (R-BIE-7, R-PRE-12, R-SAL-14), pour le menu, l'accueil et les formulaires. */
 @Injectable({ providedIn: 'root' })
 export class FeaturesStore {
   private readonly api = inject(SystemService);
@@ -126,6 +126,7 @@ export class FeaturesStore {
   });
   readonly assets = computed(() => this.features.value()?.assets ?? false);
   readonly loans = computed(() => this.features.value()?.loans ?? false);
+  readonly salaries = computed(() => this.features.value()?.salaries ?? false);
 }
 
 /** Un rattachement possible d'une ventilation, à la place d'une catégorie (R-TRX-37). */

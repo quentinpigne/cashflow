@@ -3,7 +3,9 @@
 import { AccountFamily } from '../api/models/account-family';
 import { AccountKind } from '../api/models/account-kind';
 import { AssetKind } from '../api/models/asset-kind';
+import { BonusKind } from '../api/models/bonus-kind';
 import { LoanKind } from '../api/models/loan-kind';
+import { SalaryChangeReason } from '../api/models/salary-change-reason';
 import { BatchStatus } from '../api/models/batch-status';
 import { ClearingStatus } from '../api/models/clearing-status';
 import { ImportDecision } from '../api/models/import-decision';
@@ -51,6 +53,23 @@ export const LOAN_KIND_LABELS: Record<LoanKind, string> = {
   MORTGAGE: 'Prêt immobilier',
   CONSUMER: 'Prêt à la consommation',
   OTHER: 'Autre prêt',
+};
+
+/** Motifs d'une rémunération (R-SAL-2). */
+export const SALARY_REASON_LABELS: Record<SalaryChangeReason, string> = {
+  HIRE: 'Embauche',
+  RAISE: 'Augmentation',
+  PROMOTION: 'Promotion',
+  TAX_RATE: 'Taux de prélèvement',
+  OTHER: 'Autre',
+};
+
+/** Natures de prime (R-SAL-5). */
+export const BONUS_KIND_LABELS: Record<BonusKind, string> = {
+  THIRTEENTH_MONTH: '13e mois',
+  BONUS: 'Prime',
+  PROFIT_SHARING: 'Intéressement ou participation',
+  OTHER: 'Autre',
 };
 
 /** Famille de chaque nature (spec 01), pour grouper la liste des natures. */

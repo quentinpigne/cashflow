@@ -2,24 +2,36 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 
+import { FeaturesInput } from '../../api/models/features-input';
 import { SystemService } from '../../api/services/system.service';
 import { firstValueFrom } from 'rxjs';
 
 import { Session } from '../../core/auth';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
+import { formatRate, parseRatePpm } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
 
 /** E9 — Réglages. */
 @Component({
   selector: 'app-settings',
-  imports: [RouterLink, MatListModule, MatIconModule, MatButtonModule, MatSlideToggleModule],
+  imports: [
+    RouterLink,
+    MatListModule,
+    MatIconModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSlideToggleModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -58,8 +70,8 @@ import { confirm } from '../../shared/confirm-dialog';
       <section class="card section">
         <h2>Rubriques</h2>
         <p class="muted">
-          Les biens (logement, véhicule) et les prêts ont leurs propres rubriques, à activer si vous
-          en avez.
+          Les biens (logement, véhicule), les prêts et les salaires ont leurs propres rubriques, à
+          activer si vous en avez.
         </p>
         @if (features.value(); as f) {
           <mat-slide-toggle
@@ -83,6 +95,30 @@ import { confirm } from '../../shared/confirm-dialog';
             <p class="muted small">
               {{ f.loan_count }} prêt(s) : les supprimer pour désactiver la rubrique.
             </p>
+          }
+          <mat-slide-toggle
+            [checked]="f.salaries"
+            [disabled]="f.salaries && f.employment_count > 0"
+            (change)="toggle({ salaries: $event.checked })"
+            >Salaires</mat-slide-toggle
+          >
+          @if (f.salaries && f.employment_count > 0) {
+            <p class="muted small">
+              {{ f.employment_count }} emploi(s) : les supprimer pour désactiver la rubrique.
+            </p>
+          }
+          @if (f.salaries) {
+            <mat-form-field class="tolerance">
+              <mat-label>Tolérance de l'écart de salaire</mat-label>
+              <input
+                matInput
+                inputmode="decimal"
+                [value]="percent(f.salary_gap_tolerance_ppm)"
+                (change)="saveTolerance($any($event.target).value)"
+              />
+              <span matTextSuffix>%</span>
+              <mat-hint>Écart signalé entre le net attendu et le reçu (R-SAL-9).</mat-hint>
+            </mat-form-field>
           }
         }
       </section>
@@ -134,6 +170,10 @@ import { confirm } from '../../shared/confirm-dialog';
     .small {
       font: var(--mat-sys-body-small);
     }
+    .tolerance {
+      margin-top: 0.75rem;
+      width: min(20rem, 100%);
+    }
   `,
 })
 export class SettingsPage {
@@ -157,8 +197,22 @@ export class SettingsPage {
     );
   }
 
-  /** Active ou désactive une rubrique (R-BIE-7, R-PRE-12). */
-  protected async toggle(body: { assets?: boolean; loans?: boolean }): Promise<void> {
+  protected percent(ppm: number): string {
+    return formatRate(ppm).replace(/\u00a0%$/, '');
+  }
+
+  /** Tolérance de l'écart entre salaire attendu et reçu (R-SAL-9). */
+  protected async saveTolerance(value: string): Promise<void> {
+    const ppm = parseRatePpm(value);
+    if (ppm === null) {
+      this.snack.open('Pourcentage invalide', undefined, { duration: 4000 });
+      return;
+    }
+    await this.toggle({ salary_gap_tolerance_ppm: ppm });
+  }
+
+  /** Active ou désactive une rubrique (R-BIE-7, R-PRE-12, R-SAL-14). */
+  protected async toggle(body: FeaturesInput): Promise<void> {
     try {
       await firstValueFrom(this.system.updateFeatures({ body }));
     } catch (error) {

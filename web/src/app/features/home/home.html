@@ -144,7 +144,7 @@
                     </section>
                   }
                   @case ('alerts') {
-                    @if (d.alerts.length > 0) {
+                    @if (d.alerts.length > 0 || d.salary_gaps.length > 0) {
                       <section class="card alerts">
                         <h2 class="widget-title">Alertes</h2>
                         <app-widget-menu widget="alerts" />
@@ -162,6 +162,17 @@
                                 — {{ alert.old_pending }} transaction(s) en attente depuis plus de
                                 10 jours
                               }
+                            </span>
+                          </a>
+                        }
+                        @for (gap of d.salary_gaps; track gap.employment_id) {
+                          <a class="alert" [routerLink]="['/salaires', gap.employment_id]">
+                            <mat-icon>warning</mat-icon>
+                            <span>
+                              <strong>Salaire {{ gap.employer }}</strong>
+                              — {{ gap.month | frDate: 'month' }} :
+                              {{ gap.received_minor | money }} reçus,
+                              {{ gap.expected_minor | money }} attendus
                             </span>
                           </a>
                         }

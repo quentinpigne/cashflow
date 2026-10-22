@@ -50,6 +50,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/loans/loans').then((m) => m.LoanPage),
       },
       {
+        path: 'salaires',
+        title: 'Salaires — Cashflow',
+        loadComponent: () => import('./features/salaries/salaries').then((m) => m.SalariesPage),
+      },
+      {
+        path: 'salaires/:id',
+        title: 'Emploi — Cashflow',
+        loadComponent: () =>
+          import('./features/salaries/employment-page').then((m) => m.EmploymentPage),
+      },
+      {
         path: 'transactions/:id',
         title: 'Transaction — Cashflow',
         loadComponent: () =>

@@ -84,13 +84,14 @@ Répondre à trois questions :
   (R-PRJ-44) − échéances des prêts avec tableau datées en m (mensualité et assurance, R-PRE-3). Elle est
   calculée pour chaque mois de l'horizon à partir du mois suivant, et peut être négative.
 - **R-PRJ-43** — **Revenus projetés** = salaires projetés des emplois (R-SAL-10, R-SAL-11) + **autres
-  revenus moyens** : moyenne mensuelle, sur les 12 derniers mois complets, des ventilations de catégories
+  revenus moyens** : moyenne mensuelle, sur les 12 derniers mois complets (moins si l'historique suivi est plus
+  court : seuls les mois entiers depuis l'ouverture du premier compte comptent), des ventilations de catégories
   `INCOME` des comptes `CASH`, hors catégories reliées à un emploi (et leurs sous-catégories). Les intérêts
   des comptes d'épargne n'y entrent pas : leur projection les compte déjà (R-PRJ-20). Les autres revenus
   restent constants. Sans emploi déclaré, les revenus projetés sont donc la moyenne des revenus passés.
-- **R-PRJ-44** — **Dépenses projetées** = dépenses mensuelles moyennes (R-TDB-8), hors intérêts et
-  assurance des mensualités ventilées (R-PRE-6), augmentées chaque 1er janvier du **taux de hausse des
-  dépenses** du scénario (2 % par défaut dans les trois scénarios). Les remboursements des prêts en suivi
+- **R-PRJ-44** — **Dépenses projetées** = dépenses mensuelles moyennes (R-TDB-8, sur les mêmes mois que
+  R-PRJ-43), hors intérêts et assurance des mensualités ventilées (R-PRE-6), augmentées chaque 1er janvier
+  du **taux de hausse des dépenses** du scénario (2 % par défaut dans les trois scénarios). Les remboursements des prêts en suivi
   simple et les acquisitions ne sont pas projetés (le prêt garde son capital restant dû, R-PRE-9). Un prêt
   avec tableau dont des échéances des 12 derniers mois ne sont pas payées est signalé : sa mensualité,
   comptée en dépense, le serait deux fois.

@@ -35,8 +35,9 @@
           </div>
           <p class="muted small">
             Départ : patrimoine du {{ w.today | frDate }}, {{ w.start_minor | money }}. Liquidités
-            constantes (moins les virements programmés vers l'épargne), prêts selon leur tableau
-            d'amortissement (sinon à leur dernière valeur), biens à leur dernière valeur.
+            augmentées chaque mois de la capacité d'épargne si le scénario l'active (moins les
+            virements programmés vers l'épargne), prêts selon leur tableau d'amortissement (sinon à
+            leur dernière valeur), biens à leur dernière valeur.
             {{ disclaimer }}
           </p>
           @if (w.estimated_accounts.length > 0) {
@@ -44,6 +45,76 @@
               <mat-icon>warning</mat-icon> Valeur de départ estimée (valorisation ancienne) :
               {{ w.estimated_accounts.join(', ') }}.
             </p>
+          }
+
+          <h2>Capacité d'épargne</h2>
+          @if (capacityScenarios().length === 0) {
+            <p class="muted">Aucun scénario n'active la capacité d'épargne.</p>
+          } @else {
+            <div class="toolbar">
+              <mat-form-field subscriptSizing="dynamic">
+                <mat-label>Scénario</mat-label>
+                <mat-select
+                  [value]="capacityScenarioId()"
+                  (selectionChange)="capacityScenarioId.set($event.value)"
+                >
+                  @for (s of capacityScenarios(); track s.scenario_id) {
+                    <mat-option [value]="s.scenario_id">{{ s.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-checkbox [checked]="detailed()" (change)="detailed.set($event.checked)">
+                Détailler
+              </mat-checkbox>
+            </div>
+            @if (capacityChart(); as options) {
+              <div echarts [options]="options" class="chart capacity-chart"></div>
+            }
+            @if (capacity(); as c) {
+              @if (c.shortfall_date) {
+                <p class="warning">
+                  <mat-icon>warning</mat-icon> Les versements programmés dépassent la capacité
+                  d'épargne : le compte de versement passe sous zéro en
+                  {{ c.shortfall_date | frDate: 'month' }}.
+                </p>
+              }
+              <p class="muted small">
+                Revenus projetés (salaires
+                @if (features.salaries()) {
+                  déclarés
+                }
+                + {{ w.capacity.other_income_minor | money }} d'autres revenus moyens) − dépenses
+                moyennes ({{ w.capacity.expenses_minor | money }} par mois sur
+                {{ w.capacity.months }} mois, +{{ growth(c.expense_growth_ppm) }} chaque 1er
+                janvier) − échéances des prêts. Salaires +{{ growth(c.salary_growth_ppm) }} par an.
+                Crédité sur {{ w.capacity.payroll_account_name ?? '—'
+                }}{{
+                  c.surplus_account_name
+                    ? ' ; le reste, après les versements programmés, va sur ' +
+                      c.surplus_account_name
+                    : ''
+                }}.
+              </p>
+            }
+            @for (end of w.capacity.job_ends; track end.employer) {
+              <p class="muted small">
+                Fin de l'emploi chez {{ end.employer }} le {{ end.end_date | frDate }} : plus de
+                salaire ensuite.
+              </p>
+            }
+            @if (w.capacity.jobs_without_pay.length > 0) {
+              <p class="warning">
+                <mat-icon>warning</mat-icon> Sans rémunération déclarée, rien n'est projeté pour :
+                {{ w.capacity.jobs_without_pay.join(', ') }}.
+              </p>
+            }
+            @if (w.capacity.unpaid_loans.length > 0) {
+              <p class="warning">
+                <mat-icon>warning</mat-icon> Mensualités récentes non ventilées :
+                {{ w.capacity.unpaid_loans.join(', ') }}. Comptées en dépenses, elles le sont deux
+                fois ; les ventiler depuis la fiche du prêt.
+              </p>
+            }
           }
         }
       </div>
@@ -203,6 +274,64 @@
       </div>
     </mat-tab>
 
+    @if (features.salaries()) {
+      <mat-tab label="Salaire">
+        <div class="tab">
+          <div class="toolbar">
+            <mat-button-toggle-group
+              [value]="salaryYears()"
+              (change)="salaryYears.set($event.value)"
+              aria-label="Horizon"
+            >
+              <mat-button-toggle [value]="5">5 ans</mat-button-toggle>
+              <mat-button-toggle [value]="10">10 ans</mat-button-toggle>
+              <mat-button-toggle [value]="20">20 ans</mat-button-toggle>
+              <mat-button-toggle [value]="30">30 ans</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+          @if (salary.isLoading() && !salary.hasValue()) {
+            <mat-progress-bar mode="indeterminate" />
+          }
+          @if (salaryChart(); as options) {
+            <div echarts [options]="options" class="chart"></div>
+          }
+          @if (salary.value(); as p) {
+            <div class="finals">
+              @for (f of salaryFinals(); track f.name) {
+                <div class="card final">
+                  <span class="muted">{{ f.name }} en {{ f.year }}</span>
+                  <strong class="amount">{{ f.value | money }}</strong>
+                  <span class="muted small">net annuel, +{{ growth(f.growth) }} par an</span>
+                </div>
+              }
+            </div>
+            <p class="muted small">
+              Net annuel : mois écoulés déclarés, puis dernier net en vigueur augmenté chaque année
+              au mois des augmentations ; une rémunération prévue remplace la hausse de l'année. Les
+              primes récurrentes se répètent chaque année. {{ disclaimer }}
+            </p>
+            @for (planned of p.planned; track $index) {
+              <p class="muted small">
+                Prévu : {{ planned.label }} chez {{ planned.employer }}, le
+                {{ planned.date | frDate }}, {{ planned.net_minor | money }}.
+              </p>
+            }
+            @for (end of p.job_ends; track end.employer) {
+              <p class="muted small">
+                Fin de l'emploi chez {{ end.employer }} le {{ end.end_date | frDate }}.
+              </p>
+            }
+            @if (p.jobs_without_pay.length > 0) {
+              <p class="warning">
+                <mat-icon>warning</mat-icon> Sans rémunération déclarée :
+                {{ p.jobs_without_pay.join(', ') }}.
+              </p>
+            }
+          }
+        </div>
+      </mat-tab>
+    }
+
     <mat-tab label="Scénarios">
       <div class="tab">
         <p class="muted">{{ disclaimer }}</p>
@@ -233,6 +362,7 @@
               @if (s.inflation_rate_ppm) {
                 · inflation {{ rate(s.inflation_rate_ppm) }}
               }
+              <br />{{ capacityLine(s) }}
             </p>
             <ul class="yields">
               @for (y of kindYields(s); track y.label) {

@@ -47,7 +47,7 @@ export class Shell {
 
   protected readonly features = inject(FeaturesStore);
 
-  /** Menu latéral (ordinateur) ; Biens et Prêts seulement si la rubrique est activée (spec 09). */
+  /** Menu latéral (ordinateur) ; Biens, Prêts et Salaires seulement si la rubrique est activée. */
   protected readonly items = computed<NavItem[]>(() => [
     { path: '/', label: 'Accueil', icon: 'home', exact: true },
     { path: '/comptes', label: 'Comptes', icon: 'account_balance', exact: false },
@@ -56,6 +56,9 @@ export class Shell {
       : []),
     ...(this.features.loans()
       ? [{ path: '/prets', label: 'Prêts', icon: 'real_estate_agent', exact: false }]
+      : []),
+    ...(this.features.salaries()
+      ? [{ path: '/salaires', label: 'Salaires', icon: 'work', exact: false }]
       : []),
     { path: '/transactions', label: 'Transactions', icon: 'receipt_long', exact: true },
     { path: '/budget', label: 'Budget', icon: 'savings', exact: false },
@@ -67,11 +70,12 @@ export class Shell {
 
   /**
    * Barre du bas (mobile), cinq entrées : l'import s'ouvre depuis un compte ou les réglages, et les
-   * réglages, les biens et les prêts depuis le menu du haut (ecrans.md).
+   * réglages, les biens, les prêts et les salaires depuis le menu du haut (ecrans.md).
    */
   protected readonly mobileItems = computed(() =>
     this.items().filter(
-      (i) => !['/import', '/reglages', '/projections', '/biens', '/prets'].includes(i.path),
+      (i) =>
+        !['/import', '/reglages', '/projections', '/biens', '/prets', '/salaires'].includes(i.path),
     ),
   );
 

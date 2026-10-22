@@ -6,6 +6,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
 
 import { AccountKind } from '../../api/models/account-kind';
@@ -55,7 +56,8 @@ interface PathRow {
 
 /**
  * Hypothèses d'un scénario (PRJ-03, R-PRJ-31) : rendement et frais par nature de compte, réglages propres
- * à un compte (y compris le versement mensuel), trajectoire de taux des barèmes (R-PRJ-21).
+ * à un compte (y compris le versement mensuel), trajectoire de taux des barèmes (R-PRJ-21), capacité
+ * d'épargne et hausse des salaires (R-PRJ-42 à R-PRJ-47, R-SAL-12).
  */
 @Component({
   selector: 'app-scenario-dialog',
@@ -66,6 +68,7 @@ interface PathRow {
     MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -108,6 +111,46 @@ interface PathRow {
       <mat-checkbox [ngModel]="isDefault()" (ngModelChange)="isDefault.set($event)">
         Scénario par défaut
       </mat-checkbox>
+
+      <h3>Capacité d'épargne</h3>
+      <mat-checkbox [ngModel]="capacity()" (ngModelChange)="capacity.set($event)">
+        Ajouter chaque mois aux liquidités les revenus projetés moins les dépenses et les échéances
+        de prêts
+      </mat-checkbox>
+      @if (capacity()) {
+        <div class="line">
+          <mat-form-field>
+            <mat-label>Hausse des salaires</mat-label>
+            <input
+              matInput
+              inputmode="decimal"
+              [ngModel]="salaryGrowth()"
+              (ngModelChange)="salaryGrowth.set($event)"
+            />
+            <span matTextSuffix>%/an</span>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Hausse des dépenses</mat-label>
+            <input
+              matInput
+              inputmode="decimal"
+              [ngModel]="expenseGrowth()"
+              (ngModelChange)="expenseGrowth.set($event)"
+            />
+            <span matTextSuffix>%/an</span>
+          </mat-form-field>
+        </div>
+        <mat-form-field>
+          <mat-label>Compte d'affectation du reste</mat-label>
+          <mat-select [ngModel]="surplus()" (ngModelChange)="surplus.set($event)">
+            <mat-option [value]="null">Aucun : le reste reste sur le compte courant</mat-option>
+            @for (a of savingsAccounts(); track a.id) {
+              <mat-option [value]="a.id">{{ a.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Après les versements programmés, dans la limite du plafond.</mat-hint>
+        </mat-form-field>
+      }
 
       <h3>Rendement et frais annuels par nature</h3>
       <table>
@@ -302,6 +345,16 @@ export class ScenarioDialog {
   protected readonly isDefault = signal(this.scenario?.is_default ?? false);
   protected readonly error = signal<string | null>(null);
 
+  // Capacité d'épargne : activée, 2 % par défaut (R-PRJ-44, R-PRJ-47, R-SAL-12).
+  private readonly cap = this.assumptions.capacity;
+  protected readonly capacity = signal(this.cap?.enabled ?? true);
+  protected readonly salaryGrowth = signal(percent(this.cap?.salary_growth_ppm ?? 20_000));
+  protected readonly expenseGrowth = signal(percent(this.cap?.expense_growth_ppm ?? 20_000));
+  protected readonly surplus = signal<string | null>(this.cap?.surplus_account_id ?? null);
+  protected readonly savingsAccounts = computed(() =>
+    this.accounts.open().filter((a) => a.family !== 'CASH'),
+  );
+
   protected readonly kinds = signal<Row[]>([
     ...VARIABLE_KINDS.map((kind) => ({
       key: kind,
@@ -362,12 +415,14 @@ export class ScenarioDialog {
       ...this.paths().map((r) => r.rate),
       this.inflation(),
     ];
+    const growth = [this.salaryGrowth(), this.expenseGrowth()];
     return (
       !!this.name().trim() &&
       Number.isInteger(years) &&
       years >= 1 &&
       years <= 50 &&
       numbers.every((n) => n.trim() === '' || parseRatePpm(n) !== null) &&
+      (!this.capacity() || growth.every((n) => parseRatePpm(n) !== null)) &&
       this.accountRows().every(
         (r) => r.contribution.trim() === '' || parseMoney(r.contribution) !== null,
       )
@@ -390,7 +445,18 @@ export class ScenarioDialog {
 
   private build(): Assumptions {
     const rate = (text: string) => (text.trim() === '' ? null : parseRatePpm(text));
-    const result: Assumptions = { by_kind: {}, by_family: {}, by_account: {}, rate_paths: {} };
+    const result: Assumptions = {
+      by_kind: {},
+      by_family: {},
+      by_account: {},
+      rate_paths: {},
+      capacity: {
+        enabled: this.capacity(),
+        salary_growth_ppm: rate(this.salaryGrowth()) ?? this.cap?.salary_growth_ppm ?? 20_000,
+        expense_growth_ppm: rate(this.expenseGrowth()) ?? this.cap?.expense_growth_ppm ?? 20_000,
+        surplus_account_id: this.surplus(),
+      },
+    };
     for (const row of this.kinds()) {
       const value = rate(row.rate);
       if (value === null) continue;
