@@ -13,6 +13,7 @@ pub mod projection;
 pub mod reconciliation;
 pub mod recurrence;
 pub mod reporting;
+pub mod salaries;
 pub mod savings;
 pub mod shared;
 

@@ -5,6 +5,7 @@ use chrono::{Datelike, Days, Months, NaiveDate};
 use rust_decimal::prelude::{MathematicalOps, ToPrimitive};
 use rust_decimal::{Decimal, RoundingStrategy};
 
+use crate::ledger::category::CategoryKind;
 use crate::recurrence::end_of_month;
 use crate::savings::{self, FortnightlyTerms, Movement, RatePoint};
 use crate::shared::{Date, Money, Rate};
@@ -168,14 +169,20 @@ fn monthly_factor(rate: Rate) -> Decimal {
 
 /// `V(m+1) = V(m) × (1 + r_m) × (1 − f_m) + versement(m)` (R-PRJ-30) : valeur après chaque mois.
 pub fn variable(start: Money, assumption: Assumption, months: u32) -> Vec<Money> {
+    variable_with(start, assumption, months, &[])
+}
+
+/// Comme [`variable`], avec en plus `extra[m]` versé en fin de mois m : le reste de la capacité d'épargne
+/// affecté au compte (R-PRJ-45).
+pub fn variable_with(start: Money, assumption: Assumption, months: u32, extra: &[Money]) -> Vec<Money> {
     let growth = monthly_factor(assumption.annual_return);
     // 1 − f_m = (1 − frais)^(1/12).
     let keep = monthly_factor(Rate::from_ppm(-assumption.annual_fees.ppm()));
     let mut value = dec(start);
     let contribution = dec(assumption.monthly_contribution);
-    (0..months)
-        .map(|_| {
-            value = value * growth * keep + contribution;
+    (0..months as usize)
+        .map(|m| {
+            value = value * growth * keep + contribution + extra.get(m).copied().map_or(Decimal::ZERO, dec);
             to_money(value)
         })
         .collect()
@@ -189,6 +196,104 @@ pub fn deflate(value: Money, inflation: Rate, months: u32) -> Money {
         divisor *= factor;
     }
     if divisor.is_zero() { value } else { to_money(dec(value) / divisor) }
+}
+
+// ======================================================================= Capacité d'épargne (PRJ-10)
+
+/// Une ventilation des derniers mois complets, vue par la capacité d'épargne (R-PRJ-43, R-PRJ-44).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CapacityFact {
+    pub amount: Money,
+    /// `None` : non catégorisée.
+    pub category_kind: Option<CategoryKind>,
+    /// Virement, remboursement ou acquisition : ni revenu ni dépense.
+    pub is_movement: bool,
+    pub is_eur: bool,
+    /// Compte de liquidités.
+    pub is_cash: bool,
+    /// Intérêts générés d'un compte d'épargne.
+    pub is_interest: bool,
+    /// Partie d'une mensualité ventilée selon son échéance (R-PRE-6).
+    pub is_installment: bool,
+    /// Catégorie (ou parent) reliée à un emploi.
+    pub is_salary: bool,
+}
+
+/// Moyennes mensuelles de départ (R-PRJ-43, R-PRJ-44), positives.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Baseline {
+    pub other_income: Money,
+    pub expenses: Money,
+}
+
+/// Moyennes sur `months` mois complets : autres revenus des comptes de liquidités hors salaires et intérêts,
+/// dépenses hors intérêts et assurance des mensualités ventilées.
+pub fn baseline(facts: &[CapacityFact], months: u32) -> Baseline {
+    let counted = facts.iter().filter(|f| f.is_eur && !f.is_movement);
+    let income: Money = counted
+        .clone()
+        .filter(|f| f.category_kind == Some(CategoryKind::Income) && f.is_cash && !f.is_interest && !f.is_salary)
+        .map(|f| f.amount)
+        .sum();
+    let expenses: Money = counted
+        .filter(|f| f.category_kind == Some(CategoryKind::Expense) && !f.is_installment)
+        .map(|f| -f.amount)
+        .sum();
+    let per_month = |total: Money| {
+        if months == 0 { Money::ZERO } else { to_money(dec(total) / Decimal::from(months)) }
+    };
+    Baseline { other_income: per_month(income), expenses: per_month(expenses) }
+}
+
+pub struct CapacityInput<'a> {
+    /// Salaires projetés de chaque mois de l'horizon (R-SAL-10).
+    pub salaries: &'a [Money],
+    pub baseline: Baseline,
+    /// Taux de hausse des dépenses, appliqué chaque 1er janvier.
+    pub expense_growth: Rate,
+    /// Échéances futures des prêts avec tableau : date et montant prélevé, positif.
+    pub installments: &'a [(Date, Money)],
+}
+
+/// Capacité d'épargne d'un mois et ses composantes (R-PRJ-42, R-PRJ-46).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CapacityMonth {
+    pub end: Date,
+    pub salaries: Money,
+    pub other_income: Money,
+    pub expenses: Money,
+    pub loans: Money,
+    pub total: Money,
+}
+
+/// Capacité d'épargne de chaque mois qui suit le mois en cours : revenus projetés − dépenses projetées −
+/// échéances de prêts (R-PRJ-42 à R-PRJ-44).
+pub fn capacity(today: Date, months: u32, input: &CapacityInput<'_>) -> Vec<CapacityMonth> {
+    let factor = Decimal::ONE + input.expense_growth.to_fraction();
+    month_ends(today, months)
+        .into_iter()
+        .enumerate()
+        .map(|(i, end)| {
+            let years = end.year() - today.year();
+            let expenses = to_money((0..years).fold(dec(input.baseline.expenses), |value, _| value * factor));
+            let loans: Money = input
+                .installments
+                .iter()
+                .filter(|(date, _)| date.year() == end.year() && date.month() == end.month() && *date > today)
+                .map(|(_, amount)| *amount)
+                .sum();
+            let salaries = input.salaries.get(i).copied().unwrap_or(Money::ZERO);
+            let other_income = input.baseline.other_income;
+            CapacityMonth {
+                end,
+                salaries,
+                other_income,
+                expenses,
+                loans,
+                total: salaries + other_income - expenses - loans,
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -226,6 +331,63 @@ mod tests {
         let values = variable(eur(10_000), Assumption { monthly_contribution: Money::ZERO, ..assumption }, 12);
         assert_eq!(values[11], eur(9_900));
         assert_eq!(variable(Money::ZERO, Assumption { annual_fees: Rate::ZERO, ..assumption }, 3)[2], eur(300));
+    }
+
+    /// Critère d'acceptation de PRJ-10 : l'emploi de la spec 10 sous le scénario médian.
+    #[test]
+    fn prj_10_r_prj_42_savings_capacity() {
+        let today = d("2026-10-22");
+        let salaries = [eur(2_700), eur(5_300), eur(2_754)];
+        let baseline = Baseline { other_income: eur(50), expenses: eur(1_900) };
+        let input =
+            CapacityInput { salaries: &salaries, baseline, expense_growth: Rate::from_ppm(20_000), installments: &[] };
+        let months = capacity(today, 3, &input);
+        assert_eq!(months.iter().map(|m| m.total).collect::<Vec<_>>(), [eur(850), eur(3_450), eur(866)]);
+        assert_eq!(months[2].expenses, eur(1_938));
+
+        let installments = [(d("2026-11-05"), Money::from_minor(115_920)), (d("2026-10-05"), eur(1))];
+        let with_loan = CapacityInput {
+            baseline: Baseline { expenses: eur(1_350), ..baseline },
+            installments: &installments,
+            ..input
+        };
+        assert_eq!(capacity(today, 1, &with_loan)[0].total, Money::from_minor(24_080));
+    }
+
+    #[test]
+    fn r_prj_43_r_prj_44_baseline_excludes_salaries_interest_movements_and_installments() {
+        let fact = |amount: i64, kind| CapacityFact {
+            amount: eur(amount),
+            category_kind: Some(kind),
+            is_movement: false,
+            is_eur: true,
+            is_cash: true,
+            is_interest: false,
+            is_installment: false,
+            is_salary: false,
+        };
+        let facts = [
+            fact(600, CategoryKind::Income),
+            CapacityFact { is_salary: true, ..fact(30_000, CategoryKind::Income) },
+            CapacityFact { is_interest: true, ..fact(100, CategoryKind::Income) },
+            CapacityFact { is_cash: false, ..fact(100, CategoryKind::Income) },
+            fact(-24_000, CategoryKind::Expense),
+            CapacityFact { is_installment: true, ..fact(-6_600, CategoryKind::Expense) },
+            CapacityFact { is_movement: true, ..fact(-5_000, CategoryKind::Expense) },
+            CapacityFact { is_eur: false, ..fact(-5_000, CategoryKind::Expense) },
+        ];
+        assert_eq!(baseline(&facts, 12), Baseline { other_income: eur(50), expenses: eur(2_000) });
+        assert_eq!(baseline(&facts, 0), Baseline::default());
+    }
+
+    #[test]
+    fn r_prj_45_extra_contributions_on_a_variable_account() {
+        let assumption =
+            Assumption { annual_return: Rate::ZERO, annual_fees: Rate::ZERO, monthly_contribution: eur(100) };
+        assert_eq!(
+            variable_with(eur(1_000), assumption, 3, &[eur(50), Money::ZERO]),
+            [eur(1_150), eur(1_250), eur(1_350)]
+        );
     }
 
     #[test]

@@ -48,6 +48,14 @@ pub enum DomainError {
     #[error("ce champ n'est pas modifiable après la création du compte")]
     AccountFieldLocked,
 
+    // ----- Salaires (spec 10)
+    #[error("emploi invalide : fin postérieure au début, mois des augmentations de 1 à 12")]
+    InvalidEmployment,
+    #[error("rémunération invalide : un premier du mois pendant l'emploi, brut et net positifs")]
+    InvalidSalary,
+    #[error("prime invalide : versée pendant l'emploi, net positif, brut positif s'il est connu")]
+    InvalidBonus,
+
     // ----- Transactions (spec 02)
     #[error("le montant ne peut pas être nul")]
     AmountZero,
@@ -148,6 +156,9 @@ impl DomainError {
             InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
             InstallmentPaymentLocked => "INSTALLMENT_PAYMENT_LOCKED",
             AccountFieldLocked => "ACCOUNT_FIELD_LOCKED",
+            InvalidEmployment => "INVALID_EMPLOYMENT",
+            InvalidSalary => "INVALID_SALARY",
+            InvalidBonus => "INVALID_BONUS",
             AmountZero => "AMOUNT_ZERO",
             NoSplit => "NO_SPLIT",
             SplitAmountZero => "SPLIT_AMOUNT_ZERO",
@@ -199,6 +210,9 @@ impl DomainError {
             SplitAttachmentConflict => "R-TRX-37",
             InstallmentMismatch | InstallmentAlreadyPaid => "R-PRE-6",
             InstallmentPaymentLocked => "R-PRE-8",
+            InvalidEmployment => "R-SAL-1",
+            InvalidSalary => "R-SAL-2",
+            InvalidBonus => "R-SAL-5",
             AmountZero => "R-TRX-1",
             BankLabelImmutable => "R-TRX-2",
             TransactionLocked => "R-TRX-3",
