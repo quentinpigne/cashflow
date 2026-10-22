@@ -19,9 +19,12 @@ Transaction  −120,00 €  « CARREFOUR MARKET 12/03 »
 
 Un **virement interne** relie deux transactions, l'une sortante et l'autre entrante, sur deux
 comptes suivis. Il n'est **ni un revenu ni une dépense** : il déplace de l'argent. Le lien porte
-précisément sur une **ventilation** de chaque transaction (ADR-0021) : un virement ordinaire relie deux
-transactions à ventilation unique ; une mensualité de prêt porte une ventilation de virement (le
-capital) à côté de ses dépenses (intérêts, assurance).
+précisément sur une **ventilation** de chaque transaction (ADR-0021), et chaque jambe a une ventilation
+unique.
+
+Deux autres sortes de ventilations sans catégorie sont, comme un virement, ni revenu ni dépense : la
+**ventilation de remboursement**, rattachée à un prêt (le capital d'une mensualité, R-PRE-7), et la
+**ventilation d'acquisition**, rattachée à un bien (l'apport, R-BIE-8).
 Un versement vers un compte **non suivi** (le livret d'un enfant dans une autre banque, par
 exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catégorisée.
 
@@ -87,10 +90,11 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
   montants **opposés** (ADR-0004, ADR-0021). Une transaction porte au plus une ventilation de virement.
 - **R-TRX-31** — Les deux jambes peuvent avoir des dates différentes (exécution à J+1, J+2). Un écart
   de plus de 7 jours est signalé.
-- **R-TRX-32** — Une ventilation de virement n'a ni catégorie ni projet. Elle n'entre ni dans les
-  revenus, ni dans les dépenses, ni dans les budgets, ni dans le total non catégorisé. Une jambe de
-  virement a une seule ventilation, sauf la mensualité d'un prêt ventilée selon son tableau
-  d'amortissement (R-CPT-17), qui porte aussi des ventilations de dépense.
+- **R-TRX-32** — Une jambe de virement a une seule ventilation, sans catégorie ni projet. Elle n'entre ni
+  dans les revenus, ni dans les dépenses, ni dans les budgets, ni dans le total non catégorisé.
+- **R-TRX-37** — Une ventilation a au plus un rattachement : une catégorie, un prêt (remboursement,
+  R-PRE-7) ou un bien (acquisition, R-BIE-8). Les ventilations de remboursement et d'acquisition sont
+  exclues des revenus, des dépenses, des budgets et du total non catégorisé, comme un virement.
 - **R-TRX-33** — Créer un virement depuis la saisie crée les deux jambes d'un coup (statut `PENDING`).
   Lier deux transactions existantes (cas typique après import) remplace leurs ventilations par une
   ventilation sans catégorie, après confirmation si elles étaient catégorisées.
@@ -104,7 +108,7 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
   - sinon, ou si l'utilisateur le demande, l'application **crée la jambe opposée** sur C : même date,
     montant opposé, même libellé, origine `MANUAL`, ventilation unique sans catégorie. Son statut est
     `PENDING` si C est de famille `CASH` ou `FIXED_SAVINGS` (un import ultérieur de C la pointera,
-    R-IMP-9, en renseignant sa `bank_date`) et `CLEARED` si C est de famille `VARIABLE_SAVINGS`, `LIABILITY` ou `PROPERTY` (pas de
+    R-IMP-9, en renseignant sa `bank_date`) et `CLEARED` si C est de famille `VARIABLE_SAVINGS` (pas de
     rapprochement sur ces comptes, R-RAP-10) ;
   - la création est refusée si la date est hors de la période d'ouverture de C (R-CPT-3), ou si elle
     tombe dans une période rapprochée de C (R-RAP-7).

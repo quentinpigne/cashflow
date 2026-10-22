@@ -1,8 +1,8 @@
 # Spec 09 — Biens et prêts
 
-Statut : **Revue** (2026-10-22)
+Statut : **Validée** (2026-10-22)
 Modèle : [Asset, AssetValuation, Loan, LoanBalance, LoanPayment](../modele-de-donnees.md#biens-et-prêts--spec-09)
-Décisions : ADR-0022 (biens et prêts hors des comptes), ADR-0020 (tableau d'amortissement calculé)
+Décisions : ADR-0019 (biens et prêts hors des comptes), ADR-0020 (tableau d'amortissement calculé)
 
 ## Concepts
 
@@ -13,7 +13,8 @@ pour son capital restant dû (R-TDB-1).
 
 L'argent, lui, circule toujours sur les comptes : l'apport et les mensualités sont des transactions du
 compte qui les paie. Une mensualité se **ventile** en remboursement de capital, intérêts et assurance : seuls
-les intérêts et l'assurance sont des dépenses.
+les intérêts et l'assurance sont des dépenses. L'apport se ventile en **acquisition** du bien : ce n'est pas
+une dépense, et le patrimoine ne bouge pas à l'achat.
 
 Les deux rubriques sont **facultatives** : qui n'a ni bien ni prêt les désactive dans les réglages, et
 l'interface n'en montre plus rien.
@@ -31,9 +32,15 @@ l'interface n'en montre plus rien.
 - **R-BIE-3** — Une **estimation** est une valeur positive datée, entre la date d'achat et la date de
   vente ; une seule par date.
 - **R-BIE-4** — Un bien n'a pas de transactions : ni solde calculé, ni import, ni rapprochement, ni budget.
-  L'achat, l'apport, les frais et les travaux sont des transactions des comptes qui les paient.
+  L'achat, l'apport, les frais et les travaux sont des transactions des comptes qui les paient (R-BIE-8).
 - **R-BIE-5** — Projection : un bien garde sa dernière valeur, sans plus-value ni dépréciation supposées.
-- **R-BIE-6** — Supprimer un bien supprime ses estimations ; les prêts qui le finançaient perdent ce lien.
+- **R-BIE-6** — Supprimer un bien supprime ses estimations ; les prêts qui le finançaient perdent ce lien,
+  et ses ventilations d'acquisition redeviennent non catégorisées.
+- **R-BIE-8** — Une **ventilation d'acquisition** est rattachée à un bien, sans catégorie ni projet : elle
+  n'entre ni dans les revenus, ni dans les dépenses, ni dans les budgets, ni dans le total non catégorisé.
+  On l'emploie pour l'apport ou tout paiement qui entre dans le prix d'achat ; les frais et les travaux
+  restent des dépenses, sauf choix contraire. Elle se choisit dans la ventilation d'une transaction, comme
+  une catégorie (« Acquisition › Appartement »).
 
 ## Prêts
 
@@ -80,7 +87,8 @@ l'interface n'en montre plus rien.
 - **R-PRE-7** — Une **ventilation de remboursement** est rattachée à un prêt, sans catégorie ni projet :
   elle n'entre ni dans les revenus, ni dans les dépenses, ni dans les budgets, ni dans le total non
   catégorisé. En suivi simple, on peut aussi ventiler à la main une part d'un débit en remboursement du prêt
-  (pour la sortir des dépenses) ; le capital restant dû reste celui des saisies (R-PRE-4).
+  (« Remboursement › Prêt immobilier », dans la ventilation, comme une catégorie), pour la sortir des
+  dépenses ; le capital restant dû reste celui des saisies (R-PRE-4).
 - **R-PRE-8** — Une mensualité ventilée selon son échéance ne change ni de montant, ni de compte, ni de
   ventilation : on **annule sa ventilation** (elle redevient une sortie non catégorisée). La supprimer libère
   l'échéance.
@@ -107,6 +115,7 @@ l'interface n'en montre plus rien.
 |---|---|---|
 | BIE-01 | V1 | Créer, modifier, supprimer un bien ; estimations datées ; valeur nette avec ses prêts |
 | BIE-02 | V1 | Activer ou désactiver la rubrique Biens |
+| BIE-03 | V1 | Ventiler l'apport en acquisition d'un bien |
 | PRE-01 | V1 | Créer, modifier, solder, supprimer un prêt, en suivi simple ou avec tableau |
 | PRE-02 | V1 | Tableau d'amortissement calculé (reprend CPT-09) |
 | PRE-03 | V1 | Ventiler les mensualités en remboursement, intérêts et assurance (reprend CPT-10) |
@@ -117,6 +126,12 @@ l'interface n'en montre plus rien.
 - Étant donné un appartement acheté 250 000 € le 2019-06-15, sans estimation, sa valeur au 2026-10-20 est
   250 000 € ; avec une estimation de 280 000 € au 2026-01-01, elle est de 280 000 €.
 - Vendu le 2026-09-01, il ne compte plus dans le patrimoine au 2026-10-20.
+
+### BIE-03 — Acquisition
+
+- Étant donné un débit de −50 000 € « APPORT NOTAIRE » ventilé en « Acquisition › Appartement », les dépenses
+  du mois n'en comptent rien, et le patrimoine est inchangé : le compte baisse de 50 000 €, l'appartement
+  vaut son prix d'achat.
 
 ### PRE-02 — Tableau d'amortissement
 

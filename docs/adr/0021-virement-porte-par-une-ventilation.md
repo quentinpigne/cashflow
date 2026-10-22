@@ -2,7 +2,7 @@
 
 - **Statut** : Accepté
 - **Date** : 2026-10-22
-- **Concerne** : ADR-0004, ADR-0020, spec 02, spec 03, spec 05, spec 08, modèle de données, glossaire
+- **Concerne** : ADR-0004, ADR-0019, spec 02, spec 05, spec 08, modèle de données, glossaire
 
 ## Contexte
 
@@ -35,10 +35,11 @@ sur deux comptes distincts de même devise, de montants opposés. Une ventilatio
 catégorie ni projet ; elle n'entre ni dans les revenus, ni dans les dépenses, ni dans les budgets, ni
 dans le total non catégorisé.
 
-Une transaction peut porter **au plus une** ventilation de virement, à côté de ventilations ordinaires.
-Un virement ordinaire reste deux transactions à ventilation unique, reliées : rien ne change pour
-l'utilisateur. La création d'une ventilation de virement à côté de ventilations ordinaires est
-réservée en V1 aux échéances de prêt (R-CPT-17).
+Une transaction porte **au plus une** ventilation de virement. En V1, une jambe de virement reste une
+transaction à ventilation unique : rien ne change pour l'utilisateur. Le besoin initial, la mensualité de
+prêt, est finalement couvert par une ventilation de remboursement rattachée au prêt (ADR-0019) ; le lien au
+niveau de la ventilation reste le modèle des virements, parce qu'il rend les agrégats homogènes (tout se
+décide ventilation par ventilation).
 
 ## Conséquences
 

@@ -30,9 +30,9 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
   la spec du domaine concerné. Les deux ne doivent jamais diverger.
 - Nouvelle décision structurante → nouvel ADR (copier `docs/adr/template.md`, numéro suivant,
   mettre à jour l'index `docs/adr/README.md`).
-- Décision qui change un ADR existant : **tant que l'implémentation n'a pas commencé, modifier l'ADR
-  directement** (pas de nouvel ADR, pas de « remplacé par »). Une fois l'implémentation commencée, ne
-  plus réécrire le fond d'un ADR `Accepté` : en créer un nouveau qui le remplace (`Remplacé par ADR-XXXX`).
+- Décision qui change un ADR existant : **tant que l'application n'est pas utilisée (aucune donnée réelle en
+  production), modifier l'ADR directement** (pas de nouvel ADR, pas de « remplacé par »). Ensuite, ne plus
+  réécrire le fond d'un ADR `Accepté` : en créer un nouveau qui le remplace (`Remplacé par ADR-XXXX`).
 - Garder les identifiants `R-*` et `<DOMAINE>-nn` stables : ne jamais renuméroter, marquer
   `(supprimée)` plutôt que supprimer.
 

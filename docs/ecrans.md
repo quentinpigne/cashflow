@@ -161,11 +161,11 @@ modifiée. Un encadré sans contenu (aucune alerte, rien à catégoriser) reste 
 
 ## E2 — Comptes (CPT-01, CPT-03)
 
-Liste de tous les comptes, **groupés par famille** (Liquidités, Épargne à taux fixe, Épargne variable,
-Biens, Passifs), avec le total de chaque groupe. Ordre dans un groupe : `display_order`, puis nom.
+Liste de tous les comptes, **groupés par famille** (Liquidités, Épargne à taux fixe, Épargne variable),
+avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriques (E25 à E28). Ordre dans un groupe : `display_order`, puis nom.
 
-- Chaque ligne : nom, établissement, solde (CPT-03). Pour un compte d'épargne variable, un bien ou un
-  prêt, la valeur suit R-CPT-6 ; en phase 1, sans valorisation (CPT-06 en V1), c'est le solde d'ouverture plus
+- Chaque ligne : nom, établissement, solde (CPT-03). Pour un compte d'épargne variable, la valeur suit
+  R-CPT-6 ; en phase 1, sans valorisation (CPT-06 en V1), c'est le solde d'ouverture plus
   les flux.
 - Un compte en devise autre que l'euro porte la devise et la mention « hors totaux » (R-CPT-2).
 - Les **comptes clôturés** sont regroupés dans une section repliée en bas `[mat-expansion-panel]`.
@@ -222,19 +222,11 @@ Formulaire `[mat-dialog]` sur ordinateur, plein écran sur mobile.
    transactions (R-CPT-1).
 2. **Nom** (requis), **établissement** (optionnel, liste des établissements non archivés, R-CPT-10, avec
    « Nouvel établissement… » en bas de liste).
-3. **Date d'ouverture** et **solde d'ouverture** (requis, défaut 0). Pour un prêt, le capital restant dû
-   est saisi en positif et enregistré en négatif (R-CPT-12), ce que le libellé du champ indique. Pour un
-   bien, le champ s'intitule « Valeur du bien » et suggère le prix d'achat (R-CPT-14).
+3. **Date d'ouverture** et **solde d'ouverture** (requis, défaut 0).
 4. **Coordonnées bancaires**, section repliée : IBAN (validé à la saisie, R-CPT-8), numéro de compte.
 5. **Options**, section repliée, préremplies selon la nature : compter dans le patrimoine, dans
    l'épargne de précaution (R-CPT-13), dans les budgets (R-CPT-11). Devise (EUR par défaut, non
    modifiable après création). Note.
-
-Pour un prêt, les **conditions** (R-CPT-15) se saisissent ensuite depuis sa fiche
-([E3](#e3--fiche-dun-prêt--tableau-damortissement-cpt-09-cpt-10)), dans une popup : capital emprunté,
-taux nominal, durée en mois, date de la première échéance, assurance (aucune, montant mensuel ou taux
-annuel sur le capital), compte payeur, catégories des intérêts et de l'assurance (« Prêts › Intérêts »,
-« Prêts › Assurance emprunteur » par défaut). La mensualité calculée s'affiche pendant la saisie.
 
 Compte d'épargne à taux fixe (Livret A, LDDS…) : ses conditions d'épargne (R-CPT-9) sont créées
 **préremplies** selon la nature, sans être affichées en phase 1. Leur écran (CPT-05) arrive avec
@@ -286,7 +278,8 @@ Ouvert depuis la saisie rapide ou depuis le détail d'une transaction.
 
 - En haut : le montant de la transaction et le **reste à ventiler**, en rouge tant qu'il n'est pas nul.
 - Une ligne par ventilation : catégorie, montant **ou** pourcentage (bascule globale « € / % »), note,
-  bouton de suppression. « Ajouter une ligne » en bas.
+  bouton de suppression. « Ajouter une ligne » en bas. Le choix de catégorie propose aussi, si les
+  rubriques sont activées, « Remboursement › <prêt> » (R-PRE-7) et « Acquisition › <bien> » (R-BIE-8).
 - En pourcentages, les montants calculés s'affichent à côté de chaque ligne ; l'arrondi va sur la
   dernière ligne (R-TRX-14).
 - Bouton « Répartir le reste » sur une ligne : lui attribue le reste à ventiler.
@@ -309,11 +302,10 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
   l'action « Délier » (R-TRX-34). Une transaction ordinaire propose « Marquer comme virement » :
   choix du compte de contrepartie, puis des transactions candidates s'il y en a, sinon création de la
   jambe opposée (R-TRX-35, R-TRX-36).
-- **Mensualité de prêt** (R-CPT-17) : un débit qui correspond à une échéance non payée affiche « Correspond à
+- **Mensualité de prêt** (R-PRE-6) : un débit qui correspond à une échéance non payée affiche « Correspond à
   l'échéance n° N du prêt X : capital, intérêts, assurance » et « Ventiler selon l'échéance ». Une mensualité
-  ventilée affiche « Échéance n° N du prêt X » (lien vers le prêt), sa répartition (« Capital remboursé »,
-  intérêts, assurance) et « Annuler la ventilation » ; son montant est verrouillé. La jambe du capital, sur le
-  prêt, renvoie à la même échéance.
+  ventilée affiche « Échéance n° N du prêt X » (lien vers le prêt), sa répartition (« Remboursement »,
+  intérêts, assurance) et « Annuler la ventilation » ; son montant est verrouillé (R-PRE-8).
 - Menu `⋮` : Supprimer (avec « Annuler » dans la snack-bar), Dupliquer.
 
 ## E8 — Catégories (TRX-04)
@@ -524,33 +516,14 @@ Ce qui change dans les écrans existants :
 - « Conditions » : barème (lien vers E22), méthode (seules les quinzaines sont calculées en V1),
   plafond, catégorie des intérêts, arrondi à chaque quinzaine (R-EPA-6).
 
-## E3 — Fiche d'un compte à rendement variable, d'un bien ou d'un prêt (CPT-06, EPA-05, EPA-06)
+## E3 — Fiche d'un compte à rendement variable (CPT-06, EPA-05, EPA-06)
 
 - **Performance** (épargne variable) : valeur (« estimée » si la dernière valorisation a plus de
   90 jours), capital investi, plus-value en € et en %, TRI depuis l'ouverture et depuis le 1er janvier,
   performance pondérée par le temps (signalée comme une approximation), tableau par année civile
   (« données insuffisantes » sans valorisation à ±15 jours du 31/12).
-- **Valorisations** (ou **Capital restant dû** pour un prêt, saisi en positif et enregistré en
-  négatif ; **Valeur du bien** pour un bien, sans bloc Performance) : liste datée, « Ajouter », suppression ; une saisie à une date déjà valorisée demande de
-  confirmer le remplacement.
-
-## E3 — Fiche d'un prêt : tableau d'amortissement (CPT-09, CPT-10)
-
-Pour un prêt qui a des conditions (R-CPT-15) :
-
-- **Résumé** : mensualité (hors assurance et totale), capital restant dû selon le compte et selon le
-  tableau, avec l'écart s'il y en a un ; coût total du crédit (intérêts + assurance) ; date de fin.
-- **Tableau d'amortissement**, une année à la fois (l'année de la prochaine échéance par défaut) : n°,
-  date, mensualité, capital, intérêts, assurance, capital restant dû ; les échéances payées sont
-  marquées et mènent à leur transaction ; la prochaine est mise en évidence. Sur mobile : n°, date,
-  mensualité et capital restant dû.
-- Actions : « Conditions » (popup de saisie) et retrait des conditions, après confirmation : le prêt
-  revient au suivi par valorisations.
-- Action « Ventiler les mensualités passées », affichée quand des mensualités déjà enregistrées correspondent à
-  des échéances non payées (R-CPT-17) : liste à cocher (tout coché par défaut), puis validation. Une échéance
-  payée porte une coche, avec « Voir la mensualité » et « Annuler la ventilation ».
-
-Sans conditions, un bouton « Saisir les conditions du prêt » ouvre la popup de saisie.
+- **Valorisations** : liste datée, « Ajouter », suppression ; une saisie à une date déjà valorisée demande
+  de confirmer le remplacement.
 
 ## E22 — Barèmes de taux (EPA-01)
 
@@ -597,3 +570,61 @@ prévisions (R-PRJ-3, R-PRJ-31) :
 - **Scénarios** : un bloc par scénario (horizon, inflation, rendements par nature) ; « Modifier » ouvre
   les hypothèses : rendement et frais par nature, réglages par compte (dont le versement mensuel), taux
   futurs des barèmes (R-PRJ-21) ; scénario par défaut ; suppression sauf pour le scénario par défaut.
+
+# Écrans — biens et prêts (spec 09)
+
+Statut : **Validée** (2026-10-22)
+
+Ce qui change dans les écrans existants :
+- **Navigation** : entrées **Biens** (E25) et **Prêts** (E27), après Comptes, seulement si la rubrique est
+  activée ; sur mobile, dans le menu ⋮ du haut.
+- **E1 Accueil** : encadrés **Biens** (chaque bien et sa valeur, total) et **Prêts** (chaque prêt, son
+  capital restant dû et sa prochaine échéance, total), masqués si la rubrique est désactivée (TDB-08). Le
+  détail du patrimoine distingue comptes, biens et prêts.
+- **E9 Réglages** : bloc **Rubriques** avec deux interrupteurs, « Biens » et « Prêts » (R-BIE-7, R-PRE-12).
+  Un interrupteur ne se désactive pas tant que la rubrique contient un élément : il est grisé, avec
+  l'explication (« 2 biens : les supprimer pour désactiver la rubrique »).
+- **E6 Ventilation** et **E7 Détail d'une transaction** : remboursement et acquisition (ci-dessus).
+- **E11 Import : revue** : fin d'import, « Ventiler selon les échéances » (R-IMP-22).
+
+## E25 — Biens (BIE-01)
+
+Liste des biens : nom, type, date d'achat, valeur (R-BIE-2), total. Les biens vendus sont regroupés dans
+une section repliée. Action « Nouveau bien ».
+
+## E26 — Fiche d'un bien (BIE-01, R-PRE-10)
+
+- **En-tête** : nom, type, valeur, menu ⋮ (Modifier, Supprimer).
+- **Résumé** : prix et date d'achat, vente s'il y a lieu, **prêts** qui le financent (liens vers leur
+  fiche) et **valeur nette** (valeur − capital restant dû de ces prêts).
+- **Estimations** : liste datée, « Ajouter », suppression.
+- **Acquisition** : transactions ventilées en acquisition de ce bien (R-BIE-8), avec leur total.
+
+Formulaire (popup) : nom, type, date d'achat, prix d'achat (indice : « apport et capital emprunté, hors
+frais »), compter dans le patrimoine, vente (date et prix), note.
+
+## E27 — Prêts (PRE-01)
+
+Liste des prêts : nom, type, organisme, capital restant dû (R-PRE-4), prochaine échéance s'il a un
+tableau, total. Les prêts soldés sont regroupés dans une section repliée. Action « Nouveau prêt ».
+
+## E28 — Fiche d'un prêt (PRE-01 à PRE-03)
+
+- **En-tête** : nom, type, organisme, capital restant dû, menu ⋮ (Modifier, Solder, Supprimer).
+- **Résumé** : capital emprunté, date de déblocage, bien financé (lien), mode de suivi ; avec tableau :
+  mensualité (hors assurance et totale), coût total du crédit (intérêts + assurance), date de fin.
+- **Avec tableau** : **tableau d'amortissement**, une année à la fois (l'année de la prochaine échéance par
+  défaut) : n°, date, mensualité, capital, intérêts, assurance, capital restant dû ; les échéances payées
+  portent une coche, avec « Voir la mensualité » et « Annuler la ventilation » ; la prochaine est mise en
+  évidence. Sur mobile : n°, date, mensualité et capital restant dû. « Ventiler les mensualités passées »,
+  affiché quand des mensualités déjà enregistrées correspondent à des échéances non payées (R-PRE-6) :
+  liste à cocher (tout coché par défaut), puis validation.
+- **En suivi simple** : **capitaux restants dus** saisis, liste datée, « Ajouter », suppression (R-PRE-5) ;
+  transactions ventilées en remboursement de ce prêt.
+
+Formulaire (popup) : nom, type, organisme prêteur, date de déblocage, capital emprunté, bien financé,
+compter dans le patrimoine, note, et le **mode de suivi** :
+- avec tableau : taux nominal, durée en mois, première échéance, assurance (aucune, montant mensuel ou taux
+  annuel sur le capital), compte payeur, catégories des intérêts et de l'assurance (« Prêts › Intérêts »,
+  « Prêts › Assurance emprunteur » par défaut). La mensualité calculée s'affiche pendant la saisie ;
+- suivi simple : rien de plus.

@@ -142,9 +142,9 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   candidat, marquer la ligne comme virement vers un compte crée la jambe opposée à la validation
   (R-TRX-36).
 - **R-IMP-22** — Après la validation, les transactions du lot (créées ou pointées) qui correspondent à une
-  échéance de prêt pas encore payée (R-CPT-17) sont proposées sur l'écran de fin d'import, comme le
-  rapprochement (R-RAP-11). Accepter les ventile en capital, intérêts et assurance et crée les jambes sur le
-  prêt. Rien n'est ventilé sans cet accord.
+  échéance de prêt pas encore payée (R-PRE-6) sont proposées sur l'écran de fin d'import, comme le
+  rapprochement (R-RAP-11). Accepter les ventile en remboursement, intérêts et assurance. Rien n'est ventilé
+  sans cet accord.
 
 ### Validation et annulation
 

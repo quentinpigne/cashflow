@@ -59,7 +59,7 @@ par la banque, et figer les périodes vérifiées.
   - une transaction ou une combinaison de 2 transactions dont le montant égale l'écart (ou son opposé) ;
   - une transaction dont le montant égale **le double** de l'écart, ce qui trahit une erreur de signe ;
   - les jours où le solde calculé diverge des soldes intermédiaires du relevé, s'ils sont connus.
-- **R-RAP-10** — Comptes `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY` : pas de point de contrôle. Le rôle équivalent est tenu
+- **R-RAP-10** — Comptes `VARIABLE_SAVINGS` : pas de point de contrôle. Le rôle équivalent est tenu
   par les valorisations (spec 06).
 - **R-RAP-11** — Après la validation d'un import qui a créé ou mis à jour un point de contrôle à écart
   nul (R-IMP-16), l'écran de fin d'import **propose** « Rapprocher au <date> » en un clic. Rien n'est

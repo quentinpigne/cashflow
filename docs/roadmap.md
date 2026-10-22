@@ -74,9 +74,10 @@ mois, réimport sans doublon.
 
 ## Compléments V1 (2026-10-22)
 
-- ADR-0019 — famille « Bien » (`PROPERTY`) dans le patrimoine
-- CPT-09 — conditions d'un prêt et tableau d'amortissement calculé (ADR-0020)
-- CPT-10 — ventilation des mensualités en capital, intérêts et assurance (ADR-0021)
+- BIE-01 à BIE-03 — biens hors des comptes, estimations, acquisition (ADR-0019, spec 09)
+- PRE-01 à PRE-04 — prêts hors des comptes, tableau d'amortissement, ventilation des mensualités
+  (ADR-0019, ADR-0020, spec 09)
+- TDB-08 — encadrés Biens et Prêts sur l'accueil
 
 ## Phase 7 — V2 (à prioriser plus tard)
 

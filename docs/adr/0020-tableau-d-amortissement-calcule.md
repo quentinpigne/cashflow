@@ -2,11 +2,11 @@
 
 - **Statut** : Accepté
 - **Date** : 2026-10-22
-- **Concerne** : vision, spec 01, spec 02, spec 03, spec 07, modèle de données, glossaire, écrans, feuille de route
+- **Concerne** : vision, spec 03, spec 07, spec 09, modèle de données, glossaire, écrans, feuille de route
 
 ## Contexte
 
-En V1, un prêt est suivi par son seul capital restant dû, saisi par valorisations (R-CPT-12), et la
+Sans tableau d'amortissement, un prêt n'est suivi que par son capital restant dû, saisi à la main, et la
 mensualité est une dépense entière sur le compte qui la paie. Trois défauts en découlent :
 
 - la part de capital de chaque mensualité est comptée comme une dépense, alors qu'elle réduit une
@@ -29,7 +29,7 @@ le plus courant.
 
 ## Décision
 
-Option 2. Un compte `LIABILITY` peut recevoir des **conditions de prêt** (`LoanTerms`) : capital
+Option 2. Un prêt (ADR-0019) suivi « avec tableau » a des **conditions** : capital
 emprunté, taux nominal annuel, durée en mois, date de la première échéance, assurance emprunteur
 (aucune, montant mensuel fixe, ou taux annuel sur le capital emprunté), compte payeur, catégories des
 intérêts et de l'assurance.
@@ -47,10 +47,9 @@ stocké. Cas couvert : prêt amortissable à taux fixe et mensualités constante
 - Dates : une échéance par mois à partir de la première, au même quantième (dernier jour du mois si
   ce quantième n'existe pas, comme R-TRX-41).
 
-La **dette** reste la valeur du compte selon R-CPT-6 (solde d'ouverture, flux, valorisations) : elle
-baisse par les parts de capital des mensualités payées, enregistrées comme virements vers le compte de
-prêt (ADR-0021). Le tableau donne en plus le **capital restant dû théorique** à toute date, que la fiche
-du prêt compare à la valeur du compte.
+La **dette** est le capital restant dû du tableau à la date (R-PRE-4), que les mensualités soient
+enregistrées ou non. Chaque mensualité payée se ventile en remboursement de capital, intérêts et
+assurance (R-PRE-6) : seuls les intérêts et l'assurance sont des dépenses.
 
 Hors périmètre, après la V1 : différé, remboursement anticipé, taux variable, prêt in fine, import du
 tableau de la banque.
@@ -59,10 +58,7 @@ tableau de la banque.
 
 - Le non-objectif « tableaux d'amortissement » de la vision est remplacé par ce périmètre restreint.
 - Le domaine gagne un moteur d'amortissement pur, testé contre des tableaux de référence.
-- Chaque mensualité payée peut être ventilée automatiquement en capital, intérêts et assurance
-  (ADR-0021, R-CPT-17) : les dépenses ne comptent plus que les intérêts et l'assurance.
-- La projection suit le tableau pour un prêt qui a des conditions (R-PRJ-40), et ses échéances futures
-  alimentent la trésorerie projetée du compte payeur.
-- Un prêt sans conditions garde le fonctionnement actuel (valorisations, mensualité en dépense entière).
-- Nouvelle table `loan_terms` (migration), nouvelles routes d'API et écrans : conditions du prêt dans
-  la fiche, tableau d'amortissement consultable.
+- Les dépenses ne comptent plus que les intérêts et l'assurance des mensualités ventilées (R-PRE-6, R-PRE-7).
+- La projection suit le tableau (R-PRJ-40), et les échéances futures alimentent la trésorerie projetée du
+  compte payeur (R-PRJ-10).
+- Un prêt irrégulier (différé, remboursement anticipé, taux variable, in fine) se suit en mode simple.

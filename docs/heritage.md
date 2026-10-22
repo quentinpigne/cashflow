@@ -92,8 +92,8 @@ Remarques :
 - La catégorie de revenu « Remboursements » de l'ancien seed n'est pas reprise : un remboursement vient
   en déduction de la catégorie de dépense d'origine (R-TRX-13).
 - À compléter : Santé, Loisirs, Voyages, Impôts et taxes, Assurances, Enfants, Animaux, Dons, Frais
-  bancaires, Prêts (dépense, utilisée par R-CPT-12, avec les sous-catégories Intérêts et Assurance emprunteur des
-  conditions de prêt, R-CPT-15), Intérêts (revenu, utilisé par R-EPA-10).
+  bancaires, Prêts (dépense, avec les sous-catégories Intérêts et Assurance emprunteur des
+  conditions de prêt, R-PRE-2), Intérêts (revenu, utilisé par R-EPA-10).
 
 ### Maquette du tableau de bord
 

@@ -47,9 +47,13 @@ qui ne sont pas répétés ci-dessous.
 erDiagram
     Institution ||--o{ Account : "tient"
     Account ||--o| FixedSavingsTerms : "conditions (si épargne fixe)"
-    Account ||--o| LoanTerms : "conditions (si prêt)"
-    Account ||--o{ LoanPayment : "échéances payées (si prêt)"
+    Asset ||--o{ AssetValuation : "estimé"
+    Loan ||--o{ LoanBalance : "capital restant dû saisi"
+    Loan }o--o| Asset : "finance"
+    Loan ||--o{ LoanPayment : "échéances payées"
     Transaction ||--o| LoanPayment : "paie"
+    Loan ||--o{ Split : "remboursé par"
+    Asset ||--o{ Split : "acquis par"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -100,8 +104,8 @@ erDiagram
 | `account_number` | texte ≤ 30 | optionnel |
 | `closed_on` | `Date` | optionnel, ≥ `opening_date` |
 | `include_in_net_worth` | booléen | défaut `true` |
-| `include_in_emergency_fund` | booléen | défaut `true` pour `CASH`, `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE` ; `false` sinon ; toujours `false` pour `LIABILITY` et `PROPERTY` (R-CPT-13) |
-| `include_in_budget` | booléen | défaut `true` pour `CASH`, `false` sinon ; toujours `false` pour `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY` (R-BUD-1) |
+| `include_in_emergency_fund` | booléen | défaut `true` pour `CASH`, `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE` ; `false` sinon (R-CPT-13) |
+| `include_in_budget` | booléen | défaut `true` pour `CASH`, `false` sinon ; toujours `false` pour `VARIABLE_SAVINGS` (R-BUD-1) |
 | `display_order` | entier | défaut 0 |
 | `color` | texte | optionnel |
 | `notes` | texte | optionnel |
@@ -113,8 +117,6 @@ erDiagram
 | `CASH` | `CHECKING`, `CASH_WALLET`, `OTHER_CASH` |
 | `FIXED_SAVINGS` | `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE`, `CEL`, `PEL`, `TERM_DEPOSIT`, `SAVINGS_OTHER` |
 | `VARIABLE_SAVINGS` | `LIFE_INSURANCE`, `PEA`, `PEA_PME`, `PER`, `SECURITIES`, `EMPLOYEE_SAVINGS`, `CRYPTO`, `VARIABLE_OTHER` |
-| `LIABILITY` | `MORTGAGE`, `CONSUMER_LOAN`, `LOAN_OTHER` |
-| `PROPERTY` | `REAL_ESTATE`, `VEHICLE`, `PROPERTY_OTHER` (ADR-0019) |
 
 ### FixedSavingsTerms (1–1 avec un compte `FIXED_SAVINGS`)
 
@@ -144,36 +146,7 @@ erDiagram
 
 Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu).
 
-### LoanTerms (0–1 avec un compte `LIABILITY`, ADR-0020)
-
-| Champ | Type | Contraintes |
-|---|---|---|
-| `account_id` | `Id` → Account | clé primaire ; compte de famille `LIABILITY` |
-| `principal` | `Money` | requis, > 0 : capital emprunté |
-| `annual_rate` | `Rate` | requis, ≥ 0 : taux nominal annuel, hors assurance |
-| `duration_months` | entier | requis, 1 à 600 |
-| `first_installment_date` | `Date` | requis |
-| `insurance_mode` | enum | `NONE` \| `FIXED` \| `RATE_ON_PRINCIPAL` |
-| `insurance_amount` | `Money` | requis et ≥ 0 si `FIXED`, `null` sinon : assurance mensuelle |
-| `insurance_rate` | `Rate` | requis et ≥ 0 si `RATE_ON_PRINCIPAL`, `null` sinon : taux annuel sur le capital emprunté |
-| `payer_account_id` | `Id` → Account | requis ; compte de famille `CASH` qui paie les mensualités |
-| `interest_category_id` | `Id` → Category | requis ; catégorie de dépense |
-| `insurance_category_id` | `Id` → Category | requis si une assurance existe ; catégorie de dépense |
-
-Le tableau d'amortissement en découle (R-CPT-16) et n'est pas stocké.
-
-### LoanPayment (échéances payées, R-CPT-17)
-
-| Champ | Type | Contraintes |
-|---|---|---|
-| `loan_account_id` | `Id` → Account | requis ; compte `LIABILITY` qui a des conditions |
-| `installment_number` | entier | requis, ≥ 1 ; unique avec `loan_account_id` |
-| `transaction_id` | `Id` → Transaction | requis, unique : la mensualité du compte payeur, suppression en cascade |
-
-La mensualité porte une ventilation de virement (le capital) reliée à la jambe créée sur le prêt (ADR-0021),
-et des ventilations de dépense pour les intérêts et l'assurance.
-
-### Valuation (comptes `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY`)
+### Valuation (comptes `VARIABLE_SAVINGS`)
 
 | Champ | Type | Contraintes |
 |---|---|---|
@@ -225,7 +198,9 @@ Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `
 | `category_id` | `Id` → Category | optionnel (`null` = non catégorisé) ; **doit être `null`** sur une ventilation de virement |
 | `note` | texte | optionnel |
 | `position` | entier | ordre d'affichage |
-| `project_id` | `Id` → Project | optionnel ; projet `ACTIVE` à l'affectation (R-BUD-24) ; `null` sur une ventilation de virement |
+| `project_id` | `Id` → Project | optionnel ; projet `ACTIVE` à l'affectation (R-BUD-24) ; `null` sur une ventilation de virement, de remboursement ou d'acquisition |
+| `loan_id` | `Id` → Loan | optionnel : **ventilation de remboursement** (R-PRE-7) ; alors sans catégorie ni bien |
+| `asset_id` | `Id` → Asset | optionnel : **ventilation d'acquisition** (R-BIE-8) ; alors sans catégorie ni prêt |
 
 Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (ADR-0003).
 
@@ -238,7 +213,7 @@ Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (AD
 | `note` | texte | optionnel |
 
 Invariants : comptes distincts, même devise, montants des deux ventilations opposés (ADR-0004,
-ADR-0021) ; une transaction porte au plus une ventilation de virement.
+ADR-0021) ; une jambe de virement a une ventilation unique (R-TRX-32).
 
 ### RecurringRule
 
@@ -255,6 +230,83 @@ ADR-0021) ; une transaction porte au plus une ventilation de virement.
 | `end_date` | `Date` | optionnel |
 | `split_template` | `Json` | liste `{category_id, amount}` dont la somme vaut `amount` |
 | `active` | booléen | — |
+
+## Biens et prêts — [spec 09](specs/09-biens-et-prets.md)
+
+Ni les biens ni les prêts ne sont des comptes (ADR-0019). Montants en euros.
+
+### Asset (bien)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `name` | texte ≤ 80 | requis |
+| `kind` | `AssetKind` | `REAL_ESTATE` \| `VEHICLE` \| `OTHER` |
+| `purchase_date` | `Date` | requis |
+| `purchase_price` | `Money` | requis, > 0 |
+| `sold_on` | `Date` | optionnel, ≥ `purchase_date` |
+| `sale_price` | `Money` | optionnel, ≥ 0, seulement si `sold_on` |
+| `include_in_net_worth` | booléen | défaut `true` |
+| `notes` | texte | optionnel |
+
+### AssetValuation (estimation d'un bien)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `asset_id` | `Id` → Asset | requis, suppression en cascade |
+| `date` | `Date` | requis, unique avec `asset_id`, entre l'achat et la vente |
+| `value` | `Money` | requis, > 0 |
+| `note` | texte | optionnel |
+
+### Loan (prêt)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `name` | texte ≤ 80 | requis |
+| `kind` | `LoanKind` | `MORTGAGE` \| `CONSUMER` \| `OTHER` |
+| `institution_id` | `Id` → Institution | optionnel : organisme prêteur |
+| `start_date` | `Date` | requis : date de déblocage |
+| `principal` | `Money` | requis, > 0 : capital emprunté |
+| `mode` | `LoanMode` | `SCHEDULE` (avec tableau) \| `MANUAL` (suivi simple) |
+| `annual_rate` | `Rate` | requis si `SCHEDULE`, ≥ 0 : taux nominal annuel hors assurance |
+| `duration_months` | entier | requis si `SCHEDULE`, 1 à 600 |
+| `first_installment_date` | `Date` | requis si `SCHEDULE`, ≥ `start_date` |
+| `insurance_mode` | enum | `NONE` \| `FIXED` \| `RATE_ON_PRINCIPAL` (`NONE` en suivi simple) |
+| `insurance_amount` | `Money` | requis et ≥ 0 si `FIXED` |
+| `insurance_rate` | `Rate` | requis et ≥ 0 si `RATE_ON_PRINCIPAL` |
+| `payer_account_id` | `Id` → Account | requis si `SCHEDULE` ; compte `CASH` en euros |
+| `interest_category_id` | `Id` → Category | requis si `SCHEDULE` ; catégorie de dépense |
+| `insurance_category_id` | `Id` → Category | requis si une assurance existe ; catégorie de dépense |
+| `asset_id` | `Id` → Asset | optionnel : bien financé (R-PRE-10) |
+| `closed_on` | `Date` | optionnel : date où le prêt est soldé |
+| `include_in_net_worth` | booléen | défaut `true` |
+| `notes` | texte | optionnel |
+
+Le tableau d'amortissement découle des conditions (R-PRE-3) et n'est pas stocké.
+
+### LoanBalance (capital restant dû saisi, suivi simple)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `loan_id` | `Id` → Loan | requis, suppression en cascade |
+| `date` | `Date` | requis, unique avec `loan_id` |
+| `outstanding` | `Money` | requis, ≥ 0 |
+| `note` | texte | optionnel |
+
+### LoanPayment (échéance payée, R-PRE-6)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `loan_id` | `Id` → Loan | requis, suppression en cascade |
+| `installment_number` | entier | requis, ≥ 1 ; unique avec `loan_id` |
+| `transaction_id` | `Id` → Transaction | requis, unique : la mensualité du compte payeur, suppression en cascade |
+
+La mensualité porte une ventilation de remboursement (le capital) et des ventilations de dépense (intérêts,
+assurance).
+
+### Réglages
+
+Les rubriques Biens et Prêts s'activent par deux réglages (`AppSetting`) : `features.assets`,
+`features.loans` (R-BIE-7, R-PRE-12).
 
 ## Import — [spec 03](specs/03-import.md)
 

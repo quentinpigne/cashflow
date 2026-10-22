@@ -11,19 +11,31 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 |---|---|---|
 | Établissement | `Institution` | Banque, assureur ou courtier qui tient un ou plusieurs comptes. |
 | Compte | `Account` | Tout contenant d'argent suivi par l'application : compte courant, livret, assurance vie… |
-| Famille de compte | `AccountFamily` | Regroupement qui détermine le comportement d'un compte : `CASH`, `FIXED_SAVINGS`, `VARIABLE_SAVINGS`, `LIABILITY`, `PROPERTY`. |
-| Passif, dette | `LIABILITY` | Famille des prêts. Valeur négative égale au capital restant dû. |
-| Bien | `PROPERTY` | Famille des biens possédés (logement, véhicule). Valeur positive, saisie par valorisations (ADR-0019). |
+| Famille de compte | `AccountFamily` | Regroupement qui détermine le comportement d'un compte : `CASH`, `FIXED_SAVINGS`, `VARIABLE_SAVINGS`. |
 | Nature de compte | `AccountKind` | Sous-type précis d'un compte (`CHECKING`, `LIVRET_A`, `PEA`…). Détermine sa famille. |
 | Solde d'ouverture | `opening_balance` | Solde du compte à sa date d'ouverture dans l'application (pas forcément sa date d'ouverture réelle). |
 | Solde calculé | `computed balance` | Solde d'ouverture + somme des transactions jusqu'à une date. Jamais stocké comme vérité. |
-| Conditions de prêt | `LoanTerms` | Capital emprunté, taux, durée, première échéance, assurance et compte payeur d'un prêt (ADR-0020). |
+| Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…), à une date. |
+| Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |
+
+## Biens et prêts
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Bien | `Asset` | Logement, véhicule… possédé ; compté à l'actif du patrimoine pour sa valeur. Ce n'est pas un compte (ADR-0019). |
+| Prix d'achat | `purchase_price` | Prix du bien, conseillé apport et capital emprunté compris, hors frais. Valeur du bien sans estimation. |
+| Estimation | `AssetValuation` | Valeur datée d'un bien, saisie à la main. |
+| Valeur nette d'un bien | `net value` | Valeur du bien moins le capital restant dû des prêts qui le financent. |
+| Prêt | `Loan` | Somme empruntée, comptée au passif du patrimoine pour son capital restant dû. Ce n'est pas un compte (ADR-0019). |
+| Mode de suivi | `LoanMode` | `SCHEDULE` : avec tableau d'amortissement ; `MANUAL` : suivi simple, capital restant dû saisi. |
+| Conditions de prêt | `loan terms` | Taux, durée, première échéance, assurance, compte payeur et catégories d'un prêt avec tableau (ADR-0020). |
 | Tableau d'amortissement | `AmortizationSchedule` | Échéances d'un prêt calculées à partir de ses conditions : capital, intérêts, assurance et capital restant dû de chacune. Jamais stocké. |
 | Échéance de prêt | `LoanInstallment` | Ligne du tableau d'amortissement. À distinguer de l'échéance prévue d'une récurrence. |
-| Échéance payée | `LoanPayment` | Lien entre une échéance de prêt et la mensualité qui l'a payée, ventilée en capital, intérêts et assurance (R-CPT-17). |
-| Capital restant dû | `outstanding principal` | Ce qu'il reste à rembourser d'un prêt. Valeur (négative) du compte de prêt ; le tableau en donne la valeur théorique. |
-| Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…) ou d'un bien, ou capital restant dû d'un prêt (valeur négative), à une date. |
-| Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |
+| Capital restant dû | `outstanding principal` | Ce qu'il reste à rembourser d'un prêt : selon le tableau, ou saisi en suivi simple (`LoanBalance`). |
+| Échéance payée | `LoanPayment` | Lien entre une échéance de prêt et la mensualité qui l'a payée. |
+| Ventilation de remboursement | `repayment split` | Part d'une transaction rattachée à un prêt : capital remboursé. Ni revenu ni dépense (R-PRE-7). |
+| Ventilation d'acquisition | `acquisition split` | Part d'une transaction rattachée à un bien : apport ou paiement du prix. Ni revenu ni dépense (R-BIE-8). |
+| Rubrique activable | `feature setting` | Rubrique Biens ou Prêts, masquée tant qu'elle n'est pas activée dans les réglages. |
 
 ## Transactions
 
@@ -40,7 +52,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Catégorie | `Category` | Poste de classement d'une ventilation (« Alimentation > Restaurants »). Nature revenu ou dépense. |
 | Nature de catégorie | `CategoryKind` | `INCOME` (revenu) ou `EXPENSE` (dépense). |
 | Virement interne | `Transfer` | Lien entre deux ventilations de sens opposé, de deux transactions sur deux comptes suivis (ADR-0021). Ni revenu ni dépense. |
-| Ventilation de virement | `transfer split` | Ventilation reliée par un virement interne : sans catégorie, exclue des revenus, des dépenses et des budgets. |
+| Ventilation de virement | `transfer split` | Ventilation, unique, d'une jambe de virement : sans catégorie, exclue des revenus, des dépenses et des budgets. |
 | Jambe (de virement) | `leg` | L'une des deux transactions d'un virement interne. |
 | Statut de pointage | `ClearingStatus` | `PENDING` (saisie, non vue en banque), `CLEARED` (vue sur un relevé), `RECONCILED` (couverte par un point de contrôle validé). |
 | Origine | `TransactionOrigin` | `MANUAL`, `IMPORT`, `RECURRING`, `INTEREST` (intérêts générés). |
