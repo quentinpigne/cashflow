@@ -2,7 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding-top: 0.5rem;
+  // En bas, de la place pour l'ombre de l'accordéon : le contenu de la popup, qui défile, la rognerait.
+  padding: 0.5rem 0;
 }
 
 .pair {
