@@ -85,8 +85,8 @@ function storedCount(): Count {
       align-items: center;
       justify-content: space-between;
       gap: 0.5rem;
-      // La poignée de déplacement de l'encadré est en haut à droite.
-      margin-right: 2rem;
+      // La poignée de déplacement et le bouton de réglages de l'encadré sont en haut à droite.
+      margin-right: 4.5rem;
       margin-bottom: 0.5rem;
       h2 {
         margin: 0;
