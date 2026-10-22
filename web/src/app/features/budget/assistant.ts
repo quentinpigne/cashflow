@@ -96,15 +96,18 @@ interface Row {
                       <span>{{ m | money }}</span>
                     }
                   </span>
-                  <input
-                    class="amount-input"
-                    matInput
-                    inputmode="decimal"
-                    [attr.aria-label]="'Montant pour ' + row.suggestion.name"
-                    [ngModel]="row.amount"
-                    (ngModelChange)="setAmount(row, $event)"
-                    [disabled]="!row.selected"
-                  />
+                  <mat-form-field class="amount-field">
+                    <input
+                      matInput
+                      inputmode="decimal"
+                      autocomplete="off"
+                      [attr.aria-label]="'Montant pour ' + row.suggestion.name"
+                      [ngModel]="row.amount"
+                      (ngModelChange)="setAmount(row, $event)"
+                      [disabled]="!row.selected"
+                    />
+                    <span matTextSuffix>&nbsp;€</span>
+                  </mat-form-field>
                 </div>
               }
             </section>
@@ -138,11 +141,11 @@ interface Row {
     }
     .row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto 7rem;
+      grid-template-columns: minmax(0, 1fr) auto 9rem;
       align-items: center;
       gap: 1rem;
       border-top: 1px solid var(--mat-sys-outline-variant);
-      padding: 0.25rem 0;
+      padding: 0.5rem 0;
     }
     .disabled {
       opacity: 0.6;
@@ -151,13 +154,9 @@ interface Row {
       display: flex;
       gap: 0.75rem;
     }
-    .amount-input {
-      text-align: right;
-      border: 1px solid var(--mat-sys-outline-variant);
-      border-radius: 0.25rem;
-      padding: 0.375rem 0.5rem;
-      background: transparent;
-      color: inherit;
+    // Champ de montant de la même taille que partout ailleurs ; seuls les chiffres sont à chasse fixe.
+    .amount-field input {
+      font-variant-numeric: tabular-nums;
     }
     .small {
       font: var(--mat-sys-body-small);
@@ -170,7 +169,7 @@ interface Row {
     }
     @media (max-width: 599.98px) {
       .row {
-        grid-template-columns: minmax(0, 1fr) 6rem;
+        grid-template-columns: minmax(0, 1fr) 8rem;
       }
       .history {
         display: none;
