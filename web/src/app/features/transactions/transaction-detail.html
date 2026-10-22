@@ -79,7 +79,34 @@
         }
       </mat-form-field>
 
-      @if (t.transfer; as transfer) {
+      @if (t.loan_payment; as lp) {
+        <div class="loan card">
+          <div class="splits-head">
+            <span>
+              <mat-icon>account_balance</mat-icon>
+              Échéance n° {{ lp.installment_number }} du prêt
+              <a [routerLink]="['/comptes', lp.loan_account_id]">{{ lp.loan_name }}</a>
+            </span>
+            <button mat-button type="button" (click)="unpayInstallment(t)">
+              Annuler la ventilation
+            </button>
+          </div>
+          @if (lp.is_payment) {
+            @for (split of t.splits; track split.id) {
+              <div class="split">
+                <span>{{
+                  split.category_id ? categories.label(split.category_id) : 'Capital remboursé'
+                }}</span>
+                <span class="amount" [class.negative]="split.amount_minor < 0">{{
+                  split.amount_minor | money: t.currency
+                }}</span>
+              </div>
+            }
+          } @else {
+            <p class="muted">Part de capital de la mensualité, qui réduit la dette.</p>
+          }
+        </div>
+      } @else if (t.transfer; as transfer) {
         <div class="transfer card">
           <mat-icon>swap_horiz</mat-icon>
           <span>
@@ -119,6 +146,22 @@
           (valueChange)="category.set($event)"
           [kind]="direction() === 'out' ? 'EXPENSE' : 'INCOME'"
         />
+        @if (loanProposal.value(); as p) {
+          <div class="loan card">
+            <span>
+              Correspond à l'échéance n° {{ p.installment_number }} du prêt
+              <strong>{{ p.loan_name }}</strong> ({{ p.installment_date | frDate: 'short' }}) :
+              {{ p.principal_minor | money: t.currency }} de capital,
+              {{ p.interest_minor | money: t.currency }} d'intérêts
+              @if (p.insurance_minor > 0) {
+                et {{ p.insurance_minor | money: t.currency }} d'assurance
+              }
+            </span>
+            <button mat-flat-button type="button" (click)="payInstallment(p)">
+              Ventiler selon l'échéance
+            </button>
+          </div>
+        }
         <div class="links">
           <button mat-button type="button" (click)="editSplits(t)">
             <mat-icon>call_split</mat-icon>Ventiler

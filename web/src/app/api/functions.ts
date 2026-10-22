@@ -65,8 +65,16 @@ export type { SaveLoanTerms$Params as SaveLoanTerms$Params } from './fn/loans/sa
 export { saveLoanTerms as saveLoanTerms } from './fn/loans/save-loan-terms';
 export type { DeleteLoanTerms$Params as DeleteLoanTerms$Params } from './fn/loans/delete-loan-terms';
 export { deleteLoanTerms as deleteLoanTerms } from './fn/loans/delete-loan-terms';
+export type { PayLoanInstallments$Params as PayLoanInstallments$Params } from './fn/loans/pay-loan-installments';
+export { payLoanInstallments as payLoanInstallments } from './fn/loans/pay-loan-installments';
+export type { UnpayLoanInstallment$Params as UnpayLoanInstallment$Params } from './fn/loans/unpay-loan-installment';
+export { unpayLoanInstallment as unpayLoanInstallment } from './fn/loans/unpay-loan-installment';
+export type { LoanPaymentProposals$Params as LoanPaymentProposals$Params } from './fn/loans/loan-payment-proposals';
+export { loanPaymentProposals as loanPaymentProposals } from './fn/loans/loan-payment-proposals';
 export type { PreviewLoan$Params as PreviewLoan$Params } from './fn/loans/preview-loan';
 export { previewLoan as previewLoan } from './fn/loans/preview-loan';
+export type { TransactionLoanProposal$Params as TransactionLoanProposal$Params } from './fn/loans/transaction-loan-proposal';
+export { transactionLoanProposal as transactionLoanProposal } from './fn/loans/transaction-loan-proposal';
 export type { AccountProjection$Params as AccountProjection$Params } from './fn/projections/account-projection';
 export { accountProjection as accountProjection } from './fn/projections/account-projection';
 export type { CashProjection$Params as CashProjection$Params } from './fn/projections/cash-projection';

@@ -25,6 +25,8 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { TransactionDetail } from '../../api/models/transaction-detail';
+import { LoanPaymentProposal } from '../../api/models/loan-payment-proposal';
+import { LoansService } from '../../api/services/loans.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
@@ -86,6 +88,18 @@ export class TransactionDetailView {
     stream: ({ params }) => this.api.getTransaction({ id: params.id }),
   });
 
+  private readonly loans = inject(LoansService);
+  /** Échéance de prêt à laquelle correspond un débit pas encore ventilé (R-CPT-17). */
+  protected readonly loanProposal = rxResource({
+    params: () => {
+      const t = this.value();
+      return t && !t.transfer && !t.loan_payment && t.amount_minor < 0
+        ? { id: t.id, version: this.version.value() }
+        : undefined;
+    },
+    stream: ({ params }) => this.loans.transactionLoanProposal({ id: params.id }),
+  });
+
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly direction = signal<Direction>('out');
@@ -140,9 +154,10 @@ export class TransactionDetailView {
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       this.pendingSplits.set(null);
       // Rapprochée : montant et date de solde verrouillés (R-TRX-3).
-      if (t.locked) {
+      // Mensualité ventilée selon son échéance : montant verrouillé (R-CPT-17).
+      if (t.locked || t.loan_payment) {
         this.form.controls.amount.disable();
-        if (!t.bank_date) {
+        if (t.locked && !t.bank_date) {
           this.form.controls.date.disable();
         }
       } else {
@@ -250,6 +265,47 @@ export class TransactionDetailView {
   protected async setCleared(t: TransactionDetail, cleared: boolean): Promise<void> {
     try {
       await firstValueFrom(this.reconciliation.setCleared({ id: t.id, body: { cleared } }));
+      this.version.bump();
+    } catch (error) {
+      this.error.set(errorMessage(error));
+    }
+  }
+
+  /** Ventile la mensualité selon son échéance : capital, intérêts, assurance (CPT-10). */
+  protected async payInstallment(p: LoanPaymentProposal): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.loans.payLoanInstallments({
+          id: p.loan_account_id,
+          body: [{ transaction_id: p.transaction_id, installment_number: p.installment_number }],
+        }),
+      );
+      this.version.bump();
+      this.snack.open(`Échéance n° ${p.installment_number} ventilée`, undefined, {
+        duration: 3000,
+      });
+    } catch (error) {
+      this.error.set(errorMessage(error));
+    }
+  }
+
+  protected async unpayInstallment(t: TransactionDetail): Promise<void> {
+    const payment = t.loan_payment;
+    if (!payment) return;
+    const ok = await confirm(this.dialog, {
+      title: 'Annuler la ventilation ?',
+      message:
+        'La part de capital est retirée du prêt et la mensualité redevient une dépense non catégorisée.',
+      action: 'Annuler la ventilation',
+    });
+    if (!ok) return;
+    try {
+      await firstValueFrom(
+        this.loans.unpayLoanInstallment({
+          id: payment.loan_account_id,
+          number: payment.installment_number,
+        }),
+      );
       this.version.bump();
     } catch (error) {
       this.error.set(errorMessage(error));

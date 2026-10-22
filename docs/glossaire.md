@@ -20,6 +20,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Conditions de prêt | `LoanTerms` | Capital emprunté, taux, durée, première échéance, assurance et compte payeur d'un prêt (ADR-0020). |
 | Tableau d'amortissement | `AmortizationSchedule` | Échéances d'un prêt calculées à partir de ses conditions : capital, intérêts, assurance et capital restant dû de chacune. Jamais stocké. |
 | Échéance de prêt | `LoanInstallment` | Ligne du tableau d'amortissement. À distinguer de l'échéance prévue d'une récurrence. |
+| Échéance payée | `LoanPayment` | Lien entre une échéance de prêt et la mensualité qui l'a payée, ventilée en capital, intérêts et assurance (R-CPT-17). |
 | Capital restant dû | `outstanding principal` | Ce qu'il reste à rembourser d'un prêt. Valeur (négative) du compte de prêt ; le tableau en donne la valeur théorique. |
 | Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…) ou d'un bien, ou capital restant dû d'un prêt (valeur négative), à une date. |
 | Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |

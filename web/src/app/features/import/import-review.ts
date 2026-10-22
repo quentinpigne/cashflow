@@ -20,6 +20,7 @@ import { ImportDecision } from '../../api/models/import-decision';
 import { ImportLineView } from '../../api/models/import-line-view';
 import { LineReviewInput } from '../../api/models/line-review-input';
 import { ImportsService } from '../../api/services/imports.service';
+import { LoansService } from '../../api/services/loans.service';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage, problemOf } from '../../core/http-errors';
@@ -59,6 +60,7 @@ type View = 'all' | 'create' | 'match' | 'duplicate' | 'error' | 'uncategorized'
 export class ImportReviewPage {
   private readonly api = inject(ImportsService);
   private readonly reconciliation = inject(ReconciliationService);
+  private readonly loans = inject(LoansService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
@@ -302,6 +304,28 @@ export class ImportReviewPage {
       }
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /** Ventile les mensualités de prêt reconnues dans le lot, chacune selon son échéance (R-IMP-22). */
+  protected async payLoans(): Promise<void> {
+    const proposals = this.result()?.loan_payments ?? [];
+    const loans = [...new Set(proposals.map((p) => p.loan_account_id))];
+    try {
+      for (const loan of loans) {
+        const body = proposals
+          .filter((p) => p.loan_account_id === loan)
+          .map((p) => ({
+            transaction_id: p.transaction_id,
+            installment_number: p.installment_number,
+          }));
+        await firstValueFrom(this.loans.payLoanInstallments({ id: loan, body }));
+      }
+      this.version.bump();
+      this.result.update((r) => (r ? { ...r, loan_payments: [] } : r));
+      this.snack.open('Mensualités ventilées', undefined, { duration: 3000 });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
     }
   }
 

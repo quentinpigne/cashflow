@@ -1,14 +1,21 @@
 //! Prêts : conditions et tableau d'amortissement (CPT-09, ADR-0020, R-CPT-15 et R-CPT-16).
 
+use std::collections::{HashMap, HashSet};
+
 use cashflow_domain::accounts::AccountFamily;
+use cashflow_domain::ledger::TransactionOrigin;
 use cashflow_domain::ledger::category::CategoryKind;
-use cashflow_domain::loans::{self, Installment, Insurance, LoanTerms};
-use cashflow_domain::shared::ids::{AccountId, CategoryId};
+use cashflow_domain::ledger::transfer;
+use cashflow_domain::loans::{self, Installment, Insurance, LoanTerms, PaymentParts};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, TransactionId};
 use cashflow_domain::{Date, DomainError, Money, Rate};
+use chrono::Days;
 use serde::{Deserialize, Serialize};
+use sqlx::SqliteConnection;
 use utoipa::ToSchema;
 
 use crate::db::loans::LoanTermsRow;
+use crate::db::transactions::{NewSplit, NewTransaction, TransactionRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -68,11 +75,14 @@ pub struct InstallmentView {
     pub total_minor: i64,
     /// Capital restant dû après l'échéance.
     pub remaining_minor: i64,
+    /// Mensualité ventilée selon cette échéance (R-CPT-17).
+    pub paid_transaction_id: Option<TransactionId>,
 }
 
 impl From<&Installment> for InstallmentView {
     fn from(i: &Installment) -> Self {
         Self {
+            paid_transaction_id: None,
             number: i.number,
             date: i.date,
             payment_minor: i.payment.minor(),
@@ -156,6 +166,11 @@ pub async fn get(db: &Db, account: AccountId, today: Date) -> AppResult<LoanView
     let theoretical = loans::outstanding_at(&row.terms, &schedule, today);
     let interest: Money = schedule.iter().map(|i| i.interest).sum();
     let insurance: Money = schedule.iter().map(|i| i.insurance).sum();
+    let paid: HashMap<u32, TransactionId> = db::loans::payments(&db.read, account)
+        .await?
+        .into_iter()
+        .map(|p| (p.installment_number, p.transaction_id))
+        .collect();
     Ok(LoanView {
         terms: terms_view(&row),
         outstanding_minor: outstanding.minor(),
@@ -166,7 +181,10 @@ pub async fn get(db: &Db, account: AccountId, today: Date) -> AppResult<LoanView
         total_cost_minor: (interest + insurance).minor(),
         end_date: schedule.last().map_or(row.terms.first_installment, |i| i.date),
         next_installment: schedule.iter().find(|i| i.date > today).map(|i| i.number),
-        installments: schedule.iter().map(InstallmentView::from).collect(),
+        installments: schedule
+            .iter()
+            .map(|i| InstallmentView { paid_transaction_id: paid.get(&i.number).copied(), ..InstallmentView::from(i) })
+            .collect(),
     })
 }
 
@@ -239,4 +257,221 @@ pub fn preview(input: &LoanPreviewInput, today: Date) -> AppResult<LoanPreview> 
         monthly_insurance_minor: insurance.minor(),
         monthly_total_minor: (payment + insurance).minor(),
     })
+}
+
+// ---------------------------------------------------------------- Ventilation des mensualités (CPT-10, R-CPT-17)
+
+/// Un débit du compte payeur qui correspond à une échéance pas encore payée (R-CPT-17).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct LoanPaymentProposal {
+    pub loan_account_id: AccountId,
+    pub loan_name: String,
+    pub installment_number: u32,
+    pub installment_date: Date,
+    pub transaction_id: TransactionId,
+    pub date: Date,
+    pub label: String,
+    /// Débit, négatif.
+    pub amount_minor: i64,
+    pub principal_minor: i64,
+    pub interest_minor: i64,
+    pub insurance_minor: i64,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, ToSchema)]
+pub struct LoanPaymentInput {
+    pub transaction_id: TransactionId,
+    pub installment_number: u32,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct LoanPaymentResult {
+    /// Mensualités ventilées.
+    pub paid: usize,
+}
+
+/// Propositions pour un prêt : chaque débit du compte payeur, du plus ancien au plus récent, associé à l'échéance
+/// non payée qui lui correspond (R-CPT-17), parmi `only` s'il est donné.
+async fn proposals_for(
+    db: &Db,
+    row: &LoanTermsRow,
+    loan_name: &str,
+    today: Date,
+    only: Option<&HashSet<TransactionId>>,
+) -> AppResult<Vec<LoanPaymentProposal>> {
+    let schedule = loans::schedule(&row.terms)?;
+    let mut paid: Vec<u32> =
+        db::loans::payments(&db.read, row.account_id).await?.iter().map(|p| p.installment_number).collect();
+    let tolerance = Days::new(u64::try_from(loans::DATE_TOLERANCE_DAYS).unwrap_or(5));
+    let from = row.terms.first_installment.checked_sub_days(tolerance).unwrap_or(row.terms.first_installment);
+    let mut result = Vec::new();
+    for debit in db::loans::payable_debits(&db.read, row.payer_account_id, from, today).await? {
+        if only.is_some_and(|ids| !ids.contains(&debit.id)) {
+            continue;
+        }
+        let Some(installment) = loans::matching_installment(&schedule, &paid, debit.amount, debit.date) else {
+            continue;
+        };
+        let parts = loans::payment_parts(installment, debit.amount)?;
+        paid.push(installment.number);
+        result.push(LoanPaymentProposal {
+            loan_account_id: row.account_id,
+            loan_name: loan_name.to_owned(),
+            installment_number: installment.number,
+            installment_date: installment.date,
+            transaction_id: debit.id,
+            date: debit.date,
+            label: debit.label,
+            amount_minor: debit.amount.minor(),
+            principal_minor: parts.principal.minor(),
+            interest_minor: parts.interest.minor(),
+            insurance_minor: parts.insurance.minor(),
+        });
+    }
+    Ok(result)
+}
+
+/// Mensualités déjà enregistrées qui correspondent à des échéances non payées, à ventiler en une fois (E3).
+pub async fn proposals(db: &Db, account: AccountId, today: Date) -> AppResult<Vec<LoanPaymentProposal>> {
+    let loan = loan_account(db, account).await?;
+    let row = db::loans::find(&db.read, account)
+        .await?
+        .ok_or_else(|| AppError::invalid("NO_LOAN_TERMS", "ce prêt n'a pas de conditions (R-CPT-15)"))?;
+    proposals_for(db, &row, &loan.name, today, None).await
+}
+
+/// Propositions parmi des transactions données, tous prêts confondus : fin d'import (R-IMP-22), fiche d'une
+/// transaction.
+pub async fn proposals_among(db: &Db, transactions: &[TransactionId]) -> AppResult<Vec<LoanPaymentProposal>> {
+    let wanted: HashSet<TransactionId> = transactions.iter().copied().collect();
+    // Toutes dates, même futures : les transactions sont déjà choisies.
+    let until = Date::from_ymd_opt(9999, 12, 31).ok_or(AppError::NotFound("date"))?;
+    let mut result = Vec::new();
+    for row in db::loans::list(&db.read).await? {
+        let Some(loan) = db::accounts::find(&db.read, row.account_id).await? else { continue };
+        result.extend(proposals_for(db, &row, &loan.name, until, Some(&wanted)).await?);
+    }
+    Ok(result)
+}
+
+/// Ventile des mensualités selon leurs échéances (R-CPT-17), en bloc : toutes ou aucune.
+pub async fn pay(db: &Db, account: AccountId, inputs: &[LoanPaymentInput]) -> AppResult<LoanPaymentResult> {
+    let loan = loan_account(db, account).await?;
+    let row = db::loans::find(&db.read, account)
+        .await?
+        .ok_or_else(|| AppError::invalid("NO_LOAN_TERMS", "ce prêt n'a pas de conditions (R-CPT-15)"))?;
+    let schedule = loans::schedule(&row.terms)?;
+    let mut paid: Vec<u32> =
+        db::loans::payments(&db.read, account).await?.iter().map(|p| p.installment_number).collect();
+    let mut tx = db.write.begin().await?;
+    for input in inputs {
+        let installment =
+            schedule.iter().find(|i| i.number == input.installment_number).ok_or(AppError::NotFound("échéance"))?;
+        if paid.contains(&installment.number) {
+            return Err(DomainError::InstallmentAlreadyPaid.into());
+        }
+        let debit =
+            db::transactions::find(&mut *tx, input.transaction_id).await?.ok_or(AppError::NotFound("transaction"))?;
+        if debit.account_id != row.payer_account_id || !debit.amount.is_negative() {
+            return Err(AppError::invalid(
+                "NOT_A_PAYER_DEBIT",
+                "une mensualité est un débit du compte payeur du prêt (R-CPT-17)",
+            ));
+        }
+        if db::transactions::transfer_of(&mut *tx, debit.id).await?.is_some()
+            || db::loans::payment_involving(&mut *tx, debit.id).await?.is_some()
+        {
+            return Err(DomainError::AlreadyTransferLeg.into());
+        }
+        let parts = loans::payment_parts(installment, debit.amount)?;
+        pay_one(&mut tx, &loan, &row, installment.number, &debit, parts).await?;
+        paid.push(installment.number);
+    }
+    tx.commit().await?;
+    Ok(LoanPaymentResult { paid: inputs.len() })
+}
+
+/// Ventile un débit : virement du capital vers le prêt, intérêts et assurance en dépenses (R-CPT-17).
+async fn pay_one(
+    tx: &mut SqliteConnection,
+    loan: &db::accounts::AccountRow,
+    row: &LoanTermsRow,
+    number: u32,
+    debit: &TransactionRow,
+    parts: PaymentParts,
+) -> AppResult<()> {
+    let mut splits = Vec::new();
+    for (amount, category) in [
+        (parts.principal, None),
+        (parts.interest, Some(row.interest_category_id)),
+        (parts.insurance, row.insurance_category_id),
+    ] {
+        if amount.is_positive() {
+            splits.push(NewSplit { amount: -amount, category_id: category, note: None, project_id: None });
+        }
+    }
+    db::transactions::replace_splits(&mut *tx, debit.id, &splits).await?;
+    let mut touched = vec![debit.id];
+    if parts.principal.is_positive() {
+        // La jambe du capital, sur le prêt : pointée d'office, comme toute jambe sur un compte valorisé (R-TRX-36).
+        super::transactions::period(loan).check(debit.date)?;
+        let leg = TransactionId::new();
+        let label = format!("Échéance n° {number}");
+        let new = NewTransaction {
+            id: leg,
+            account_id: loan.id,
+            date: debit.date,
+            bank_date: None,
+            value_date: None,
+            amount: parts.principal,
+            bank_label: None,
+            label: &label,
+            note: None,
+            clearing_status: transfer::opposite_leg_status(loan.kind.family()),
+            origin: TransactionOrigin::Manual,
+            recurring_rule_id: None,
+            fingerprint: None,
+        };
+        let single = [NewSplit { amount: parts.principal, category_id: None, note: None, project_id: None }];
+        super::transactions::insert_validated(&mut *tx, &new, &single).await?;
+        let outflow = db::transactions::splits_of(&mut *tx, debit.id)
+            .await?
+            .into_iter()
+            .find(|s| s.category_id.is_none())
+            .ok_or(AppError::NotFound("ventilation du capital"))?;
+        let inflow = db::transactions::splits_of(&mut *tx, leg)
+            .await?
+            .into_iter()
+            .next()
+            .ok_or(AppError::NotFound("ventilation de la jambe"))?;
+        db::transactions::insert_transfer(&mut *tx, outflow.id, inflow.id, None).await?;
+        touched.push(leg);
+    }
+    db::loans::insert_payment(&mut *tx, row.account_id, number, debit.id).await?;
+    super::check_split_sums(&mut *tx, &touched).await?;
+    Ok(())
+}
+
+/// Annule la ventilation d'une échéance : la jambe sur le prêt est supprimée, la mensualité redevient une dépense
+/// non catégorisée.
+pub async fn unpay(db: &Db, account: AccountId, number: u32) -> AppResult<()> {
+    loan_account(db, account).await?;
+    let payment = db::loans::payments(&db.read, account)
+        .await?
+        .into_iter()
+        .find(|p| p.installment_number == number)
+        .ok_or(AppError::NotFound("échéance payée"))?;
+    let debit =
+        db::transactions::find(&db.read, payment.transaction_id).await?.ok_or(AppError::NotFound("transaction"))?;
+    let mut tx = db.write.begin().await?;
+    if let Some(leg) = payment.leg_transaction_id {
+        // Supprimer la jambe emporte le virement et la ventilation qu'il reliait.
+        db::transactions::delete(&mut *tx, leg).await?;
+    }
+    db::loans::delete_payment(&mut *tx, debit.id).await?;
+    let single = [NewSplit { amount: debit.amount, category_id: None, note: None, project_id: None }];
+    db::transactions::replace_splits(&mut tx, debit.id, &single).await?;
+    super::check_split_sums(&mut tx, &[debit.id]).await?;
+    tx.commit().await?;
+    Ok(())
 }

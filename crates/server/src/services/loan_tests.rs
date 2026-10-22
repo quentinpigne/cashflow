@@ -5,9 +5,9 @@ use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::loans::Insurance;
 use cashflow_domain::shared::ids::{AccountId, CategoryId};
 
-use super::accounts;
-use super::loans::{self, LoanPreviewInput, LoanTermsInput};
-use super::tests::{account, category, d, setup};
+use super::loans::{self, LoanPaymentInput, LoanPreviewInput, LoanTermsInput};
+use super::tests::{account, category, d, setup, tx};
+use super::{accounts, transactions};
 use crate::db::Db;
 use crate::error::AppError;
 
@@ -133,4 +133,104 @@ async fn r_cpt_16_preview_while_typing() {
     )
     .unwrap();
     assert_eq!((preview.monthly_payment_minor, preview.monthly_total_minor), (110_920, 115_420));
+}
+
+// ---------------------------------------------------------------- Ventilation des mensualités (CPT-10)
+
+async fn spend(db: &Db, account: AccountId, date: &str, amount: i64) -> cashflow_domain::shared::ids::TransactionId {
+    transactions::create(db, &tx(account, date, amount, None)).await.unwrap()
+}
+
+async fn value(db: &Db, account: AccountId, at: &str) -> i64 {
+    accounts::get(db, account, d(at)).await.unwrap().balance_minor
+}
+
+#[tokio::test]
+async fn cpt_10_r_cpt_17_monthly_payments_are_split_into_principal_interest_and_insurance() {
+    let (db, _dir) = setup().await;
+    let f = fixture(&db).await;
+    loans::save_terms(&db, f.loan, &input(&f), d("2026-01-31")).await.unwrap();
+    let first = spend(&db, f.checking, "2026-01-05", -115_920).await;
+    // 40 centimes d'assurance en plus, payé deux jours plus tard : toujours reconnu (±1 €, ±5 jours).
+    let second = spend(&db, f.checking, "2026-02-07", -115_960).await;
+    spend(&db, f.checking, "2026-01-10", -5_000).await;
+
+    let proposals = loans::proposals(&db, f.loan, d("2026-02-28")).await.unwrap();
+    assert_eq!(
+        proposals.iter().map(|p| (p.transaction_id, p.installment_number)).collect::<Vec<_>>(),
+        [(first, 1), (second, 2)]
+    );
+    let inputs: Vec<LoanPaymentInput> = proposals
+        .iter()
+        .map(|p| LoanPaymentInput { transaction_id: p.transaction_id, installment_number: p.installment_number })
+        .collect();
+    assert_eq!(loans::pay(&db, f.loan, &inputs).await.unwrap().paid, 2);
+
+    // Le capital rembourse la dette ; seuls intérêts et assurance sont des dépenses.
+    let detail = transactions::get(&db, first).await.unwrap();
+    let mut parts: Vec<(i64, bool)> = detail.splits.iter().map(|s| (s.amount_minor, s.category_id.is_some())).collect();
+    parts.sort_unstable();
+    assert_eq!(parts, [(-60_920, false), (-50_000, true), (-5_000, true)]);
+    assert_eq!(value(&db, f.loan, "2026-01-31").await, -20_000_000 + 60_920);
+    let january = super::dashboard::get(&db, d("2026-01-31")).await.unwrap();
+    assert_eq!(january.month.expenses_minor, 55_000);
+    let view = loans::get(&db, f.loan, d("2026-02-28")).await.unwrap();
+    assert_eq!(view.installments[0].paid_transaction_id, Some(first));
+    assert_eq!(view.gap_minor, 0);
+    assert!(loans::proposals(&db, f.loan, d("2026-02-28")).await.unwrap().is_empty());
+    assert_eq!(code(loans::pay(&db, f.loan, &inputs[..1]).await.unwrap_err()), "INSTALLMENT_ALREADY_PAID");
+}
+
+#[tokio::test]
+async fn r_cpt_17_a_paid_installment_is_locked_until_its_split_is_undone() {
+    let (db, _dir) = setup().await;
+    let f = fixture(&db).await;
+    loans::save_terms(&db, f.loan, &input(&f), d("2026-01-31")).await.unwrap();
+    let payment = spend(&db, f.checking, "2026-01-05", -115_920).await;
+    let pay = [LoanPaymentInput { transaction_id: payment, installment_number: 1 }];
+    loans::pay(&db, f.loan, &pay).await.unwrap();
+    let detail = transactions::get(&db, payment).await.unwrap();
+    let leg = detail.transfer.as_ref().unwrap().counterpart_transaction_id;
+
+    // Le montant ne change plus ; le libellé si.
+    let update = |amount: i64, label: &str| transactions::TransactionUpdateInput {
+        account_id: f.checking,
+        date: d("2026-01-05"),
+        amount_minor: amount,
+        label: label.into(),
+        note: None,
+        splits: None,
+    };
+    assert_eq!(
+        code(transactions::update(&db, payment, &update(-120_000, "Échéance")).await.unwrap_err()),
+        "INSTALLMENT_PAYMENT_LOCKED"
+    );
+    transactions::update(&db, payment, &update(-115_920, "Échéance de janvier")).await.unwrap();
+    assert_eq!(transactions::get(&db, payment).await.unwrap().label, "Échéance de janvier");
+    // La jambe sur le prêt ne se supprime pas seule ; la ventilation de virement reste sans catégorie.
+    assert_eq!(code(transactions::delete(&db, leg).await.unwrap_err()), "INSTALLMENT_PAYMENT_LOCKED");
+    let transfer_split = detail.splits.iter().find(|s| s.category_id.is_none()).unwrap().id;
+    let categorize = transactions::CategorizeInput { category_id: Some(f.interest) };
+    assert_eq!(
+        code(transactions::categorize_split(&db, transfer_split, &categorize).await.unwrap_err()),
+        "TRANSFER_LEG_CATEGORIZED"
+    );
+
+    let transfer = detail.transfer.as_ref().unwrap().transfer_id;
+    assert_eq!(code(super::transfers::unlink(&db, transfer).await.unwrap_err()), "INSTALLMENT_PAYMENT_LOCKED");
+    assert_eq!(detail.loan_payment.as_ref().map(|p| (p.installment_number, p.is_payment)), Some((1, true)));
+
+    // Annuler la ventilation : la jambe disparaît, la mensualité redevient une sortie non catégorisée.
+    loans::unpay(&db, f.loan, 1).await.unwrap();
+    assert_eq!(value(&db, f.loan, "2026-01-31").await, -20_000_000);
+    let detail = transactions::get(&db, payment).await.unwrap();
+    assert_eq!(detail.splits.len(), 1);
+    assert!(detail.transfer.is_none());
+    assert_eq!(transactions::get(&db, leg).await.map(|_| ()).map_err(code), Err("NotFound(\"transaction\")".into()));
+
+    // Supprimer une mensualité ventilée emporte la jambe du capital.
+    loans::pay(&db, f.loan, &pay).await.unwrap();
+    transactions::delete(&db, payment).await.unwrap();
+    assert_eq!(value(&db, f.loan, "2026-01-31").await, -20_000_000);
+    assert!(loans::get(&db, f.loan, d("2026-01-31")).await.unwrap().installments[0].paid_transaction_id.is_none());
 }

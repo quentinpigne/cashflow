@@ -1,7 +1,7 @@
 //! Prêts : conditions (ADR-0020, R-CPT-15).
 
 use cashflow_domain::loans::{Insurance, LoanTerms};
-use cashflow_domain::shared::ids::{AccountId, CategoryId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, LoanPaymentId, TransactionId};
 use cashflow_domain::{Date, Money, Rate};
 use sqlx::SqliteExecutor;
 
@@ -119,4 +119,128 @@ pub async fn is_payer(db: impl SqliteExecutor<'_>, account: AccountId) -> anyhow
         .fetch_one(db)
         .await?;
     Ok(count > 0)
+}
+
+// ---------------------------------------------------------------- Échéances payées (R-CPT-17)
+
+/// Une échéance payée : la transaction du compte payeur et, si elle existe, la jambe du capital sur le prêt.
+#[derive(Debug, Clone, Copy)]
+pub struct PaymentRow {
+    pub loan_account_id: AccountId,
+    pub installment_number: u32,
+    pub transaction_id: TransactionId,
+    pub leg_transaction_id: Option<TransactionId>,
+}
+
+macro_rules! payment_row {
+    ($r:expr) => {
+        PaymentRow {
+            loan_account_id: id_from_db(&$r.loan_account_id)?,
+            installment_number: u32::try_from($r.installment_number)?,
+            transaction_id: id_from_db(&$r.transaction_id)?,
+            leg_transaction_id: opt_id_from_db($r.leg.as_deref())?,
+        }
+    };
+}
+
+pub async fn payments(db: impl SqliteExecutor<'_>, loan: AccountId) -> anyhow::Result<Vec<PaymentRow>> {
+    let loan = loan.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT lp.loan_account_id, lp.installment_number, lp.transaction_id,
+                  (SELECT tl.inflow_transaction_id FROM transfer_leg tl WHERE tl.outflow_transaction_id = lp.transaction_id)
+                      AS "leg?: String"
+           FROM loan_payment lp WHERE lp.loan_account_id = ? ORDER BY lp.installment_number"#,
+        loan
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| Ok(payment_row!(r))).collect()
+}
+
+/// L'échéance payée par une transaction, qu'elle soit la mensualité du compte payeur ou la jambe sur le prêt.
+pub async fn payment_involving(
+    db: impl SqliteExecutor<'_>,
+    transaction: TransactionId,
+) -> anyhow::Result<Option<PaymentRow>> {
+    let transaction = transaction.to_string();
+    let row = sqlx::query!(
+        r#"SELECT lp.loan_account_id, lp.installment_number, lp.transaction_id,
+                  (SELECT tl.inflow_transaction_id FROM transfer_leg tl WHERE tl.outflow_transaction_id = lp.transaction_id)
+                      AS "leg?: String"
+           FROM loan_payment lp
+           WHERE lp.transaction_id = ?1
+              OR lp.transaction_id IN (SELECT tl.outflow_transaction_id FROM transfer_leg tl WHERE tl.inflow_transaction_id = ?1)"#,
+        transaction
+    )
+    .fetch_optional(db)
+    .await?;
+    row.map(|r| Ok(payment_row!(r))).transpose()
+}
+
+pub async fn insert_payment(
+    db: impl SqliteExecutor<'_>,
+    loan: AccountId,
+    number: u32,
+    transaction: TransactionId,
+) -> anyhow::Result<()> {
+    let id = LoanPaymentId::new().to_string();
+    let loan = loan.to_string();
+    let number = i64::from(number);
+    let transaction = transaction.to_string();
+    let now = timestamp();
+    sqlx::query!(
+        "INSERT INTO loan_payment (id, loan_account_id, installment_number, transaction_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)",
+        id,
+        loan,
+        number,
+        transaction,
+        now,
+        now
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn delete_payment(db: impl SqliteExecutor<'_>, transaction: TransactionId) -> anyhow::Result<()> {
+    let transaction = transaction.to_string();
+    sqlx::query!("DELETE FROM loan_payment WHERE transaction_id = ?", transaction).execute(db).await?;
+    Ok(())
+}
+
+/// Débit du compte payeur qui peut payer une échéance : sortie, hors virement, pas déjà rattaché à une échéance.
+#[derive(Debug, Clone)]
+pub struct DebitRow {
+    pub id: TransactionId,
+    pub date: Date,
+    pub amount: Money,
+    pub label: String,
+}
+
+pub async fn payable_debits(
+    db: impl SqliteExecutor<'_>,
+    payer: AccountId,
+    from: Date,
+    to: Date,
+) -> anyhow::Result<Vec<DebitRow>> {
+    let payer = payer.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT t.id AS "id!", t.date AS "date!: Date", t.amount AS "amount!: i64", t.label AS "label!"
+           FROM ledger_transaction t
+           WHERE t.account_id = ? AND t.amount < 0 AND t.date BETWEEN ? AND ?
+             AND NOT EXISTS (SELECT 1 FROM transfer_leg tl WHERE t.id IN (tl.outflow_transaction_id, tl.inflow_transaction_id))
+             AND NOT EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id)
+           ORDER BY t.date, t.id"#,
+        payer,
+        from,
+        to
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(DebitRow { id: id_from_db(&r.id)?, date: r.date, amount: Money::from_minor(r.amount), label: r.label })
+        })
+        .collect()
 }

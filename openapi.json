@@ -585,6 +585,141 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/loan/payments": {
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Ventile des mensualités selon leurs échéances (CPT-10, R-CPT-17).",
+        "operationId": "payLoanInstallments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LoanPaymentInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/loan/payments/{number}": {
+      "delete": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Annule la ventilation d'une échéance (R-CPT-17).",
+        "operationId": "unpayLoanInstallment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/loan/proposals": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Mensualités déjà enregistrées qui correspondent à des échéances non payées (R-CPT-17).",
+        "operationId": "loanPaymentProposals",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanPaymentProposal"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}/performance": {
       "get": {
         "tags": [
@@ -4315,6 +4450,43 @@
         }
       }
     },
+    "/api/v1/transactions/{id}/loan-proposal": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "L'échéance de prêt à laquelle correspond une transaction, s'il y en a une (R-CPT-17).",
+        "operationId": "transactionLoanProposal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LoanPaymentProposal"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/{id}/transfer": {
       "post": {
         "tags": [
@@ -6327,7 +6499,8 @@
           "matched",
           "skipped",
           "transfers",
-          "checkpoints"
+          "checkpoints",
+          "loan_payments"
         ],
         "properties": {
           "checkpoints": {
@@ -6340,6 +6513,13 @@
           "created": {
             "type": "integer",
             "minimum": 0
+          },
+          "loan_payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanPaymentProposal"
+            },
+            "description": "Mensualités de prêt reconnues parmi les transactions créées ou pointées, à ventiler en un clic (R-IMP-22)."
           },
           "matched": {
             "type": "integer",
@@ -7079,6 +7259,17 @@
             "format": "int32",
             "minimum": 0
           },
+          "paid_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId",
+                "description": "Mensualité ventilée selon cette échéance (R-CPT-17)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "payment_minor": {
             "type": "integer",
             "format": "int64",
@@ -7484,6 +7675,123 @@
           },
           "rollover": {
             "type": "boolean"
+          }
+        }
+      },
+      "LoanPaymentInput": {
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "installment_number"
+        ],
+        "properties": {
+          "installment_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "LoanPaymentProposal": {
+        "type": "object",
+        "description": "Un débit du compte payeur qui correspond à une échéance pas encore payée (R-CPT-17).",
+        "required": [
+          "loan_account_id",
+          "loan_name",
+          "installment_number",
+          "installment_date",
+          "transaction_id",
+          "date",
+          "label",
+          "amount_minor",
+          "principal_minor",
+          "interest_minor",
+          "insurance_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Débit, négatif."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "installment_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "installment_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interest_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "loan_account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "loan_name": {
+            "type": "string"
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "LoanPaymentRef": {
+        "type": "object",
+        "required": [
+          "loan_account_id",
+          "loan_name",
+          "installment_number",
+          "is_payment"
+        ],
+        "properties": {
+          "installment_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "is_payment": {
+            "type": "boolean",
+            "description": "Vrai pour la mensualité du compte payeur, faux pour la jambe du capital sur le prêt."
+          },
+          "loan_account_id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "loan_name": {
+            "type": "string"
+          }
+        }
+      },
+      "LoanPaymentResult": {
+        "type": "object",
+        "required": [
+          "paid"
+        ],
+        "properties": {
+          "paid": {
+            "type": "integer",
+            "description": "Mensualités ventilées.",
+            "minimum": 0
           }
         }
       },
@@ -9976,6 +10284,17 @@
           },
           "label": {
             "type": "string"
+          },
+          "loan_payment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanPaymentRef",
+                "description": "Échéance de prêt payée par cette transaction, ou dont elle est la jambe du capital (R-CPT-17)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "locked": {
             "type": "boolean",

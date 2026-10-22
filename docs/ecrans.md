@@ -309,6 +309,11 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
   l'action « Délier » (R-TRX-34). Une transaction ordinaire propose « Marquer comme virement » :
   choix du compte de contrepartie, puis des transactions candidates s'il y en a, sinon création de la
   jambe opposée (R-TRX-35, R-TRX-36).
+- **Mensualité de prêt** (R-CPT-17) : un débit qui correspond à une échéance non payée affiche « Correspond à
+  l'échéance n° N du prêt X : capital, intérêts, assurance » et « Ventiler selon l'échéance ». Une mensualité
+  ventilée affiche « Échéance n° N du prêt X » (lien vers le prêt), sa répartition (« Capital remboursé »,
+  intérêts, assurance) et « Annuler la ventilation » ; son montant est verrouillé. La jambe du capital, sur le
+  prêt, renvoie à la même échéance.
 - Menu `⋮` : Supprimer (avec « Annuler » dans la snack-bar), Dupliquer.
 
 ## E8 — Catégories (TRX-04)
@@ -383,7 +388,8 @@ Conçu pour l'ordinateur, utilisable sur mobile. Étapes `[mat-stepper]` :
 - Filtres : toutes, à créer, à pointer, doublons, erreurs, non catégorisées. Sélection multiple : décision
   ou catégorie en masse.
 - Pied : « Annuler l'import » (supprime le lot, R-IMP-1) et « Valider » ; après validation, résumé et,
-  pour chaque point de contrôle à écart nul, **« Rapprocher au <date> »** (R-RAP-11).
+  pour chaque point de contrôle à écart nul, **« Rapprocher au <date> »** (R-RAP-11), et, si des mensualités
+  de prêt sont reconnues parmi les transactions du lot, **« Ventiler selon les échéances »** (R-IMP-22).
 
 ## E12 — Import : historique (IMP-06, IMP-07)
 
@@ -540,8 +546,9 @@ Pour un prêt qui a des conditions (R-CPT-15) :
   mensualité et capital restant dû.
 - Actions : « Conditions » (popup de saisie) et retrait des conditions, après confirmation : le prêt
   revient au suivi par valorisations.
-- Action « Ventiler les mensualités passées » : propose en une liste les transactions du compte payeur
-  qui correspondent à des échéances non payées (R-CPT-17), à cocher puis valider.
+- Action « Ventiler les mensualités passées », affichée quand des mensualités déjà enregistrées correspondent à
+  des échéances non payées (R-CPT-17) : liste à cocher (tout coché par défaut), puis validation. Une échéance
+  payée porte une coche, avec « Voir la mensualité » et « Annuler la ventilation ».
 
 Sans conditions, un bouton « Saisir les conditions du prêt » ouvre la popup de saisie.
 

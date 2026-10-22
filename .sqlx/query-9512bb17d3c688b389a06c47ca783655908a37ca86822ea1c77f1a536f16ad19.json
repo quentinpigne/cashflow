@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT lp.loan_account_id, lp.installment_number, lp.transaction_id,\n                  (SELECT tl.inflow_transaction_id FROM transfer_leg tl WHERE tl.outflow_transaction_id = lp.transaction_id)\n                      AS \"leg?: String\"\n           FROM loan_payment lp\n           WHERE lp.transaction_id = ?1\n              OR lp.transaction_id IN (SELECT tl.outflow_transaction_id FROM transfer_leg tl WHERE tl.inflow_transaction_id = ?1)",
+  "describe": {
+    "columns": [
+      {
+        "name": "loan_account_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "loan_account_id"
+          }
+        }
+      },
+      {
+        "name": "installment_number",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "installment_number"
+          }
+        }
+      },
+      {
+        "name": "transaction_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_payment",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "leg?: String",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "transaction_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "9512bb17d3c688b389a06c47ca783655908a37ca86822ea1c77f1a536f16ad19"
+}

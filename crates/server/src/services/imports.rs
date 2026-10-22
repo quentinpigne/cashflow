@@ -279,6 +279,8 @@ pub struct CommitResult {
     /// Points de contrôle créés ou mis à jour par le relevé (R-IMP-16) ; à écart nul, l'écran propose
     /// « Rapprocher » en un clic (R-RAP-11).
     pub checkpoints: Vec<Checkpoint>,
+    /// Mensualités de prêt reconnues parmi les transactions créées ou pointées, à ventiler en un clic (R-IMP-22).
+    pub loan_payments: Vec<super::loans::LoanPaymentProposal>,
 }
 
 // ---------------------------------------------------------------- Profils
@@ -987,7 +989,14 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
     let lock = reconciliation::lock(&mut tx, account.id).await?;
     let existing: HashSet<String> =
         db::imports::fingerprints_of(&mut *tx, account.id).await?.into_iter().map(|(p, _)| p).collect();
-    let mut result = CommitResult { created: 0, matched: 0, skipped: 0, transfers: 0, checkpoints: Vec::new() };
+    let mut result = CommitResult {
+        created: 0,
+        matched: 0,
+        skipped: 0,
+        transfers: 0,
+        checkpoints: Vec::new(),
+        loan_payments: Vec::new(),
+    };
     let mut touched = Vec::new();
     // Un projet proposé par une règle n'est rattaché que s'il est encore en cours (R-BUD-24).
     let active_projects: HashSet<ProjectId> =
@@ -1204,6 +1213,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
     tx.commit().await?;
     let all = reconciliation::list(db, account.id).await?;
     result.checkpoints = all.into_iter().filter(|c| checkpoints.contains(&c.id)).collect();
+    result.loan_payments = super::loans::proposals_among(db, &touched).await?;
     Ok(result)
 }
 

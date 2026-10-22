@@ -424,7 +424,18 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         insurance_category_id: Some(insurance),
     };
     super::loans::save_terms(db, loan, &input, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
-    valuations(db, start, today, life, pea, (loan, &loan_terms, &schedule)).await?;
+    // Chaque mensualité est ventilée selon son échéance : la dette baisse du capital remboursé (CPT-10).
+    let payments: Vec<super::loans::LoanPaymentInput> = super::loans::proposals(db, loan, today)
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .iter()
+        .map(|p| super::loans::LoanPaymentInput {
+            transaction_id: p.transaction_id,
+            installment_number: p.installment_number,
+        })
+        .collect();
+    super::loans::pay(db, loan, &payments).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    valuations(db, start, today, life, pea).await?;
     recurrences(db, &c, start, today, checking, livret_a, life).await?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
@@ -484,15 +495,8 @@ async fn recurrences(
 }
 
 /// Valorisations trimestrielles (CPT-06) : l'assurance vie progresse d'environ 3 % par an, le PEA de 6 % avec
-/// un trimestre de baisse, le prêt suit son tableau d'amortissement (R-CPT-12, R-CPT-16).
-async fn valuations(
-    db: &Db,
-    start: Date,
-    today: Date,
-    life: AccountId,
-    pea: AccountId,
-    (loan, terms, schedule): (AccountId, &LoanTerms, &[loans::Installment]),
-) -> anyhow::Result<()> {
+/// un trimestre de baisse.
+async fn valuations(db: &Db, start: Date, today: Date, life: AccountId, pea: AccountId) -> anyhow::Result<()> {
     let mut quarter = 0_i64;
     let pea_moves = [15, 12, -20, 18];
     let mut pea_value = 650_000_i64;
@@ -509,8 +513,7 @@ async fn valuations(
         let invested = accounts::get(db, life, date).await.map_err(|e| anyhow::anyhow!("{e}"))?.balance_minor;
         let life_value = invested + invested * 75 * quarter / 10_000;
         pea_value += pea_value * pea_moves[usize::try_from((quarter - 1) % 4).unwrap_or(0)] / 1_000;
-        let debt = loans::outstanding_at(terms, schedule, date);
-        for (account, value) in [(life, life_value), (pea, pea_value), (loan, -debt.minor())] {
+        for (account, value) in [(life, life_value), (pea, pea_value)] {
             let input = savings::ValuationInput { date, value_minor: value, note: None, replace: true };
             savings::save_valuation(db, account, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
         }
@@ -556,7 +559,8 @@ async fn budget(
         // Budget fixe : pas d'alerte (R-BUD-60).
         budgets::BudgetLineInput {
             alert_thresholds: Some(Vec::new()),
-            ..line(BudgetKind::Expense, c.get("Prêts", ""), LOAN_INSTALLMENT, false)
+            // Intérêts et assurance seulement : le capital rembourse la dette (CPT-10).
+            ..line(BudgetKind::Expense, c.get("Prêts", ""), 39_000, false)
         },
         budgets::BudgetLineInput {
             periodicity: Periodicity::Yearly,
@@ -639,6 +643,16 @@ mod tests {
         let budget = budgets::month(&db, &budgets::MonthQuery { month: None }, today).await.unwrap();
         assert!(budget.lines.len() >= 10);
         assert_eq!(budgets::projects(&db).await.unwrap()[0].actual_minor, 40_200);
+        // Les mensualités ventilées amortissent le prêt exactement comme son tableau (CPT-10).
+        let loan = accounts.iter().find(|a| a.kind == AccountKind::Mortgage).unwrap();
+        let view = super::super::loans::get(&db, loan.id, today).await.unwrap();
+        assert_eq!(view.gap_minor, 0);
+        assert!(
+            view.installments
+                .iter()
+                .filter(|i| i.date <= today && i.number >= 85)
+                .all(|i| i.paid_transaction_id.is_some())
+        );
         assert!(load(&db, today).await.is_err(), "le jeu ne se charge que dans une base vide");
     }
 }

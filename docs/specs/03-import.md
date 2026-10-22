@@ -141,9 +141,10 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   lots en revue**, sont suggérés. Accepter la suggestion crée le virement à la validation. Sans
   candidat, marquer la ligne comme virement vers un compte crée la jambe opposée à la validation
   (R-TRX-36).
-- **R-IMP-22** — Une ligne qui correspond à une échéance de prêt pas encore payée (R-CPT-17) est
-  proposée comme paiement de cette échéance. Accepter la proposition ventile la transaction en capital,
-  intérêts et assurance à la validation, et crée la jambe sur le prêt.
+- **R-IMP-22** — Après la validation, les transactions du lot (créées ou pointées) qui correspondent à une
+  échéance de prêt pas encore payée (R-CPT-17) sont proposées sur l'écran de fin d'import, comme le
+  rapprochement (R-RAP-11). Accepter les ventile en capital, intérêts et assurance et crée les jambes sur le
+  prêt. Rien n'est ventilé sans cet accord.
 
 ### Validation et annulation
 

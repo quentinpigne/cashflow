@@ -51,6 +51,7 @@ define_id!(
     TransactionId,
     SplitId,
     TransferId,
+    LoanPaymentId,
     RecurringRuleId,
     ImportProfileId,
     ImportBatchId,

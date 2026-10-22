@@ -103,7 +103,10 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
   ventilation d'assurance si elle est nulle). Un écart de montant (au plus 1 €) est porté par la
   ventilation d'assurance, ou par celle des intérêts sans assurance : le capital versé reste celui du
   tableau. Une échéance n'est payée qu'une fois. On peut aussi
-  ventiler ainsi, en une fois, les mensualités passées déjà enregistrées.
+  ventiler ainsi, en une fois, les mensualités passées déjà enregistrées. Une mensualité ventilée et sa jambe
+  sur le prêt ne changent ni de montant, ni de compte, ni de ventilation, et leur virement ne se délie pas :
+  on **annule la ventilation** (la jambe est supprimée, la mensualité redevient une sortie non catégorisée).
+  Supprimer la mensualité supprime sa jambe ; la jambe ne se supprime pas seule.
 
 ## Features
 

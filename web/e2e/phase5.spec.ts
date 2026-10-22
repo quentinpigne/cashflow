@@ -98,3 +98,31 @@ test('E3 : tableau d’amortissement d’un prêt et conditions (CPT-09)', async
   await expect(dialog.locator('.preview')).toContainText('1 381,16 €');
   await dialog.getByRole('button', { name: 'Annuler' }).click();
 });
+
+test('E3 : mensualités ventilées en capital, intérêts et assurance (CPT-10, R-CPT-17)', async ({
+  page,
+}) => {
+  await login(page);
+  await openAccount(page, 'Prêt immobilier');
+  const panel = page.locator('app-loan-panel');
+  // Les mensualités passées de la démo sont ventilées : pas d'écart au tableau.
+  await expect(panel.getByText(/écart/)).toHaveCount(0);
+  const paid = panel.getByRole('button', { name: /Échéance \d+ payée/ });
+  await expect(paid.first()).toBeVisible();
+
+  // Annuler la ventilation d'une échéance, puis la refaire depuis la proposition.
+  await paid.first().click();
+  await page.getByRole('menuitem', { name: 'Annuler la ventilation' }).click();
+  await page.getByRole('button', { name: 'Annuler la ventilation' }).click();
+  await expect(panel.getByText(/correspondent à des échéances non ventilées/)).toBeVisible();
+  await panel.getByRole('button', { name: 'Ventiler les mensualités passées' }).click();
+  await page.getByRole('button', { name: /Ventiler 1 mensualité/ }).click();
+  await expect(panel.getByText(/correspondent à des échéances non ventilées/)).toHaveCount(0);
+
+  // La fiche de la mensualité montre l'échéance et sa répartition.
+  await paid.first().click();
+  await page.getByRole('menuitem', { name: 'Voir la mensualité' }).click();
+  await expect(page.getByText(/Échéance n° \d+ du prêt/)).toBeVisible();
+  await expect(page.getByText('Capital remboursé')).toBeVisible();
+  await expect(page.getByText('Prêts › Intérêts')).toBeVisible();
+});

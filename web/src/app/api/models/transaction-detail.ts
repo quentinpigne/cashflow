@@ -3,6 +3,7 @@
 
 import { AccountId } from '../models/account-id';
 import { ClearingStatus } from '../models/clearing-status';
+import { LoanPaymentRef } from '../models/loan-payment-ref';
 import { Split } from '../models/split';
 import { TransactionId } from '../models/transaction-id';
 import { TransactionOrigin } from '../models/transaction-origin';
@@ -19,6 +20,7 @@ export interface TransactionDetail {
   date: string;
   id: TransactionId;
   label: string;
+  loan_payment?: (LoanPaymentRef | null);
 
   /**
    * Rapprochée : montant, compte et date de solde sont verrouillés (R-TRX-3).

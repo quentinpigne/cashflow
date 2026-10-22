@@ -330,3 +330,51 @@ async fn r_imp_1_cancel_review_changes_nothing() {
     assert!(imports::list(&db, &data).await.unwrap().is_empty());
     assert_eq!(transactions::list(&db, checking, &Default::default()).await.unwrap().total, 0);
 }
+
+/// Une mensualité de prêt importée est proposée en fin d'import, pour être ventilée en un clic (R-IMP-22).
+#[tokio::test]
+async fn r_imp_22_loan_payment_is_proposed_after_import() {
+    use cashflow_domain::loans::Insurance;
+
+    use super::loans::{self, LoanTermsInput};
+
+    let (db, data, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 500_000).await;
+    let loan = account(&db, "Prêt", AccountKind::Mortgage, -20_000_000).await;
+    let interest = categories::create(
+        &db,
+        &categories::CategoryInput {
+            name: "Intérêts d'emprunt".into(),
+            kind: CategoryKind::Expense,
+            parent_id: None,
+            archived: false,
+            display_order: None,
+            color: None,
+            icon: None,
+        },
+    )
+    .await
+    .unwrap();
+    let terms = LoanTermsInput {
+        principal_minor: 20_000_000,
+        annual_rate_ppm: 30_000,
+        duration_months: 240,
+        first_installment_date: d("2026-03-05"),
+        insurance: Insurance::None,
+        payer_account_id: checking,
+        interest_category_id: interest,
+        insurance_category_id: None,
+    };
+    loans::save_terms(&db, loan, &terms, d(TODAY)).await.unwrap();
+    let batch = import(
+        &db,
+        &data,
+        checking,
+        "Date;Libellé;Montant\n05/03/2026;ECHEANCE PRET;-1109,20\n06/03/2026;CAFE;-2,50\n",
+    )
+    .await;
+    let result = imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    assert_eq!(result.loan_payments.len(), 1);
+    let proposal = &result.loan_payments[0];
+    assert_eq!((proposal.installment_number, proposal.principal_minor, proposal.interest_minor), (1, 60_920, 50_000));
+}

@@ -48,6 +48,8 @@ erDiagram
     Institution ||--o{ Account : "tient"
     Account ||--o| FixedSavingsTerms : "conditions (si épargne fixe)"
     Account ||--o| LoanTerms : "conditions (si prêt)"
+    Account ||--o{ LoanPayment : "échéances payées (si prêt)"
+    Transaction ||--o| LoanPayment : "paie"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -159,6 +161,17 @@ Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu)
 | `insurance_category_id` | `Id` → Category | requis si une assurance existe ; catégorie de dépense |
 
 Le tableau d'amortissement en découle (R-CPT-16) et n'est pas stocké.
+
+### LoanPayment (échéances payées, R-CPT-17)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `loan_account_id` | `Id` → Account | requis ; compte `LIABILITY` qui a des conditions |
+| `installment_number` | entier | requis, ≥ 1 ; unique avec `loan_account_id` |
+| `transaction_id` | `Id` → Transaction | requis, unique : la mensualité du compte payeur, suppression en cascade |
+
+La mensualité porte une ventilation de virement (le capital) reliée à la jambe créée sur le prêt (ADR-0021),
+et des ventilations de dépense pour les intérêts et l'assurance.
 
 ### Valuation (comptes `VARIABLE_SAVINGS`, `LIABILITY` et `PROPERTY`)
 

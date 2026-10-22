@@ -38,6 +38,22 @@ header {
   }
 }
 
+.loan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .splits-head span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  > button {
+    align-self: flex-start;
+  }
+}
+
 .splits-head {
   display: flex;
   justify-content: space-between;

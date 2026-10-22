@@ -10,6 +10,7 @@ import {
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import {
   MAT_DIALOG_DATA,
@@ -20,12 +21,15 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { catchError, firstValueFrom, of } from 'rxjs';
 
 import { Insurance } from '../../api/models/insurance';
+import { LoanPaymentProposal } from '../../api/models/loan-payment-proposal';
 import { LoanTermsView } from '../../api/models/loan-terms-view';
 import { LoansService } from '../../api/services/loans.service';
 import { DataVersion } from '../../core/data-version';
@@ -327,10 +331,100 @@ export class LoanTermsDialog {
   }
 }
 
+/** Mensualités déjà enregistrées à ventiler en une fois selon leurs échéances (E3, CPT-10). */
+@Component({
+  selector: 'app-loan-payments-dialog',
+  imports: [MatDialogModule, MatButtonModule, MatCheckboxModule, MoneyPipe, FrDatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <h2 mat-dialog-title>Ventiler les mensualités passées</h2>
+    <mat-dialog-content>
+      <p class="muted">
+        Chaque mensualité cochée est ventilée selon son échéance : le capital rembourse le prêt, les
+        intérêts et l'assurance deviennent des dépenses.
+      </p>
+      @for (p of data.proposals; track p.transaction_id) {
+        <mat-checkbox
+          [checked]="selected().has(p.transaction_id)"
+          (change)="toggle(p, $event.checked)"
+        >
+          <span class="line">
+            <span>{{ p.date | frDate: 'short' }} · {{ p.label }}</span>
+            <span class="muted small"
+              >échéance n° {{ p.installment_number }} : {{ p.principal_minor | money }} de
+              capital</span
+            >
+          </span>
+        </mat-checkbox>
+      }
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Annuler</button>
+      <button mat-flat-button [disabled]="selected().size === 0" (click)="save()">
+        Ventiler {{ selected().size }} mensualité(s)
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    mat-checkbox {
+      display: block;
+    }
+    .line {
+      display: flex;
+      flex-direction: column;
+    }
+    .small {
+      font: var(--mat-sys-body-small);
+    }
+    .error {
+      color: var(--mat-sys-error);
+    }
+  `,
+})
+export class LoanPaymentsDialog {
+  protected readonly data = inject<{ accountId: string; proposals: LoanPaymentProposal[] }>(
+    MAT_DIALOG_DATA,
+  );
+  private readonly api = inject(LoansService);
+  private readonly ref = inject(MatDialogRef<LoanPaymentsDialog>);
+  protected readonly selected = signal(new Set(this.data.proposals.map((p) => p.transaction_id)));
+  protected readonly error = signal<string | null>(null);
+
+  protected toggle(p: LoanPaymentProposal, checked: boolean): void {
+    const next = new Set(this.selected());
+    if (checked) next.add(p.transaction_id);
+    else next.delete(p.transaction_id);
+    this.selected.set(next);
+  }
+
+  protected async save(): Promise<void> {
+    const body = this.data.proposals
+      .filter((p) => this.selected().has(p.transaction_id))
+      .map((p) => ({ transaction_id: p.transaction_id, installment_number: p.installment_number }));
+    try {
+      await firstValueFrom(this.api.payLoanInstallments({ id: this.data.accountId, body }));
+      this.ref.close(true);
+    } catch (e) {
+      this.error.set(errorMessage(e));
+    }
+  }
+}
+
 /** Fiche d'un prêt (E3, CPT-09) : résumé et tableau d'amortissement, une année à la fois. */
 @Component({
   selector: 'app-loan-panel',
-  imports: [MatButtonModule, MatIconModule, MatTooltipModule, MoneyPipe, FrDatePipe],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MoneyPipe,
+    FrDatePipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card panel">
@@ -377,6 +471,16 @@ export class LoanTermsDialog {
           <dt>Fin du prêt</dt>
           <dd>{{ l.end_date | frDate }}</dd>
         </dl>
+        @if (proposals.value()?.length) {
+          <p class="pending">
+            <mat-icon>info</mat-icon>
+            <span
+              >{{ proposals.value()?.length }} mensualité(s) déjà enregistrée(s) correspondent à des
+              échéances non ventilées.</span
+            >
+            <button mat-stroked-button (click)="payPast()">Ventiler les mensualités passées</button>
+          </p>
+        }
         <div class="year">
           <button
             mat-icon-button
@@ -399,6 +503,7 @@ export class LoanTermsDialog {
         <table>
           <thead>
             <tr>
+              <th><span class="cdk-visually-hidden">Payée</span></th>
               <th>N°</th>
               <th>Date</th>
               <th class="right">Mensualité</th>
@@ -411,6 +516,26 @@ export class LoanTermsDialog {
           <tbody>
             @for (i of rows(); track i.number) {
               <tr [class.next]="i.number === l.next_installment">
+                <td class="state">
+                  @if (i.paid_transaction_id; as paid) {
+                    <button
+                      mat-icon-button
+                      [matMenuTriggerFor]="paidMenu"
+                      [attr.aria-label]="'Échéance ' + i.number + ' payée'"
+                      matTooltip="Mensualité ventilée"
+                    >
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                    <mat-menu #paidMenu>
+                      <a mat-menu-item [routerLink]="['/transactions', paid]">
+                        <mat-icon>open_in_new</mat-icon>Voir la mensualité
+                      </a>
+                      <button mat-menu-item (click)="unpay(i.number)">
+                        <mat-icon>undo</mat-icon>Annuler la ventilation
+                      </button>
+                    </mat-menu>
+                  }
+                </td>
                 <td>{{ i.number }}</td>
                 <td>{{ i.date | frDate: 'short' }}</td>
                 <td class="right amount">{{ i.total_minor | money }}</td>
@@ -469,6 +594,25 @@ export class LoanTermsDialog {
       border-radius: 0.5rem;
       padding: 0 0.375rem;
     }
+    .pending {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--mat-sys-corner-medium);
+      background: var(--mat-sys-surface-container);
+      span {
+        flex: 1;
+      }
+    }
+    .state {
+      width: 2.5rem;
+      padding: 0;
+      mat-icon {
+        color: var(--mat-sys-primary);
+      }
+    }
     .year {
       display: flex;
       align-items: center;
@@ -516,6 +660,11 @@ export class LoanPanel {
     params: () => ({ id: this.accountId(), version: this.version.value() }),
     stream: ({ params }) => this.api.getLoan({ id: params.id }),
   });
+  protected readonly proposals = rxResource({
+    params: () =>
+      this.loan.hasValue() ? { id: this.accountId(), version: this.version.value() } : undefined,
+    stream: ({ params }) => this.api.loanPaymentProposals({ id: params.id }),
+  });
   /** Pas de conditions : l'API répond NO_LOAN_TERMS. */
   protected readonly missing = computed(
     () => problemOf(this.loan.error())?.code === 'NO_LOAN_TERMS',
@@ -544,6 +693,31 @@ export class LoanPanel {
     });
     if (await firstValueFrom(ref.afterClosed())) {
       this.version.bump();
+    }
+  }
+
+  protected async payPast(): Promise<void> {
+    const ref = this.dialog.open(LoanPaymentsDialog, {
+      data: { accountId: this.accountId(), proposals: this.proposals.value() ?? [] },
+    });
+    if (await firstValueFrom(ref.afterClosed())) {
+      this.version.bump();
+    }
+  }
+
+  protected async unpay(number: number): Promise<void> {
+    const ok = await confirm(this.dialog, {
+      title: 'Annuler la ventilation ?',
+      message:
+        'La part de capital est retirée du prêt et la mensualité redevient une dépense non catégorisée.',
+      action: 'Annuler la ventilation',
+    });
+    if (!ok) return;
+    try {
+      await firstValueFrom(this.api.unpayLoanInstallment({ id: this.accountId(), number }));
+      this.version.bump();
+    } catch (e) {
+      this.snack.open(errorMessage(e), undefined, { duration: 4000 });
     }
   }
 

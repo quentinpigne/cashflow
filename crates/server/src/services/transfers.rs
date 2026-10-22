@@ -248,6 +248,13 @@ pub async fn mark_as_transfer(db: &Db, id: TransactionId, input: &MarkAsTransfer
 
 /// Délie un virement : les deux transactions restent, sans catégorie (R-TRX-34).
 pub async fn unlink(db: &Db, id: TransferId) -> AppResult<()> {
+    // Le virement d'une mensualité ventilée ne se délie pas : on annule sa ventilation (R-CPT-17).
+    let transfer = db::transactions::all_transfers(&db.read).await?.into_iter().find(|t| t.id == id);
+    if let Some(t) = transfer
+        && db::loans::payment_involving(&db.read, t.outflow_transaction_id).await?.is_some()
+    {
+        return Err(DomainError::InstallmentPaymentLocked.into());
+    }
     db::transactions::delete_transfer(&db.write, id).await?;
     Ok(())
 }

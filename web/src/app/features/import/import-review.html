@@ -55,6 +55,15 @@
             }
           </p>
         }
+        @if (r.loan_payments.length > 0) {
+          <p class="checkpoint">
+            {{ r.loan_payments.length }} mensualité(s) de prêt reconnue(s) ({{
+              r.loan_payments[0].loan_name
+            }}, échéance n° {{ r.loan_payments[0].installment_number
+            }}{{ r.loan_payments.length > 1 ? '…' : '' }}).
+            <button mat-flat-button (click)="payLoans()">Ventiler selon les échéances</button>
+          </p>
+        }
         <a mat-stroked-button [routerLink]="['/comptes', b.summary.account_id]">Voir le compte</a>
       </section>
     }

@@ -99,8 +99,19 @@ pub struct TransactionDetail {
     pub origin: TransactionOrigin,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
+    /// Échéance de prêt payée par cette transaction, ou dont elle est la jambe du capital (R-CPT-17).
+    pub loan_payment: Option<LoanPaymentRef>,
     /// Rapprochée : montant, compte et date de solde sont verrouillés (R-TRX-3).
     pub locked: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct LoanPaymentRef {
+    pub loan_account_id: AccountId,
+    pub loan_name: String,
+    pub installment_number: u32,
+    /// Vrai pour la mensualité du compte payeur, faux pour la jambe du capital sur le prêt.
+    pub is_payment: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
@@ -267,6 +278,12 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
     let splits = db::transactions::splits_of(&db.write, id).await?.into_iter().map(Into::into).collect();
     let names = account_names(db).await?;
     let transfer = db::transactions::transfer_of(&db.write, id).await?.map(|side| transfer_summary(&side, &names));
+    let loan_payment = db::loans::payment_involving(&db.write, id).await?.map(|p| LoanPaymentRef {
+        loan_account_id: p.loan_account_id,
+        loan_name: names.get(&p.loan_account_id).cloned().unwrap_or_default(),
+        installment_number: p.installment_number,
+        is_payment: p.transaction_id == id,
+    });
     Ok(TransactionDetail {
         id: t.id,
         account_id: t.account_id,
@@ -285,6 +302,7 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
         origin: t.origin,
         splits,
         transfer,
+        loan_payment,
     })
 }
 
@@ -399,6 +417,34 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
 
     let transfer = db::transactions::transfer_of(&mut *tx, id).await?;
     let existing = db::transactions::splits_of(&mut *tx, id).await?;
+    // Une mensualité ventilée selon son échéance, et la jambe du capital sur le prêt, ne changent ni de montant,
+    // ni de compte, ni de ventilation (R-CPT-17) : seuls le libellé, la note et la date se modifient.
+    if db::loans::payment_involving(&mut *tx, id).await?.is_some() {
+        let same_splits = input.splits.as_ref().is_none_or(|splits| {
+            splits.len() == existing.len()
+                && splits
+                    .iter()
+                    .zip(&existing)
+                    .all(|(new, old)| new.amount_minor == old.amount.minor() && new.category_id == old.category_id)
+        });
+        if amount != current.amount || input.account_id != current.account_id || !same_splits {
+            return Err(DomainError::InstallmentPaymentLocked.into());
+        }
+        let note = clean(input.note.as_deref());
+        let update = TransactionUpdate {
+            account_id: current.account_id,
+            date: input.date,
+            bank_date: current.bank_date,
+            value_date: current.value_date,
+            amount,
+            label: &label,
+            note: note.as_deref(),
+            clearing_status: current.clearing_status,
+        };
+        db::transactions::update(&mut *tx, id, &update).await?;
+        tx.commit().await?;
+        return Ok(());
+    }
     let splits: Vec<SplitInput> = match &input.splits {
         Some(splits) => splits.clone(),
         None if existing.len() == 1 => vec![SplitInput {
@@ -485,22 +531,35 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
     Ok(())
 }
 
-/// Supprime une transaction. Une jambe de virement supprimée délie l'autre, qui reste (R-TRX-34).
+/// Supprime une transaction. Une jambe de virement supprimée délie l'autre, qui reste (R-TRX-34). Une mensualité
+/// ventilée emporte la jambe du capital créée sur le prêt ; cette jambe ne se supprime pas seule (R-CPT-17).
 pub async fn delete(db: &Db, id: TransactionId) -> AppResult<()> {
     let current = db::transactions::find(&db.read, id).await?.ok_or(AppError::NotFound("transaction"))?;
     if current.clearing_status == ClearingStatus::Reconciled {
         return Err(DomainError::TransactionLocked.into());
     }
-    let mut conn = db.write.acquire().await?;
-    reconciliation::lock(&mut conn, current.account_id).await?.check(current.balance_date)?;
-    db::transactions::delete(&mut *conn, id).await?;
+    let payment = db::loans::payment_involving(&db.read, id).await?;
+    if payment.is_some_and(|p| p.transaction_id != id) {
+        return Err(DomainError::InstallmentPaymentLocked.into());
+    }
+    let mut tx = db.write.begin().await?;
+    reconciliation::lock(&mut tx, current.account_id).await?.check(current.balance_date)?;
+    if let Some(leg) = payment.and_then(|p| p.leg_transaction_id) {
+        db::transactions::delete(&mut *tx, leg).await?;
+    }
+    db::transactions::delete(&mut *tx, id).await?;
+    tx.commit().await?;
     Ok(())
 }
 
 /// Catégorise une ventilation sur place, depuis l'accueil (`ecrans.md` E1).
 pub async fn categorize_split(db: &Db, split_id: SplitId, input: &CategorizeInput) -> AppResult<()> {
     let split = db::transactions::find_split(&db.read, split_id).await?.ok_or(AppError::NotFound("ventilation"))?;
-    if db::transactions::transfer_of(&db.read, split.transaction_id).await?.is_some() {
+    // Seule une ventilation de virement reste sans catégorie (R-TRX-32, ADR-0021).
+    if db::transactions::transfer_of(&db.read, split.transaction_id)
+        .await?
+        .is_some_and(|side| side.split_id == split_id)
+    {
         return Err(DomainError::TransferLegCategorized.into());
     }
     if let Some(category) = input.category_id

@@ -33,6 +33,10 @@ pub enum DomainError {
     InstallmentMismatch,
     #[error("cette échéance est déjà payée")]
     InstallmentAlreadyPaid,
+    #[error(
+        "une mensualité ventilée selon le tableau d'amortissement ne change ni de montant ni de compte : annuler d'abord sa ventilation depuis la fiche du prêt"
+    )]
+    InstallmentPaymentLocked,
     #[error("ce champ n'est pas modifiable après la création du compte")]
     AccountFieldLocked,
 
@@ -130,6 +134,7 @@ impl DomainError {
             InvalidLoanTerms => "INVALID_LOAN_TERMS",
             InstallmentMismatch => "INSTALLMENT_MISMATCH",
             InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
+            InstallmentPaymentLocked => "INSTALLMENT_PAYMENT_LOCKED",
             AccountFieldLocked => "ACCOUNT_FIELD_LOCKED",
             AmountZero => "AMOUNT_ZERO",
             NoSplit => "NO_SPLIT",
@@ -176,7 +181,7 @@ impl DomainError {
             ClosingBeforeOpening | ClosingBalanceNotZero { .. } => "R-CPT-5",
             AccountNotEmpty => "R-CPT-7",
             InvalidLoanTerms => "R-CPT-15",
-            InstallmentMismatch | InstallmentAlreadyPaid => "R-CPT-17",
+            InstallmentMismatch | InstallmentAlreadyPaid | InstallmentPaymentLocked => "R-CPT-17",
             AmountZero => "R-TRX-1",
             BankLabelImmutable => "R-TRX-2",
             TransactionLocked => "R-TRX-3",
