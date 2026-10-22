@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -8,6 +8,8 @@ import { SavingsService } from '../../api/services/savings.service';
 import { DataVersion } from '../../core/data-version';
 import { formatRate, formatRatePpm } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { HomeSettings } from '../home/home-settings';
+import { WidgetMenu, WidgetMenuItem, optionItem } from '../home/widget-menu';
 
 /**
  * Épargne sur l'accueil (TDB-05) : épargne de précaution, intérêts de l'année des livrets, valeur et
@@ -15,13 +17,14 @@ import { MoneyPipe } from '../../shared/money.pipe';
  */
 @Component({
   selector: 'app-home-savings',
-  imports: [RouterLink, MatIconModule, MatTooltipModule, MoneyPipe],
+  imports: [RouterLink, MatIconModule, MatTooltipModule, WidgetMenu, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (overview.value(); as o) {
       <section class="card">
-        <h2>Épargne</h2>
-        @if (o.emergency_fund_minor > 0) {
+        <h2 class="widget-title">Épargne</h2>
+        <app-widget-menu widget="savings" [items]="menuItems()" />
+        @if (settings.option('savings.emergency') && o.emergency_fund_minor > 0) {
           <div class="row">
             <span>
               Épargne de précaution
@@ -38,7 +41,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
             dépenses par mois
           </p>
         }
-        @if (o.fixed.length > 0) {
+        @if (settings.option('savings.interest') && o.fixed.length > 0) {
           <h3>Intérêts {{ year }}</h3>
           <div class="row">
             <span>Courus depuis le 1er janvier</span>
@@ -65,7 +68,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
             </a>
           }
         }
-        @if (o.variable.length > 0) {
+        @if (settings.option('savings.variable') && o.variable.length > 0) {
           <h3>Épargne variable</h3>
           <div class="row">
             <span>Valeur / capital investi</span>
@@ -98,10 +101,6 @@ import { MoneyPipe } from '../../shared/money.pipe';
   styles: `
     :host {
       display: contents;
-    }
-    h2 {
-      font: var(--mat-sys-title-medium);
-      margin: 0 0 0.5rem;
     }
     h3 {
       font: var(--mat-sys-title-small);
@@ -137,12 +136,19 @@ import { MoneyPipe } from '../../shared/money.pipe';
 export class HomeSavings {
   private readonly api = inject(SavingsService);
   private readonly version = inject(DataVersion);
+  protected readonly settings = inject(HomeSettings);
 
   protected readonly year = new Date().getFullYear();
   protected readonly overview = rxResource({
     params: () => this.version.value(),
     stream: () => this.api.savingsOverview(),
   });
+
+  protected readonly menuItems = computed<WidgetMenuItem[]>(() => [
+    optionItem(this.settings, 'savings.emergency', 'Épargne de précaution'),
+    optionItem(this.settings, 'savings.interest', 'Intérêts de l’année'),
+    optionItem(this.settings, 'savings.variable', 'Épargne variable'),
+  ]);
 
   protected months(tenths: number | null | undefined): string {
     if (tenths === null || tenths === undefined) return '—';

@@ -20,6 +20,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -41,7 +42,9 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { HomeBudget } from '../budget/home-budget';
 import { HomeMissed } from '../projections/home-missed';
 import { HomeSavings } from '../savings/home-savings';
-import { HomeLayout, Widget, columnCount } from './home-layout';
+import { HomeLayout, WIDGET_LABELS, Widget, columnCount } from './home-layout';
+import { HomeSettings } from './home-settings';
+import { WidgetMenu, WidgetMenuItem, optionItem } from './widget-menu';
 import { HomeRecent } from './home-recent';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
@@ -57,19 +60,6 @@ const DEFINITIONS = {
   rate: 'Épargne du mois divisée par les revenus. Non défini si les revenus sont nuls.',
 };
 
-/** Nom de chaque encadré, pour les lecteurs d'écran. */
-const WIDGET_LABELS: Record<Widget, string> = {
-  'net-worth': 'Patrimoine',
-  month: 'Mois en cours',
-  recent: 'Dernières saisies',
-  alerts: 'Alertes',
-  missed: 'Échéances non vues',
-  uncategorized: 'À catégoriser',
-  budget: 'Budget du mois',
-  savings: 'Épargne',
-  accounts: 'Comptes',
-};
-
 /** E1 — Accueil (TDB-01), dont les encadrés se réorganisent par glisser-déposer. */
 @Component({
   selector: 'app-home',
@@ -83,9 +73,11 @@ const WIDGET_LABELS: Record<Widget, string> = {
     HomeRecent,
     HomeSavings,
     HomeMissed,
+    WidgetMenu,
     RouterLink,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     MatProgressBarModule,
     MatTooltipModule,
     CategoryPicker,
@@ -108,9 +100,9 @@ export class HomePage {
     params: () => this.version.value(),
     stream: () => this.api.getDashboard(),
   });
-  protected readonly showDetail = signal(false);
 
   protected readonly layout = inject(HomeLayout);
+  protected readonly settings = inject(HomeSettings);
   protected readonly labels = WIDGET_LABELS;
 
   /** Largeur disponible pour la grille (page moins ses marges), suivie au redimensionnement. */
@@ -147,6 +139,16 @@ export class HomePage {
     }
     this.layout.save(this.count(), columns);
   }
+
+  protected readonly netWorthItems = computed<WidgetMenuItem[]>(() => [
+    optionItem(this.settings, 'net-worth.detail', 'Détail actif brut / dettes'),
+  ]);
+  protected readonly monthItems = computed<WidgetMenuItem[]>(() => [
+    optionItem(this.settings, 'month.previous', 'Comparer au mois précédent'),
+  ]);
+  protected readonly accountsItems = computed<WidgetMenuItem[]>(() => [
+    optionItem(this.settings, 'accounts.detail', 'Détail des comptes'),
+  ]);
 
   protected readonly monthLabel = computed(() =>
     this.dashboard.hasValue() ? formatMonth(this.dashboard.value().month.from) : '',

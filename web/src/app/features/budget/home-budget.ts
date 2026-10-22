@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { BudgetsService } from '../../api/services/budgets.service';
 import { DataVersion } from '../../core/data-version';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { HomeSettings } from '../home/home-settings';
+import { WidgetMenu, WidgetMenuItem, optionItem } from '../home/widget-menu';
 import { BudgetGauge } from './gauge';
 
 /**
@@ -13,13 +15,14 @@ import { BudgetGauge } from './gauge';
  */
 @Component({
   selector: 'app-home-budget',
-  imports: [RouterLink, MoneyPipe, BudgetGauge],
+  imports: [RouterLink, WidgetMenu, MoneyPipe, BudgetGauge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (budget.value(); as b) {
-      @if (b.has_lines || projects().length > 0) {
+      @if (b.has_lines || (settings.option('budget.projects') && projects().length > 0)) {
         <section class="card">
-          <h2><a routerLink="/budget">Budget du mois</a></h2>
+          <h2 class="widget-title"><a routerLink="/budget">Budget du mois</a></h2>
+          <app-widget-menu widget="budget" [items]="menuItems()" />
           @if (b.has_lines) {
             <div class="row">
               <span>Reste à budgéter</span>
@@ -49,7 +52,7 @@ import { BudgetGauge } from './gauge';
               />
             </a>
           }
-          @if (goals().length > 0) {
+          @if (settings.option('budget.goals') && goals().length > 0) {
             <h3>Épargne</h3>
             @for (line of goals(); track line.id) {
               <a class="item" routerLink="/budget">
@@ -68,7 +71,7 @@ import { BudgetGauge } from './gauge';
               </a>
             }
           }
-          @if (projects().length > 0) {
+          @if (settings.option('budget.projects') && projects().length > 0) {
             <h3>Projets</h3>
             @for (p of projects(); track p.id) {
               <a class="item" [routerLink]="['/budget/projets', p.id]">
@@ -95,13 +98,6 @@ import { BudgetGauge } from './gauge';
     :host {
       display: contents;
     }
-    h2 {
-      font: var(--mat-sys-title-medium);
-      margin: 0 0 0.5rem;
-      a {
-        color: inherit;
-      }
-    }
     h3 {
       font: var(--mat-sys-title-small);
       margin: 1rem 0 0.25rem;
@@ -124,6 +120,7 @@ import { BudgetGauge } from './gauge';
 export class HomeBudget {
   private readonly api = inject(BudgetsService);
   private readonly version = inject(DataVersion);
+  protected readonly settings = inject(HomeSettings);
 
   protected readonly budget = rxResource({
     params: () => this.version.value(),
@@ -145,4 +142,8 @@ export class HomeBudget {
   protected readonly projects = computed(() =>
     (this.allProjects.value() ?? []).filter((p) => p.active),
   );
+  protected readonly menuItems = computed<WidgetMenuItem[]>(() => [
+    optionItem(this.settings, 'budget.goals', 'Objectifs d’épargne'),
+    optionItem(this.settings, 'budget.projects', 'Projets'),
+  ]);
 }

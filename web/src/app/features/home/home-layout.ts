@@ -15,6 +15,19 @@ export const WIDGETS = [
 
 export type Widget = (typeof WIDGETS)[number];
 
+/** Nom de chaque encadré (lecteurs d'écran, liste des encadrés masqués). */
+export const WIDGET_LABELS: Record<Widget, string> = {
+  'net-worth': 'Patrimoine',
+  month: 'Mois en cours',
+  recent: 'Dernières saisies',
+  alerts: 'Alertes',
+  missed: 'Échéances non vues',
+  uncategorized: 'À catégoriser',
+  budget: 'Budget du mois',
+  savings: 'Épargne',
+  accounts: 'Comptes',
+};
+
 /** Nombre de colonnes, d'après la largeur disponible : une sur mobile, jusqu'à quatre sur grand écran. */
 export const MAX_COLUMNS = 4;
 

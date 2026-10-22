@@ -52,3 +52,26 @@ test('E1 : dernières saisies, la plus récente en tête (TDB-01)', async ({ pag
   await page.locator('app-home-recent a.row').first().click();
   await expect(page).toHaveURL(/\/transactions\/[0-9a-f-]{36}$/);
 });
+
+test('E1 : réglages d’un encadré, masquer puis réafficher (TDB-01)', async ({ page }) => {
+  await login(page);
+  const accounts = page.locator('section.accounts');
+  await expect(accounts.locator('a.account').first()).toBeVisible();
+
+  // Option d'affichage : les familles seules, sans le détail des comptes.
+  await page.getByRole('button', { name: 'Réglages de l’encadré Comptes' }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Détail des comptes' }).click();
+  await expect(accounts.locator('a.account')).toHaveCount(0);
+  await expect(accounts.locator('.family').first()).toBeVisible();
+
+  // Masquer l'encadré, gardé après rechargement, puis le réafficher.
+  await page.getByRole('button', { name: 'Réglages de l’encadré Comptes' }).click();
+  await page.getByRole('menuitem', { name: 'Masquer l’encadré' }).click();
+  await expect(accounts).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('section.accounts')).toHaveCount(0);
+  await page.getByRole('button', { name: /Encadrés masqués \(1\)/ }).click();
+  await page.getByRole('menuitem', { name: 'Afficher « Comptes »' }).click();
+  await expect(accounts.locator('.family').first()).toBeVisible();
+  await expect(accounts.locator('a.account')).toHaveCount(0);
+});

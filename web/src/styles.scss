@@ -103,6 +103,25 @@ input.amount {
   padding: 1rem;
 }
 
+// Titre d'un encadré de l'accueil (E1) : le même pour tous, lien ou non. La marge de droite laisse la
+// place au bouton de réglages et à la poignée de déplacement.
+.widget-title {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 4.5rem 0.5rem 0;
+  font: var(--mat-sys-title-medium);
+
+  a {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
 .empty {
   padding: 2rem 1rem;
   text-align: center;

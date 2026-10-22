@@ -129,10 +129,24 @@ en cours à gauche, comptes à droite, « à catégoriser » et alertes en desso
 **Dernières saisies.** Encadré des 5, 10 ou 15 dernières transactions **saisies** (ordre de
 création, quelle que soit leur date d'opération) : date, compte, libellé (en italique si en attente),
 catégorie, ventilation ou virement, montant ; un clic ouvre la transaction (E7). Le nombre affiché se
-choisit dans le menu de réglages de l'encadré et est gardé dans le navigateur.
+choisit dans le menu de réglages de l'encadré.
 
-**Réglages d'un encadré.** Un encadré qui a des options (« Dernières saisies » pour l'instant) porte, à
-côté de sa poignée, un bouton de réglages discret qui ouvre un menu.
+**Réglages d'un encadré.** Chaque encadré porte, à côté de sa poignée, un bouton de réglages discret
+qui ouvre un menu : les options d'affichage propres à l'encadré, puis « Masquer l'encadré ». Options :
+
+| Encadré | Options (valeur par défaut) |
+|---|---|
+| Patrimoine | Détail actif brut / dettes (non ; un clic sur le montant bascule aussi) |
+| Mois en cours | Comparer au mois précédent (oui) |
+| Dernières saisies | 5, 10 ou 15 transactions (5) |
+| Budget du mois | Objectifs d'épargne (oui), Projets (oui) |
+| Épargne | Épargne de précaution, Intérêts de l'année, Épargne variable (oui) |
+| Comptes | Détail des comptes (oui ; sinon les familles seules) |
+
+Les encadrés masqués se réaffichent depuis le bouton « Encadrés masqués (n) » en haut de l'accueil.
+Réglages et encadrés masqués sont gardés dans le navigateur (`localStorage`), pour tous les nombres de
+colonnes. Tous les encadrés ont le même style de titre ; un titre qui mène à un écran (Budget, Comptes,
+Échéances) n'est souligné qu'au survol.
 
 **Disposition personnalisable.** Chaque encadré porte une poignée (⋮⋮, en haut à droite) : on le fait
 glisser pour le réordonner dans sa colonne, ou le changer de colonne. La disposition est gardée dans le

@@ -1,7 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
 
 import { RecentTransaction } from '../../api/models/recent-transaction';
@@ -10,7 +8,7 @@ import { DataVersion } from '../../core/data-version';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CategoriesStore } from '../../shared/stores';
-import { WidgetMenu } from './widget-menu';
+import { WidgetMenu, WidgetMenuItem } from './widget-menu';
 
 const COUNTS = [5, 10, 15] as const;
 type Count = (typeof COUNTS)[number];
@@ -32,14 +30,12 @@ function storedCount(): Count {
  */
 @Component({
   selector: 'app-home-recent',
-  imports: [RouterLink, MatIconModule, MatMenuModule, WidgetMenu, FrDatePipe, MoneyPipe],
+  imports: [RouterLink, WidgetMenu, FrDatePipe, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="card">
-      <header>
-        <h2>Dernières saisies</h2>
-        <app-widget-menu label="Dernières saisies" [menu]="settings" />
-      </header>
+      <h2 class="widget-title">Dernières saisies</h2>
+      <app-widget-menu widget="recent" [items]="menuItems()" />
       @for (t of recent.value() ?? []; track t.id) {
         <a
           class="row"
@@ -61,37 +57,11 @@ function storedCount(): Count {
         }
       }
       <a class="all" routerLink="/transactions">Toutes les transactions</a>
-      <mat-menu #settings xPosition="before">
-        @for (n of counts; track n) {
-          <button
-            mat-menu-item
-            role="menuitemradio"
-            [attr.aria-checked]="count() === n"
-            (click)="setCount(n)"
-          >
-            <mat-icon>{{ count() === n ? 'check' : '' }}</mat-icon>
-            <span>{{ n }} transactions</span>
-          </button>
-        }
-      </mat-menu>
     </section>
   `,
   styles: `
     :host {
       display: contents;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      // La poignée de déplacement et le bouton de réglages de l'encadré sont en haut à droite.
-      margin-right: 4.5rem;
-      margin-bottom: 0.5rem;
-      h2 {
-        margin: 0;
-        font: var(--mat-sys-title-medium);
-      }
     }
     .row {
       display: flex;
@@ -135,12 +105,20 @@ export class HomeRecent {
   private readonly version = inject(DataVersion);
   private readonly categories = inject(CategoriesStore);
 
-  protected readonly counts = COUNTS;
   protected readonly count = signal<Count>(storedCount());
   protected readonly recent = rxResource({
     params: () => ({ limit: this.count(), version: this.version.value() }),
     stream: ({ params }) => this.api.recentTransactions({ limit: params.limit }),
   });
+
+  protected readonly menuItems = computed<WidgetMenuItem[]>(() =>
+    COUNTS.map((n) => ({
+      label: `${n} transactions`,
+      checked: this.count() === n,
+      select: () => this.setCount(n),
+      radio: true,
+    })),
+  );
 
   protected setCount(count: Count): void {
     this.count.set(count);

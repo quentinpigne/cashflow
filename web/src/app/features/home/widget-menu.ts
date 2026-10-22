@@ -1,26 +1,67 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenu, MatMenuModule } from '@angular/material/menu';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { WIDGET_LABELS, Widget } from './home-layout';
+import { HomeSettings, WidgetOption } from './home-settings';
+
+/** Une entrée cochable du menu de réglages : option à cocher, ou choix exclusif (`radio`). */
+export interface WidgetMenuItem {
+  label: string;
+  checked: boolean;
+  select: () => void;
+  radio?: boolean;
+}
+
+/** Entrée qui bascule une option d'affichage de l'accueil. */
+export function optionItem(
+  settings: HomeSettings,
+  key: WidgetOption,
+  label: string,
+): WidgetMenuItem {
+  return { label, checked: settings.option(key), select: () => settings.toggle(key) };
+}
+
 /**
- * Réglages d'un encadré de l'accueil (ecrans.md E1) : un bouton discret à côté de la poignée de l'encadré,
- * qui ouvre le menu (`mat-menu`) de l'encadré.
+ * Réglages d'un encadré de l'accueil (ecrans.md E1) : un bouton discret à côté de la poignée de
+ * l'encadré, qui ouvre un menu avec les options de l'encadré, puis « Masquer l'encadré ».
  */
 @Component({
   selector: 'app-widget-menu',
-  imports: [MatIconModule, MatMenuModule, MatTooltipModule],
+  imports: [MatDividerModule, MatIconModule, MatMenuModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
       class="trigger"
       type="button"
-      [matMenuTriggerFor]="menu()"
-      [attr.aria-label]="'Réglages de l’encadré ' + label()"
+      [matMenuTriggerFor]="menu"
+      [attr.aria-label]="'Réglages de l’encadré ' + labels[widget()]"
       matTooltip="Réglages"
     >
       <mat-icon>tune</mat-icon>
     </button>
+    <mat-menu #menu xPosition="before">
+      @for (item of items(); track item.label) {
+        <button
+          mat-menu-item
+          [role]="item.radio ? 'menuitemradio' : 'menuitemcheckbox'"
+          [attr.aria-checked]="item.checked"
+          (click)="item.select()"
+        >
+          <mat-icon>{{ item.checked ? 'check' : '' }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </button>
+      }
+      @if (items().length > 0) {
+        <mat-divider />
+      }
+      <button mat-menu-item (click)="settings.hide(widget())">
+        <mat-icon>visibility_off</mat-icon>
+        <span>Masquer l’encadré</span>
+      </button>
+    </mat-menu>
   `,
   styles: `
     // À gauche de la poignée de déplacement (home.scss, .handle), avec la même taille et la même
@@ -65,7 +106,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   `,
 })
 export class WidgetMenu {
-  /** Nom de l'encadré, pour les lecteurs d'écran. */
-  readonly label = input.required<string>();
-  readonly menu = input.required<MatMenu>();
+  protected readonly settings = inject(HomeSettings);
+  protected readonly labels = WIDGET_LABELS;
+
+  readonly widget = input.required<Widget>();
+  /** Options propres à l'encadré, avant « Masquer l'encadré ». */
+  readonly items = input<WidgetMenuItem[]>([]);
 }

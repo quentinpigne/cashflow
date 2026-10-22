@@ -7,16 +7,18 @@ import { ProjectionsService } from '../../api/services/projections.service';
 import { DataVersion } from '../../core/data-version';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { WidgetMenu } from '../home/widget-menu';
 
 /** Échéances passées non honorées, signalées sur l'accueil (R-TRX-42). */
 @Component({
   selector: 'app-home-missed',
-  imports: [RouterLink, MatIconModule, FrDatePipe, MoneyPipe],
+  imports: [RouterLink, MatIconModule, WidgetMenu, FrDatePipe, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (missed().length > 0) {
       <section class="card">
-        <h2><a routerLink="/recurrences">Échéances non vues</a></h2>
+        <h2 class="widget-title"><a routerLink="/recurrences">Échéances non vues</a></h2>
+        <app-widget-menu widget="missed" />
         @for (o of missed(); track o.rule_id + o.date) {
           <a class="row" routerLink="/recurrences">
             <mat-icon>event_busy</mat-icon>
@@ -35,13 +37,6 @@ import { MoneyPipe } from '../../shared/money.pipe';
   styles: `
     :host {
       display: contents;
-    }
-    h2 {
-      font: var(--mat-sys-title-medium);
-      margin: 0 0 0.5rem;
-      a {
-        color: inherit;
-      }
     }
     .row {
       display: grid;
