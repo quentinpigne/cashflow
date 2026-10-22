@@ -1,7 +1,7 @@
 # Spec 07 — Projections
 
 Statut : **Validée** (2026-10-20)
-Modèle : [ProjectionScenario](../modele-de-donnees.md#projections--spec-07), RecurringRule, FixedSavingsTerms
+Modèle : [ProjectionScenario](../modele-de-donnees.md#projections--spec-07), RecurringRule, FixedSavingsTerms, Employment (spec 10)
 
 ## Objectif
 
@@ -70,13 +70,42 @@ Répondre à trois questions :
 ## Projection de patrimoine
 
 - **R-PRJ-40** — Patrimoine projeté = Σ projections des comptes inclus dans le patrimoine, sous un même
-  scénario. Les comptes `CASH` sont projetés à leur solde actuel, constant au-delà de l'horizon de
-  trésorerie (pas de dérive spéculative). Les biens et les prêts comptés dans le patrimoine s'y ajoutent
-  (spec 09) : un prêt avec tableau suit son capital restant dû (R-PRE-4), un prêt en suivi simple garde son
+  scénario. Les comptes `CASH` partent de leur solde actuel, diminué des versements programmés (R-PRJ-41)
+  et augmenté chaque mois de la capacité d'épargne (R-PRJ-42), sauf si le scénario la désactive
+  (R-PRJ-47). Les biens et les prêts comptés dans le patrimoine s'y ajoutent (spec 09) : un prêt avec tableau suit son capital restant dû (R-PRE-4), un prêt en suivi simple garde son
   dernier capital restant dû, un bien sa dernière valeur (R-BIE-5).
 - **R-PRJ-41** — Les virements internes programmés sont pris en compte **des deux côtés** : ils
   réduisent le compte source et augmentent la cible. Le patrimoine n'est donc pas gonflé par les flux
   internes.
+
+## Capacité d'épargne (ADR-0022)
+
+- **R-PRJ-42** — **Capacité d'épargne** du mois m = revenus projetés (R-PRJ-43) − dépenses projetées
+  (R-PRJ-44) − échéances des prêts avec tableau datées en m (mensualité et assurance, R-PRE-3). Elle est
+  calculée pour chaque mois de l'horizon à partir du mois suivant, et peut être négative.
+- **R-PRJ-43** — **Revenus projetés** = salaires projetés des emplois (R-SAL-10, R-SAL-11) + **autres
+  revenus moyens** : moyenne mensuelle, sur les 12 derniers mois complets, des ventilations de catégories
+  `INCOME` des comptes `CASH`, hors catégories reliées à un emploi (et leurs sous-catégories). Les intérêts
+  des comptes d'épargne n'y entrent pas : leur projection les compte déjà (R-PRJ-20). Les autres revenus
+  restent constants. Sans emploi déclaré, les revenus projetés sont donc la moyenne des revenus passés.
+- **R-PRJ-44** — **Dépenses projetées** = dépenses mensuelles moyennes (R-TDB-8), hors intérêts et
+  assurance des mensualités ventilées (R-PRE-6), augmentées chaque 1er janvier du **taux de hausse des
+  dépenses** du scénario (2 % par défaut dans les trois scénarios). Les remboursements des prêts en suivi
+  simple et les acquisitions ne sont pas projetés (le prêt garde son capital restant dû, R-PRE-9). Un prêt
+  avec tableau dont des échéances des 12 derniers mois ne sont pas payées est signalé : sa mensualité,
+  comptée en dépense, le serait deux fois.
+- **R-PRJ-45** — **Affectation**. La capacité d'épargne est créditée en fin de mois sur le **compte de
+  versement** : le compte courant qui a reçu le plus de ventilations des catégories des emplois sur les 12
+  derniers mois, à défaut le premier compte courant. Les versements programmés en partent comme avant
+  (R-PRJ-4, R-PRJ-41). Le scénario peut désigner un **compte d'affectation du reste** (compte d'épargne) : le
+  reste positif du mois (capacité − versements programmés des comptes `CASH`) y est alors viré, dans la
+  limite de son plafond (R-PRJ-22) ; le dépassement reste sur le compte de versement.
+- **R-PRJ-46** — La projection affiche la capacité d'épargne mois par mois avec ses composantes et ses
+  hypothèses (taux de hausse des salaires et des dépenses, moyennes de départ, fins d'emploi et de prêts).
+  Un solde projeté du compte de versement sous zéro déclenche un avertissement daté (« les versements
+  programmés dépassent la capacité d'épargne à partir de … »).
+- **R-PRJ-47** — La capacité d'épargne est **activée par défaut** dans chaque scénario, et désactivable :
+  les comptes `CASH` gardent alors leur solde actuel, diminué des seuls versements programmés.
 
 ## Features
 
@@ -91,8 +120,22 @@ Répondre à trois questions :
 | PRJ-07 | V2 | Objectifs : « X € à telle date » → versement mensuel nécessaire selon un scénario |
 | PRJ-08 | V2 | Compte de débordement en cas de plafond atteint |
 | PRJ-09 | V2 | Affichage en euros constants |
+| PRJ-10 | V1 | Capacité d'épargne dans la projection du patrimoine (ADR-0022) |
 
 ### PRJ-04 — Critère d'acceptation
 
 - Étant donné V0 = 10 000 €, r = 5 %/an, frais = 0, versement = 0, alors la valeur à 12 mois vaut
   10 500,00 € (à l'arrondi près) et à 120 mois 16 288,95 €.
+
+### PRJ-10 — Critère d'acceptation
+
+- Étant donné l'emploi de l'exemple de la spec 10 (scénario médian, 2 %), 50 € d'autres revenus moyens,
+  1 900 € de dépenses moyennes, une hausse des dépenses de 2 %, un versement programmé de 300 € par mois du
+  compte courant vers le Livret A et aucun prêt : la capacité d'épargne de novembre 2026 vaut
+  2 700 + 50 − 1 900 = 850 € (compte courant +550 €, Livret A +300 €) ; celle de décembre 2026, 13e mois
+  compris, 3 450 € ; celle de janvier 2027, 2 754 + 50 − 1 938 = 866 €.
+- Avec en plus le prêt de PRE-02 (échéance de 1 159,20 €), dont 550 € d'intérêts et d'assurance comptés
+  dans les 1 900 € : la capacité de novembre 2026 vaut 2 700 + 50 − 1 350 − 1 159,20 = 240,80 €, et elle
+  augmente de 1 159,20 € (avant hausse des dépenses) le mois suivant la dernière échéance.
+- Capacité d'épargne désactivée : le compte courant reste à son solde du jour, diminué des versements
+  programmés.

@@ -54,6 +54,9 @@ erDiagram
     Transaction ||--o| LoanPayment : "paie"
     Loan ||--o{ Split : "remboursé par"
     Asset ||--o{ Split : "acquis par"
+    Employment ||--o{ Salary : "rémunérations successives"
+    Employment ||--o{ SalaryBonus : "primes"
+    Category ||--o{ Employment : "salaire reçu sur"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -308,6 +311,54 @@ assurance).
 Les rubriques Biens et Prêts s'activent par deux réglages (`AppSetting`) : `features.assets`,
 `features.loans` (R-BIE-7, R-PRE-12).
 
+## Salaires — [spec 10](specs/10-salaires.md)
+
+Décision : ADR-0022. Montants en euros.
+
+### Employment (emploi)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `employer` | texte ≤ 80 | requis |
+| `job_title` | texte ≤ 80 | optionnel : poste |
+| `start_date` | `Date` | requis |
+| `end_date` | `Date` | optionnel, ≥ `start_date` |
+| `income_category_id` | `Id` → Category | requis ; catégorie de revenu (`INCOME`) comparée au net attendu (R-SAL-9) |
+| `raise_month` | entier | 1 à 12, défaut 1 : mois des augmentations (R-SAL-10) |
+| `paid_next_month` | booléen | défaut `false` : le salaire du mois M est versé en M+1 |
+| `notes` | texte | optionnel |
+
+### Salary (rémunération)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `employment_id` | `Id` → Employment | requis, suppression en cascade |
+| `effective_month` | `Date` | requis, premier jour d'un mois, unique avec `employment_id`, entre le mois de début et le mois de fin de l'emploi |
+| `annual_gross` | `Money` | requis, > 0 : brut annuel de base, hors primes |
+| `monthly_net` | `Money` | requis, > 0 : net mensuel versé, après prélèvement à la source |
+| `reason` | `SalaryChangeReason` | `HIRE` \| `RAISE` \| `PROMOTION` \| `TAX_RATE` \| `OTHER` |
+| `note` | texte | optionnel |
+
+Une rémunération dont `effective_month` est futur est prévue (R-SAL-4) ; rien ne la distingue en base.
+
+### SalaryBonus (prime)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `employment_id` | `Id` → Employment | requis, suppression en cascade |
+| `label` | texte ≤ 80 | requis |
+| `kind` | `BonusKind` | `THIRTEENTH_MONTH` \| `BONUS` \| `PROFIT_SHARING` \| `OTHER` |
+| `paid_on` | `Date` | requis, entre le début et la fin de l'emploi |
+| `net_amount` | `Money` | requis, > 0 |
+| `gross_amount` | `Money` | optionnel, > 0 |
+| `recurring` | booléen | défaut `true` pour `THIRTEENTH_MONTH`, `false` sinon (R-SAL-11) |
+| `note` | texte | optionnel |
+
+### Réglages
+
+`features.salaries` active la rubrique (R-SAL-14) ; `salaries.gap_tolerance` (`Rate`, défaut 5 %) fixe la
+tolérance de l'écart entre attendu et reçu (R-SAL-9).
+
 ## Import — [spec 03](specs/03-import.md)
 
 ### ImportProfile
@@ -386,7 +437,7 @@ Les rubriques Biens et Prêts s'activent par deux réglages (`AppSetting`) : `fe
 | `name` | texte | requis, unique (ex. « Prudent », « Médian », « Optimiste ») |
 | `horizon_months` | entier | 1–600 |
 | `inflation_rate` | `Rate` | optionnel (affichage en euros constants) |
-| `assumptions` | `Json` | par compte ou par famille : rendement annuel, frais annuels, versement mensuel, évolution des taux… |
+| `assumptions` | `Json` | par compte ou par famille : rendement annuel, frais annuels, versement mensuel, évolution des taux… ; capacité d'épargne (R-PRJ-42 à R-PRJ-47) : `savings_capacity` (booléen, défaut `true`), `salary_growth_rate`, `expense_growth_rate` (`Rate`), `surplus_account_id` (compte d'affectation du reste, optionnel) |
 | `is_default` | booléen | un seul scénario par défaut |
 
 ## Budgets — [spec 05](specs/05-budgets.md)

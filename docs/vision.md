@@ -59,6 +59,8 @@ Les données sont sensibles et ne doivent pas quitter mon contrôle sans action 
 | Épargne | Taux fixe (intérêts calculés), taux variable (valorisations, performance) | [06](specs/06-epargne.md) |
 | Projections | Trésorerie, épargne fixe, épargne variable par scénarios | [07](specs/07-projections.md) |
 | Tableau de bord | Patrimoine, taux d'épargne, épargne de précaution, budgets | [08](specs/08-tableau-de-bord.md) |
+| Biens et prêts | Biens, prêts, tableau d'amortissement | [09](specs/09-biens-et-prets.md) |
+| Salaires | Emplois, rémunérations et primes déclarées, comparaison au reçu, projection, capacité d'épargne | [10](specs/10-salaires.md) |
 
 ## Non-objectifs (au moins pour la V1)
 

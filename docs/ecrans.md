@@ -628,3 +628,49 @@ compter dans le patrimoine, note, et le **mode de suivi** :
   annuel sur le capital), compte payeur, catégories des intérêts et de l'assurance (« Prêts › Intérêts »,
   « Prêts › Assurance emprunteur » par défaut). La mensualité calculée s'affiche pendant la saisie ;
 - suivi simple : rien de plus.
+
+# Écrans — salaires (spec 10)
+
+Statut : **Revue** (2026-10-22)
+
+Ce qui change dans les écrans existants :
+- **Navigation** : entrée **Salaires** (E29), après Prêts, seulement si la rubrique est activée ; sur mobile,
+  dans le menu ⋮ du haut.
+- **E1 Accueil** : dans les alertes, l'écart de salaire signalé du dernier mois complet (R-SAL-9), avec un
+  lien vers l'emploi.
+- **E9 Réglages** : interrupteur « Salaires » dans le bloc **Rubriques** (R-SAL-14), et tolérance de l'écart.
+- **E24 Projections** :
+  - onglet **Patrimoine** : sous la courbe, la **capacité d'épargne** mois par mois (barres, négatives en
+    rouge), dépliable en revenus, dépenses et échéances de prêts (R-PRJ-46) ; avertissement daté si le compte
+    de versement passe sous zéro ;
+  - nouvel onglet **Salaire** : net annuel réel (R-SAL-8) prolongé en pointillés par chaque scénario
+    (R-SAL-13), horizon 5, 10, 20 ou 30 ans, hypothèses (taux, rémunérations et primes prévues, fins
+    d'emploi) ;
+  - formulaire d'un scénario : bloc **Capacité d'épargne** avec l'interrupteur (R-PRJ-47), le taux de hausse
+    des salaires, le taux de hausse des dépenses et le compte d'affectation du reste (aucun par défaut).
+
+## E29 — Salaires (SAL-01, SAL-02)
+
+- **Évolution** : barres du net annuel par année, tous emplois, une couleur par emploi, et courbe du brut
+  annuel ; variation sur l'année précédente au survol ; années incomplètes ou prévisionnelles signalées
+  (R-SAL-7, R-SAL-8). Bascule net / brut sur mobile.
+- **Emplois** : liste (employeur, poste, dates, net mensuel en vigueur) ; les emplois terminés sont regroupés
+  dans une section repliée. Action « Nouvel emploi ».
+
+## E30 — Fiche d'un emploi (SAL-01 à SAL-03)
+
+- **En-tête** : employeur, poste, dates, net mensuel en vigueur, menu ⋮ (Modifier, Supprimer).
+- **Rémunérations** : liste chronologique inverse (mois d'effet, motif, brut annuel, net mensuel, variation
+  sur la précédente) ; les rémunérations prévues portent la mention « prévue ». « Ajouter » ouvre le
+  formulaire prérempli avec la dernière (R-SAL-2).
+- **Primes** : liste datée (libellé, nature, net, brut, récurrente) ; « Ajouter ».
+- **Revenu annuel** : tableau par année, net et brut, variation (R-SAL-7).
+- **Reçu** : les 12 derniers mois, attendu, reçu, écart ; les écarts signalés en rouge ; un clic sur un mois
+  ouvre les transactions de la catégorie sur ce mois (E14 filtrée).
+
+Formulaires (popup) :
+- **emploi** : employeur, poste, date de début, date de fin, catégorie de revenu (« Salaires » par défaut),
+  mois des augmentations, versement décalé, note ;
+- **rémunération** : mois d'effet (sélecteur de mois), motif, brut annuel de base (indice : « hors primes et
+  13e mois »), net mensuel versé (indice : « net payé, après prélèvement à la source »), note ;
+- **prime** : libellé, nature, date de versement, net, brut, récurrente, note.

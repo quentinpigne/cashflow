@@ -22,6 +22,8 @@ a été consignée (ADR, spec).
 | # | Question | Où |
 |---|---|---|
 | Q19 | Multi-membres : budgets, projets et scénarios sont-ils personnels, familiaux, ou les deux ? Que voit un membre `VIEWER` ? | ADR-0006 |
+| Q20 | Pension de retraite et revenus de remplacement (chômage) : un emploi de nature « pension », ou une entité à part ? | ADR-0022, spec 10 (SAL-06) |
+| Q21 | Multi-membres : un emploi appartient-il à un membre du foyer ? | ADR-0006, spec 10 |
 
 ## Tranchées
 

@@ -79,11 +79,18 @@ mois, réimport sans doublon.
   (ADR-0019, ADR-0020, spec 09)
 - TDB-08 — encadrés Biens et Prêts sur l'accueil
 
+## Compléments V1 — salaires (proposé le 2026-10-22)
+
+- SAL-01 à SAL-05 — emplois, rémunérations et primes, évolution, comparaison au reçu, projection du salaire,
+  activation (ADR-0022, spec 10)
+- PRJ-10 — capacité d'épargne dans la projection du patrimoine (ADR-0022, spec 07)
+
 ## Phase 7 — V2 (à prioriser plus tard)
 
 - IMP-12 (PDF générique OCR), IMP-13
 - EPA-07, EPA-08, EPA-09
 - PRJ-06 à PRJ-09
+- SAL-06 à SAL-08
 - BUD-09 (push mobile), BUD-11, BUD-12, BUD-13
 - TRX-09, TRX-10, TRX-11, CPT-08
 - Tableaux d'amortissement des prêts (hors périmètre V1, cf. vision)

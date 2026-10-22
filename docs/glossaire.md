@@ -35,7 +35,27 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Échéance payée | `LoanPayment` | Lien entre une échéance de prêt et la mensualité qui l'a payée. |
 | Ventilation de remboursement | `repayment split` | Part d'une transaction rattachée à un prêt : capital remboursé. Ni revenu ni dépense (R-PRE-7). |
 | Ventilation d'acquisition | `acquisition split` | Part d'une transaction rattachée à un bien : apport ou paiement du prix. Ni revenu ni dépense (R-BIE-8). |
-| Rubrique activable | `feature setting` | Rubrique Biens ou Prêts, masquée tant qu'elle n'est pas activée dans les réglages. |
+| Rubrique activable | `feature setting` | Rubrique Biens, Prêts ou Salaires, masquée tant qu'elle n'est pas activée dans les réglages. |
+
+## Salaires
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Emploi | `Employment` | Employeur, poste et dates d'un contrat de travail ; porte ses rémunérations et ses primes (ADR-0022). |
+| Rémunération | `Salary` | Brut annuel de base et net mensuel versé d'un emploi, en vigueur à partir d'un mois d'effet. |
+| Mois d'effet | `effective_month` | Premier mois où une rémunération s'applique. Futur : la rémunération est prévue. |
+| Brut annuel de base | `annual_gross` | Salaire brut annuel hors primes (le 13e mois est une prime). |
+| Net mensuel versé | `monthly_net` | Salaire net payé chaque mois, après prélèvement à la source. |
+| Prime | `SalaryBonus` | Versement ponctuel ou annuel d'un emploi : 13e mois, prime, intéressement… Récurrente ou non. |
+| Mois des augmentations | `raise_month` | Mois où la projection applique la hausse annuelle d'un emploi. |
+| Versement décalé | `paid_next_month` | Le salaire du mois M est versé en M+1. |
+| Revenu annuel | — | Net (ou brut) d'un emploi sur une année civile, primes comprises (R-SAL-7). |
+| Écart de salaire | `salary gap` | Net reçu sur la catégorie d'un emploi − net attendu, pour un mois (R-SAL-9). |
+| Taux de hausse des salaires | `salary_growth_rate` | Hausse annuelle du net projeté, fixée par scénario. |
+| Taux de hausse des dépenses | `expense_growth_rate` | Hausse annuelle des dépenses projetées, fixée par scénario. |
+| Capacité d'épargne | `savings capacity` | Revenus projetés − dépenses projetées − échéances de prêts, pour un mois de projection (R-PRJ-42). |
+| Compte de versement | — | Compte courant qui reçoit le salaire, crédité de la capacité d'épargne en projection (R-PRJ-45). |
+| Compte d'affectation du reste | `surplus_account_id` | Compte d'épargne vers lequel le scénario vire le reste de la capacité d'épargne. |
 
 ## Transactions
 
