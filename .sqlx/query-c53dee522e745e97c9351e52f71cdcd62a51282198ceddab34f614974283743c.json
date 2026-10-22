@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id IS NOT NULL AS \"has_project!: bool\",\n                  c.kind AS \"category_kind?\", a.currency,\n                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n                      AS \"is_transfer!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
+  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id IS NOT NULL AS \"has_project!: bool\",\n                  c.kind AS \"category_kind?\", a.currency,\n                  EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                      AS \"is_transfer!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -84,5 +84,5 @@
       false
     ]
   },
-  "hash": "96d1487a2a205925a8251ff3d4908954ea3f2a2ba83587cfbbabbb080057ebc6"
+  "hash": "c53dee522e745e97c9351e52f71cdcd62a51282198ceddab34f614974283743c"
 }

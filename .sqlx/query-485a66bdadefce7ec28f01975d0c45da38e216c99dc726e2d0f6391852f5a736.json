@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT s.id, t.id AS \"transaction_id!\", a.id AS \"account_id!\", a.name AS \"account_name!\",\n                  t.date AS \"date!: Date\", t.label AS \"label!\", s.amount,\n                  (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS \"split_count!: i64\",\n                  count(*) OVER () AS \"total!: i64\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           WHERE s.category_id IS NULL\n             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n           ORDER BY t.date DESC, t.id DESC, s.position\n           LIMIT ?",
+  "query": "SELECT s.id, t.id AS \"transaction_id!\", a.id AS \"account_id!\", a.name AS \"account_name!\",\n                  t.date AS \"date!: Date\", t.label AS \"label!\", s.amount,\n                  (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS \"split_count!: i64\",\n                  count(*) OVER () AS \"total!: i64\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           WHERE s.category_id IS NULL\n             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n           ORDER BY t.date DESC, t.id DESC, s.position\n           LIMIT ?",
   "describe": {
     "columns": [
       {
@@ -108,5 +108,5 @@
       null
     ]
   },
-  "hash": "96d69e2078371ff5a991cb2c34285520d723dcd67f5e8b92fc8336197cfb5e20"
+  "hash": "485a66bdadefce7ec28f01975d0c45da38e216c99dc726e2d0f6391852f5a736"
 }

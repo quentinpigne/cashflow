@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\"\n           FROM ledger_transaction t\n           WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?\n             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n           ORDER BY balance_date",
+  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\"\n           FROM ledger_transaction t\n           WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?\n             AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n           ORDER BY balance_date",
   "describe": {
     "columns": [
       {
@@ -154,5 +154,5 @@
       true
     ]
   },
-  "hash": "8792f57ef6d71a3824184a8e6fe0fe50c01dd745585375275fe8f8ce54d2fc78"
+  "hash": "2ffb8935293ca80c00524616050cb6ea51739a52c55e3d06da8672895493d8ec"
 }

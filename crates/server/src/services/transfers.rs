@@ -134,7 +134,7 @@ pub async fn create_from(
         };
         insert_validated(&mut tx, &new, &uncategorized(signed)).await?;
     }
-    let transfer_id = db::transactions::insert_transfer(&mut *tx, outflow, inflow, None).await?;
+    let transfer_id = db::transactions::insert_transfer_between(&mut tx, outflow, inflow).await?;
     check_split_sums(&mut tx, &[outflow, inflow]).await?;
     tx.commit().await?;
     Ok(TransferCreated { transfer_id, outflow_transaction_id: outflow, inflow_transaction_id: inflow })
@@ -240,7 +240,7 @@ pub async fn mark_as_transfer(db: &Db, id: TransactionId, input: &MarkAsTransfer
         (counterpart_account.currency, source_account.currency)
     };
     transfer::check_transfer(&leg(outflow, outflow_currency), &leg(inflow, inflow_currency))?;
-    let transfer_id = db::transactions::insert_transfer(&mut *tx, outflow.id, inflow.id, None).await?;
+    let transfer_id = db::transactions::insert_transfer_between(&mut tx, outflow.id, inflow.id).await?;
     check_split_sums(&mut tx, &[source.id, counterpart.id]).await?;
     tx.commit().await?;
     Ok(transfer_id)

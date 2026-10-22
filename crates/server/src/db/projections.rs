@@ -112,7 +112,7 @@ pub async fn expenses(
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN category c ON c.id = s.category_id
            WHERE t.account_id = ? AND t.balance_date BETWEEN ? AND ? AND c.kind = 'EXPENSE'
-             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))"#,
+             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))"#,
         account,
         from,
         to

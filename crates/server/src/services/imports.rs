@@ -1148,7 +1148,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                         (other.currency, account.currency)
                     };
                     transfer::check_transfer(&leg(outflow, oc), &leg(inflow, ic))?;
-                    db::transactions::insert_transfer(&mut *tx, outflow.id, inflow.id, None).await?;
+                    db::transactions::insert_transfer_between(&mut tx, outflow.id, inflow.id).await?;
                     touched.push(counterpart.id);
                     result.transfers += 1;
                 }

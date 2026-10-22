@@ -175,4 +175,88 @@ mod tests {
         .await;
         assert!(orphan.is_err());
     }
+
+    /// La migration des virements les rattache à l'unique ventilation de chaque jambe (ADR-0021) ; supprimer une
+    /// jambe supprime toujours le virement.
+    #[tokio::test]
+    async fn adr_0021_transfers_move_to_the_split_of_each_leg() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::connect(&dir.path().join("test.db")).await.unwrap();
+        migrate_until(&db, 20261022000003).await;
+        let now = "2026-10-22T00:00:00Z";
+        let id = |n: u32| format!("0192f000-0000-7000-8000-{n:012}");
+        for (account, name) in [(1, "Courant"), (2, "Livret")] {
+            sqlx::query(
+                "INSERT INTO account (id, name, kind, opening_date, opening_balance, created_at, updated_at)
+                 VALUES (?, ?, 'CHECKING', '2026-01-01', 0, ?, ?)",
+            )
+            .bind(id(account))
+            .bind(name)
+            .bind(now)
+            .bind(now)
+            .execute(&db.write)
+            .await
+            .unwrap();
+        }
+        for (transaction, account, amount) in [(11, 1, -5_000), (12, 2, 5_000)] {
+            sqlx::query(
+                "INSERT INTO ledger_transaction (id, account_id, date, amount, label, clearing_status, origin,
+                                                 created_at, updated_at)
+                 VALUES (?, ?, '2026-03-01', ?, 'Virement', 'PENDING', 'MANUAL', ?, ?)",
+            )
+            .bind(id(transaction))
+            .bind(id(account))
+            .bind(amount)
+            .bind(now)
+            .bind(now)
+            .execute(&db.write)
+            .await
+            .unwrap();
+            sqlx::query(
+                "INSERT INTO split (id, transaction_id, amount, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            )
+            .bind(id(transaction + 10))
+            .bind(id(transaction))
+            .bind(amount)
+            .bind(now)
+            .bind(now)
+            .execute(&db.write)
+            .await
+            .unwrap();
+        }
+        sqlx::query(
+            "INSERT INTO transfer (id, outflow_transaction_id, inflow_transaction_id, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind(id(30))
+        .bind(id(11))
+        .bind(id(12))
+        .bind(now)
+        .bind(now)
+        .execute(&db.write)
+        .await
+        .unwrap();
+
+        db.migrate().await.unwrap();
+
+        let (outflow, inflow): (String, String) =
+            sqlx::query_as("SELECT outflow_split_id, inflow_split_id FROM transfer WHERE id = ?")
+                .bind(id(30))
+                .fetch_one(&db.write)
+                .await
+                .unwrap();
+        assert_eq!((outflow, inflow), (id(21), id(22)));
+        let legs: (String, String) =
+            sqlx::query_as("SELECT outflow_transaction_id, inflow_transaction_id FROM transfer_leg WHERE id = ?")
+                .bind(id(30))
+                .fetch_one(&db.write)
+                .await
+                .unwrap();
+        assert_eq!(legs, (id(11), id(12)));
+        let broken: Vec<(String,)> = sqlx::query_as("PRAGMA foreign_key_check").fetch_all(&db.write).await.unwrap();
+        assert!(broken.is_empty());
+        sqlx::query("DELETE FROM ledger_transaction WHERE id = ?").bind(id(11)).execute(&db.write).await.unwrap();
+        let left: i64 = sqlx::query_scalar("SELECT count(*) FROM transfer").fetch_one(&db.write).await.unwrap();
+        assert_eq!(left, 0);
+    }
 }

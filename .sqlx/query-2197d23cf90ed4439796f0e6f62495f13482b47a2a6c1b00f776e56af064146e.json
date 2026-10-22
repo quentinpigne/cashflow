@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id AS \"id!\", outflow_transaction_id AS \"outflow!\", inflow_transaction_id AS \"inflow!\",\n                  outflow_split_id AS \"outflow_split!\", inflow_split_id AS \"inflow_split!\"\n           FROM transfer_leg",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "outflow!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "inflow!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "outflow_split!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "outflow_split_id"
+          }
+        }
+      },
+      {
+        "name": "inflow_split!",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "inflow_split_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2197d23cf90ed4439796f0e6f62495f13482b47a2a6c1b00f776e56af064146e"
+}

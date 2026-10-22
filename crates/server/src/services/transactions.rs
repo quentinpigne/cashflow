@@ -458,8 +458,8 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 clearing_status: counterpart.clearing_status,
             };
             db::transactions::update(&mut *tx, counterpart.id, &update).await?;
-            let single = [NewSplit { amount: -amount, category_id: None, note: None, project_id: None }];
-            db::transactions::replace_splits(&mut tx, counterpart.id, &single).await?;
+            // Les ventilations reliées changent de montant sur place : les remplacer délierait le virement.
+            db::transactions::set_split_amount(&mut *tx, side.counterpart_split_id, -amount).await?;
             touched.push(counterpart.id);
         }
     }
@@ -476,7 +476,10 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
         clearing_status: current.clearing_status,
     };
     db::transactions::update(&mut *tx, id, &update).await?;
-    db::transactions::replace_splits(&mut tx, id, &new_splits(&splits)).await?;
+    match &transfer {
+        Some(side) => db::transactions::set_split_amount(&mut *tx, side.split_id, amount).await?,
+        None => db::transactions::replace_splits(&mut tx, id, &new_splits(&splits)).await?,
+    }
     check_split_sums(&mut tx, &touched).await?;
     tx.commit().await?;
     Ok(())
@@ -567,15 +570,21 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
     let transactions = db::transactions::list_all(&db.read).await?;
     let account_of: HashMap<TransactionId, AccountId> = transactions.iter().map(|t| (t.id, t.account_id)).collect();
     let mut sides: HashMap<TransactionId, TransferSide> = HashMap::new();
-    for (transfer, outflow, inflow) in db::transactions::all_transfers(&db.read).await? {
-        for (this, other, is_outflow) in [(outflow, inflow, true), (inflow, outflow, false)] {
+    for t in db::transactions::all_transfers(&db.read).await? {
+        let (outflow, inflow) = (t.outflow_transaction_id, t.inflow_transaction_id);
+        for (this, this_split, other, other_split, is_outflow) in [
+            (outflow, t.outflow_split_id, inflow, t.inflow_split_id, true),
+            (inflow, t.inflow_split_id, outflow, t.outflow_split_id, false),
+        ] {
             if let Some(account) = account_of.get(&other) {
                 sides.insert(
                     this,
                     TransferSide {
-                        transfer_id: transfer,
+                        transfer_id: t.id,
                         transaction_id: this,
+                        split_id: this_split,
                         counterpart_transaction_id: other,
+                        counterpart_split_id: other_split,
                         counterpart_account_id: *account,
                         is_outflow,
                     },

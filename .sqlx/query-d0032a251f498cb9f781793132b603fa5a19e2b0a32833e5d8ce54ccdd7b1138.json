@@ -1,0 +1,83 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT tr.id AS \"id!\", t.id AS \"transaction_id!\", other.id AS \"counterpart_id!\",\n                  other.account_id AS \"counterpart_account!\",\n                  CASE WHEN tr.outflow_transaction_id = t.id THEN tr.outflow_split_id ELSE tr.inflow_split_id END\n                      AS \"split_id!: String\",\n                  CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_split_id ELSE tr.outflow_split_id END\n                      AS \"counterpart_split_id!: String\",\n                  (tr.outflow_transaction_id = t.id) AS \"is_outflow!: bool\"\n           FROM transfer_leg tr\n           JOIN ledger_transaction t ON t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id)\n           JOIN ledger_transaction other\n             ON other.id = CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_transaction_id\n                                ELSE tr.outflow_transaction_id END\n           WHERE t.account_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transfer",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "transaction_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "counterpart_id!",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "counterpart_account!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "split_id!: String",
+        "ordinal": 4,
+        "type_info": "Null",
+        "origin": "Expression"
+      },
+      {
+        "name": "counterpart_split_id!: String",
+        "ordinal": 5,
+        "type_info": "Null",
+        "origin": "Expression"
+      },
+      {
+        "name": "is_outflow!: bool",
+        "ordinal": 6,
+        "type_info": "Null",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "d0032a251f498cb9f781793132b603fa5a19e2b0a32833e5d8ce54ccdd7b1138"
+}

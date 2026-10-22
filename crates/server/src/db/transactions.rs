@@ -37,12 +37,15 @@ pub struct SplitRow {
     pub project_id: Option<ProjectId>,
 }
 
-/// Le virement auquel appartient une transaction, vu depuis celle-ci.
+/// Le virement auquel appartient une transaction, vu depuis celle-ci (ADR-0021 : il relie deux ventilations).
 #[derive(Debug, Clone, Copy)]
 pub struct TransferSide {
     pub transfer_id: TransferId,
     pub transaction_id: TransactionId,
+    /// Ventilation de virement de cette transaction.
+    pub split_id: SplitId,
     pub counterpart_transaction_id: TransactionId,
+    pub counterpart_split_id: SplitId,
     pub counterpart_account_id: AccountId,
     pub is_outflow: bool,
 }
@@ -176,9 +179,14 @@ pub async fn transfers_for_account(
 ) -> anyhow::Result<Vec<TransferSide>> {
     let account = account.to_string();
     let rows = sqlx::query!(
-        r#"SELECT tr.id, t.id AS "transaction_id!", other.id AS "counterpart_id!", other.account_id AS "counterpart_account!",
+        r#"SELECT tr.id AS "id!", t.id AS "transaction_id!", other.id AS "counterpart_id!",
+                  other.account_id AS "counterpart_account!",
+                  CASE WHEN tr.outflow_transaction_id = t.id THEN tr.outflow_split_id ELSE tr.inflow_split_id END
+                      AS "split_id!: String",
+                  CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_split_id ELSE tr.outflow_split_id END
+                      AS "counterpart_split_id!: String",
                   (tr.outflow_transaction_id = t.id) AS "is_outflow!: bool"
-           FROM transfer tr
+           FROM transfer_leg tr
            JOIN ledger_transaction t ON t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id)
            JOIN ledger_transaction other
              ON other.id = CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_transaction_id
@@ -193,7 +201,9 @@ pub async fn transfers_for_account(
             Ok(TransferSide {
                 transfer_id: id_from_db(&r.id)?,
                 transaction_id: id_from_db(&r.transaction_id)?,
+                split_id: id_from_db(&r.split_id)?,
                 counterpart_transaction_id: id_from_db(&r.counterpart_id)?,
+                counterpart_split_id: id_from_db(&r.counterpart_split_id)?,
                 counterpart_account_id: id_from_db(&r.counterpart_account)?,
                 is_outflow: r.is_outflow,
             })
@@ -207,9 +217,13 @@ pub async fn transfer_of(
 ) -> anyhow::Result<Option<TransferSide>> {
     let transaction = transaction.to_string();
     let row = sqlx::query!(
-        r#"SELECT tr.id, other.id AS "counterpart_id!", other.account_id AS "counterpart_account!",
+        r#"SELECT tr.id AS "id!", other.id AS "counterpart_id!", other.account_id AS "counterpart_account!",
+                  CASE WHEN tr.outflow_transaction_id = ?1 THEN tr.outflow_split_id ELSE tr.inflow_split_id END
+                      AS "split_id!: String",
+                  CASE WHEN tr.outflow_transaction_id = ?1 THEN tr.inflow_split_id ELSE tr.outflow_split_id END
+                      AS "counterpart_split_id!: String",
                   (tr.outflow_transaction_id = ?1) AS "is_outflow!: bool"
-           FROM transfer tr
+           FROM transfer_leg tr
            JOIN ledger_transaction other
              ON other.id = CASE WHEN tr.outflow_transaction_id = ?1 THEN tr.inflow_transaction_id
                                 ELSE tr.outflow_transaction_id END
@@ -222,7 +236,9 @@ pub async fn transfer_of(
         Ok(TransferSide {
             transfer_id: id_from_db(&r.id)?,
             transaction_id: id_from_db(&transaction)?,
+            split_id: id_from_db(&r.split_id)?,
             counterpart_transaction_id: id_from_db(&r.counterpart_id)?,
+            counterpart_split_id: id_from_db(&r.counterpart_split_id)?,
             counterpart_account_id: id_from_db(&r.counterpart_account)?,
             is_outflow: r.is_outflow,
         })
@@ -305,12 +321,23 @@ pub async fn update(db: impl SqliteExecutor<'_>, id: TransactionId, u: &Transact
     Ok(())
 }
 
+/// Remplace les ventilations d'une transaction. Refusé si l'une porte un virement : la supprimer emporterait le
+/// virement en cascade (ADR-0021) ; une jambe change de montant par [`set_split_amount`].
 pub async fn replace_splits(
     conn: &mut SqliteConnection,
     transaction: TransactionId,
     splits: &[NewSplit<'_>],
 ) -> anyhow::Result<()> {
     let transaction = transaction.to_string();
+    let linked = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!: i64" FROM transfer_leg WHERE ?1 IN (outflow_transaction_id, inflow_transaction_id)"#,
+        transaction
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+    if linked > 0 {
+        anyhow::bail!("les ventilations d'une jambe de virement ne se remplacent pas (ADR-0021)");
+    }
     sqlx::query!("DELETE FROM split WHERE transaction_id = ?", transaction).execute(&mut *conn).await?;
     let now = timestamp();
     for (position, split) in splits.iter().enumerate() {
@@ -358,10 +385,11 @@ pub async fn delete(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::R
     Ok(())
 }
 
+/// Relie deux ventilations par un virement (ADR-0021).
 pub async fn insert_transfer(
     db: impl SqliteExecutor<'_>,
-    outflow: TransactionId,
-    inflow: TransactionId,
+    outflow: SplitId,
+    inflow: SplitId,
     note: Option<&str>,
 ) -> anyhow::Result<TransferId> {
     let transfer = TransferId::new();
@@ -370,7 +398,7 @@ pub async fn insert_transfer(
     let inflow = inflow.to_string();
     let now = timestamp();
     sqlx::query!(
-        "INSERT INTO transfer (id, outflow_transaction_id, inflow_transaction_id, note, created_at, updated_at)
+        "INSERT INTO transfer (id, outflow_split_id, inflow_split_id, note, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?)",
         id,
         outflow,
@@ -382,6 +410,32 @@ pub async fn insert_transfer(
     .execute(db)
     .await?;
     Ok(transfer)
+}
+
+/// Relie deux transactions à ventilation unique par un virement ordinaire (R-TRX-32).
+pub async fn insert_transfer_between(
+    conn: &mut SqliteConnection,
+    outflow: TransactionId,
+    inflow: TransactionId,
+) -> anyhow::Result<TransferId> {
+    let single = async |conn: &mut SqliteConnection, id: TransactionId| -> anyhow::Result<SplitId> {
+        match splits_of(&mut *conn, id).await?.as_slice() {
+            [split] => Ok(split.id),
+            _ => anyhow::bail!("une jambe de virement ordinaire a une seule ventilation (R-TRX-32)"),
+        }
+    };
+    let outflow = single(&mut *conn, outflow).await?;
+    let inflow = single(&mut *conn, inflow).await?;
+    insert_transfer(&mut *conn, outflow, inflow, None).await
+}
+
+/// Change le montant d'une ventilation, sans toucher aux autres ni au virement qui la relie.
+pub async fn set_split_amount(db: impl SqliteExecutor<'_>, id: SplitId, amount: Money) -> anyhow::Result<()> {
+    let id = id.to_string();
+    let amount = amount.minor();
+    let now = timestamp();
+    sqlx::query!("UPDATE split SET amount = ?, updated_at = ? WHERE id = ?", amount, now, id).execute(db).await?;
+    Ok(())
 }
 
 pub async fn delete_transfer(db: impl SqliteExecutor<'_>, id: TransferId) -> anyhow::Result<()> {
@@ -407,7 +461,7 @@ pub async fn transfer_candidates(
                   origin AS "origin!"
            FROM ledger_transaction t
            WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?
-             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
+             AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
            ORDER BY balance_date"#,
         account,
         opposite,
@@ -462,7 +516,7 @@ pub struct SplitFactRow {
 pub async fn split_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<SplitFactRow>> {
     let rows = sqlx::query!(
         r#"SELECT t.date AS "date: Date", s.amount, c.kind AS "category_kind?", a.currency,
-                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
+                  EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
                       AS "is_transfer!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
@@ -509,7 +563,7 @@ pub async fn uncategorized(db: impl SqliteExecutor<'_>, limit: i64) -> anyhow::R
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
            WHERE s.category_id IS NULL
-             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
+             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
            ORDER BY t.date DESC, t.id DESC, s.position
            LIMIT ?"#,
         limit
@@ -579,14 +633,32 @@ pub async fn all_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Split
     rows.into_iter().map(|r| split_row!(r)).collect()
 }
 
-pub async fn all_transfers(
-    db: impl SqliteExecutor<'_>,
-) -> anyhow::Result<Vec<(TransferId, TransactionId, TransactionId)>> {
-    let rows =
-        sqlx::query!("SELECT id, outflow_transaction_id, inflow_transaction_id FROM transfer").fetch_all(db).await?;
+/// Un virement et ses deux jambes : transactions et ventilations.
+pub struct TransferRow {
+    pub id: TransferId,
+    pub outflow_transaction_id: TransactionId,
+    pub inflow_transaction_id: TransactionId,
+    pub outflow_split_id: SplitId,
+    pub inflow_split_id: SplitId,
+}
+
+pub async fn all_transfers(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<TransferRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT id AS "id!", outflow_transaction_id AS "outflow!", inflow_transaction_id AS "inflow!",
+                  outflow_split_id AS "outflow_split!", inflow_split_id AS "inflow_split!"
+           FROM transfer_leg"#
+    )
+    .fetch_all(db)
+    .await?;
     rows.into_iter()
         .map(|r| {
-            Ok((id_from_db(&r.id)?, id_from_db(&r.outflow_transaction_id)?, id_from_db(&r.inflow_transaction_id)?))
+            Ok(TransferRow {
+                id: id_from_db(&r.id)?,
+                outflow_transaction_id: id_from_db(&r.outflow)?,
+                inflow_transaction_id: id_from_db(&r.inflow)?,
+                outflow_split_id: id_from_db(&r.outflow_split)?,
+                inflow_split_id: id_from_db(&r.inflow_split)?,
+            })
         })
         .collect()
 }
@@ -610,7 +682,7 @@ pub async fn categorized_facts(
     let rows = sqlx::query!(
         r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, s.project_id IS NOT NULL AS "has_project!: bool",
                   c.kind AS "category_kind?", a.currency,
-                  EXISTS (SELECT 1 FROM transfer tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
+                  EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
                       AS "is_transfer!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
@@ -663,7 +735,7 @@ pub async fn recent(db: impl SqliteExecutor<'_>, limit: i64) -> anyhow::Result<V
                   (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS "split_count!: i64",
                   (SELECT x.category_id FROM split x WHERE x.transaction_id = t.id ORDER BY x.position LIMIT 1)
                       AS "category_id?",
-                  (SELECT oa.name FROM transfer tr
+                  (SELECT oa.name FROM transfer_leg tr
                      JOIN ledger_transaction o
                        ON o.id = CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_transaction_id
                                       ELSE tr.outflow_transaction_id END

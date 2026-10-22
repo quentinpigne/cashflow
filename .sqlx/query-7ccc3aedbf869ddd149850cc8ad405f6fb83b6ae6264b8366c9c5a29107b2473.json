@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.id AS \"id!\", a.id AS \"account_id!\", a.name AS \"account_name!\", a.currency AS \"currency!\",\n                  t.date AS \"date!: Date\", t.label AS \"label!\", t.amount AS \"amount!: i64\",\n                  t.clearing_status AS \"clearing_status!\",\n                  (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS \"split_count!: i64\",\n                  (SELECT x.category_id FROM split x WHERE x.transaction_id = t.id ORDER BY x.position LIMIT 1)\n                      AS \"category_id?\",\n                  (SELECT oa.name FROM transfer tr\n                     JOIN ledger_transaction o\n                       ON o.id = CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_transaction_id\n                                      ELSE tr.outflow_transaction_id END\n                     JOIN account oa ON oa.id = o.account_id\n                   WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id)) AS \"counterpart?\"\n           FROM ledger_transaction t\n           JOIN account a ON a.id = t.account_id\n           ORDER BY t.created_at DESC, t.id DESC\n           LIMIT ?",
+  "query": "SELECT t.id AS \"id!\", a.id AS \"account_id!\", a.name AS \"account_name!\", a.currency AS \"currency!\",\n                  t.date AS \"date!: Date\", t.label AS \"label!\", t.amount AS \"amount!: i64\",\n                  t.clearing_status AS \"clearing_status!\",\n                  (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS \"split_count!: i64\",\n                  (SELECT x.category_id FROM split x WHERE x.transaction_id = t.id ORDER BY x.position LIMIT 1)\n                      AS \"category_id?\",\n                  (SELECT oa.name FROM transfer_leg tr\n                     JOIN ledger_transaction o\n                       ON o.id = CASE WHEN tr.outflow_transaction_id = t.id THEN tr.inflow_transaction_id\n                                      ELSE tr.outflow_transaction_id END\n                     JOIN account oa ON oa.id = o.account_id\n                   WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id)) AS \"counterpart?\"\n           FROM ledger_transaction t\n           JOIN account a ON a.id = t.account_id\n           ORDER BY t.created_at DESC, t.id DESC\n           LIMIT ?",
   "describe": {
     "columns": [
       {
@@ -137,5 +137,5 @@
       true
     ]
   },
-  "hash": "b7b30bd3e81403776a5926f2f7cdfca3c09f233f86fcd1f47a217217b219bd00"
+  "hash": "7ccc3aedbf869ddd149850cc8ad405f6fb83b6ae6264b8366c9c5a29107b2473"
 }

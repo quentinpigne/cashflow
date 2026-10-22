@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t_in.date AS \"date!: Date\", t_in.account_id AS \"account_id!\", s_in.amount AS \"amount!: i64\"\n           FROM transfer tr\n           JOIN split s_in ON s_in.id = tr.inflow_split_id\n           JOIN split s_out ON s_out.id = tr.outflow_split_id\n           JOIN ledger_transaction t_in ON t_in.id = s_in.transaction_id\n           JOIN ledger_transaction t_out ON t_out.id = s_out.transaction_id\n           JOIN account a_out ON a_out.id = t_out.account_id\n           WHERE a_out.include_in_budget = 1 AND t_in.date BETWEEN ?1 AND ?2\n           UNION ALL\n           SELECT t_out.date, t_out.account_id, s_out.amount\n           FROM transfer tr\n           JOIN split s_in ON s_in.id = tr.inflow_split_id\n           JOIN split s_out ON s_out.id = tr.outflow_split_id\n           JOIN ledger_transaction t_in ON t_in.id = s_in.transaction_id\n           JOIN ledger_transaction t_out ON t_out.id = s_out.transaction_id\n           JOIN account a_in ON a_in.id = t_in.account_id\n           WHERE a_in.include_in_budget = 1 AND t_out.date BETWEEN ?1 AND ?2",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "account_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "amount!: i64",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "18ddb642be8819dbb45539248b36a2eddc077ff692e76c0123b779439a2b1478"
+}
