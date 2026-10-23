@@ -124,9 +124,7 @@ export class AnalysesPage {
       tooltip: { trigger: 'axis', valueFormatter: (v: number) => formatChartValue(v) },
       xAxis: {
         type: 'category',
-        data: months.map((m) =>
-          formatMonth(`${m.month}-01`).replace(/ \d{4}$/, (y) => y.slice(-3)),
-        ),
+        data: months.map((m) => formatMonth(`${m.month}-01`).replace(/ \d{2}(\d{2})$/, ' $1')),
       },
       yAxis: {
         type: 'value',
