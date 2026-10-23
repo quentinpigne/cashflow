@@ -677,7 +677,7 @@ Formulaires (popup) :
 
 # Écrans — tiers (spec 11)
 
-Statut : **Revue** (2026-10-23)
+Statut : **Validée** (2026-10-23)
 
 Ce qui change dans les écrans existants :
 - **E5 Saisie rapide** (dépense ou revenu) : champ **Tiers** `[mat-autocomplete]` entre le compte et la

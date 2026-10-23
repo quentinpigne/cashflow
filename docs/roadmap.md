@@ -85,7 +85,7 @@ mois, réimport sans doublon.
   activation (ADR-0022, spec 10)
 - PRJ-10 — capacité d'épargne dans la projection du patrimoine (ADR-0022, spec 07)
 
-## Compléments V1 — tiers (proposé le 2026-10-23)
+## Compléments V1 — tiers (2026-10-23)
 
 - TIE-01 à TIE-04 — tiers et groupes de tiers, affectation aux transactions, import et règles, dépenses par
   tiers et par groupe (spec 11)

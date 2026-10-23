@@ -1,6 +1,6 @@
 # Spec 11 — Tiers
 
-Statut : **Revue** (2026-10-23)
+Statut : **Validée** (2026-10-23)
 Modèle : [Payee, PayeeGroup](../modele-de-donnees.md#tiers--spec-11)
 
 ## Concepts
