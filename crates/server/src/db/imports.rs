@@ -437,6 +437,38 @@ pub async fn fingerprints_of(
     rows.into_iter().map(|r| Ok((r.fingerprint, id_from_db(&r.id)?))).collect()
 }
 
+/// Transactions déjà importées (avec une empreinte) dont la date de solde tombe dans la période : doublons
+/// probables d'une ligne au libellé différent (R-IMP-27).
+pub async fn imported_in_period(
+    db: impl SqliteExecutor<'_>,
+    account: AccountId,
+    from: Date,
+    to: Date,
+) -> anyhow::Result<Vec<MatchableRow>> {
+    let account = account.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT id AS "id!", balance_date AS "balance_date!: Date", amount AS "amount!",
+                  coalesce(bank_label, label) AS "label!: String"
+           FROM ledger_transaction
+           WHERE account_id = ? AND balance_date BETWEEN ? AND ? AND fingerprint IS NOT NULL"#,
+        account,
+        from,
+        to
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(MatchableRow {
+                id: id_from_db(&r.id)?,
+                balance_date: r.balance_date,
+                amount: Money::from_minor(r.amount),
+                label: r.label,
+            })
+        })
+        .collect()
+}
+
 /// Transactions susceptibles d'être pointées par une ligne (R-IMP-9) : `PENDING`, ou `CLEARED` sans empreinte.
 pub struct MatchableRow {
     pub id: TransactionId,

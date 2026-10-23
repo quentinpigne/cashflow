@@ -765,6 +765,25 @@ pub async fn start(db: &Db, data: &DataDir, upload: &Upload, today: Date) -> App
     let matched: HashMap<usize, (TransactionId, u8)> =
         to_match.iter().zip(matches).filter_map(|((i, _), m)| m.map(|m| (*i, m))).collect();
 
+    // Doublons probables (R-IMP-27) : la même opération déjà importée sous un autre libellé (autre format).
+    let exact: HashSet<TransactionId> = line_prints.iter().flatten().filter_map(|p| existing.get(p)).copied().collect();
+    let unmatched: Vec<&(usize, LineToMatch)> = to_match.iter().filter(|(i, _)| !matched.contains_key(i)).collect();
+    let imported: Vec<Candidate<TransactionId>> = match statement.period {
+        Some((start, end)) => db::imports::imported_in_period(&db.read, account.id, start, end)
+            .await?
+            .into_iter()
+            .filter(|m| !exact.contains(&m.id))
+            .map(|m| Candidate { id: m.id, date: m.balance_date, amount: m.amount, label: m.label })
+            .collect(),
+        None => Vec::new(),
+    };
+    let lines: Vec<LineToMatch> = unmatched.iter().map(|(_, l)| l.clone()).collect();
+    let probable: HashMap<usize, (TransactionId, u8)> = unmatched
+        .iter()
+        .zip(matcher::assign(&lines, &imported, tolerance))
+        .filter_map(|((i, _), m)| m.map(|m| (*i, m)))
+        .collect();
+
     let suggester = Suggester::load(db, account.id).await?;
     let batch_id = ImportBatchId::new();
     let elsewhere = db::imports::reviewing_lines_elsewhere(&db.read, batch_id).await?;
@@ -803,10 +822,20 @@ pub async fn start(db: &Db, data: &DataDir, upload: &Upload, today: Date) -> App
                 row.match_score = Some(i64::from(*score));
                 row.decision =
                     Some(if *score >= AUTO_MATCH_SCORE { ImportDecision::Match } else { ImportDecision::Create });
+            } else if let Some((transaction, score)) = probable.get(&index) {
+                // Le score distingue un doublon probable d'un doublon d'empreinte (R-IMP-6), qui n'en a pas.
+                row.match_kind = MatchKind::Duplicate;
+                row.match_transaction_id = Some(*transaction);
+                row.match_score = Some(i64::from(*score));
+                row.decision = Some(ImportDecision::Skip);
             } else {
                 row.decision = Some(ImportDecision::Create);
             }
-            if row.decision == Some(ImportDecision::Create) || row.match_kind == MatchKind::Candidate {
+            // Les suggestions servent aussi si l'utilisateur crée quand même un doublon probable.
+            if row.decision == Some(ImportDecision::Create)
+                || row.match_kind == MatchKind::Candidate
+                || probable.contains_key(&index)
+            {
                 let mut review = suggester.suggest(account.id, line, amount);
                 if review.transfer_to.is_none() {
                     review.proposal = transfer_proposal(db, account.id, amount, date, tolerance, &elsewhere).await?;

@@ -166,10 +166,19 @@
 
         @if (line.errors.length > 0) {
           <p class="errors">{{ line.errors.join(' · ') }}</p>
-        } @else if (line.match_kind === 'DUPLICATE') {
-          <p class="muted info">
-            Doublon : déjà importée{{ line.matched ? ' (' + line.matched.label + ')' : '' }}.
-          </p>
+        } @else if (line.match_kind === 'DUPLICATE' && line.decision !== 'CREATE') {
+          @if (line.matched?.score != null) {
+            <!-- Même montant, date proche, libellé différent : la même opération d'un autre export (R-IMP-27). -->
+            <p class="muted info">
+              Doublon probable : « {{ line.matched!.label }} » du
+              {{ line.matched!.date | frDate: 'short' }} est déjà importée, avec le même montant.
+              Choisir « Créer » s'il s'agit d'une autre opération.
+            </p>
+          } @else {
+            <p class="muted info">
+              Doublon : déjà importée{{ line.matched ? ' (' + line.matched.label + ')' : '' }}.
+            </p>
+          }
         } @else if (line.decision === 'MATCH' && line.matched) {
           <p class="info">
             <mat-icon>link</mat-icon>

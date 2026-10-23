@@ -108,7 +108,8 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
 - **R-IMP-8** — Chevauchement de relevés : deux exports successifs qui se recouvrent sur quelques
   jours ne créent pas de doublons tant que la banque fournit des libellés stables. Si la banque
   modifie ses libellés entre deux exports (cas connu : le libellé de carte « en cours » diffère du
-  libellé définitif), R-IMP-9 propose un candidat et la décision revient à l'utilisateur.
+  libellé définitif), ou si la même période est importée sous deux formats (CSV puis PDF), R-IMP-27
+  signale un doublon probable et la décision revient à l'utilisateur.
 
 ### Correspondance avec les transactions existantes
 
@@ -130,6 +131,14 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   note et sa ventilation sont **conservés** (R-TRX-7). Une transaction **créée** par import a
   `bank_date` = date de la ligne et `date` = **date d'achat** de la ligne si le relevé la donne (paiement par
   carte d'un relevé LCL, R-IMP-26), sinon la date de la ligne.
+
+- **R-IMP-27** — **Doublon probable.** Une ligne ni `DUPLICATE` (R-IMP-6) ni associée à un candidat (R-IMP-9)
+  est comparée aux transactions **déjà importées** du compte (avec une empreinte) dont la date de solde tombe
+  **dans la période du relevé** : même montant exact, date à ±5 jours (le même réglage que R-IMP-9), score de
+  R-IMP-9, chaque transaction associée à une seule ligne. La ligne est marquée `DUPLICATE`, avec la transaction
+  trouvée et son score, et sa décision par défaut est `SKIP` ; l'utilisateur peut la créer quand même. Se
+  limiter à la période du relevé évite de confondre une opération du nouveau mois avec une opération semblable
+  du mois précédent.
 
 ### Suggestions
 

@@ -461,3 +461,63 @@ async fn r_imp_23_a_pdf_that_is_not_an_lcl_statement_is_refused() {
     assert!(matches!(refused, Err(AppError::Invalid { code: "UNREADABLE_FILE", .. })));
     assert!(imports::list(&db, &data).await.unwrap().is_empty(), "aucun lot créé");
 }
+
+/// R-IMP-27 : la même période importée en PDF puis en CSV ne crée pas de doublons, sans gêner le mois suivant.
+#[tokio::test]
+async fn r_imp_27_same_operations_from_another_format_are_probable_duplicates() {
+    let (db, data, _dir) = setup().await;
+    let input = AccountInput {
+        name: "Courant".into(),
+        kind: AccountKind::Checking,
+        institution_id: None,
+        currency: None,
+        opening_date: d("2025-12-02"),
+        opening_balance_minor: 125_000,
+        iban: None,
+        account_number: None,
+        include_in_net_worth: None,
+        include_in_emergency_fund: None,
+        include_in_budget: None,
+        display_order: None,
+        color: None,
+        notes: None,
+    };
+    let checking = accounts::create(&db, &input, d(TODAY)).await.unwrap().id;
+    let pdf = Upload {
+        file_name: "releve.pdf".into(),
+        content: std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/lcl/releve-fictif.pdf")).unwrap(),
+        account_id: checking,
+        profile_id: None,
+        format: None,
+        settings: None,
+        save_profile_as: None,
+    };
+    let batch = imports::start(&db, &data, &pdf, d(TODAY)).await.unwrap();
+    imports::commit(&db, batch.batch_id, &CommitInput::default()).await.unwrap();
+
+    // Même période en CSV : libellés différents, mêmes montants et dates.
+    let csv = "Date;Libellé;Montant\n04/12/2025;VIR SEPA EMPLOYEUR;2400,00\n05/12/2025;CB BOULANGERIE;-4,20\n\
+               05/12/2025;CB BOULANGERIE;-4,20\n20/12/2025;CB NOUVELLE BOUTIQUE;-9,99\n";
+    let again = import(&db, &data, checking, csv).await;
+    let kinds: Vec<(MatchKind, Option<ImportDecision>)> =
+        again.lines.iter().map(|l| (l.match_kind, l.decision)).collect();
+    assert_eq!(
+        kinds,
+        [
+            (MatchKind::Duplicate, Some(ImportDecision::Skip)),
+            (MatchKind::Duplicate, Some(ImportDecision::Skip)),
+            // Une seule boulangerie à 4,20 a été importée : la seconde est une autre opération.
+            (MatchKind::None, Some(ImportDecision::Create)),
+            (MatchKind::None, Some(ImportDecision::Create)),
+        ]
+    );
+    let probable = again.lines[0].matched.as_ref().unwrap();
+    assert!(probable.score.is_some(), "un doublon probable porte un score, pas un doublon d'empreinte");
+    assert_eq!(probable.label, "VIREMENT EMPLOYEUR FICTIF");
+    imports::cancel(&db, &data, again.summary.id).await.unwrap();
+
+    // Le mois suivant : la librairie du 2 janvier (déjà importée) n'est pas dans sa période.
+    let next = import(&db, &data, checking, "Date;Libellé;Montant\n03/01/2026;CB LIBRAIRIE;-20,00\n").await;
+    assert_eq!(next.lines[0].match_kind, MatchKind::None);
+    assert_eq!(next.lines[0].decision, Some(ImportDecision::Create));
+}
