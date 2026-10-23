@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE ledger_transaction SET payee_id = ?, updated_at = ? WHERE payee_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "4b6519af344dd844cbad6a35347cf712a13357b77c2dae2248f8cf7cecb86a3d"
+}

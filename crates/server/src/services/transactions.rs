@@ -6,8 +6,9 @@ use cashflow_domain::accounts::AccountPeriod;
 use cashflow_domain::ledger::balance::{self, DatedAmount};
 use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::{self, BalanceAffectingChange, ClearingStatus, TransactionOrigin};
+use cashflow_domain::payees;
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, CategoryId, LoanId, ProjectId, SplitId, TransactionId, TransferId,
+    AccountId, AssetId, CategoryId, LoanId, PayeeGroupId, PayeeId, ProjectId, SplitId, TransactionId, TransferId,
 };
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
@@ -73,6 +74,7 @@ pub struct TransactionListItem {
     pub amount_minor: i64,
     pub clearing_status: ClearingStatus,
     pub origin: TransactionOrigin,
+    pub payee_id: Option<PayeeId>,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
     /// Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
@@ -105,6 +107,8 @@ pub struct TransactionDetail {
     pub note: Option<String>,
     pub clearing_status: ClearingStatus,
     pub origin: TransactionOrigin,
+    /// Tiers (spec 11), modifiable même rapprochée (R-TIE-12).
+    pub payee_id: Option<PayeeId>,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
     /// Échéance de prêt payée par cette transaction (R-PRE-6).
@@ -135,7 +139,7 @@ pub struct SplitInput {
 }
 
 /// Saisie d'une transaction (TRX-01). Sans `splits`, une ventilation unique sur `category_id`.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct TransactionInput {
     pub account_id: AccountId,
     pub date: Date,
@@ -144,6 +148,9 @@ pub struct TransactionInput {
     pub note: Option<String>,
     pub category_id: Option<CategoryId>,
     pub splits: Option<Vec<SplitInput>>,
+    /// Tiers (R-TIE-10), jamais sur un virement (R-TIE-11).
+    #[serde(default)]
+    pub payee_id: Option<PayeeId>,
 }
 
 /// Modification d'une transaction. Sans `splits`, la ventilation existante est conservée ; une
@@ -156,6 +163,23 @@ pub struct TransactionUpdateInput {
     pub label: String,
     pub note: Option<String>,
     pub splits: Option<Vec<SplitInput>>,
+    /// Le tiers fait partie de l'état complet : absent, la transaction n'a plus de tiers.
+    #[serde(default)]
+    pub payee_id: Option<PayeeId>,
+}
+
+/// Tiers affecté en masse (TIE-02) ; absent, le tiers est retiré.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BulkPayeeInput {
+    pub transaction_ids: Vec<TransactionId>,
+    pub payee_id: Option<PayeeId>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BulkPayeeResult {
+    pub updated: usize,
+    /// Jambes de virement, laissées sans tiers (R-TIE-11).
+    pub skipped: usize,
 }
 
 /// Catégorisation en masse (TRX-06).
@@ -195,6 +219,12 @@ pub struct TransactionFilter {
     pub max_amount_minor: Option<i64>,
     /// Recherche dans le libellé, le libellé bancaire et la note.
     pub text: Option<String>,
+    /// Tiers (TIE-04).
+    pub payee_id: Option<PayeeId>,
+    /// Tiers de ce groupe.
+    pub payee_group_id: Option<PayeeGroupId>,
+    /// Seulement les transactions sans tiers, hors virements.
+    pub without_payee: Option<bool>,
     pub cursor: Option<String>,
     /// 200 par défaut.
     pub limit: Option<usize>,
@@ -237,6 +267,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
     let running = balance::running_balances(row.opening_balance, &movements);
 
     let category_ids = category_family(db, filter.category_id).await?;
+    let payee_ids = payee_selection(db, filter).await?;
     let text = clean(filter.text.as_deref()).map(|t| t.to_lowercase());
 
     let mut items: Vec<TransactionListItem> = transactions
@@ -250,6 +281,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
                 transfers.contains_key(&t.id),
                 filter,
                 category_ids.as_ref(),
+                payee_ids.as_ref(),
                 text.as_deref(),
             );
             keep.then(|| TransactionListItem {
@@ -264,6 +296,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
                 amount_minor: t.amount.minor(),
                 clearing_status: t.clearing_status,
                 origin: t.origin,
+                payee_id: t.payee_id,
                 splits: tx_splits,
                 transfer: transfers.get(&t.id).map(|side| transfer_summary(side, &names)),
                 balance_after_minor: Some(balance_after.minor()),
@@ -314,6 +347,7 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
         locked: t.clearing_status == ClearingStatus::Reconciled,
         clearing_status: t.clearing_status,
         origin: t.origin,
+        payee_id: t.payee_id,
         splits,
         transfer,
         loan_payment,
@@ -351,6 +385,16 @@ async fn check_references(conn: &mut SqliteConnection, splits: &[SplitInput], ke
         {
             super::budgets::check_active(conn, project).await?;
         }
+    }
+    Ok(())
+}
+
+/// Le tiers cité existe (R-TIE-10).
+pub(crate) async fn check_payee(conn: &mut SqliteConnection, payee: Option<PayeeId>) -> AppResult<()> {
+    if let Some(payee) = payee
+        && db::payees::find(&mut *conn, payee).await?.is_none()
+    {
+        return Err(AppError::NotFound("tiers"));
     }
     Ok(())
 }
@@ -394,6 +438,7 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
     period(&account).check(input.date)?;
     reconciliation::lock(&mut tx, input.account_id).await?.check(input.date)?;
     check_references(&mut tx, &splits, &[]).await?;
+    check_payee(&mut tx, input.payee_id).await?;
     let id = TransactionId::new();
     let note = clean(input.note.as_deref());
     let new = NewTransaction {
@@ -410,6 +455,7 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
         origin: TransactionOrigin::Manual,
         recurring_rule_id: None,
         fingerprint: None,
+        payee_id: input.payee_id,
     };
     db::transactions::insert(&mut tx, &new, &new_splits(&splits)).await?;
     check_split_sums(&mut tx, &[id]).await?;
@@ -444,6 +490,8 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
     }
 
     let transfer = db::transactions::transfer_of(&mut *tx, id).await?;
+    payees::check_transfer_leg(input.payee_id.is_some(), transfer.is_some())?;
+    check_payee(&mut tx, input.payee_id).await?;
     let existing = db::transactions::splits_of(&mut *tx, id).await?;
     // Une mensualité ventilée selon son échéance, et la jambe du capital sur le prêt, ne changent ni de montant,
     // ni de compte, ni de ventilation (R-CPT-17) : seuls le libellé, la note et la date se modifient.
@@ -468,6 +516,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
             label: &label,
             note: note.as_deref(),
             clearing_status: current.clearing_status,
+            payee_id: input.payee_id,
         };
         db::transactions::update(&mut *tx, id, &update).await?;
         tx.commit().await?;
@@ -534,6 +583,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 label: &counterpart.label,
                 note: counterpart.note.as_deref(),
                 clearing_status: counterpart.clearing_status,
+                payee_id: counterpart.payee_id,
             };
             db::transactions::update(&mut *tx, counterpart.id, &update).await?;
             // Les ventilations reliées changent de montant sur place : les remplacer délierait le virement.
@@ -552,6 +602,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
         label: &label,
         note: note.as_deref(),
         clearing_status: current.clearing_status,
+        payee_id: input.payee_id,
     };
     db::transactions::update(&mut *tx, id, &update).await?;
     match &transfer {
@@ -614,6 +665,7 @@ fn matches_filter(
     is_transfer: bool,
     filter: &TransactionFilter,
     category_ids: Option<&HashSet<CategoryId>>,
+    payee_ids: Option<&HashSet<PayeeId>>,
     text: Option<&str>,
 ) -> bool {
     filter.from.is_none_or(|from| t.date >= from)
@@ -623,6 +675,8 @@ fn matches_filter(
         && filter.max_amount_minor.is_none_or(|max| t.amount.minor().abs() <= max)
         && category_ids.is_none_or(|ids| splits.iter().any(|s| s.category_id.is_some_and(|c| ids.contains(&c))))
         && (!filter.uncategorized.unwrap_or(false) || (!is_transfer && splits.iter().any(|s| s.category_id.is_none())))
+        && payee_ids.is_none_or(|ids| t.payee_id.is_some_and(|p| ids.contains(&p)))
+        && (!filter.without_payee.unwrap_or(false) || (!is_transfer && t.payee_id.is_none()))
         && text.is_none_or(|text| {
             [Some(&t.label), t.bank_label.as_ref(), t.note.as_ref()]
                 .into_iter()
@@ -638,6 +692,20 @@ async fn category_family(db: &Db, category: Option<CategoryId>) -> AppResult<Opt
         db::categories::list(&db.read).await?.into_iter().filter(|c| c.parent_id == Some(category)).map(|c| c.id),
     );
     Ok(Some(ids))
+}
+
+/// Tiers retenus par le filtre : le tiers choisi, ou les tiers du groupe choisi (TIE-04).
+async fn payee_selection(db: &Db, filter: &TransactionFilter) -> AppResult<Option<HashSet<PayeeId>>> {
+    let mut selection: Option<HashSet<PayeeId>> = filter.payee_id.map(|p| HashSet::from([p]));
+    if let Some(group) = filter.payee_group_id {
+        let members: HashSet<PayeeId> =
+            db::payees::list(&db.read).await?.into_iter().filter(|p| p.group_id == Some(group)).map(|p| p.id).collect();
+        selection = Some(match selection {
+            Some(chosen) => chosen.intersection(&members).copied().collect(),
+            None => members,
+        });
+    }
+    Ok(selection)
 }
 
 /// Toutes les transactions, tous comptes confondus, les plus récentes d'abord (TRX-08).
@@ -676,6 +744,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
         }
     }
     let category_ids = category_family(db, filter.category_id).await?;
+    let payee_ids = payee_selection(db, filter).await?;
     let text = clean(filter.text.as_deref()).map(|t| t.to_lowercase());
     let mut items: Vec<TransactionListItem> = transactions
         .into_iter()
@@ -683,23 +752,31 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
         .filter_map(|t| {
             let tx_splits = splits.remove(&t.id).unwrap_or_default();
             let side = sides.get(&t.id);
-            matches_filter(&t, &tx_splits, side.is_some(), filter, category_ids.as_ref(), text.as_deref()).then(|| {
-                TransactionListItem {
-                    id: t.id,
-                    account_name: accounts.get(&t.account_id).cloned().unwrap_or_default(),
-                    account_id: t.account_id,
-                    date: t.date,
-                    bank_date: t.bank_date,
-                    balance_date: t.balance_date,
-                    label: t.label,
-                    note: t.note,
-                    amount_minor: t.amount.minor(),
-                    clearing_status: t.clearing_status,
-                    origin: t.origin,
-                    splits: tx_splits,
-                    transfer: side.map(|s| transfer_summary(s, &accounts)),
-                    balance_after_minor: None,
-                }
+            let keep = matches_filter(
+                &t,
+                &tx_splits,
+                side.is_some(),
+                filter,
+                category_ids.as_ref(),
+                payee_ids.as_ref(),
+                text.as_deref(),
+            );
+            keep.then(|| TransactionListItem {
+                id: t.id,
+                account_name: accounts.get(&t.account_id).cloned().unwrap_or_default(),
+                account_id: t.account_id,
+                date: t.date,
+                bank_date: t.bank_date,
+                balance_date: t.balance_date,
+                label: t.label,
+                note: t.note,
+                amount_minor: t.amount.minor(),
+                clearing_status: t.clearing_status,
+                origin: t.origin,
+                payee_id: t.payee_id,
+                splits: tx_splits,
+                transfer: side.map(|s| transfer_summary(s, &accounts)),
+                balance_after_minor: None,
             })
         })
         .collect();
@@ -734,6 +811,28 @@ pub async fn categorize_many(db: &Db, input: &BulkCategorizeInput) -> AppResult<
             }
             _ => result.skipped += 1,
         }
+    }
+    tx.commit().await?;
+    Ok(result)
+}
+
+/// Affecte (ou retire) un tiers à plusieurs transactions (TIE-02). Les jambes de virement sont laissées sans tiers
+/// (R-TIE-11) ; une transaction rapprochée change de tiers sans déverrouillage (R-TIE-12).
+pub async fn set_payee_many(db: &Db, input: &BulkPayeeInput) -> AppResult<BulkPayeeResult> {
+    let mut result = BulkPayeeResult { updated: 0, skipped: 0 };
+    let mut tx = db.write.begin().await?;
+    check_payee(&mut tx, input.payee_id).await?;
+    for id in &input.transaction_ids {
+        if db::transactions::find(&mut *tx, *id).await?.is_none() {
+            return Err(AppError::NotFound("transaction"));
+        }
+        let is_transfer = db::transactions::transfer_of(&mut *tx, *id).await?.is_some();
+        if payees::check_transfer_leg(input.payee_id.is_some(), is_transfer).is_err() {
+            result.skipped += 1;
+            continue;
+        }
+        db::transactions::set_payee(&mut *tx, *id, input.payee_id).await?;
+        result.updated += 1;
     }
     tx.commit().await?;
     Ok(result)

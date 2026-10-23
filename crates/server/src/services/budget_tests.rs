@@ -204,6 +204,7 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
         label: "Dîner".into(),
         note: None,
         splits: Some(vec![kept]),
+        payee_id: None,
     };
     transactions::update(&db, dinner, &update).await.unwrap();
     assert!(budgets::delete_project(&db, project.id).await.is_err());

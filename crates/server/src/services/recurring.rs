@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin, split};
 use cashflow_domain::recurrence::{self, Candidate, Frequency, Occurrence, Schedule};
-use cashflow_domain::shared::ids::{AccountId, RecurringRuleId, TransactionId};
+use cashflow_domain::shared::ids::{AccountId, PayeeId, RecurringRuleId, TransactionId};
 use cashflow_domain::{Date, Money};
 use chrono::Days;
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,7 @@ pub struct RecurringRuleView {
     pub end_date: Option<Date>,
     pub split_template: Vec<TemplateSplit>,
     pub active: bool,
+    pub payee_id: Option<PayeeId>,
     pub next_date: Option<Date>,
     /// Échéances des 60 derniers jours non honorées (R-TRX-42).
     pub missed: Vec<Date>,
@@ -56,6 +57,9 @@ pub struct RecurringRuleInput {
     pub split_template: Vec<TemplateSplit>,
     #[serde(default = "yes")]
     pub active: bool,
+    /// Tiers d'une dépense ou d'un revenu ; jamais sur un virement (R-TIE-13).
+    #[serde(default)]
+    pub payee_id: Option<PayeeId>,
 }
 
 fn one() -> u32 {
@@ -145,6 +149,7 @@ fn view(rule: &RuleRow, candidates: &[CandidateRow], today: Date) -> RecurringRu
         end_date: rule.end_date,
         split_template: rule.split_template.clone(),
         active: rule.active,
+        payee_id: rule.payee_id,
         next_date: list.iter().find_map(|o| match o {
             Occurrence::Upcoming { date } => Some(*date),
             _ => None,
@@ -207,6 +212,10 @@ pub async fn save(
             ));
         }
     }
+    cashflow_domain::payees::check_transfer_leg(input.payee_id.is_some(), input.target_account_id.is_some())?;
+    if let Some(payee) = input.payee_id {
+        db::payees::find(&db.read, payee).await?.ok_or(AppError::NotFound("tiers"))?;
+    }
     if !input.split_template.is_empty() {
         let amounts: Vec<Money> = input.split_template.iter().map(|s| Money::from_minor(s.amount_minor)).collect();
         split::check_splits(amount, &amounts)?;
@@ -224,6 +233,7 @@ pub async fn save(
         end_date: input.end_date,
         split_template: input.split_template.clone(),
         active: input.active,
+        payee_id: input.payee_id,
     };
     if let Some(id) = id
         && !db::recurring::list(&db.read).await?.iter().any(|r| r.id == id)
@@ -324,6 +334,7 @@ pub async fn materialize(db: &Db, id: RecurringRuleId, input: &MaterializeInput)
         origin: TransactionOrigin::Recurring,
         recurring_rule_id: Some(rule.id),
         fingerprint: None,
+        payee_id: rule.payee_id,
     };
     let splits: Vec<NewSplit<'_>> = if rule.split_template.is_empty() {
         vec![NewSplit { amount: rule.amount, category_id: None, note: None, project_id: None, ..Default::default() }]

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE categorization_rule SET actions = json_set(actions, '$.set_payee', ?1), updated_at = ?2\n         WHERE json_extract(actions, '$.set_payee') = ?3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "f37735a2f5c33b9e0227d0a37bb3492dba2b519e5a2523ea4e5c694a2c830f0f"
+}

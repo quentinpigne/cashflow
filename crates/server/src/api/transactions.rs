@@ -7,8 +7,8 @@ use utoipa::ToSchema;
 
 use crate::error::{AppResult, Problem};
 use crate::services::transactions::{
-    self, BulkCategorizeInput, BulkCategorizeResult, CategorizeInput, TransactionDetail, TransactionFilter,
-    TransactionInput, TransactionPage, TransactionUpdateInput,
+    self, BulkCategorizeInput, BulkCategorizeResult, BulkPayeeInput, BulkPayeeResult, CategorizeInput,
+    TransactionDetail, TransactionFilter, TransactionInput, TransactionPage, TransactionUpdateInput,
 };
 use crate::services::transfers::{
     self, Candidate, CandidatesQuery, MarkAsTransferInput, TransferCreated, TransferInput,
@@ -166,4 +166,16 @@ pub async fn categorize_many(
     Json(input): Json<BulkCategorizeInput>,
 ) -> AppResult<Json<BulkCategorizeResult>> {
     Ok(Json(transactions::categorize_many(&state.db, &input).await?))
+}
+
+/// Affecte ou retire un tiers sur plusieurs transactions (TIE-02) ; les jambes de virement sont ignorées (R-TIE-11).
+#[utoipa::path(
+    post, operation_id = "setTransactionsPayee", path = "/transactions/payee", tag = "transactions",
+    request_body = BulkPayeeInput, responses((status = 200, body = BulkPayeeResult), (status = 404, body = Problem))
+)]
+pub async fn set_payee_many(
+    State(state): State<AppState>,
+    Json(input): Json<BulkPayeeInput>,
+) -> AppResult<Json<BulkPayeeResult>> {
+    Ok(Json(transactions::set_payee_many(&state.db, &input).await?))
 }

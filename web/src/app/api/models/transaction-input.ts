@@ -3,6 +3,7 @@
 
 import { AccountId } from '../models/account-id';
 import { CategoryId } from '../models/category-id';
+import { PayeeId } from '../models/payee-id';
 import { SplitInput } from '../models/split-input';
 
 /**
@@ -15,5 +16,6 @@ export interface TransactionInput {
   date: string;
   label: string;
   note?: (string | null);
+  payee_id?: (PayeeId | null);
   splits?: (Array<SplitInput> | null);
 }

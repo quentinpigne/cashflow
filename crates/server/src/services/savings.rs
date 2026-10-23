@@ -374,6 +374,7 @@ pub async fn record_interest(db: &Db, account: AccountId, year: i32, today: Date
         origin: TransactionOrigin::Interest,
         recurring_rule_id: None,
         fingerprint: None,
+        payee_id: None,
     };
     let split = NewSplit {
         amount,

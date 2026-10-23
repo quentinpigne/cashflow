@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, account_id, target_account_id, label, amount, amount_tolerance, frequency, interval,\n                  anchor_date AS \"anchor_date: Date\", end_date AS \"end_date: Date\", split_template,\n                  active AS \"active: bool\"\n           FROM recurring_rule ORDER BY label COLLATE NOCASE",
+  "query": "SELECT id, account_id, target_account_id, label, amount, amount_tolerance, frequency, interval,\n                  anchor_date AS \"anchor_date: Date\", end_date AS \"end_date: Date\", split_template,\n                  active AS \"active: bool\", payee_id\n           FROM recurring_rule ORDER BY label COLLATE NOCASE",
   "describe": {
     "columns": [
       {
@@ -134,6 +134,17 @@
             "name": "active"
           }
         }
+      },
+      {
+        "name": "payee_id",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "recurring_rule",
+            "name": "payee_id"
+          }
+        }
       }
     ],
     "parameters": {
@@ -151,8 +162,9 @@
       false,
       true,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "5fbaecd244b9370846398311e823b6579f002de94dfac56aba59578daaaf1edb"
+  "hash": "043ee0bcfc615a09e50b5106bf12399187610efa69da1c3ba0303205e1537463"
 }

@@ -4,6 +4,7 @@
 import { AccountId } from '../models/account-id';
 import { ClearingStatus } from '../models/clearing-status';
 import { LoanPaymentRef } from '../models/loan-payment-ref';
+import { PayeeId } from '../models/payee-id';
 import { Split } from '../models/split';
 import { TransactionId } from '../models/transaction-id';
 import { TransactionOrigin } from '../models/transaction-origin';
@@ -28,6 +29,7 @@ export interface TransactionDetail {
   locked: boolean;
   note?: (string | null);
   origin: TransactionOrigin;
+  payee_id?: (PayeeId | null);
   splits: Array<Split>;
   transfer?: (TransferSummary | null);
   value_date?: (string | null);

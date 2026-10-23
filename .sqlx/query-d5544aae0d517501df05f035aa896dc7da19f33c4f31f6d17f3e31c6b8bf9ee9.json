@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE recurring_rule SET payee_id = ?, updated_at = ? WHERE payee_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d5544aae0d517501df05f035aa896dc7da19f33c4f31f6d17f3e31c6b8bf9ee9"
+}

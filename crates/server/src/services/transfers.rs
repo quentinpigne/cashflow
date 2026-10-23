@@ -131,6 +131,7 @@ pub async fn create_from(
             origin: if rule.is_some() { TransactionOrigin::Recurring } else { TransactionOrigin::Manual },
             recurring_rule_id: rule,
             fingerprint: None,
+            payee_id: None,
         };
         insert_validated(&mut tx, &new, &uncategorized(signed)).await?;
     }
@@ -205,26 +206,29 @@ pub async fn mark_as_transfer(db: &Db, id: TransactionId, input: &MarkAsTransfer
                 origin: TransactionOrigin::Manual,
                 recurring_rule_id: None,
                 fingerprint: None,
+                payee_id: None,
             };
             insert_validated(&mut tx, &new, &uncategorized(-source.amount)).await?;
             db::transactions::find(&mut *tx, created).await?.ok_or(AppError::NotFound("transaction"))?
         }
     };
 
-    // Les ventilations catégorisées sont remplacées, après confirmation (R-TRX-33).
+    // Les ventilations catégorisées et les tiers sont retirés, après confirmation (R-TRX-33, R-TIE-11).
     let mut categorized = false;
     for t in [&source, &counterpart] {
         let splits = db::transactions::splits_of(&mut *tx, t.id).await?;
-        categorized |= splits.len() != 1 || splits.iter().any(|s| s.category_id.is_some());
+        categorized |= splits.len() != 1 || splits.iter().any(|s| s.category_id.is_some()) || t.payee_id.is_some();
     }
     if categorized && !input.confirm {
         return Err(AppError::invalid(
             "TRANSFER_REPLACES_CATEGORIES",
-            "les ventilations catégorisées seront remplacées par une ventilation sans catégorie : confirmer",
+            "les ventilations catégorisées seront remplacées par une ventilation sans catégorie, et le tiers retiré : \
+             confirmer",
         ));
     }
     for t in [&source, &counterpart] {
         db::transactions::replace_splits(&mut tx, t.id, &uncategorized(t.amount)).await?;
+        db::transactions::set_payee(&mut *tx, t.id, None).await?;
     }
     let (outflow, inflow) = if source.amount.is_negative() { (&source, &counterpart) } else { (&counterpart, &source) };
     let leg = |t: &TransactionRow, currency| TransferLeg {

@@ -9,6 +9,7 @@ mod dashboard;
 mod imports;
 mod institutions;
 mod loans;
+mod payees;
 mod projections;
 mod reconciliation;
 mod reports;
@@ -41,6 +42,7 @@ use crate::state::AppState;
         (name = "accounts", description = "Comptes (spec 01)"),
         (name = "institutions", description = "Établissements (spec 01)"),
         (name = "categories", description = "Catégories (spec 02)"),
+        (name = "payees", description = "Tiers et groupes de tiers (spec 11)"),
         (name = "transactions", description = "Transactions, ventilations et virements (spec 02)"),
         (name = "imports", description = "Import de relevés (spec 03)"),
         (name = "reconciliation", description = "Rapprochement (spec 04)"),
@@ -76,6 +78,15 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(categories::update, categories::delete))
         .routes(routes!(categories::reorder))
         .routes(routes!(categories::merge))
+        .routes(routes!(payees::list, payees::create))
+        .routes(routes!(payees::update, payees::delete))
+        .routes(routes!(payees::merge))
+        .routes(routes!(payees::regroup))
+        .routes(routes!(payees::summary))
+        .routes(routes!(payees::create_group))
+        .routes(routes!(payees::update_group, payees::delete_group))
+        .routes(routes!(payees::group_summary))
+        .routes(routes!(payees::report))
         .routes(routes!(transactions::list))
         .routes(routes!(transactions::create))
         .routes(routes!(transactions::get, transactions::update, transactions::delete))
@@ -111,6 +122,7 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(reports::evolution))
         .routes(routes!(transactions::list_all))
         .routes(routes!(transactions::categorize_many))
+        .routes(routes!(transactions::set_payee_many))
         .routes(routes!(budgets::month))
         .routes(routes!(budgets::list_lines, budgets::create_line))
         .routes(routes!(budgets::update_line))

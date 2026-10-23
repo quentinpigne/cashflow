@@ -7,6 +7,7 @@ import { ImportDecision } from '../models/import-decision';
 import { ImportLineId } from '../models/import-line-id';
 import { MatchKind } from '../models/match-kind';
 import { MatchView } from '../models/match-view';
+import { PayeeId } from '../models/payee-id';
 import { TransactionId } from '../models/transaction-id';
 import { TransferProposal } from '../models/transfer-proposal';
 export interface ImportLineView {
@@ -30,6 +31,12 @@ export interface ImportLineView {
   match_kind: MatchKind;
   matched?: (MatchView | null);
   note?: (string | null);
+  payee_id?: (PayeeId | null);
+
+  /**
+   * Tiers appris d'un libellé identique (R-TIE-17).
+   */
+  payee_learned: boolean;
   proposal?: (TransferProposal | null);
   raw: any;
   splits: Array<DraftSplit>;

@@ -5,7 +5,7 @@ import { AccountId } from '../models/account-id';
 import { TransactionId } from '../models/transaction-id';
 
 /**
- * Transaction existante non catégorisée à laquelle la règle s'appliquerait (R-IMP-19).
+ * Transaction existante à laquelle la règle s'appliquerait (R-IMP-19, R-TIE-19).
  */
 export interface RuleMatch {
   account_id: AccountId;
@@ -13,5 +13,15 @@ export interface RuleMatch {
   amount_minor: number;
   date: string;
   label: string;
+
+  /**
+   * Non catégorisée : la catégorie (et le reste des actions) changera.
+   */
+  sets_category: boolean;
+
+  /**
+   * Sans tiers, pour une règle qui en affecte un : le tiers changera.
+   */
+  sets_payee: boolean;
   transaction_id: TransactionId;
 }

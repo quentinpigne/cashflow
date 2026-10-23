@@ -1,7 +1,7 @@
 //! Récurrences (spec 02, TRX-07).
 
 use cashflow_domain::recurrence::Frequency;
-use cashflow_domain::shared::ids::{AccountId, CategoryId, RecurringRuleId, TransactionId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, PayeeId, RecurringRuleId, TransactionId};
 use cashflow_domain::{Date, Money};
 use serde::{Deserialize, Serialize};
 use sqlx::{SqliteConnection, SqliteExecutor};
@@ -32,13 +32,15 @@ pub struct RuleRow {
     pub end_date: Option<Date>,
     pub split_template: Vec<TemplateSplit>,
     pub active: bool,
+    /// Tiers repris par les échéances matérialisées (R-TIE-13).
+    pub payee_id: Option<PayeeId>,
 }
 
 pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<RuleRow>> {
     let rows = sqlx::query!(
         r#"SELECT id, account_id, target_account_id, label, amount, amount_tolerance, frequency, interval,
                   anchor_date AS "anchor_date: Date", end_date AS "end_date: Date", split_template,
-                  active AS "active: bool"
+                  active AS "active: bool", payee_id
            FROM recurring_rule ORDER BY label COLLATE NOCASE"#
     )
     .fetch_all(db)
@@ -58,6 +60,7 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<RuleRow>> {
                 end_date: r.end_date,
                 split_template: serde_json::from_str(&r.split_template)?,
                 active: r.active,
+                payee_id: opt_id_from_db(r.payee_id.as_deref())?,
             })
         })
         .collect()
@@ -71,17 +74,19 @@ pub async fn upsert(db: impl SqliteExecutor<'_>, r: &RuleRow) -> anyhow::Result<
     let tolerance = r.tolerance.minor();
     let frequency = enum_to_db(&r.frequency);
     let template = serde_json::to_string(&r.split_template)?;
+    let payee = r.payee_id.map(|p| p.to_string());
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO recurring_rule (id, account_id, target_account_id, label, amount, amount_tolerance, frequency, interval,
-                                     anchor_date, end_date, split_template, active, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?13)
+                                     anchor_date, end_date, split_template, active, payee_id, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?14, ?13, ?13)
          ON CONFLICT (id) DO UPDATE SET account_id = excluded.account_id, target_account_id = excluded.target_account_id,
                                         label = excluded.label, amount = excluded.amount,
                                         amount_tolerance = excluded.amount_tolerance, frequency = excluded.frequency,
                                         interval = excluded.interval, anchor_date = excluded.anchor_date,
                                         end_date = excluded.end_date, split_template = excluded.split_template,
-                                        active = excluded.active, updated_at = excluded.updated_at",
+                                        active = excluded.active, payee_id = excluded.payee_id,
+                                        updated_at = excluded.updated_at",
         id,
         account,
         target,
@@ -94,7 +99,8 @@ pub async fn upsert(db: impl SqliteExecutor<'_>, r: &RuleRow) -> anyhow::Result<
         r.end_date,
         template,
         r.active,
-        now
+        now,
+        payee
     )
     .execute(db)
     .await?;

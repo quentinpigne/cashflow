@@ -1,0 +1,88 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.id, p.name, p.group_id, p.archived AS \"archived: bool\", p.note,\n                  (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id) AS \"transaction_count!: i64\",\n                  (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id)\n                  + (SELECT count(*) FROM recurring_rule r WHERE r.payee_id = p.id)\n                  + (SELECT count(*) FROM categorization_rule c WHERE json_extract(c.actions, '$.set_payee') = p.id)\n                      AS \"usage!: i64\"\n           FROM payee p ORDER BY p.name COLLATE NOCASE",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "group_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "archived: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "archived"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "name": "transaction_count!: i64",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "usage!: i64",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "715428d3af80495dce13ee8f5e69482b37f150be07f964a9a41444f011c1e78e"
+}

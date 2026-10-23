@@ -11,12 +11,18 @@ import { Conditions } from '../../models/conditions';
 import { RuleMatch } from '../../models/rule-match';
 
 export interface PreviewRule$Params {
+
+/**
+ * La règle affecte un tiers : l'aperçu inclut aussi les transactions sans tiers, même catégorisées (R-TIE-19).
+ */
+  sets_payee?: boolean;
       body: Conditions
 }
 
 export function previewRule(http: HttpClient, rootUrl: string, params: PreviewRule$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<RuleMatch>>> {
   const rb = new RequestBuilder(rootUrl, previewRule.PATH, 'post');
   if (params) {
+    rb.query('sets_payee', params.sets_payee, {});
     rb.body(params.body, 'application/json');
   }
 

@@ -109,6 +109,7 @@ async fn imp_05_manual_transaction_is_pointed_and_keeps_its_date() {
         note: None,
         category_id: None,
         splits: None,
+        payee_id: None,
     };
     let manual = transactions::create(&db, &manual).await.unwrap();
     let batch = import(&db, &data, checking, MARCH).await;
@@ -250,6 +251,7 @@ async fn rap_01_to_04_statement_checkpoint_reconcile_lock_and_unlock() {
         label: "LOYER".into(),
         note: None,
         splits: None,
+        payee_id: None,
     };
     assert!(matches!(
         transactions::update(&db, locked, &change).await,
@@ -263,6 +265,7 @@ async fn rap_01_to_04_statement_checkpoint_reconcile_lock_and_unlock() {
         note: None,
         category_id: None,
         splits: None,
+        payee_id: None,
     };
     assert!(matches!(
         transactions::create(&db, &late).await,
@@ -306,6 +309,7 @@ async fn r_imp_17_revert_restores_previous_state() {
         note: None,
         category_id: None,
         splits: None,
+        payee_id: None,
     };
     let manual = transactions::create(&db, &manual).await.unwrap();
     let batch = import(&db, &data, checking, MARCH).await;

@@ -13,8 +13,10 @@ use cashflow_domain::import::{self as domain_import, BatchStatus, ImportDecision
 use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::transfer::{self, TransferLeg};
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
+use cashflow_domain::payees::{self, PastTransaction};
 use cashflow_domain::shared::ids::{
-    AccountId, CategorizationRuleId, CategoryId, ImportBatchId, ImportLineId, ImportProfileId, ProjectId, TransactionId,
+    AccountId, CategorizationRuleId, CategoryId, ImportBatchId, ImportLineId, ImportProfileId, PayeeId, ProjectId,
+    TransactionId,
 };
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
@@ -156,6 +158,11 @@ struct Review {
     project: Option<ProjectId>,
     #[serde(default)]
     learned: bool,
+    /// Tiers de la transaction créée : règle (R-TIE-16), appris (R-TIE-17) ou choisi en revue.
+    #[serde(default)]
+    payee: Option<PayeeId>,
+    #[serde(default)]
+    payee_learned: bool,
     /// État de la transaction pointée avant validation, pour l'annulation (R-IMP-17).
     #[serde(default)]
     previous: Option<Value>,
@@ -208,6 +215,10 @@ pub struct ImportLineView {
     /// Suggestion issue d'au moins une règle (R-IMP-12) ou de l'apprentissage (R-IMP-13).
     pub suggested_by_rule: bool,
     pub learned: bool,
+    /// Tiers de la transaction créée (TIE-03).
+    pub payee_id: Option<PayeeId>,
+    /// Tiers appris d'un libellé identique (R-TIE-17).
+    pub payee_learned: bool,
     pub transaction_id: Option<TransactionId>,
 }
 
@@ -253,6 +264,9 @@ pub struct LineReviewInput {
     pub note: Option<String>,
     pub transfer_to: Option<AccountId>,
     pub transfer_transaction_id: Option<TransactionId>,
+    /// Tiers de la transaction créée ; ignoré pour un virement (R-TIE-11).
+    #[serde(default)]
+    pub payee_id: Option<PayeeId>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -261,6 +275,9 @@ pub struct BulkInput {
     pub decision: Option<ImportDecision>,
     /// Catégorie posée sur les lignes `CREATE` non ventilées.
     pub category_id: Option<CategoryId>,
+    /// Tiers posé sur les lignes qui ne sont pas des virements.
+    #[serde(default)]
+    pub payee_id: Option<PayeeId>,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
@@ -502,11 +519,15 @@ fn find_stored_file(data: &DataDir, batch: ImportBatchId) -> Option<PathBuf> {
         .find(|p| p.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with(&prefix)))
 }
 
-/// Suggestions de catégorisation : règles, puis apprentissage, puis catégorie de la banque.
+/// Suggestions de catégorisation : règles, puis apprentissage, puis catégorie du tiers, puis catégorie de la banque.
 struct Suggester {
     rules: Vec<cashflow_domain::import::rules::Rule<CategorizationRuleId>>,
     learned: HashMap<String, CategoryId>,
     categories_by_name: HashMap<String, CategoryId>,
+    /// Tiers de la dernière transaction de chaque libellé normalisé, tous comptes (R-TIE-17).
+    learned_payees: HashMap<String, PayeeId>,
+    /// Catégorie suggérée par chaque tiers (R-TIE-14, R-TIE-18).
+    payee_categories: HashMap<PayeeId, CategoryId>,
 }
 
 impl Suggester {
@@ -524,7 +545,11 @@ impl Suggester {
             .filter(|c| !c.archived)
             .map(|c| (normalize_label(&c.name), c.id))
             .collect();
-        Ok(Self { rules, learned, categories_by_name })
+        let mut learned_payees = HashMap::new();
+        for (label, payee) in db::payees::labelled_payees(&db.read).await? {
+            learned_payees.entry(normalize_label(&label)).or_insert(payee);
+        }
+        Ok(Self { rules, learned, categories_by_name, learned_payees, payee_categories: payee_categories(db).await? })
     }
 
     fn suggest(&self, account: AccountId, line: &ReadLine, amount: Money) -> Review {
@@ -541,6 +566,12 @@ impl Suggester {
             review.transfer_to = Some(to);
             return review;
         }
+        review.payee = suggestion.payee;
+        if review.payee.is_none() {
+            review.payee = self.learned_payees.get(&normalize_label(&line.bank_label)).copied();
+            review.payee_learned = review.payee.is_some();
+        }
+        let payee_category = review.payee.and_then(|p| self.payee_categories.get(&p)).copied();
         if !suggestion.splits.is_empty() {
             let weights: Vec<u64> = suggestion.splits.iter().map(|s| s.weight).collect();
             if let Ok(amounts) = split::allocate(amount, &weights) {
@@ -557,6 +588,9 @@ impl Suggester {
             review.splits =
                 Some(vec![DraftSplit { category_id: Some(*category), amount_minor: amount.minor(), note: None }]);
             review.learned = true;
+        } else if let Some(category) = payee_category {
+            review.splits =
+                Some(vec![DraftSplit { category_id: Some(category), amount_minor: amount.minor(), note: None }]);
         } else if let Some(category) =
             line.bank_category.as_deref().and_then(|c| self.categories_by_name.get(&normalize_label(c)))
         {
@@ -565,6 +599,23 @@ impl Suggester {
         }
         review
     }
+}
+
+/// Catégorie de la dernière transaction de chaque tiers à une seule ventilation, catégorisée (R-TIE-14).
+pub(crate) async fn payee_categories(db: &Db) -> AppResult<HashMap<PayeeId, CategoryId>> {
+    let mut history: HashMap<PayeeId, Vec<PastTransaction<TransactionId>>> = HashMap::new();
+    for row in db::payees::history(&db.read).await? {
+        history.entry(row.payee_id).or_default().push(PastTransaction {
+            date: row.date,
+            id: row.transaction_id,
+            split_count: usize::try_from(row.split_count).unwrap_or(0),
+            category: row.category_id,
+        });
+    }
+    Ok(history
+        .into_iter()
+        .filter_map(|(payee, past)| payees::suggested_category(&past).map(|category| (payee, category)))
+        .collect())
 }
 
 async fn tolerance(db: &Db) -> AppResult<i64> {
@@ -868,6 +919,8 @@ pub async fn get(db: &Db, data: &DataDir, id: ImportBatchId) -> AppResult<BatchD
                 proposal: review.proposal.clone(),
                 suggested_by_rule: !review.rules.is_empty(),
                 learned: review.learned,
+                payee_id: review.payee,
+                payee_learned: review.payee_learned,
                 transaction_id: l.transaction_id,
             }
         })
@@ -925,7 +978,15 @@ pub async fn review_line(
             &input.splits.iter().map(|s| Money::from_minor(s.amount_minor)).collect::<Vec<_>>(),
         )?;
     }
+    let payee = input.payee_id.filter(|_| input.transfer_to.is_none());
+    if let Some(payee) = payee {
+        db::payees::find(&db.read, payee).await?.ok_or(AppError::NotFound("tiers"))?;
+    }
     let mut review = Review::from_value(&line.suggested);
+    if review.payee != payee {
+        review.payee_learned = false;
+    }
+    review.payee = payee;
     review.label = clean(input.label.as_deref());
     review.splits = (!input.splits.is_empty()).then(|| input.splits.clone());
     review.note = clean(input.note.as_deref());
@@ -940,6 +1001,9 @@ pub async fn review_line(
 /// Décision ou catégorie appliquée à plusieurs lignes (IMP-04, actions en masse).
 pub async fn bulk(db: &Db, batch_id: ImportBatchId, input: &BulkInput) -> AppResult<()> {
     reviewing(db, batch_id).await?;
+    if let Some(payee) = input.payee_id {
+        db::payees::find(&db.read, payee).await?.ok_or(AppError::NotFound("tiers"))?;
+    }
     let lines = db::imports::lines_of(&db.read, batch_id).await?;
     let mut tx = db.write.begin().await?;
     for line in lines.iter().filter(|l| input.line_ids.contains(&l.id) && l.errors.is_empty()) {
@@ -959,6 +1023,12 @@ pub async fn bulk(db: &Db, batch_id: ImportBatchId, input: &BulkInput) -> AppRes
         {
             review.splits =
                 Some(vec![DraftSplit { category_id: Some(category), amount_minor: amount.minor(), note: None }]);
+        }
+        if let Some(payee) = input.payee_id
+            && review.transfer_to.is_none()
+        {
+            review.payee = Some(payee);
+            review.payee_learned = false;
         }
         db::imports::update_line_review(&mut *tx, line.id, decision, line.match_transaction_id, &review.to_value())
             .await?;
@@ -1058,6 +1128,11 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                 let label: String = label.chars().take(200).collect();
                 // Une ligne forcée en création malgré un doublon n'emporte pas l'empreinte déjà utilisée.
                 let print = line.fingerprint.clone().filter(|p| !existing.contains(p));
+                // Un tiers supprimé depuis la revue est ignoré ; un virement n'en a pas (R-TIE-11).
+                let payee = match review.payee.filter(|_| transfer_to.is_none()) {
+                    Some(p) => db::payees::find(&mut *tx, p).await?.map(|_| p),
+                    None => None,
+                };
                 let transaction = TransactionId::new();
                 let new = NewTransaction {
                     id: transaction,
@@ -1073,6 +1148,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                     origin: TransactionOrigin::Import,
                     recurring_rule_id: None,
                     fingerprint: print.as_deref(),
+                    payee_id: payee,
                 };
                 let new_splits: Vec<NewSplit<'_>> = splits
                     .iter()
@@ -1112,6 +1188,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                                 }],
                             )
                             .await?;
+                            db::transactions::set_payee(&mut *tx, leg.id, None).await?;
                             leg
                         }
                         None => {
@@ -1133,6 +1210,7 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                                 origin: TransactionOrigin::Manual,
                                 recurring_rule_id: None,
                                 fingerprint: None,
+                                payee_id: None,
                             };
                             super::transactions::insert_validated(
                                 &mut tx,

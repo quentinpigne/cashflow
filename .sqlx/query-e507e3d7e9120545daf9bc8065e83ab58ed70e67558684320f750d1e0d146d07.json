@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT coalesce(t.bank_label, t.label) AS \"label!: String\", t.payee_id AS \"payee_id!\"\n           FROM ledger_transaction t JOIN payee p ON p.id = t.payee_id\n           WHERE p.archived = 0\n           ORDER BY t.date DESC, t.id DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "label!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "name": "payee_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "payee_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "e507e3d7e9120545daf9bc8065e83ab58ed70e67558684320f750d1e0d146d07"
+}

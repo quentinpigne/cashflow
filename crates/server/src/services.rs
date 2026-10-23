@@ -14,6 +14,7 @@ pub mod features;
 pub mod imports;
 pub mod institutions;
 pub mod loans;
+pub mod payees;
 pub mod projections;
 pub mod reconciliation;
 pub mod recurring;
@@ -65,6 +66,8 @@ mod budget_tests;
 mod import_tests;
 #[cfg(test)]
 mod loan_tests;
+#[cfg(test)]
+mod payee_tests;
 #[cfg(test)]
 mod projection_tests;
 #[cfg(test)]

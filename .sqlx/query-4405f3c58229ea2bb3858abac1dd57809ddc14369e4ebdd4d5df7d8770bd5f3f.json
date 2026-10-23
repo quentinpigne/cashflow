@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\"\n           FROM ledger_transaction WHERE id = ?",
+  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\", payee_id AS \"payee_id?\"\n           FROM ledger_transaction WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -134,6 +134,17 @@
             "name": "origin"
           }
         }
+      },
+      {
+        "name": "payee_id?",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "payee_id"
+          }
+        }
       }
     ],
     "parameters": {
@@ -151,8 +162,9 @@
       true,
       false,
       false,
+      true,
       true
     ]
   },
-  "hash": "18b6ca308bfd6bb91692d15a22b4944df8da98487624197563ad94b4460542f9"
+  "hash": "4405f3c58229ea2bb3858abac1dd57809ddc14369e4ebdd4d5df7d8770bd5f3f"
 }

@@ -11,6 +11,7 @@ import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
 import { BulkCategorizeResult } from '../models/bulk-categorize-result';
+import { BulkPayeeResult } from '../models/bulk-payee-result';
 import { Candidate } from '../models/candidate';
 import { categorizeSplit } from '../fn/transactions/categorize-split';
 import { CategorizeSplit$Params } from '../fn/transactions/categorize-split';
@@ -30,6 +31,8 @@ import { listTransactions } from '../fn/transactions/list-transactions';
 import { ListTransactions$Params } from '../fn/transactions/list-transactions';
 import { markAsTransfer } from '../fn/transactions/mark-as-transfer';
 import { MarkAsTransfer$Params } from '../fn/transactions/mark-as-transfer';
+import { setTransactionsPayee } from '../fn/transactions/set-transactions-payee';
+import { SetTransactionsPayee$Params } from '../fn/transactions/set-transactions-payee';
 import { TransactionCreated } from '../models/transaction-created';
 import { TransactionDetail } from '../models/transaction-detail';
 import { TransactionPage } from '../models/transaction-page';
@@ -224,6 +227,41 @@ export class TransactionsService extends BaseService {
     const resp = this.categorizeTransactions$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<BulkCategorizeResult>): BulkCategorizeResult => r.body)
+    );
+  }
+
+  /** Path part for operation `setTransactionsPayee()` */
+  static readonly SetTransactionsPayeePath = '/api/v1/transactions/payee';
+
+  /**
+   * Affecte ou retire un tiers sur plusieurs transactions (TIE-02) ; les jambes de virement sont ignorées (R-TIE-11).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `setTransactionsPayee()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsPayee$Response(params: SetTransactionsPayee$Params, context?: HttpContext): Observable<StrictHttpResponse<BulkPayeeResult>> {
+    const obs = setTransactionsPayee(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Affecte ou retire un tiers sur plusieurs transactions (TIE-02) ; les jambes de virement sont ignorées (R-TIE-11).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `setTransactionsPayee$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsPayee(params: SetTransactionsPayee$Params, context?: HttpContext): Observable<BulkPayeeResult> {
+    const resp = this.setTransactionsPayee$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BulkPayeeResult>): BulkPayeeResult => r.body)
     );
   }
 

@@ -214,6 +214,7 @@ async fn r_pre_8_a_paid_installment_is_locked_until_its_split_is_undone() {
         label: label.into(),
         note: None,
         splits: None,
+        payee_id: None,
     };
     assert_eq!(
         code(transactions::update(&db, payment, &update(-120_000, "Échéance")).await.unwrap_err()),
@@ -304,6 +305,7 @@ async fn r_prj_10_payer_cash_projection_counts_each_installment_once() {
         end_date: None,
         split_template: Vec::new(),
         active: true,
+        payee_id: None,
     };
     recurring::save(&db, None, &duplicate, d("2026-01-31")).await.unwrap();
     let query = CashQuery { days: Some(60), variable: Some(false), threshold_minor: None };

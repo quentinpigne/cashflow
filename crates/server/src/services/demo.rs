@@ -10,14 +10,14 @@ use anyhow::{Context, bail};
 use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::assets::AssetKind;
 use cashflow_domain::loans::{Insurance, LoanKind, LoanTerms};
-use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId, PayeeId};
 use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
 use super::{
-    accounts, auth, budgets, categories, imports, institutions, reconciliation, recurring, rules, savings, seed,
-    transactions, transfers,
+    accounts, auth, budgets, categories, imports, institutions, payees, reconciliation, recurring, rules, savings,
+    seed, transactions, transfers,
 };
 use crate::db::Db;
 
@@ -238,6 +238,7 @@ async fn spend(
         note: None,
         category_id: category,
         splits: None,
+        payee_id: None,
     };
     transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{label} le {date} : {e}"))?;
     Ok(())
@@ -377,6 +378,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
                         ..Default::default()
                     },
                 ]),
+                payee_id: None,
             };
             transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
         }
@@ -538,6 +540,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
         .collect();
     super::loans::pay(db, loan, &payments).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     valuations(db, start, today, life, pea).await?;
+    payees(db).await?;
     recurrences(db, &c, start, today, checking, livret_a, life).await?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
@@ -552,6 +555,107 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Tiers et groupes de tiers (spec 11), affectés aux transactions déjà saisies d'après leur libellé ; une règle
+/// affecte le tiers des stations-service (R-TIE-16).
+async fn payees(db: &Db) -> anyhow::Result<()> {
+    use super::payees::{PayeeGroupInput, PayeeInput};
+    use cashflow_domain::import::rules::{Actions, Conditions, LabelCondition, LabelField, LabelOp};
+    let err = |e: crate::error::AppError| anyhow::anyhow!("{e}");
+    let mut groups = HashMap::new();
+    for name in ["Carrefour", "TotalEnergies", "Santé"] {
+        let input = PayeeGroupInput { name: name.into(), note: None };
+        groups.insert(name, payees::create_group(db, &input).await.map_err(err)?);
+    }
+    let list = [
+        ("Carrefour Meylan", Some("Carrefour")),
+        ("Carrefour Market Grenoble", Some("Carrefour")),
+        ("Biocoop Grenoble", None),
+        ("TotalEnergies Meylan", Some("TotalEnergies")),
+        ("Le Bistrot du Coin", None),
+        ("Pizzeria Napoli", None),
+        ("Marché de Meylan", None),
+        ("Propriétaire", None),
+        ("Free", None),
+        ("EDF", None),
+        ("Acme Industries", None),
+        ("LCL", None),
+        ("MAIF", None),
+        ("Dr Martin", Some("Santé")),
+        ("CPAM", Some("Santé")),
+    ];
+    let mut ids = HashMap::new();
+    for (name, group) in list {
+        let input = PayeeInput {
+            name: name.into(),
+            group_id: group.and_then(|g| groups.get(g).copied()),
+            archived: false,
+            note: None,
+        };
+        ids.insert(name, payees::create(db, &input).await.map_err(err)?);
+    }
+    // Les supermarchés et les restaurants alternent d'un mois à l'autre.
+    let rotations: [(&str, &[&str]); 3] = [
+        ("CARTE SUPERMARCHE", &["Carrefour Meylan", "Carrefour Market Grenoble", "Biocoop Grenoble"]),
+        ("CARTE RESTAURANT", &["Le Bistrot du Coin", "Pizzeria Napoli"]),
+        ("CARREFOUR MARKET", &["Carrefour Market Grenoble"]),
+    ];
+    let fixed = [
+        ("Marché", "Marché de Meylan"),
+        ("LOYER APPARTEMENT", "Propriétaire"),
+        ("BOX INTERNET", "Free"),
+        ("FORFAIT MOBILE", "Free"),
+        ("ENERGIE ELEC GAZ", "EDF"),
+        ("VIREMENT SALAIRE", "Acme Industries"),
+        ("PRIME 13E MOIS", "Acme Industries"),
+        ("ECHEANCE PRET IMMO", "LCL"),
+        ("ASSURANCE AUTO ECHEANCE", "MAIF"),
+        ("MEDECIN GENERALISTE", "Dr Martin"),
+        ("REMBOURSEMENT CPAM", "CPAM"),
+    ];
+    let all = transactions::list_all(db, &transactions::TransactionFilter { limit: Some(1000), ..Default::default() })
+        .await
+        .map_err(err)?;
+    let mut chosen: HashMap<PayeeId, Vec<cashflow_domain::shared::ids::TransactionId>> = HashMap::new();
+    let mut seen: HashMap<&str, usize> = HashMap::new();
+    for t in all.items.iter().rev() {
+        let name = if let Some((label, names)) = rotations.iter().find(|(l, _)| *l == t.label) {
+            let n = seen.entry(label).or_default();
+            *n += 1;
+            Some(names[*n % names.len()])
+        } else {
+            fixed.iter().find(|(l, _)| *l == t.label).map(|(_, p)| *p)
+        };
+        if let Some(payee) = name.and_then(|n| ids.get(n)) {
+            chosen.entry(*payee).or_default().push(t.id);
+        }
+    }
+    for (payee, transaction_ids) in chosen {
+        let input = transactions::BulkPayeeInput { transaction_ids, payee_id: Some(payee) };
+        transactions::set_payee_many(db, &input).await.map_err(err)?;
+    }
+    let station = rules::RuleInput {
+        name: "Station-service".into(),
+        priority: 10,
+        conditions: Conditions {
+            label: Some(LabelCondition {
+                op: LabelOp::Contains,
+                value: "STATION SERVICE".into(),
+                field: LabelField::Label,
+            }),
+            ..Default::default()
+        },
+        actions: Actions { set_payee: ids.get("TotalEnergies Meylan").copied(), ..Default::default() },
+        stop_processing: false,
+        active: true,
+    };
+    let rule = rules::save(db, None, &station).await.map_err(err)?;
+    let matches =
+        rules::preview(db, &station.conditions, &rules::PreviewQuery { sets_payee: Some(true) }).await.map_err(err)?;
+    let apply = rules::ApplyInput { transaction_ids: matches.into_iter().map(|m| m.transaction_id).collect() };
+    rules::apply(db, rule.id, &apply).await.map_err(err)?;
+    Ok(())
+}
+
 /// Les échéances régulières du compte courant (TRX-07), qui alimentent la projection de trésorerie.
 async fn recurrences(
     db: &Db,
@@ -563,6 +667,23 @@ async fn recurrences(
     life: AccountId,
 ) -> anyhow::Result<()> {
     use cashflow_domain::recurrence::Frequency;
+    let payees: HashMap<String, PayeeId> = payees::list(db)
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .payees
+        .into_iter()
+        .map(|p| (p.name, p.id))
+        .collect();
+    let payee_of = |label: &str| {
+        let name = match label {
+            "Loyer" => "Propriétaire",
+            "Box internet" | "Forfait mobile" => "Free",
+            "Électricité et gaz" => "EDF",
+            "Salaire" => "Acme Industries",
+            _ => return None,
+        };
+        payees.get(name).copied()
+    };
     let rules = [
         ("Loyer", 3, -89_000, c.get("Logement", "Loyer"), None, 0),
         ("Box internet", 6, -2_999, c.get("Abonnements", "Internet"), None, 0),
@@ -589,6 +710,7 @@ async fn recurrences(
                 vec![crate::db::recurring::TemplateSplit { category_id: category, amount_minor: amount }]
             },
             active: true,
+            payee_id: payee_of(label),
         };
         recurring::save(db, None, &input, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
@@ -716,6 +838,7 @@ async fn budget(
                 project_id: Some(project.id),
                 ..Default::default()
             }]),
+            payee_id: None,
         };
         transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }

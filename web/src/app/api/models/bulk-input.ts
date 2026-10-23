@@ -4,8 +4,10 @@
 import { CategoryId } from '../models/category-id';
 import { ImportDecision } from '../models/import-decision';
 import { ImportLineId } from '../models/import-line-id';
+import { PayeeId } from '../models/payee-id';
 export interface BulkInput {
   category_id?: (CategoryId | null);
   decision?: (ImportDecision | null);
   line_ids: Array<ImportLineId>;
+  payee_id?: (PayeeId | null);
 }

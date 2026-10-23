@@ -71,6 +71,7 @@ pub(super) fn tx(account: AccountId, date: &str, amount: i64, category: Option<C
         note: None,
         category_id: category,
         splits: None,
+        payee_id: None,
     }
 }
 
@@ -154,6 +155,7 @@ async fn r_trx_4_single_split_follows_amount_multiple_splits_must_be_rebalanced(
         label: "Test".into(),
         note: None,
         splits: None,
+        payee_id: None,
     };
     transactions::update(&db, single, &update(-1_500)).await.unwrap();
     let detail = transactions::get(&db, single).await.unwrap();
@@ -218,6 +220,7 @@ async fn trx_05_transfer_moves_money_without_changing_net_worth() {
         label: "Épargne".into(),
         note: None,
         splits: None,
+        payee_id: None,
     };
     transactions::update(&db, created.outflow_transaction_id, &update).await.unwrap();
     assert_eq!(balance(&db, livret, TODAY).await, 25_000);

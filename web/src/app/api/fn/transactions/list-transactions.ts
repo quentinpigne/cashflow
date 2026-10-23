@@ -10,6 +10,8 @@ import { RequestBuilder } from '../../request-builder';
 import { AccountId } from '../../models/account-id';
 import { CategoryId } from '../../models/category-id';
 import { ClearingStatus } from '../../models/clearing-status';
+import { PayeeGroupId } from '../../models/payee-group-id';
+import { PayeeId } from '../../models/payee-id';
 import { TransactionPage } from '../../models/transaction-page';
 
 export interface ListTransactions$Params {
@@ -47,6 +49,21 @@ export interface ListTransactions$Params {
  * Recherche dans le libellé, le libellé bancaire et la note.
  */
   text?: string;
+
+/**
+ * Tiers (TIE-04).
+ */
+  payee_id?: PayeeId;
+
+/**
+ * Tiers de ce groupe.
+ */
+  payee_group_id?: PayeeGroupId;
+
+/**
+ * Seulement les transactions sans tiers, hors virements.
+ */
+  without_payee?: boolean;
   cursor?: string;
 
 /**
@@ -68,6 +85,9 @@ export function listTransactions(http: HttpClient, rootUrl: string, params: List
     rb.query('min_amount_minor', params.min_amount_minor, {});
     rb.query('max_amount_minor', params.max_amount_minor, {});
     rb.query('text', params.text, {});
+    rb.query('payee_id', params.payee_id, {});
+    rb.query('payee_group_id', params.payee_group_id, {});
+    rb.query('without_payee', params.without_payee, {});
     rb.query('cursor', params.cursor, {});
     rb.query('limit', params.limit, {});
   }

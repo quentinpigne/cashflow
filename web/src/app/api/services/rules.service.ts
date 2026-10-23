@@ -102,7 +102,7 @@ export class RulesService extends BaseService {
   static readonly PreviewRulePath = '/api/v1/rules/preview';
 
   /**
-   * Transactions non catégorisées concernées par ces conditions (aperçu, R-IMP-19).
+   * Transactions non catégorisées (ou sans tiers, R-TIE-19) concernées par ces conditions (aperçu, R-IMP-19).
    *
    *
    *
@@ -117,7 +117,7 @@ export class RulesService extends BaseService {
   }
 
   /**
-   * Transactions non catégorisées concernées par ces conditions (aperçu, R-IMP-19).
+   * Transactions non catégorisées (ou sans tiers, R-TIE-19) concernées par ces conditions (aperçu, R-IMP-19).
    *
    *
    *

@@ -3,6 +3,7 @@
 
 import { AccountId } from '../models/account-id';
 import { Frequency } from '../models/frequency';
+import { PayeeId } from '../models/payee-id';
 import { RecurringRuleId } from '../models/recurring-rule-id';
 import { TemplateSplit } from '../models/template-split';
 export interface RecurringRuleView {
@@ -26,6 +27,7 @@ export interface RecurringRuleView {
    */
   missed: Array<string>;
   next_date?: (string | null);
+  payee_id?: (PayeeId | null);
   split_template: Array<TemplateSplit>;
   target_account_id?: (AccountId | null);
 }

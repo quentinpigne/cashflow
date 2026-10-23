@@ -3,6 +3,7 @@
 
 import { AccountId } from '../models/account-id';
 import { Frequency } from '../models/frequency';
+import { PayeeId } from '../models/payee-id';
 import { TemplateSplit } from '../models/template-split';
 export interface RecurringRuleInput {
   account_id: AccountId;
@@ -14,6 +15,7 @@ export interface RecurringRuleInput {
   frequency: Frequency;
   interval?: number;
   label: string;
+  payee_id?: (PayeeId | null);
   split_template?: Array<TemplateSplit>;
   target_account_id?: (AccountId | null);
 }

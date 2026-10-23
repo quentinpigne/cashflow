@@ -1,11 +1,11 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use cashflow_domain::import::rules::Conditions;
 use cashflow_domain::shared::ids::CategorizationRuleId;
 
 use crate::error::{AppResult, Problem};
-use crate::services::rules::{self, ApplyInput, ApplyResult, RuleInput, RuleMatch, RuleView};
+use crate::services::rules::{self, ApplyInput, ApplyResult, PreviewQuery, RuleInput, RuleMatch, RuleView};
 use crate::state::AppState;
 
 /// Règles de catégorisation, par priorité (IMP-08).
@@ -46,16 +46,17 @@ pub async fn delete(State(state): State<AppState>, Path(id): Path<Categorization
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Transactions non catégorisées concernées par ces conditions (aperçu, R-IMP-19).
+/// Transactions non catégorisées (ou sans tiers, R-TIE-19) concernées par ces conditions (aperçu, R-IMP-19).
 #[utoipa::path(
-    post, operation_id = "previewRule", path = "/rules/preview", tag = "rules", request_body = Conditions,
-    responses((status = 200, body = Vec<RuleMatch>), (status = 422, body = Problem))
+    post, operation_id = "previewRule", path = "/rules/preview", tag = "rules", params(PreviewQuery),
+    request_body = Conditions, responses((status = 200, body = Vec<RuleMatch>), (status = 422, body = Problem))
 )]
 pub async fn preview(
     State(state): State<AppState>,
+    Query(query): Query<PreviewQuery>,
     Json(conditions): Json<Conditions>,
 ) -> AppResult<Json<Vec<RuleMatch>>> {
-    Ok(Json(rules::preview(&state.db, &conditions).await?))
+    Ok(Json(rules::preview(&state.db, &conditions, &query).await?))
 }
 
 /// Applique une règle aux transactions choisies dans l'aperçu (R-IMP-19).

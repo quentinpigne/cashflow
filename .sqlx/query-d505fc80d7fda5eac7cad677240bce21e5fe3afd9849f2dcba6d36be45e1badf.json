@@ -1,0 +1,69 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.payee_id AS \"payee_id!\", t.id AS \"id!\", t.date AS \"date!: Date\",\n                  (SELECT count(*) FROM split x WHERE x.transaction_id = t.id) AS \"split_count!: i64\",\n                  (SELECT x.category_id FROM split x WHERE x.transaction_id = t.id ORDER BY x.position LIMIT 1)\n                      AS \"category_id?\"\n           FROM ledger_transaction t WHERE t.payee_id IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "payee_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "payee_id"
+          }
+        }
+      },
+      {
+        "name": "id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date!: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "split_count!: i64",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "category_id?",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "category_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d505fc80d7fda5eac7cad677240bce21e5fe3afd9849f2dcba6d36be45e1badf"
+}

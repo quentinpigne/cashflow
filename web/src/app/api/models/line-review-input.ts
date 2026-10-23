@@ -4,6 +4,7 @@
 import { AccountId } from '../models/account-id';
 import { DraftSplit } from '../models/draft-split';
 import { ImportDecision } from '../models/import-decision';
+import { PayeeId } from '../models/payee-id';
 import { TransactionId } from '../models/transaction-id';
 
 /**
@@ -14,6 +15,7 @@ export interface LineReviewInput {
   label?: (string | null);
   match_transaction_id?: (TransactionId | null);
   note?: (string | null);
+  payee_id?: (PayeeId | null);
 
   /**
    * Ventilation de la transaction créée ; sans ventilation, une seule non catégorisée.

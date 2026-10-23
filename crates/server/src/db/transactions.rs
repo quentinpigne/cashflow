@@ -3,7 +3,7 @@
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, CategoryId, LoanId, ProjectId, RecurringRuleId, SplitId, TransactionId, TransferId,
+    AccountId, AssetId, CategoryId, LoanId, PayeeId, ProjectId, RecurringRuleId, SplitId, TransactionId, TransferId,
 };
 use cashflow_domain::{Date, Money};
 use sqlx::{SqliteConnection, SqliteExecutor};
@@ -25,6 +25,8 @@ pub struct TransactionRow {
     pub note: Option<String>,
     pub clearing_status: ClearingStatus,
     pub origin: TransactionOrigin,
+    /// Tiers de la transaction (spec 11).
+    pub payee_id: Option<PayeeId>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +70,7 @@ pub struct NewTransaction<'a> {
     pub origin: TransactionOrigin,
     pub recurring_rule_id: Option<RecurringRuleId>,
     pub fingerprint: Option<&'a str>,
+    pub payee_id: Option<PayeeId>,
 }
 
 #[derive(Default)]
@@ -96,6 +99,7 @@ macro_rules! transaction_row {
             note: r.note,
             clearing_status: enum_from_db(&r.clearing_status)?,
             origin: enum_from_db(&r.origin)?,
+            payee_id: opt_id_from_db(r.payee_id.as_deref())?,
         })
     }};
 }
@@ -123,7 +127,7 @@ pub async fn list_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!"
+                  origin AS "origin!", payee_id AS "payee_id?"
            FROM ledger_transaction WHERE account_id = ? ORDER BY balance_date, id"#,
         account
     )
@@ -138,7 +142,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::Res
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!"
+                  origin AS "origin!", payee_id AS "payee_id?"
            FROM ledger_transaction WHERE id = ?"#,
         id
     )
@@ -268,11 +272,13 @@ pub async fn insert(
     let status = enum_to_db(&t.clearing_status);
     let origin = enum_to_db(&t.origin);
     let rule = t.recurring_rule_id.map(|r| r.to_string());
+    let payee = t.payee_id.map(|p| p.to_string());
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO ledger_transaction (id, account_id, date, bank_date, value_date, amount, bank_label, label, note,
-                                         clearing_status, origin, recurring_rule_id, fingerprint, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                         clearing_status, origin, recurring_rule_id, fingerprint, payee_id, created_at,
+                                         updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         id,
         account,
         t.date,
@@ -286,6 +292,7 @@ pub async fn insert(
         origin,
         rule,
         t.fingerprint,
+        payee,
         now,
         now
     )
@@ -304,6 +311,7 @@ pub struct TransactionUpdate<'a> {
     pub label: &'a str,
     pub note: Option<&'a str>,
     pub clearing_status: ClearingStatus,
+    pub payee_id: Option<PayeeId>,
 }
 
 pub async fn update(db: impl SqliteExecutor<'_>, id: TransactionId, u: &TransactionUpdate<'_>) -> anyhow::Result<()> {
@@ -311,10 +319,11 @@ pub async fn update(db: impl SqliteExecutor<'_>, id: TransactionId, u: &Transact
     let account = u.account_id.to_string();
     let amount = u.amount.minor();
     let status = enum_to_db(&u.clearing_status);
+    let payee = u.payee_id.map(|p| p.to_string());
     let now = timestamp();
     sqlx::query!(
         "UPDATE ledger_transaction SET account_id = ?, date = ?, bank_date = ?, value_date = ?, amount = ?, label = ?,
-                                       note = ?, clearing_status = ?, updated_at = ?
+                                       note = ?, clearing_status = ?, payee_id = ?, updated_at = ?
          WHERE id = ?",
         account,
         u.date,
@@ -324,6 +333,7 @@ pub async fn update(db: impl SqliteExecutor<'_>, id: TransactionId, u: &Transact
         u.label,
         u.note,
         status,
+        payee,
         now,
         id
     )
@@ -398,6 +408,17 @@ pub async fn set_split_category(
     )
     .execute(db)
     .await?;
+    Ok(())
+}
+
+/// Change le tiers d'une transaction, sans toucher au reste : il n'affecte pas le solde (R-TIE-12).
+pub async fn set_payee(db: impl SqliteExecutor<'_>, id: TransactionId, payee: Option<PayeeId>) -> anyhow::Result<()> {
+    let id = id.to_string();
+    let payee = payee.map(|p| p.to_string());
+    let now = timestamp();
+    sqlx::query!("UPDATE ledger_transaction SET payee_id = ?, updated_at = ? WHERE id = ?", payee, now, id)
+        .execute(db)
+        .await?;
     Ok(())
 }
 
@@ -480,7 +501,7 @@ pub async fn transfer_candidates(
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!"
+                  origin AS "origin!", payee_id AS "payee_id?"
            FROM ledger_transaction t
            WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?
              AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
@@ -639,7 +660,7 @@ pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Transac
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!"
+                  origin AS "origin!", payee_id AS "payee_id?"
            FROM ledger_transaction ORDER BY date, id"#
     )
     .fetch_all(db)

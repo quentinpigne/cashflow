@@ -24,6 +24,7 @@ fn rule(account: AccountId, label: &str, amount: i64, anchor: &str) -> Recurring
         end_date: None,
         split_template: Vec::new(),
         active: true,
+        payee_id: None,
     }
 }
 
