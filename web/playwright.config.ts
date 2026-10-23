@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   workers: 1,
+  // Un écran qui calcule beaucoup (accueil, analyses) peut dépasser 5 s sur une machine chargée ou en CI.
+  expect: { timeout: 10_000 },
   reporter: [['list']],
   use: {
     baseURL: 'http://127.0.0.1:3100',
@@ -15,7 +17,10 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'ordinateur', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 } } },
+    {
+      name: 'ordinateur',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 } },
+    },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {

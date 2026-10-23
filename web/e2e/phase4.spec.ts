@@ -64,8 +64,12 @@ test('E20 : créer un projet et y rattacher une transaction (BUD-06)', async ({ 
 test('E21 : centre de notifications (BUD-08)', async ({ page }) => {
   await login(page);
   const bell = page.getByRole('button', { name: /^Notifications/ });
-  await bell.click();
-  await expect(page.getByRole('menuitem', { name: /seuil/i }).first()).toBeVisible();
+  const alert = page.getByRole('menuitem', { name: /seuil/i }).first();
+  // Un clic parti avant que le menu soit prêt ne l'ouvre pas : on réessaie tant qu'il est fermé.
+  await expect(async () => {
+    if (!(await page.getByRole('menu').isVisible())) await bell.click();
+    await expect(alert).toBeVisible({ timeout: 2_000 });
+  }).toPass();
   const markAll = page.getByRole('button', { name: 'Tout marquer comme lu' });
   if (await markAll.isVisible()) {
     await markAll.click();
