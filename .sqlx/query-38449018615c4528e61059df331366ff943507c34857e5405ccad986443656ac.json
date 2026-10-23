@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO import_line (id, batch_id, line_number, raw, date, value_date, amount, bank_label, fingerprint, errors,\n                                  match_kind, match_transaction_id, match_score, suggested, decision, purchase_date,\n                                  created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?17, ?16, ?16)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 17
+    },
+    "nullable": []
+  },
+  "hash": "38449018615c4528e61059df331366ff943507c34857e5405ccad986443656ac"
+}

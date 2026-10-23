@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, batch_id, line_number, raw, date AS \"date: Date\", value_date AS \"value_date: Date\", amount, bank_label,\n                  fingerprint, errors, match_kind, match_transaction_id, match_score, suggested, decision, transaction_id\n           FROM import_line WHERE batch_id = ? ORDER BY line_number",
+  "query": "SELECT id, batch_id, line_number, raw, date AS \"date: Date\", value_date AS \"value_date: Date\",\n                  purchase_date AS \"purchase_date: Date\", amount, bank_label, fingerprint, errors, match_kind, match_transaction_id, match_score, suggested, decision, transaction_id\n           FROM import_line WHERE batch_id = ? ORDER BY line_number",
   "describe": {
     "columns": [
       {
@@ -70,8 +70,19 @@
         }
       },
       {
-        "name": "amount",
+        "name": "purchase_date: Date",
         "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_line",
+            "name": "purchase_date"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 7,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -82,7 +93,7 @@
       },
       {
         "name": "bank_label",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -93,7 +104,7 @@
       },
       {
         "name": "fingerprint",
-        "ordinal": 8,
+        "ordinal": 9,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -104,7 +115,7 @@
       },
       {
         "name": "errors",
-        "ordinal": 9,
+        "ordinal": 10,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -115,7 +126,7 @@
       },
       {
         "name": "match_kind",
-        "ordinal": 10,
+        "ordinal": 11,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -126,7 +137,7 @@
       },
       {
         "name": "match_transaction_id",
-        "ordinal": 11,
+        "ordinal": 12,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -137,7 +148,7 @@
       },
       {
         "name": "match_score",
-        "ordinal": 12,
+        "ordinal": 13,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -148,7 +159,7 @@
       },
       {
         "name": "suggested",
-        "ordinal": 13,
+        "ordinal": 14,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -159,7 +170,7 @@
       },
       {
         "name": "decision",
-        "ordinal": 14,
+        "ordinal": 15,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -170,7 +181,7 @@
       },
       {
         "name": "transaction_id",
-        "ordinal": 15,
+        "ordinal": 16,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -193,6 +204,7 @@
       true,
       true,
       true,
+      true,
       false,
       false,
       true,
@@ -202,5 +214,5 @@
       true
     ]
   },
-  "hash": "e8e6962252daaa9df3deff46a4d03d8423af00fbce74526ef959f03d19fd6352"
+  "hash": "7347c05a22679c38d6b0760cb296782ee03e52c8c1baa54a6082fc418c2f299f"
 }

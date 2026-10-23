@@ -9289,6 +9289,7 @@
           "CSV",
           "XLSX",
           "OFX",
+          "PDF",
           "PDF_OCR"
         ]
       },
@@ -9685,6 +9686,14 @@
                 "type": "null"
               }
             ]
+          },
+          "purchase_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Date d'achat d'un paiement par carte, date de la transaction créée (R-IMP-26)."
           },
           "raw": {},
           "splits": {

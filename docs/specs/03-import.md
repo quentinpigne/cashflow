@@ -175,7 +175,8 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
 - **R-IMP-24** — **Table des opérations.** Sur chaque page, la table commence sous la ligne d'en-têtes `DATE`,
   `LIBELLE`, `VALEUR`, `DEBIT`, `CREDIT` ; l'abscisse des en-têtes donne les colonnes. Un montant au crédit est
   positif, au débit négatif (R-IMP-2). Une ligne **sans date** est la suite du libellé de la ligne précédente
-  (ajoutée après un saut de ligne). Le pied de page (« Page n / m ») est ignoré.
+  (ajoutée après un saut de ligne) ; le libellé de la transaction créée n'en reprend que la première ligne, le
+  libellé bancaire garde tout. Le pied de page (« Page n / m ») est ignoré.
 - **R-IMP-25** — **Soldes et période.** La période est lue en tête (`du jj.mm.aaaa au jj.mm.aaaa`). La ligne
   `ANCIEN SOLDE` donne le solde de début, `SOLDE EN EUROS` le solde de fin et sa date ; elles ne sont pas des
   opérations. `SOLDE INTERMEDIAIRE …` et `TOTAUX` sont ignorées. La lecture s'arrête après `SOLDE EN EUROS`.

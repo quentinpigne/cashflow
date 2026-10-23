@@ -393,3 +393,71 @@ async fn r_imp_22_loan_payment_is_proposed_after_import() {
     let proposal = &result.loan_payments[0];
     assert_eq!((proposal.installment_number, proposal.principal_minor, proposal.interest_minor), (1, 60_920, 50_000));
 }
+
+/// IMP-10 : un relevé PDF LCL (fictif) importé, validé, et rapproché à zéro (R-IMP-23 à R-IMP-26).
+#[tokio::test]
+async fn imp_10_lcl_pdf_statement_is_imported_with_purchase_dates() {
+    let (db, data, _dir) = setup().await;
+    let input = AccountInput {
+        name: "Courant".into(),
+        kind: AccountKind::Checking,
+        institution_id: None,
+        currency: None,
+        opening_date: d("2025-12-02"),
+        opening_balance_minor: 125_000,
+        iban: None,
+        account_number: None,
+        include_in_net_worth: None,
+        include_in_emergency_fund: None,
+        include_in_budget: None,
+        display_order: None,
+        color: None,
+        notes: None,
+    };
+    let checking = accounts::create(&db, &input, d(TODAY)).await.unwrap().id;
+    let upload = Upload {
+        file_name: "releve.pdf".into(),
+        content: std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/lcl/releve-fictif.pdf")).unwrap(),
+        account_id: checking,
+        profile_id: None,
+        format: None,
+        settings: None,
+        save_profile_as: Some("ignoré".into()),
+    };
+    let created = imports::start(&db, &data, &upload, d(TODAY)).await.unwrap();
+    assert_eq!(created.profile_id, None, "un relevé PDF n'a pas de profil (R-IMP-23)");
+    let batch = imports::get(&db, &data, created.batch_id).await.unwrap();
+    assert_eq!(batch.lines.len(), 7);
+    assert_eq!(batch.statement.gap_minor, Some(0), "contrôle du relevé (R-IMP-18)");
+
+    let result = imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    assert_eq!(result.created, 7);
+    assert!(result.checkpoints.iter().all(|c| c.gap_minor == 0));
+    let card = batch_transaction(&db, &data, batch.summary.id, 6).await;
+    let card = transactions::get(&db, card).await.unwrap();
+    assert_eq!(card.date, d("2025-12-31"), "date d'achat (R-IMP-26)");
+    assert_eq!(card.bank_date, Some(d("2026-01-02")));
+    assert_eq!(card.value_date, Some(d("2026-01-02")));
+    assert_eq!(card.balance_date, d("2026-01-02"), "les soldes suivent la banque (R-TRX-7)");
+    let salary = transactions::get(&db, batch_transaction(&db, &data, batch.summary.id, 0).await).await.unwrap();
+    assert_eq!(salary.label, "VIREMENT EMPLOYEUR FICTIF", "première ligne du libellé (R-IMP-24)");
+    assert!(salary.bank_label.unwrap().contains("REF.CLIENT"));
+}
+
+#[tokio::test]
+async fn r_imp_23_a_pdf_that_is_not_an_lcl_statement_is_refused() {
+    let (db, data, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let upload = Upload {
+        file_name: "facture.pdf".into(),
+        content: b"%PDF-1.4 pas vraiment un PDF".to_vec(),
+        account_id: checking,
+        profile_id: None,
+        format: None,
+        settings: None,
+        save_profile_as: None,
+    };
+    let refused = imports::start(&db, &data, &upload, d(TODAY)).await;
+    assert!(matches!(refused, Err(AppError::Invalid { code: "UNREADABLE_FILE", .. })));
+    assert!(imports::list(&db, &data).await.unwrap().is_empty(), "aucun lot créé");
+}

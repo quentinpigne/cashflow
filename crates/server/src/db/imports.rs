@@ -257,6 +257,8 @@ pub struct LineRow {
     pub raw: Value,
     pub date: Option<Date>,
     pub value_date: Option<Date>,
+    /// Date d'achat d'un paiement par carte (R-IMP-26).
+    pub purchase_date: Option<Date>,
     pub amount: Option<Money>,
     pub bank_label: Option<String>,
     pub fingerprint: Option<String>,
@@ -279,6 +281,7 @@ macro_rules! line_row {
             raw: serde_json::from_str(&r.raw)?,
             date: r.date,
             value_date: r.value_date,
+            purchase_date: r.purchase_date,
             amount: r.amount.map(Money::from_minor),
             bank_label: r.bank_label,
             fingerprint: r.fingerprint,
@@ -306,8 +309,9 @@ pub async fn insert_line(db: impl SqliteExecutor<'_>, l: &LineRow) -> anyhow::Re
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO import_line (id, batch_id, line_number, raw, date, value_date, amount, bank_label, fingerprint, errors,
-                                  match_kind, match_transaction_id, match_score, suggested, decision, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?16)",
+                                  match_kind, match_transaction_id, match_score, suggested, decision, purchase_date,
+                                  created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?17, ?16, ?16)",
         id,
         batch,
         l.line_number,
@@ -323,7 +327,8 @@ pub async fn insert_line(db: impl SqliteExecutor<'_>, l: &LineRow) -> anyhow::Re
         l.match_score,
         suggested,
         decision,
-        now
+        now,
+        l.purchase_date
     )
     .execute(db)
     .await?;
@@ -333,8 +338,8 @@ pub async fn insert_line(db: impl SqliteExecutor<'_>, l: &LineRow) -> anyhow::Re
 pub async fn lines_of(db: impl SqliteExecutor<'_>, batch: ImportBatchId) -> anyhow::Result<Vec<LineRow>> {
     let batch = batch.to_string();
     let rows = sqlx::query!(
-        r#"SELECT id, batch_id, line_number, raw, date AS "date: Date", value_date AS "value_date: Date", amount, bank_label,
-                  fingerprint, errors, match_kind, match_transaction_id, match_score, suggested, decision, transaction_id
+        r#"SELECT id, batch_id, line_number, raw, date AS "date: Date", value_date AS "value_date: Date",
+                  purchase_date AS "purchase_date: Date", amount, bank_label, fingerprint, errors, match_kind, match_transaction_id, match_score, suggested, decision, transaction_id
            FROM import_line WHERE batch_id = ? ORDER BY line_number"#,
         batch
     )
@@ -350,7 +355,8 @@ pub async fn reviewing_lines_elsewhere(
 ) -> anyhow::Result<Vec<(AccountId, LineRow)>> {
     let batch = batch.to_string();
     let rows = sqlx::query!(
-        r#"SELECT l.id, l.batch_id, l.line_number, l.raw, l.date AS "date: Date", l.value_date AS "value_date: Date", l.amount,
+        r#"SELECT l.id, l.batch_id, l.line_number, l.raw, l.date AS "date: Date", l.value_date AS "value_date: Date",
+                  l.purchase_date AS "purchase_date: Date", l.amount,
                   l.bank_label, l.fingerprint, l.errors, l.match_kind, l.match_transaction_id, l.match_score, l.suggested,
                   l.decision, l.transaction_id, b.account_id AS "account_id!"
            FROM import_line l JOIN import_batch b ON b.id = l.batch_id

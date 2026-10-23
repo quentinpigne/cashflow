@@ -108,6 +108,7 @@ impl StatementReader for OfxReader {
                 bank_label,
                 fitid,
                 bank_category: None,
+                purchase_date: None,
                 errors,
             });
         }

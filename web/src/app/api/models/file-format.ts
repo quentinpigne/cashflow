@@ -5,5 +5,5 @@
 /**
  * Format d'un fichier de relevé (modèle de données, `ImportProfile.format`).
  */
-export type FileFormat = 'CSV' | 'XLSX' | 'OFX' | 'PDF_OCR';
+export type FileFormat = 'CSV' | 'XLSX' | 'OFX' | 'PDF' | 'PDF_OCR';
 

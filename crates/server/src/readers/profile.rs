@@ -320,6 +320,7 @@ pub fn apply(table: &Table, settings: &ProfileSettings, context: ReadContext) ->
             bank_label,
             fitid: None,
             bank_category: category_column.map(|c| cell_at(row, c).text()).filter(|t| !t.trim().is_empty()),
+            purchase_date: None,
             errors,
         });
     }

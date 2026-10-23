@@ -1,10 +1,12 @@
 //! Lecteurs de relevés (spec 03) : chaque format produit la même sortie, un [`Statement`].
 //!
-//! Ajouter un format revient à ajouter un lecteur ; le reste du pipeline ne change pas. Le PDF
-//! (IMP-10) et l'OCR (IMP-12, ADR-0007) s'ajouteront ici derrière le même trait.
+//! Ajouter un format revient à ajouter un lecteur ; le reste du pipeline ne change pas. L'OCR (IMP-12,
+//! ADR-0007) s'ajoutera ici derrière le même trait.
 
 pub mod csv;
+pub mod lcl_pdf;
 pub mod ofx;
+pub mod pdf;
 pub mod profile;
 pub mod xlsx;
 
@@ -19,6 +21,8 @@ pub enum FileFormat {
     Csv,
     Xlsx,
     Ofx,
+    /// PDF à texte extractible, lu par un parseur dédié à la banque (IMP-10).
+    Pdf,
     PdfOcr,
 }
 
@@ -27,7 +31,13 @@ impl FileFormat {
     pub fn detect(file_name: &str, content: &[u8]) -> Option<Self> {
         let lower = file_name.to_lowercase();
         let head = String::from_utf8_lossy(&content[..content.len().min(512)]).to_uppercase();
-        if lower.ends_with(".ofx") || lower.ends_with(".qfx") || head.contains("OFXHEADER") || head.contains("<OFX>") {
+        if lower.ends_with(".pdf") || content.starts_with(b"%PDF") {
+            Some(FileFormat::Pdf)
+        } else if lower.ends_with(".ofx")
+            || lower.ends_with(".qfx")
+            || head.contains("OFXHEADER")
+            || head.contains("<OFX>")
+        {
             Some(FileFormat::Ofx)
         } else if lower.ends_with(".xlsx")
             || lower.ends_with(".xlsm")
@@ -58,6 +68,8 @@ pub struct ReadLine {
     pub fitid: Option<String>,
     /// Catégorie fournie par la banque, si le profil la lit.
     pub bank_category: Option<String>,
+    /// Date d'achat d'un paiement par carte, lue dans le libellé (R-IMP-26).
+    pub purchase_date: Option<Date>,
     pub errors: Vec<String>,
 }
 

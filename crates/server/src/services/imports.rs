@@ -197,6 +197,8 @@ pub struct ImportLineView {
     pub line_number: i64,
     pub date: Option<Date>,
     pub value_date: Option<Date>,
+    /// Date d'achat d'un paiement par carte, date de la transaction créée (R-IMP-26).
+    pub purchase_date: Option<Date>,
     pub amount_minor: Option<i64>,
     pub bank_label: Option<String>,
     pub raw: Value,
@@ -402,7 +404,9 @@ fn read_table(upload: &Upload, settings: Option<&ProfileSettings>) -> AppResult<
                 readers::xlsx::table(&upload.content, settings.and_then(|s| s.sheet.as_deref())).map_err(unreadable)?;
             Ok(Read { format, encoding: None, delimiter: None, sheets, table: Some(table) })
         }
-        FileFormat::Ofx => Ok(Read { format, encoding: None, delimiter: None, sheets: Vec::new(), table: None }),
+        FileFormat::Ofx | FileFormat::Pdf => {
+            Ok(Read { format, encoding: None, delimiter: None, sheets: Vec::new(), table: None })
+        }
         FileFormat::PdfOcr => Err(AppError::invalid("FORMAT_UNAVAILABLE", "l'import PDF n'est pas encore disponible")),
     }
 }
@@ -416,6 +420,8 @@ fn read_statement(
     let unreadable = |e: readers::ReadError| AppError::invalid("UNREADABLE_FILE", e.to_string());
     match (read.format, &read.table) {
         (FileFormat::Ofx, _) => readers::ofx::OfxReader.read(&upload.content, context).map_err(unreadable),
+        // Seul le relevé LCL est reconnu pour l'instant (IMP-10) ; l'OCR viendra en V2 (IMP-12).
+        (FileFormat::Pdf, _) => readers::lcl_pdf::LclPdfReader.read(&upload.content, context).map_err(unreadable),
         (_, Some(table)) => {
             let settings = settings
                 .ok_or_else(|| AppError::invalid("SETTINGS_REQUIRED", "choisir un profil ou associer les colonnes"))?;
@@ -678,9 +684,9 @@ pub async fn start(db: &Db, data: &DataDir, upload: &Upload, today: Date) -> App
         return Err(AppError::invalid("EMPTY_STATEMENT", "aucune ligne lue dans ce fichier"));
     }
 
-    // Profil enregistré à partir des réglages de l'assistant (IMP-02).
+    // Profil enregistré à partir des réglages de l'assistant (IMP-02). Un relevé PDF n'a pas de profil (R-IMP-23).
     let mut profile_id = upload.profile_id;
-    if let Some(name) = clean(upload.save_profile_as.as_deref()) {
+    if let Some(name) = clean(upload.save_profile_as.as_deref()).filter(|_| read.format != FileFormat::Pdf) {
         let saved = save_profile(
             db,
             None,
@@ -773,6 +779,7 @@ pub async fn start(db: &Db, data: &DataDir, upload: &Upload, today: Date) -> App
             raw: serde_json::json!(line.raw),
             date: line.date,
             value_date: line.value_date,
+            purchase_date: line.purchase_date,
             amount: line.amount,
             bank_label: Some(line.bank_label.clone()).filter(|l| !l.is_empty()),
             fingerprint: print.clone(),
@@ -904,6 +911,7 @@ pub async fn get(db: &Db, data: &DataDir, id: ImportBatchId) -> AppResult<BatchD
                 line_number: l.line_number,
                 date: l.date,
                 value_date: l.value_date,
+                purchase_date: l.purchase_date,
                 amount_minor: l.amount.map(Money::minor),
                 bank_label: l.bank_label.clone(),
                 raw: l.raw.clone(),
@@ -1124,7 +1132,9 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                     }
                     (Some(splits), None) => splits.clone(),
                 };
-                let label = review.label.clone().unwrap_or_else(|| bank_label.to_owned());
+                // Un libellé bancaire sur plusieurs lignes (suites d'un relevé PDF) : la première suffit (R-IMP-24).
+                let label =
+                    review.label.clone().unwrap_or_else(|| bank_label.lines().next().unwrap_or(bank_label).to_owned());
                 let label: String = label.chars().take(200).collect();
                 // Une ligne forcée en création malgré un doublon n'emporte pas l'empreinte déjà utilisée.
                 let print = line.fingerprint.clone().filter(|p| !existing.contains(p));
@@ -1133,11 +1143,14 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
                     Some(p) => db::payees::find(&mut *tx, p).await?.map(|_| p),
                     None => None,
                 };
+                // La date d'achat d'un paiement par carte devient la date de la transaction ; la date bancaire reste
+                // celle de la ligne, pour les soldes et le rapprochement (R-IMP-11, R-IMP-26).
+                let shown = line.purchase_date.filter(|p| period(&account).check(*p).is_ok()).unwrap_or(date);
                 let transaction = TransactionId::new();
                 let new = NewTransaction {
                     id: transaction,
                     account_id: account.id,
-                    date,
+                    date: shown,
                     bank_date: Some(date),
                     value_date: line.value_date,
                     amount,

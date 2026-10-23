@@ -38,6 +38,11 @@ export interface ImportLineView {
    */
   payee_learned: boolean;
   proposal?: (TransferProposal | null);
+
+  /**
+   * Date d'achat d'un paiement par carte, date de la transaction créée (R-IMP-26).
+   */
+  purchase_date?: (string | null);
   raw: any;
   splits: Array<DraftSplit>;
 

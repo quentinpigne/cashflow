@@ -10,5 +10,6 @@ export const FILE_FORMAT: FileFormat[] = [
   'CSV',
   'XLSX',
   'OFX',
+  'PDF',
   'PDF_OCR'
 ];
