@@ -26,4 +26,7 @@ test('E10, E11 : importer un relevé PDF LCL, sans profil (IMP-10)', async ({ pa
   await expect(page.getByText('achat le 3 déc.')).toBeVisible();
   await page.getByRole('button', { name: /^Valider/ }).click();
   await expect(page.getByText(/7 transaction\(s\) créée\(s\)/)).toBeVisible();
+  // Lot validé : la revue se consulte, elle ne se modifie plus.
+  await expect(page.locator('app-category-picker, app-payee-picker')).toHaveCount(0);
+  await expect(page.locator('.info.muted', { hasText: 'Non catégorisé' }).first()).toBeVisible();
 });

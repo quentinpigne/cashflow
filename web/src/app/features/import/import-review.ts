@@ -30,7 +30,7 @@ import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PayeePicker } from '../../shared/payee-picker';
-import { AccountsStore, CategoriesStore } from '../../shared/stores';
+import { AccountsStore, CategoriesStore, PayeesStore } from '../../shared/stores';
 import { SplitDraft, SplitEditor, SplitEditorData } from '../transactions/split-editor';
 
 type View = 'all' | 'create' | 'match' | 'duplicate' | 'error' | 'uncategorized' | 'without-payee';
@@ -74,6 +74,7 @@ export class ImportReviewPage {
   private readonly router = inject(Router);
   protected readonly accounts = inject(AccountsStore);
   protected readonly categories = inject(CategoriesStore);
+  protected readonly payees = inject(PayeesStore);
 
   readonly id = input.required<string>();
 

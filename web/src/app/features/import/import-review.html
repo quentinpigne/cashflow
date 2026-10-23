@@ -195,28 +195,34 @@
                     <button mat-button (click)="editSplits(line)">Modifier</button>
                   }
                 </p>
-              } @else {
+              } @else if (reviewing()) {
                 <app-category-picker
                   [value]="line.splits[0]?.category_id ?? null"
                   (valueChange)="setCategory(line, $event)"
                   [kind]="(line.amount_minor ?? 0) < 0 ? 'EXPENSE' : 'INCOME'"
                 />
+              } @else {
+                <!-- Lot validé : la revue est figée, on la consulte seulement. -->
+                <p class="info muted">{{ categories.label(line.splits[0]?.category_id) }}</p>
               }
               @if (line.suggested_by_rule) {
                 <span class="tag">règle</span>
               } @else if (line.learned) {
                 <span class="tag">déjà vu</span>
               }
-              <div class="payee">
-                <app-payee-picker
-                  [value]="line.payee_id ?? null"
-                  (valueChange)="setPayee(line, $event)"
-                  [disabled]="!reviewing()"
-                />
-                @if (line.payee_learned) {
-                  <span class="tag">déjà vu</span>
-                }
-              </div>
+              @if (reviewing()) {
+                <div class="payee">
+                  <app-payee-picker
+                    [value]="line.payee_id ?? null"
+                    (valueChange)="setPayee(line, $event)"
+                  />
+                  @if (line.payee_learned) {
+                    <span class="tag">déjà vu</span>
+                  }
+                </div>
+              } @else if (line.payee_id) {
+                <p class="info muted">Tiers : {{ payees.name(line.payee_id) }}</p>
+              }
               @if (line.proposal; as p) {
                 <p class="proposal">
                   <mat-icon>swap_horiz</mat-icon>
