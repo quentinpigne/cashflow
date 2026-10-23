@@ -61,6 +61,7 @@ Les données sont sensibles et ne doivent pas quitter mon contrôle sans action 
 | Tableau de bord | Patrimoine, taux d'épargne, épargne de précaution, budgets | [08](specs/08-tableau-de-bord.md) |
 | Biens et prêts | Biens, prêts, tableau d'amortissement | [09](specs/09-biens-et-prets.md) |
 | Salaires | Emplois, rémunérations et primes déclarées, comparaison au reçu, projection, capacité d'épargne | [10](specs/10-salaires.md) |
+| Tiers | Tiers des transactions, groupes de tiers (enseignes), dépenses par tiers et par groupe | [11](specs/11-tiers.md) |
 
 ## Non-objectifs (au moins pour la V1)
 

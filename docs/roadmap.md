@@ -85,6 +85,11 @@ mois, réimport sans doublon.
   activation (ADR-0022, spec 10)
 - PRJ-10 — capacité d'épargne dans la projection du patrimoine (ADR-0022, spec 07)
 
+## Compléments V1 — tiers (proposé le 2026-10-23)
+
+- TIE-01 à TIE-04 — tiers et groupes de tiers, affectation aux transactions, import et règles, dépenses par
+  tiers et par groupe (spec 11)
+
 ## Phase 7 — V2 (à prioriser plus tard)
 
 - IMP-12 (PDF générique OCR), IMP-13
@@ -92,7 +97,7 @@ mois, réimport sans doublon.
 - PRJ-06 à PRJ-09
 - SAL-06 à SAL-08
 - BUD-09 (push mobile), BUD-11, BUD-12, BUD-13
-- TRX-09, TRX-10, TRX-11, CPT-08
+- TRX-10, TRX-11, CPT-08, TIE-05
 - Tableaux d'amortissement des prêts (hors périmètre V1, cf. vision)
 - Multi-membres du foyer : accès par compte, vues par membre et par foyer (ADR-0006)
 

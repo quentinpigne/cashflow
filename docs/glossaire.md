@@ -79,6 +79,13 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Récurrence | `RecurringRule` | Modèle de transaction qui se répète (salaire, loyer…), source d'échéances prévues. |
 | Échéance prévue | `ScheduledOccurrence` | Occurrence future calculée d'une récurrence. Ce n'est pas une transaction. |
 
+## Tiers
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Tiers | `Payee` | Personne ou organisme de l'autre côté d'une transaction : magasin, employeur, administration, proche. Facultatif, porté par la transaction (spec 11). |
+| Groupe de tiers | `PayeeGroup` | Regroupement de tiers, sur un seul niveau : l'enseigne « Carrefour » pour ses magasins, « Famille »… Jamais affecté directement à une transaction. |
+
 ## Import et rapprochement
 
 | Terme | Identifiant | Définition |
@@ -89,7 +96,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Empreinte | `fingerprint` | Hash stable d'une ligne qui sert à détecter les doublons. |
 | Correspondance | `match` | Association proposée entre une ligne d'import et une transaction existante. |
 | Décision d'import | `ImportDecision` | Choix pour une ligne : `CREATE`, `MATCH` (pointer une existante), `SKIP`. |
-| Règle de catégorisation | `CategorizationRule` | Condition sur une transaction (libellé, montant, compte) et actions associées (catégorie, libellé, virement). |
+| Règle de catégorisation | `CategorizationRule` | Condition sur une transaction (libellé, montant, compte) et actions associées (catégorie, libellé, tiers, virement). |
 | Point de contrôle | `BalanceCheckpoint` | Solde réel d'un compte à une date, issu d'un relevé ou d'une saisie. |
 | Écart | `gap` | Point de contrôle − solde calculé à la même date. Doit valoir 0. |
 | Rapprochement | `reconciliation` | Validation d'un point de contrôle sans écart, qui verrouille les transactions couvertes. |
@@ -139,3 +146,5 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Custom label | Libellé (`label`) | Simplification. |
 | Budget (pour une catégorie) | Ligne de budget | Une catégorie classe ; une ligne de budget prévoit un montant pour elle. |
 | Enveloppe | Ligne de budget avec report, ou projet | Le modèle « enveloppes » n'a pas été retenu (ADR-0014). |
+| Bénéficiaire, marchand, destinataire | Tiers (`Payee`) | Un tiers peut aussi me verser de l'argent (employeur) : « bénéficiaire » ne couvre qu'un sens. |
+| Enseigne (comme entité) | Groupe de tiers (`PayeeGroup`) | Un groupe peut réunir autre chose que des magasins. |

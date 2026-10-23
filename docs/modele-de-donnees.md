@@ -64,6 +64,9 @@ erDiagram
     Transaction ||--|{ Split : "ventilée en"
     Category ||--o{ Split : "classe"
     Category ||--o{ Category : "parent de"
+    PayeeGroup ||--o{ Payee : "regroupe"
+    Payee ||--o{ Transaction : "tiers de"
+    Payee ||--o{ RecurringRule : "tiers de"
     Split ||--o| Transfer : "jambe sortante"
     Split ||--o| Transfer : "jambe entrante"
     Account ||--o{ RecurringRule : "échéancier"
@@ -189,8 +192,10 @@ Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu)
 | `origin` | `TransactionOrigin` | `MANUAL` \| `IMPORT` \| `RECURRING` \| `INTEREST` |
 | `recurring_rule_id` | `Id` → RecurringRule | optionnel |
 | `fingerprint` | texte | optionnel, unique avec `account_id` quand renseigné |
+| `payee_id` | `Id` → Payee | optionnel ; **doit être `null`** sur une jambe de virement (R-TIE-11) |
 
-Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `clearing_status`), `fingerprint`.
+Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `clearing_status`), `fingerprint`,
+(`payee_id`, `date`).
 
 ### Split
 
@@ -232,7 +237,28 @@ ADR-0021) ; une jambe de virement a une ventilation unique (R-TRX-32).
 | `anchor_date` | `Date` | première occurrence |
 | `end_date` | `Date` | optionnel |
 | `split_template` | `Json` | liste `{category_id, amount}` dont la somme vaut `amount` |
+| `payee_id` | `Id` → Payee | optionnel ; `null` si `target_account_id` est renseigné (R-TIE-13) |
 | `active` | booléen | — |
+
+## Tiers — [spec 11](specs/11-tiers.md)
+
+### PayeeGroup (groupe de tiers)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `name` | texte ≤ 80 | requis, unique sans distinction de casse |
+| `note` | texte | optionnel |
+
+### Payee (tiers)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `name` | texte ≤ 80 | requis, unique sans distinction de casse |
+| `group_id` | `Id` → PayeeGroup | optionnel ; mis à `null` à la suppression du groupe (R-TIE-4) |
+| `archived` | booléen | défaut `false` |
+| `note` | texte | optionnel |
+
+Index : `group_id`.
 
 ## Biens et prêts — [spec 09](specs/09-biens-et-prets.md)
 
@@ -399,7 +425,7 @@ tolérance de l'écart entre attendu et reçu (R-SAL-9).
 | `match_kind` | enum | `NONE` \| `DUPLICATE` \| `CANDIDATE` |
 | `match_transaction_id` | `Id` → Transaction | optionnel |
 | `match_score` | entier 0–100 | optionnel |
-| `suggested` | `Json` | libellé, ventilation, virement proposés par les règles |
+| `suggested` | `Json` | libellé, ventilation, virement, tiers proposés par les règles ou appris (R-IMP-13, R-TIE-17) |
 | `decision` | `ImportDecision` | `CREATE` \| `MATCH` \| `SKIP` |
 | `transaction_id` | `Id` → Transaction | transaction créée ou pointée, renseignée à la validation |
 

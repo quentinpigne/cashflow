@@ -136,7 +136,8 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   ligne `CREATE`. La première règle qui correspond s'applique ; si son `stop_processing` vaut `false`,
   les suivantes sont aussi évaluées, et les actions déjà appliquées ne sont pas écrasées.
 - **R-IMP-13** — Sans règle applicable, la catégorie suggérée est celle de la dernière transaction du
-  même compte au libellé normalisé identique, si elle existe (« apprentissage » minimal).
+  même compte au libellé normalisé identique, si elle existe (« apprentissage » minimal). Le tiers suit
+  une règle voisine, tous comptes confondus (R-TIE-17, R-TIE-18).
 - **R-IMP-14** — Les candidats de virement interne (R-TRX-35), y compris parmi les lignes d'**autres
   lots en revue**, sont suggérés. Accepter la suggestion crée le virement à la validation. Sans
   candidat, marquer la ligne comme virement vers un compte crée la jambe opposée à la validation
@@ -180,15 +181,16 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   "set_label": "Netflix",
   "set_splits": [ { "category_id": "<id>", "ratio": 1.0 } ],   // ratio ou montant fixe + reste
   "set_project": "<project_id>",                               // rattache à un projet actif (ADR-0014)
+  "set_payee": "<payee_id>",                                   // tiers existant de la transaction (spec 11, R-TIE-16)
   "mark_transfer_to": "<account_id>",                          // suggère un virement interne
   "set_note": null
 }
 ```
 
 - **R-IMP-19** — Les règles s'appliquent aussi **à la demande** sur des transactions existantes non
-  catégorisées, avec un aperçu avant application.
+  catégorisées (ou sans tiers, pour une règle qui en affecte un, R-TIE-19), avec un aperçu avant application.
 - **R-IMP-20** — Depuis une transaction, « créer une règle à partir de celle-ci » préremplit la
-  condition sur le libellé normalisé et l'action sur sa ventilation.
+  condition sur le libellé normalisé et les actions sur sa ventilation et son tiers.
 
 ## Features
 

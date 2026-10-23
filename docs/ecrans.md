@@ -674,3 +674,52 @@ Formulaires (popup) :
 - **rémunération** : mois d'effet (sélecteur de mois), motif, brut annuel de base (indice : « hors primes et
   13e mois »), net mensuel versé (indice : « net payé, après prélèvement à la source »), note ;
 - **prime** : libellé, nature, date de versement, net, brut, récurrente, note.
+
+# Écrans — tiers (spec 11)
+
+Statut : **Revue** (2026-10-23)
+
+Ce qui change dans les écrans existants :
+- **E5 Saisie rapide** (dépense ou revenu) : champ **Tiers** `[mat-autocomplete]` entre le compte et la
+  catégorie, tiers non archivés groupés par groupe de tiers ; un nom inconnu propose « Créer le tiers « … » »
+  (R-TIE-15). Choisir un tiers alors que la catégorie est vide la préremplit (R-TIE-14). Pas de tiers en mode
+  virement (R-TIE-11).
+- **E7 Détail d'une transaction** : champ **Tiers**, modifiable même sur une transaction rapprochée
+  (R-TIE-12), avec un lien vers la fiche du tiers (E32). Absent sur une jambe de virement.
+- **E9 Réglages** : entrée **Tiers** (E31), après Catégories.
+- **E11 Import : revue** : colonne **Tiers** pour les lignes à créer, suggérée par les règles ou apprise
+  (R-TIE-16, R-TIE-17), modifiable ; filtre « sans tiers » ; tiers en masse sur la sélection.
+- **E14 Transactions** : filtres **tiers** et **groupe de tiers** (dont « sans tiers ») ; colonne Tiers ;
+  action en masse **« Affecter un tiers »** (sauf jambes de virement, ignorées et comptées dans la
+  confirmation).
+- **E15 Analyses** : onglet **Par tiers** (TIE-04) : période (mois, 12 derniers mois, année civile), dépenses
+  ou revenus ; barres horizontales des 15 premiers et tableau : montant, non catégorisé (R-TIE-21), nombre de
+  transactions, période précédente. Bascule **groupes / tiers** : en groupes, un groupe se déplie en ses
+  tiers, et les tiers sans groupe figurent chacun sur sa ligne. Un clic ouvre la fiche (E32).
+- **E16 Règles** : action **Tiers** (choix d'un tiers existant, R-TIE-16) ; « Créer une règle à partir de
+  celle-ci » la préremplit (R-IMP-20).
+- **E23 Récurrences** : champ Tiers dans le formulaire (dépense ou revenu, R-TIE-13).
+
+## E31 — Tiers (TIE-01)
+
+Dans les réglages, comme les catégories (E8).
+
+- Liste par groupe de tiers (ordre alphabétique), les tiers sans groupe dans une section « Sans groupe » ;
+  pour chaque tiers, le nombre de transactions. Champ de recherche en tête.
+- Actions sur un tiers : Renommer, **Changer de groupe**, **Archiver**, **Fusionner dans…** (indique le
+  nombre de transactions, R-TIE-7), Supprimer s'il n'a jamais servi (R-TIE-5).
+- Actions sur un groupe : Renommer, Supprimer (ses tiers passent « Sans groupe », R-TIE-4).
+- « Nouveau tiers » (nom, groupe, note) et « Nouveau groupe » (nom, note). Le choix du groupe d'un tiers
+  permet d'en créer un.
+- Sélection multiple : « Changer de groupe » pour plusieurs tiers d'un coup.
+- Les tiers archivés sont regroupés en bas, repliés, avec « Désarchiver ».
+
+## E32 — Fiche d'un tiers ou d'un groupe (TIE-04)
+
+- **En-tête** : nom, groupe (lien) pour un tiers ou liste de ses tiers pour un groupe, note, menu ⋮ (mêmes
+  actions qu'en E31).
+- **Chiffres** : dépenses et revenus sur 12 mois glissants et sur l'année civile, non catégorisé à côté
+  (R-TIE-20, R-TIE-21), dépense moyenne par transaction.
+- **Évolution** : barres mensuelles des dépenses sur 12 ou 24 mois ; pour un groupe, empilées par tiers.
+- **Catégories** : répartition des dépenses du tiers par catégorie sur la période.
+- **Transactions** : les dernières, avec « Tout voir » qui ouvre E14 filtrée sur le tiers ou le groupe.

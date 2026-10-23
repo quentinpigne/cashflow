@@ -37,8 +37,8 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
   et vaut `bank_label` par défaut.
 - **R-TRX-3** — Une transaction `RECONCILED` ne peut être ni modifiée (montant, compte, date de solde),
   ni supprimée, sans déverrouillage explicite du point de contrôle qui la couvre (spec 04, R-RAP-6).
-  Le libellé, la note, la ventilation, et la `date` quand une `bank_date` existe, restent modifiables :
-  ils n'affectent pas le solde.
+  Le libellé, la note, la ventilation, le tiers (spec 11), et la `date` quand une `bank_date` existe,
+  restent modifiables : ils n'affectent pas le solde.
 - **R-TRX-4** — Modifier le montant d'une transaction à une seule ventilation met à jour cette
   ventilation. Avec plusieurs ventilations, la modification est refusée tant que la ventilation
   n'est pas rééquilibrée (l'interface propose de reporter l'écart sur une ventilation choisie).
@@ -140,14 +140,14 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
 | TRX-06 | V1 | Catégorisation en masse (sélection multiple → catégorie) |
 | TRX-07 | V1 | Récurrences : création, échéancier, échéances non honorées |
 | TRX-08 | V1 | Vue transverse de toutes les transactions (tous comptes) |
-| TRX-09 | V2 | Tiers (`Payee`) normalisés à partir des libellés |
+| TRX-09 | — | *(supprimée : remplacée par la spec 11, TIE-01 à TIE-05)* |
 | TRX-10 | V2 | Étiquettes libres (tags) transverses aux catégories (« Vacances 2026 ») |
 | TRX-11 | V2 | Pièces jointes (justificatifs) |
 
 ### TRX-01 — Saisir une transaction
 
 - Champs : compte, date (aujourd'hui par défaut), montant avec sens (dépense ou revenu), libellé,
-  catégorie, note.
+  tiers (spec 11), catégorie, note.
 - La transaction est créée `PENDING`, origine `MANUAL`, avec une ventilation unique.
 - Saisie rapide accessible depuis n'importe quel écran.
 
