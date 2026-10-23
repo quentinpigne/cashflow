@@ -89,3 +89,13 @@ header {
 .error {
   color: var(--mat-sys-error);
 }
+
+.payee {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  app-payee-picker {
+    flex: 1;
+  }
+}

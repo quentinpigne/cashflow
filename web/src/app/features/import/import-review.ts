@@ -29,10 +29,16 @@ import { CategoryPicker } from '../../shared/category-picker';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { PayeePicker } from '../../shared/payee-picker';
 import { AccountsStore, CategoriesStore } from '../../shared/stores';
 import { SplitDraft, SplitEditor, SplitEditorData } from '../transactions/split-editor';
 
-type View = 'all' | 'create' | 'match' | 'duplicate' | 'error' | 'uncategorized';
+type View = 'all' | 'create' | 'match' | 'duplicate' | 'error' | 'uncategorized' | 'without-payee';
+
+/** Ligne à créer, hors virement : elle peut recevoir un tiers (R-TIE-11). */
+function withoutPayee(l: ImportLineView): boolean {
+  return l.decision === 'CREATE' && l.errors.length === 0 && !l.transfer_to && !l.payee_id;
+}
 
 /** E11 — Import : revue (IMP-04, IMP-05, R-IMP-18). */
 @Component({
@@ -50,6 +56,7 @@ type View = 'all' | 'create' | 'match' | 'duplicate' | 'error' | 'uncategorized'
     MatProgressBarModule,
     MatSelectModule,
     CategoryPicker,
+    PayeePicker,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -75,6 +82,7 @@ export class ImportReviewPage {
   protected readonly view = signal<View>('all');
   protected readonly selection = signal<Set<string>>(new Set());
   protected readonly bulkCategory = signal<string | null>(null);
+  protected readonly bulkPayee = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly result = signal<CommitResult | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -106,6 +114,8 @@ export class ImportReviewPage {
             !l.transfer_to &&
             !l.splits.some((s) => s.category_id)
           );
+        case 'without-payee':
+          return withoutPayee(l);
         default:
           return true;
       }
@@ -127,6 +137,7 @@ export class ImportReviewPage {
           !l.transfer_to &&
           !l.splits.some((s) => s.category_id),
       ).length,
+      withoutPayee: lines.filter(withoutPayee).length,
     };
   });
 
@@ -143,6 +154,7 @@ export class ImportReviewPage {
       note: line.note ?? null,
       transfer_to: line.transfer_to ?? null,
       transfer_transaction_id: line.transfer_transaction_id ?? null,
+      payee_id: line.payee_id ?? null,
     };
   }
 
@@ -170,6 +182,10 @@ export class ImportReviewPage {
     return this.save(line, {
       splits: category ? [{ category_id: category, amount_minor: amount, note: null }] : [],
     });
+  }
+
+  protected setPayee(line: ImportLineView, payee: string | null): Promise<void> {
+    return this.save(line, { payee_id: payee });
   }
 
   protected setLabel(line: ImportLineView, label: string): Promise<void> {
@@ -254,10 +270,13 @@ export class ImportReviewPage {
             line_ids: [...this.selection()],
             decision,
             category_id: decision ? null : this.bulkCategory(),
+            payee_id: decision ? null : this.bulkPayee(),
           },
         }),
       );
       this.selection.set(new Set());
+      this.bulkCategory.set(null);
+      this.bulkPayee.set(null);
       this.batch.reload();
     } catch (error) {
       this.snack.open(errorMessage(error), undefined, { duration: 5000 });

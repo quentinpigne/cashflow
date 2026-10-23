@@ -37,6 +37,7 @@ import { abs, negate, parseMoney, toEditable } from '../../core/money';
 import { decodeAttachment, encodeAttachment } from '../../core/attachments';
 import { CategoryPicker } from '../../shared/category-picker';
 import { confirm } from '../../shared/confirm-dialog';
+import { PayeePicker } from '../../shared/payee-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AttachmentsStore, CategoriesStore, ProjectsStore } from '../../shared/stores';
@@ -61,6 +62,7 @@ type Direction = 'out' | 'in';
     MatMenuModule,
     MatProgressBarModule,
     CategoryPicker,
+    PayeePicker,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -105,6 +107,8 @@ export class TransactionDetailView {
   protected readonly error = signal<string | null>(null);
   protected readonly direction = signal<Direction>('out');
   protected readonly category = signal<string | null>(null);
+  /** Tiers, modifiable même sur une transaction rapprochée (R-TIE-12). */
+  protected readonly payee = signal<string | null>(null);
   /** Projet de la transaction (BUD-06) : l'interface le porte sur toutes ses ventilations. */
   protected readonly project = signal<string | null>(null);
   protected readonly projects = inject(ProjectsStore);
@@ -168,6 +172,7 @@ export class TransactionDetailView {
       });
       this.direction.set(t.amount_minor < 0 ? 'out' : 'in');
       this.category.set(t.splits.length === 1 ? encodeAttachment(t.splits[0]) : null);
+      this.payee.set(t.payee_id ?? null);
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       this.pendingSplits.set(null);
       // Rapprochée : montant et date de solde verrouillés (R-TRX-3).
@@ -265,6 +270,7 @@ export class TransactionDetailView {
             amount_minor: amount,
             label: value.label,
             note: value.note || null,
+            payee_id: t.transfer ? null : this.payee(),
             splits:
               splits?.map((s) => ({
                 ...s,
@@ -404,6 +410,7 @@ export class TransactionDetailView {
           amount_minor: t.amount_minor,
           label: t.label,
           note: t.note ?? null,
+          payee_id: t.payee_id ?? null,
           splits: t.transfer
             ? null
             : t.splits.map((s) => ({

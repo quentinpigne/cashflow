@@ -78,11 +78,32 @@
       <mat-label>Texte</mat-label>
       <input matInput [ngModel]="text()" (ngModelChange)="text.set($event); reset()" />
     </mat-form-field>
+    <app-payee-picker
+      class="wide"
+      [creatable]="false"
+      [value]="payee()"
+      (valueChange)="payee.set($event); reset()"
+    />
+    <mat-form-field>
+      <mat-label>Groupe de tiers</mat-label>
+      <mat-select [ngModel]="payeeGroup()" (ngModelChange)="payeeGroup.set($event); reset()">
+        <mat-option [value]="null">Tous</mat-option>
+        @for (g of payees.groups(); track g.id) {
+          <mat-option [value]="g.id">{{ g.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
     <mat-slide-toggle
       [checked]="uncategorized()"
       (change)="uncategorized.set($event.checked); reset()"
     >
       À catégoriser
+    </mat-slide-toggle>
+    <mat-slide-toggle
+      [checked]="withoutPayee()"
+      (change)="withoutPayee.set($event.checked); reset()"
+    >
+      Sans tiers
     </mat-slide-toggle>
   </div>
 
@@ -101,6 +122,18 @@
         [disabled]="!bulkCategory() || busy()"
       >
         Catégoriser
+      </button>
+      <app-payee-picker
+        class="bulk-picker"
+        label="Affecter un tiers"
+        [value]="bulkPayee()"
+        (valueChange)="bulkPayee.set($event)"
+      />
+      <button mat-flat-button (click)="setPayeeOfSelection()" [disabled]="!bulkPayee() || busy()">
+        Affecter
+      </button>
+      <button mat-button (click)="setPayeeOfSelection(true)" [disabled]="busy()">
+        Retirer le tiers
       </button>
       @if (projects.active().length > 0) {
         <mat-form-field class="bulk-project" subscriptSizing="dynamic">
@@ -138,7 +171,7 @@
       <div class="row" [class.pending]="item.clearing_status === 'PENDING'">
         <mat-checkbox
           [checked]="selection().has(item.id)"
-          [disabled]="!!item.transfer || item.splits.length > 1"
+          [disabled]="!!item.transfer"
           (change)="toggle(item.id, $event.checked)"
           [attr.aria-label]="'Sélectionner ' + item.label"
         />

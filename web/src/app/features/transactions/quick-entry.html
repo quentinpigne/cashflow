@@ -51,18 +51,21 @@
         <mat-error>Choisir le compte d'arrivée</mat-error>
       }
     </mat-form-field>
-  } @else if (splits(); as list) {
-    <div class="split-summary">
-      <mat-icon>call_split</mat-icon>
-      <span>{{ splitSummary() }}</span>
-      <button mat-button type="button" (click)="editSplits()">Modifier</button>
-    </div>
   } @else {
-    <app-category-picker
-      [value]="category()"
-      (valueChange)="category.set($event)"
-      [kind]="categoryKind()"
-    />
+    <app-payee-picker [value]="payee()" (valueChange)="choosePayee($event)" />
+    @if (splits(); as list) {
+      <div class="split-summary">
+        <mat-icon>call_split</mat-icon>
+        <span>{{ splitSummary() }}</span>
+        <button mat-button type="button" (click)="editSplits()">Modifier</button>
+      </div>
+    } @else {
+      <app-category-picker
+        [value]="category()"
+        (valueChange)="category.set($event)"
+        [kind]="categoryKind()"
+      />
+    }
   }
 
   <mat-form-field>

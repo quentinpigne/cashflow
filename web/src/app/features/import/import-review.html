@@ -79,6 +79,9 @@
       <mat-chip-option value="uncategorized"
         >Non catégorisées ({{ counts().uncategorized }})</mat-chip-option
       >
+      <mat-chip-option value="without-payee"
+        >Sans tiers ({{ counts().withoutPayee }})</mat-chip-option
+      >
       <mat-chip-option value="duplicate">Doublons ({{ counts().duplicate }})</mat-chip-option>
       <mat-chip-option value="error">En erreur ({{ counts().error }})</mat-chip-option>
     </mat-chip-listbox>
@@ -95,8 +98,17 @@
           [value]="bulkCategory()"
           (valueChange)="bulkCategory.set($event)"
         />
-        <button mat-stroked-button (click)="bulk(null)" [disabled]="!bulkCategory()">
-          Catégoriser
+        <app-payee-picker
+          class="bulk-picker"
+          [value]="bulkPayee()"
+          (valueChange)="bulkPayee.set($event)"
+        />
+        <button
+          mat-stroked-button
+          (click)="bulk(null)"
+          [disabled]="!bulkCategory() && !bulkPayee()"
+        >
+          Appliquer
         </button>
       </div>
     }
@@ -190,6 +202,16 @@
               } @else if (line.learned) {
                 <span class="tag">déjà vu</span>
               }
+              <div class="payee">
+                <app-payee-picker
+                  [value]="line.payee_id ?? null"
+                  (valueChange)="setPayee(line, $event)"
+                  [disabled]="!reviewing()"
+                />
+                @if (line.payee_learned) {
+                  <span class="tag">déjà vu</span>
+                }
+              </div>
               @if (line.proposal; as p) {
                 <p class="proposal">
                   <mat-icon>swap_horiz</mat-icon>

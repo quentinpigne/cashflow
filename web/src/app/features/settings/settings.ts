@@ -41,6 +41,10 @@ import { confirm } from '../../shared/confirm-dialog';
           <mat-icon matListItemIcon>category</mat-icon>
           <span matListItemTitle>Catégories</span>
         </a>
+        <a mat-list-item routerLink="/reglages/tiers">
+          <mat-icon matListItemIcon>storefront</mat-icon>
+          <span matListItemTitle>Tiers</span>
+        </a>
         <a mat-list-item routerLink="/reglages/etablissements">
           <mat-icon matListItemIcon>account_balance</mat-icon>
           <span matListItemTitle>Établissements</span>

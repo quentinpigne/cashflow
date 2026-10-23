@@ -123,6 +123,12 @@
       </div>
     }
     <button mat-button (click)="addShare()"><mat-icon>call_split</mat-icon>Ventiler</button>
+    <app-payee-picker
+      label="Tiers"
+      [creatable]="false"
+      [value]="payee()"
+      (valueChange)="payee.set($event)"
+    />
     @if (projectOptions().length > 0) {
       <mat-form-field>
         <mat-label>Rattacher au projet</mat-label>
@@ -152,7 +158,9 @@
     <mat-checkbox [ngModel]="active()" (ngModelChange)="active.set($event)">Active</mat-checkbox>
   </div>
 
-  <h3>Transactions existantes non catégorisées</h3>
+  <h3>
+    Transactions existantes non catégorisées{{ payee() && !transferTo() ? ' ou sans tiers' : '' }}
+  </h3>
   <button mat-stroked-button (click)="preview()">Aperçu</button>
   @if (matches(); as list) {
     @for (m of list; track m.transaction_id) {
@@ -162,9 +170,12 @@
       >
         {{ m.date | frDate: 'short' }} · {{ m.account_name }} · {{ m.label }} ·
         {{ m.amount_minor | money }}
+        @if (payee() && !transferTo()) {
+          <span class="muted"> · {{ change(m) }}</span>
+        }
       </mat-checkbox>
     } @empty {
-      <p class="muted">Aucune transaction non catégorisée concernée.</p>
+      <p class="muted">Aucune transaction concernée.</p>
     }
   }
   @if (error()) {

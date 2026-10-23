@@ -18,8 +18,9 @@ import { DataVersion } from '../../core/data-version';
 import { formatMonth, shiftMonth, toIsoDate } from '../../core/dates';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { PayeeAnalysis } from '../payees/payee-analysis';
 
-/** E15 — Analyses (TDB-02, TDB-03). */
+/** E15 — Analyses (TDB-02, TDB-03, TIE-04). */
 @Component({
   selector: 'app-analyses',
   imports: [
@@ -32,6 +33,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
     MatTabsModule,
     NgxEchartsDirective,
     MoneyPipe,
+    PayeeAnalysis,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './analyses.html',

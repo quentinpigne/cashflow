@@ -17,7 +17,7 @@ import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
 import { abs } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
-import { CategoriesStore } from '../../shared/stores';
+import { CategoriesStore, PayeesStore } from '../../shared/stores';
 import { RuleFormData, RuleFormDialog } from './rule-form';
 
 /** E16 — Règles de catégorisation (IMP-08). */
@@ -105,6 +105,7 @@ export class RulesPage implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly categories = inject(CategoriesStore);
+  private readonly payees = inject(PayeesStore);
 
   /** Transaction de départ (R-IMP-20). */
   readonly depuis = input<string>();
@@ -133,6 +134,7 @@ export class RulesPage implements OnInit {
           .filter((s) => s.category_id)
           .map((s) => ({ category_id: s.category_id, weight: abs(s.amount_minor) })),
         set_label: t.bank_label && t.label !== t.bank_label ? t.label : null,
+        set_payee: t.payee_id ?? null,
       },
     };
     this.open({ rule: null, draft });
@@ -150,6 +152,8 @@ export class RulesPage implements OnInit {
       parts.push(
         `→ ${rule.actions.set_splits.map((s) => this.categories.label(s.category_id)).join(', ')}`,
       );
+    if (rule.actions.set_payee && !rule.actions.mark_transfer_to)
+      parts.push(`→ tiers ${this.payees.name(rule.actions.set_payee)}`);
     return parts.join(' ');
   }
 

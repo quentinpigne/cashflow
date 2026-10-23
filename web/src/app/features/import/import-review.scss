@@ -147,3 +147,13 @@ mat-chip-listbox {
   display: block;
   margin-bottom: 0.25rem;
 }
+
+.payee {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  app-payee-picker {
+    flex: 1;
+  }
+}

@@ -35,7 +35,8 @@ import { parseMoney } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AccountsStore, CategoriesStore, ProjectsStore } from '../../shared/stores';
+import { PayeePicker } from '../../shared/payee-picker';
+import { AccountsStore, CategoriesStore, PayeesStore, ProjectsStore } from '../../shared/stores';
 
 const PAGE = 200;
 
@@ -54,6 +55,7 @@ const PAGE = 200;
     MatSelectModule,
     MatSlideToggleModule,
     CategoryPicker,
+    PayeePicker,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -69,12 +71,15 @@ export class TransactionsPage implements OnInit {
   protected readonly layout = inject(Layout);
   protected readonly accounts = inject(AccountsStore);
   protected readonly categories = inject(CategoriesStore);
+  protected readonly payees = inject(PayeesStore);
 
-  // Filtres reçus dans l'URL (lien depuis les analyses, E15).
+  // Filtres reçus dans l'URL (lien depuis les analyses, E15, et la fiche d'un tiers, E32).
   readonly categorie = input<string>();
   readonly du = input<string>();
   readonly au = input<string>();
   readonly a_categoriser = input<string>();
+  readonly tiers = input<string>();
+  readonly groupe = input<string>();
 
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly statuses: ClearingStatus[] = ['PENDING', 'CLEARED', 'RECONCILED'];
@@ -87,6 +92,11 @@ export class TransactionsPage implements OnInit {
   protected readonly max = signal('');
   protected readonly text = signal('');
   protected readonly uncategorized = signal(false);
+  /** Filtres par tiers (TIE-04). */
+  protected readonly payee = signal<string | null>(null);
+  protected readonly payeeGroup = signal<string | null>(null);
+  protected readonly withoutPayee = signal(false);
+  protected readonly bulkPayee = signal<string | null>(null);
   protected readonly limit = signal(PAGE);
   protected readonly selection = signal<Set<string>>(new Set());
   protected readonly projects = inject(ProjectsStore);
@@ -110,6 +120,9 @@ export class TransactionsPage implements OnInit {
         max_amount_minor: parseMoney(this.max()) ?? undefined,
         text: this.text().trim() || undefined,
         uncategorized: this.uncategorized() || undefined,
+        payee_id: this.payee() ?? undefined,
+        payee_group_id: this.payeeGroup() ?? undefined,
+        without_payee: this.withoutPayee() || undefined,
         limit: this.limit(),
         version: this.version.value(),
       };
@@ -121,9 +134,10 @@ export class TransactionsPage implements OnInit {
   protected readonly items = computed<TransactionListItem[]>(() =>
     this.page.hasValue() ? this.page.value().items : [],
   );
+  /** Les virements ne prennent ni catégorie ni tiers (R-TRX-32, R-TIE-11). */
   protected readonly selectableIds = computed(() =>
     this.items()
-      .filter((i) => !i.transfer && i.splits.length === 1)
+      .filter((i) => !i.transfer)
       .map((i) => i.id),
   );
   protected readonly allSelected = computed(
@@ -138,13 +152,17 @@ export class TransactionsPage implements OnInit {
     if (this.du()) this.from.set(fromIsoDate(this.du() as string));
     if (this.au()) this.to.set(fromIsoDate(this.au() as string));
     if (this.a_categoriser()) this.uncategorized.set(true);
+    if (this.tiers()) this.payee.set(this.tiers() ?? null);
+    if (this.groupe()) this.payeeGroup.set(this.groupe() ?? null);
   }
 
   protected categoryText(item: TransactionListItem): string {
     if (item.transfer) {
       return `Virement ${item.transfer.is_outflow ? 'vers' : 'depuis'} ${item.transfer.counterpart_account_name}`;
     }
-    return item.splits.length > 1 ? 'Ventilée' : this.categories.label(item.splits[0]?.category_id);
+    const category =
+      item.splits.length > 1 ? 'Ventilée' : this.categories.label(item.splits[0]?.category_id);
+    return item.payee_id ? `${this.payees.name(item.payee_id)} · ${category}` : category;
   }
 
   protected toggle(id: string, checked: boolean): void {
@@ -197,6 +215,33 @@ export class TransactionsPage implements OnInit {
       const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
       const verb = choice === this.NO_PROJECT ? 'détachée(s)' : 'rattachée(s)';
       this.snack.open(`${result.attached} transaction(s) ${verb}${skipped}`, undefined, {
+        duration: 4000,
+      });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Tiers affecté (ou retiré) en masse ; les virements sont ignorés (TIE-02, R-TIE-11). */
+  protected async setPayeeOfSelection(remove = false): Promise<void> {
+    const payee = remove ? null : this.bulkPayee();
+    if ((!payee && !remove) || this.selection().size === 0) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.api.setTransactionsPayee({
+          body: { transaction_ids: [...this.selection()], payee_id: payee },
+        }),
+      );
+      this.selection.set(new Set());
+      this.version.bump();
+      const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
+      const verb = remove ? 'sans tiers' : `affectée(s) à ${this.payees.name(payee)}`;
+      this.snack.open(`${result.updated} transaction(s) ${verb}${skipped}`, undefined, {
         duration: 4000,
       });
     } catch (error) {

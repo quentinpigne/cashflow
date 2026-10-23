@@ -41,7 +41,8 @@ import { errorMessage, problemOf } from '../../core/http-errors';
 import { Layout } from '../../core/layout';
 import { formatMoney, negate, parseMoney, sum } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
-import { AccountsStore } from '../../shared/stores';
+import { PayeePicker } from '../../shared/payee-picker';
+import { AccountsStore, CategoriesStore, PayeesStore } from '../../shared/stores';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
 export interface QuickEntryData {
@@ -99,6 +100,7 @@ export class QuickEntry {
     MatInputModule,
     MatSelectModule,
     CategoryPicker,
+    PayeePicker,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './quick-entry.html',
@@ -121,6 +123,10 @@ export class QuickEntryForm {
   private readonly data = this.sheetData ?? this.dialogData ?? {};
   protected readonly mode = signal<Mode>('expense');
   protected readonly category = signal<string | null>(null);
+  /** Tiers (R-TIE-10), sans objet pour un virement (R-TIE-11). */
+  protected readonly payee = signal<string | null>(null);
+  private readonly payees = inject(PayeesStore);
+  private readonly categories = inject(CategoriesStore);
   protected readonly splits = signal<SplitDraft[] | null>(null);
   protected readonly showNote = signal(false);
   protected readonly busy = signal(false);
@@ -173,6 +179,23 @@ export class QuickEntryForm {
   constructor() {
     if (!this.accounts.byId().has(this.form.controls.accountId.value)) {
       this.form.controls.accountId.setValue(this.accounts.open()[0]?.id ?? '');
+    }
+  }
+
+  /**
+   * Choisir un tiers alors que la catégorie est vide reprend celle de sa dernière transaction, si elle est de la
+   * nature du mode (R-TIE-14).
+   */
+  protected choosePayee(id: string | null): void {
+    this.payee.set(id);
+    const suggested = id ? this.payees.byId().get(id)?.suggested_category_id : null;
+    if (
+      suggested &&
+      !this.category() &&
+      !this.splits() &&
+      this.categories.byId().get(suggested)?.kind === this.categoryKind()
+    ) {
+      this.category.set(suggested);
     }
   }
 
@@ -280,6 +303,7 @@ export class QuickEntryForm {
               note: value.note || null,
               category_id: splits || isAttachment(this.category()) ? null : this.category(),
               splits: this.apiSplits(splits, amount),
+              payee_id: this.payee(),
             },
           }),
         );

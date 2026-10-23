@@ -78,6 +78,19 @@
           <mat-hint>Libellé bancaire : {{ t.bank_label }}</mat-hint>
         }
       </mat-form-field>
+      @if (!t.transfer) {
+        <div class="payee">
+          <app-payee-picker [value]="payee()" (valueChange)="payee.set($event)" />
+          @if (t.payee_id && t.payee_id === payee()) {
+            <a
+              mat-icon-button
+              [routerLink]="['/tiers', t.payee_id]"
+              aria-label="Voir la fiche du tiers"
+              ><mat-icon>open_in_new</mat-icon></a
+            >
+          }
+        </div>
+      }
 
       @if (t.loan_payment; as lp) {
         <div class="loan card">

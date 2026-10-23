@@ -149,6 +149,23 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/settings').then((m) => m.SettingsPage),
       },
       {
+        path: 'reglages/tiers',
+        title: 'Tiers — Cashflow',
+        loadComponent: () => import('./features/payees/payees').then((m) => m.PayeesPage),
+      },
+      {
+        path: 'tiers/groupe/:id',
+        title: 'Groupe de tiers — Cashflow',
+        data: { kind: 'group' },
+        loadComponent: () => import('./features/payees/payee-page').then((m) => m.PayeePage),
+      },
+      {
+        path: 'tiers/:id',
+        title: 'Tiers — Cashflow',
+        data: { kind: 'payee' },
+        loadComponent: () => import('./features/payees/payee-page').then((m) => m.PayeePage),
+      },
+      {
         path: 'reglages/categories',
         title: 'Catégories — Cashflow',
         loadComponent: () => import('./features/settings/categories').then((m) => m.CategoriesPage),

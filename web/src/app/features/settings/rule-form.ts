@@ -18,6 +18,7 @@ import { parseMoney, parsePercent, toEditable } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { PayeePicker } from '../../shared/payee-picker';
 import { AccountsStore, ProjectsStore } from '../../shared/stores';
 
 export interface RuleFormData {
@@ -45,6 +46,7 @@ interface Share {
     MatInputModule,
     MatSelectModule,
     CategoryPicker,
+    PayeePicker,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -77,6 +79,8 @@ export class RuleFormDialog {
   protected readonly setLabel = signal(this.source.actions?.set_label ?? '');
   protected readonly transferTo = signal<string>(this.source.actions?.mark_transfer_to ?? '');
   protected readonly note = signal(this.source.actions?.set_note ?? '');
+  /** Action `set_payee` : un tiers existant (R-TIE-16). */
+  protected readonly payee = signal<string | null>(this.source.actions?.set_payee ?? null);
   /** Action `set_project` (BUD-06). */
   protected readonly project = signal<string>(this.source.actions?.set_project ?? '');
   private readonly projects = inject(ProjectsStore);
@@ -150,6 +154,7 @@ export class RuleFormDialog {
         mark_transfer_to: this.transferTo() || null,
         set_project: this.transferTo() ? null : this.project() || null,
         set_note: this.note().trim() || null,
+        set_payee: this.transferTo() ? null : this.payee(),
       },
       stop_processing: this.stop(),
       active: this.active(),
@@ -159,12 +164,24 @@ export class RuleFormDialog {
   protected async preview(): Promise<void> {
     this.error.set(null);
     try {
-      const matches = await firstValueFrom(this.api.previewRule({ body: this.conditions() }));
+      // Une règle qui affecte un tiers vise aussi les transactions sans tiers (R-TIE-19).
+      const matches = await firstValueFrom(
+        this.api.previewRule({
+          body: this.conditions(),
+          sets_payee: !this.transferTo() && !!this.payee(),
+        }),
+      );
       this.matches.set(matches);
       this.chosen.set(new Set(matches.map((m) => m.transaction_id)));
     } catch (error) {
       this.error.set(errorMessage(error));
     }
+  }
+
+  /** Ce que l'application de la règle changera sur une transaction de l'aperçu. */
+  protected change(m: RuleMatch): string {
+    if (m.sets_category && m.sets_payee) return 'catégorie et tiers';
+    return m.sets_payee ? 'tiers' : 'catégorie';
   }
 
   protected toggle(id: string, checked: boolean): void {

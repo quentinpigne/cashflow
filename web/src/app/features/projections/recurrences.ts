@@ -29,6 +29,7 @@ import { formatDate, fromIsoDate, toIsoDate, todayIso } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { abs, parseMoney, toEditable } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
+import { PayeePicker } from '../../shared/payee-picker';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
@@ -57,6 +58,7 @@ type Direction = 'out' | 'in' | 'transfer';
     MatInputModule,
     MatSelectModule,
     CategoryPicker,
+    PayeePicker,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -95,6 +97,7 @@ type Direction = 'out' | 'in' | 'transfer';
           </mat-select>
         </mat-form-field>
       } @else {
+        <app-payee-picker [value]="payee()" (valueChange)="payee.set($event)" />
         <app-category-picker
           [kind]="direction() === 'in' ? 'INCOME' : 'EXPENSE'"
           [value]="category()"
@@ -216,6 +219,8 @@ export class RecurrenceDialog {
   protected readonly category = signal<string | null>(
     this.rule?.split_template?.[0]?.category_id ?? null,
   );
+  /** Tiers repris par les échéances matérialisées (R-TIE-13). */
+  protected readonly payee = signal<string | null>(this.rule?.payee_id ?? null);
   protected readonly amount = signal(this.rule ? toEditable(abs(this.rule.amount_minor)) : '');
   protected readonly tolerance = signal(
     this.rule?.amount_tolerance_minor ? toEditable(this.rule.amount_tolerance_minor) : '',
@@ -263,6 +268,7 @@ export class RecurrenceDialog {
       end_date: end ? toIsoDate(end) : null,
       split_template: transfer ? [] : [{ category_id: this.category(), amount_minor: signed }],
       active: this.active(),
+      payee_id: transfer ? null : this.payee(),
     };
     try {
       if (this.rule) {

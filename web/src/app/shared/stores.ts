@@ -1,9 +1,12 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 
 import { Account } from '../api/models/account';
 import { Category } from '../api/models/category';
 import { Institution } from '../api/models/institution';
+import { PayeeGroupView } from '../api/models/payee-group-view';
+import { PayeeView } from '../api/models/payee-view';
 import { ProjectView } from '../api/models/project-view';
 import { AccountsService } from '../api/services/accounts.service';
 import { BudgetsService } from '../api/services/budgets.service';
@@ -11,6 +14,7 @@ import { CategoriesService } from '../api/services/categories.service';
 import { InstitutionsService } from '../api/services/institutions.service';
 import { AssetsService } from '../api/services/assets.service';
 import { LoansService } from '../api/services/loans.service';
+import { PayeesService } from '../api/services/payees.service';
 import { SystemService } from '../api/services/system.service';
 import { DataVersion } from '../core/data-version';
 
@@ -64,6 +68,47 @@ export class CategoriesStore {
 
   label(id: string | null | undefined): string {
     return id ? (this.byId().get(id)?.label ?? '—') : 'Non catégorisé';
+  }
+}
+
+/** Tiers et groupes de tiers (spec 11), partagés par tous les écrans. */
+@Injectable({ providedIn: 'root' })
+export class PayeesStore {
+  private readonly api = inject(PayeesService);
+  private readonly version = inject(DataVersion);
+  /** Noms des tiers créés à la volée, connus avant le rechargement de la liste (R-TIE-15). */
+  private readonly created = signal(new Map<string, string>());
+
+  readonly all = rxResource({
+    params: () => this.version.value(),
+    stream: () => this.api.listPayees(),
+  });
+
+  readonly list = computed<PayeeView[]>(() => (this.all.hasValue() ? this.all.value().payees : []));
+  readonly groups = computed<PayeeGroupView[]>(() =>
+    this.all.hasValue() ? this.all.value().groups : [],
+  );
+  readonly byId = computed(() => new Map(this.list().map((p) => [p.id, p])));
+  readonly groupById = computed(() => new Map(this.groups().map((g) => [g.id, g])));
+
+  /** Nom d'un tiers ; vide sans tiers. */
+  name(id: string | null | undefined): string {
+    if (!id) return '';
+    return this.byId().get(id)?.name ?? this.created().get(id) ?? '—';
+  }
+
+  groupName(id: string | null | undefined): string {
+    return id ? (this.groupById().get(id)?.name ?? '—') : '';
+  }
+
+  /** Crée un tiers sans groupe depuis la saisie (R-TIE-15) et retourne son identifiant. */
+  async create(name: string): Promise<string> {
+    const created = await firstValueFrom(
+      this.api.createPayee({ body: { name, group_id: null, archived: false, note: null } }),
+    );
+    this.created.update((m) => new Map(m).set(created.id, name.trim()));
+    this.version.bump();
+    return created.id;
   }
 }
 
