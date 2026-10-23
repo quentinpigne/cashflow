@@ -36,9 +36,8 @@ Logique éprouvée (`app/utils/pdf_importer/lcl_pdf_importer.py`), à porter :
 - Montant : `CREDIT` s'il est renseigné, sinon `−DEBIT` ; séparateur de milliers espace, décimale virgule.
   ⚠️ L'ancien code passait par `float` : le nouveau doit convertir depuis la chaîne (R-IMP-2).
 
-Point à valider : la date « CB » est la date d'achat, et non la date d'opération du relevé. Il faut
-choisir laquelle va dans `date` et laquelle dans `value_date`. Proposition : date d'achat dans `date`
-(plus parlante pour le budget), date du relevé dans `value_date`.
+Tranché (2026-10-23) : la date « CB » est la date d'achat ; elle devient la `date` de la transaction créée,
+la colonne `DATE` sa date bancaire et la colonne `VALEUR` sa date de valeur (spec 03, R-IMP-26).
 
 ### Extraction générique par annotation (→ IMP-12)
 

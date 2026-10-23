@@ -198,6 +198,10 @@ server ──► domain
   compilateur.
 - Dans `server`, les dépendances entre modules vont dans un seul sens : `api` → `services` → `db` /
   `readers`. Les routes n'exécutent pas de requête ; les services ne contiennent pas de calcul métier.
+- Les relevés PDF (IMP-10) sont lus avec `pdf-extract` (pur Rust, au-dessus de `lopdf`), qui donne le texte et
+  la position de chaque élément sans bibliothèque native ni service tiers (ADR-0007). `pdfium-render` a été
+  écarté : il embarque la bibliothèque PDFium dans l'image. Les paniques éventuelles de la bibliothèque sont
+  confinées à la lecture du fichier, qui est alors refusé.
 - Chaque service s'exécute dans **une transaction SQLite**, ouverte et validée par le service.
 
 ### Correspondance des modules

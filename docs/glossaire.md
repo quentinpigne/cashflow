@@ -65,6 +65,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Date d'opération | `date` | Date de l'opération telle que je la connais (saisie, ou date bancaire à l'import). Sert à l'affichage, aux budgets et aux rapports. |
 | Date bancaire | `bank_date` | Date de l'opération selon la banque, connue à l'import ou au pointage. |
 | Date de solde | `balance_date` | `bank_date` si elle est connue, sinon `date`. Sert aux soldes et au rapprochement. |
+| Date d'achat | `purchase_date` | Date d'un paiement par carte, lue dans le libellé d'un relevé (« CB … 03/09/26 ») ; devient la date d'une transaction créée par import (R-IMP-26). |
 | Date de valeur | `value_date` | Date de prise en compte par la banque pour les intérêts. Optionnelle. |
 | Libellé bancaire | `bank_label` | Libellé brut, tel que fourni par la banque. Jamais modifié après import. |
 | Libellé | `label` | Libellé lisible, choisi par l'utilisateur ou une règle. Par défaut, le libellé bancaire. |

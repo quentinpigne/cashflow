@@ -417,7 +417,8 @@ tolérance de l'écart entre attendu et reçu (R-SAL-9).
 | `batch_id` | `Id` → ImportBatch | requis, cascade |
 | `line_number` | entier | position dans le fichier source |
 | `raw` | `Json` | cellules d'origine, pour la traçabilité |
-| `date`, `value_date` | `Date` | `date` requise si la ligne est valide |
+| `date`, `value_date` | `Date` | `date` requise si la ligne est valide : date bancaire de l'opération |
+| `purchase_date` | `Date` | optionnel : date d'achat d'un paiement par carte, lue dans le libellé (R-IMP-26) ; date de la transaction créée |
 | `amount` | `Money` | requis si la ligne est valide |
 | `bank_label` | texte | requis si la ligne est valide |
 | `fingerprint` | texte | calculé (spec 03, R-IMP-5) |

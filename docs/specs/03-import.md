@@ -31,7 +31,7 @@ transaction n'est créée ou modifiée avant l'étape 6** (R-IMP-1).
 | CSV | MVP | Profil d'import (mapping de colonnes personnalisé) |
 | XLSX | MVP | Profil d'import + choix de la feuille |
 | OFX / QFX | V1 | Standard : pas de mapping. `FITID` est utilisé comme empreinte. Soldes `LEDGERBAL` récupérés. |
-| PDF (parseur dédié à une banque) | V1 | Parseur spécifique (LCL d'abord, cf. heritage.md) sur le texte extrait **localement** avec sa position ; OCR (opt-in) en repli pour les PDF scannés (ADR-0007) |
+| PDF (parseur dédié à une banque) | V1 | Parseur spécifique (LCL d'abord, R-IMP-23 à R-IMP-26) sur le texte extrait **localement** avec sa position. Pas de mapping ni de profil. OCR (opt-in) en repli pour les PDF scannés (ADR-0007, V2) |
 | PDF (générique) | V2 | OCR + extraction structurée par un modèle ; **opt-in** (ADR-0007) |
 
 Tous les lecteurs produisent la même sortie : une liste de lignes brutes normalisées, plus des
@@ -128,7 +128,8 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
 - **R-IMP-11** — Valider un `MATCH` : la transaction existante devient `CLEARED` et reçoit
   `bank_label`, `fingerprint`, `value_date` et **`bank_date`** de la ligne. Sa `date`, son libellé, sa
   note et sa ventilation sont **conservés** (R-TRX-7). Une transaction **créée** par import a
-  `date` = `bank_date` = date de la ligne.
+  `bank_date` = date de la ligne et `date` = **date d'achat** de la ligne si le relevé la donne (paiement par
+  carte d'un relevé LCL, R-IMP-26), sinon la date de la ligne.
 
 ### Suggestions
 
@@ -165,6 +166,23 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
 - **R-IMP-18** — Contrôle interne du relevé : si le relevé fournit un solde de début et un solde de
   fin, la revue affiche `fin − début − Σ lignes valides`. Un écart non nul signale une ligne mal lue
   ou manquante **avant** la validation.
+
+### Relevé PDF LCL (IMP-10)
+
+- **R-IMP-23** — Le texte du PDF et la position de chaque élément sont extraits **localement**, sans service tiers
+  (ADR-0007). Un PDF sans texte extractible (scanné) ou qui n'est pas un relevé de compte LCL reconnu est refusé
+  avec un message explicite ; aucun lot n'est créé. Le relevé n'a pas de profil d'import.
+- **R-IMP-24** — **Table des opérations.** Sur chaque page, la table commence sous la ligne d'en-têtes `DATE`,
+  `LIBELLE`, `VALEUR`, `DEBIT`, `CREDIT` ; l'abscisse des en-têtes donne les colonnes. Un montant au crédit est
+  positif, au débit négatif (R-IMP-2). Une ligne **sans date** est la suite du libellé de la ligne précédente
+  (ajoutée après un saut de ligne). Le pied de page (« Page n / m ») est ignoré.
+- **R-IMP-25** — **Soldes et période.** La période est lue en tête (`du jj.mm.aaaa au jj.mm.aaaa`). La ligne
+  `ANCIEN SOLDE` donne le solde de début, `SOLDE EN EUROS` le solde de fin et sa date ; elles ne sont pas des
+  opérations. `SOLDE INTERMEDIAIRE …` et `TOTAUX` sont ignorées. La lecture s'arrête après `SOLDE EN EUROS`.
+- **R-IMP-26** — **Dates.** La colonne `DATE` (`jj.mm`, année selon R-IMP-4) donne la date de la ligne, qui
+  devient la date bancaire ; la colonne `VALEUR` (`jj.mm.aa`) la date de valeur. Pour un paiement par carte
+  (libellé « CB … jj/mm/aa »), la date du libellé est la **date d'achat**, qui devient la date de la
+  transaction créée (R-IMP-11). Les soldes et le rapprochement restent ainsi calés sur la banque (R-TRX-7).
 
 ### Règles de catégorisation
 

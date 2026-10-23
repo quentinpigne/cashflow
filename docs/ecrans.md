@@ -366,7 +366,8 @@ Conçu pour l'ordinateur, utilisable sur mobile. Étapes `[mat-stepper]` :
    (XLSX), ligne des en-têtes, lignes à ignorer ; association des colonnes (date et format, libellé(s),
    montant unique ou débit/crédit, séparateurs) ; filtres de lignes ; cellules des soldes. Les 20
    premières lignes brutes sont affichées, et **l'aperçu normalisé se met à jour en direct** avec les
-   erreurs par ligne. L'OFX saute cette étape.
+   erreurs par ligne. L'OFX et le PDF LCL (R-IMP-23) sautent cette étape, ainsi que la suivante : un
+   relevé PDF n'a pas de profil.
 3. **Profil** : nom du profil à enregistrer (facultatif), puis « Lancer la revue ».
 
 ## E11 — Import : revue (IMP-04, IMP-05, R-IMP-18)
