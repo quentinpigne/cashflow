@@ -16,23 +16,29 @@
         <label class="drop">
           <input
             type="file"
-            accept=".csv,.txt,.xlsx,.xls,.ofx,.qfx"
+            accept=".csv,.txt,.xlsx,.xls,.ofx,.qfx,.pdf"
             (change)="chooseFile($event)"
           />
           <mat-icon>upload_file</mat-icon>
-          <span>{{ file()?.name ?? 'Choisir un fichier CSV, Excel ou OFX' }}</span>
+          <span>{{
+            file()?.name ?? 'Choisir un fichier CSV, Excel, OFX ou un relevé PDF LCL'
+          }}</span>
         </label>
 
-        <mat-form-field>
-          <mat-label>Profil d'import</mat-label>
-          <mat-select [ngModel]="profileId()" (ngModelChange)="chooseProfile($event)">
-            <mat-option [value]="newProfile">Nouveau profil</mat-option>
-            @for (p of profiles.value() ?? []; track p.id) {
-              <mat-option [value]="p.id">{{ p.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        @if (profileId() !== newProfile && format() !== 'OFX') {
+        @if (format() === 'PDF') {
+          <p class="muted">Relevé PDF LCL : lu directement, sans profil d'import.</p>
+        } @else {
+          <mat-form-field>
+            <mat-label>Profil d'import</mat-label>
+            <mat-select [ngModel]="profileId()" (ngModelChange)="chooseProfile($event)">
+              <mat-option [value]="newProfile">Nouveau profil</mat-option>
+              @for (p of profiles.value() ?? []; track p.id) {
+                <mat-option [value]="p.id">{{ p.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+        @if (profileId() !== newProfile && format() !== 'OFX' && format() !== 'PDF') {
           <button mat-button class="edit-profile" (click)="editProfile()" [disabled]="!preview()">
             <mat-icon>tune</mat-icon>Modifier ce profil
           </button>

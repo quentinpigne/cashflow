@@ -129,8 +129,9 @@ export class ImportWizardPage implements OnInit {
   protected readonly profiles = rxResource({ stream: () => this.api.listImportProfiles() });
 
   protected readonly format = computed(() => this.preview()?.format ?? null);
+  /** L'OFX et le PDF LCL se lisent sans mapping ni profil (R-IMP-23). */
   protected readonly needsMapping = computed(
-    () => this.profileId() === NEW_PROFILE && this.format() !== 'OFX',
+    () => this.profileId() === NEW_PROFILE && this.format() !== 'OFX' && this.format() !== 'PDF',
   );
 
   /** Colonnes proposées : en-têtes de la ligne choisie, sinon numéros. */

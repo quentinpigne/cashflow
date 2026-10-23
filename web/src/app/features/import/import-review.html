@@ -125,7 +125,7 @@
         [class.skip]="line.decision === 'SKIP'"
         [class.invalid]="line.errors.length > 0"
       >
-        <div class="head">
+        <div class="head" [class.readonly]="!reviewing()">
           @if (reviewing()) {
             <mat-checkbox
               [checked]="selection().has(line.id)"
@@ -135,7 +135,12 @@
             />
           }
           <span class="date">{{ line.date ? (line.date | frDate: 'short') : '—' }}</span>
-          <span class="bank">{{ line.bank_label ?? '—' }}</span>
+          <span class="bank"
+            >{{ line.bank_label ?? '—' }}
+            @if (line.purchase_date) {
+              <span class="muted">· achat le {{ line.purchase_date | frDate: 'short' }}</span>
+            }
+          </span>
           <span class="amount" [class.negative]="(line.amount_minor ?? 0) < 0">{{
             line.amount_minor | money: b.currency
           }}</span>
