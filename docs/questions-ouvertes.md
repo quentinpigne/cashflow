@@ -13,7 +13,6 @@ a été consignée (ADR, spec).
 
 | # | Question | Proposition par défaut | Où |
 |---|---|---|---|
-| Q4 | Quelles autres banques que LCL, et quels formats d'export proposent-elles ? | Recenser avant la phase 2 | spec 03, roadmap |
 | Q11 | Chiffrement de la base au repos | Chiffrement du disque du serveur (ADR-0015) ; SQLCipher non retenu pour l'instant | ADR-0015 |
 | Q15 | HTTPS local : domaine personnel avec challenge DNS, ou autorité de certification interne ? | Sans objet en V1 (HTTP simple). À trancher au passage au HTTPS servi par axum | ADR-0015 |
 
@@ -29,6 +28,7 @@ a été consignée (ADR, spec).
 
 | # | Question | Réponse | Où |
 |---|---|---|---|
+| Q4 | Quelles banques, et quels formats d'export ? | LCL seulement pour l'instant (CSV/Excel, PDF) ; une autre banque se recensera le jour où elle sera utilisée (2026-10-23) | spec 03, roadmap |
 | Q5 | Conserver le fichier source de chaque import ? | Oui, supprimable | spec 03, R-IMP-21 |
 | — | Formats LCL | CSV/Excel pour la période récente, PDF pour l'historique | spec 03, roadmap |
 | — | Date conservée au pointage | Celle de l'utilisateur ; la date bancaire va dans `bank_date` | spec 02, R-TRX-7 |
