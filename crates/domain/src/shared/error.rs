@@ -84,6 +84,18 @@ pub enum DomainError {
     #[error("une catégorie de ce nom existe déjà à cet endroit")]
     CategoryNameTaken,
 
+    // ----- Tiers (spec 11)
+    #[error("un tiers de ce nom existe déjà")]
+    PayeeNameTaken,
+    #[error("un groupe de tiers de ce nom existe déjà")]
+    PayeeGroupNameTaken,
+    #[error("un tiers utilisé ne peut pas être supprimé : l'archiver ou le fusionner")]
+    PayeeInUse,
+    #[error("un tiers se fusionne dans un autre tiers")]
+    InvalidPayeeMerge,
+    #[error("une jambe de virement interne n'a pas de tiers")]
+    PayeeOnTransferLeg,
+
     // ----- Virements internes
     #[error("un virement relie deux comptes différents")]
     TransferSameAccount,
@@ -171,6 +183,11 @@ impl DomainError {
             CategoryInUse => "CATEGORY_IN_USE",
             InvalidCategoryMerge => "INVALID_CATEGORY_MERGE",
             CategoryNameTaken => "CATEGORY_NAME_TAKEN",
+            PayeeNameTaken => "PAYEE_NAME_TAKEN",
+            PayeeGroupNameTaken => "PAYEE_GROUP_NAME_TAKEN",
+            PayeeInUse => "PAYEE_IN_USE",
+            InvalidPayeeMerge => "INVALID_PAYEE_MERGE",
+            PayeeOnTransferLeg => "PAYEE_ON_TRANSFER_LEG",
             TransferSameAccount => "TRANSFER_SAME_ACCOUNT",
             TransferCurrencyMismatch => "TRANSFER_CURRENCY_MISMATCH",
             TransferAmountsNotOpposite => "TRANSFER_AMOUNTS_NOT_OPPOSITE",
@@ -221,6 +238,11 @@ impl DomainError {
             InvalidAllocation => "R-TRX-14",
             CategoryDepthExceeded | CategoryKindMismatch | CategoryNameTaken => "R-TRX-20",
             CategoryInUse | InvalidCategoryMerge => "R-TRX-22",
+            PayeeNameTaken => "R-TIE-1",
+            PayeeGroupNameTaken => "R-TIE-2",
+            PayeeInUse => "R-TIE-5",
+            InvalidPayeeMerge => "R-TIE-7",
+            PayeeOnTransferLeg => "R-TIE-11",
             TransferSameAccount | TransferCurrencyMismatch | TransferAmountsNotOpposite | AlreadyTransferLeg => {
                 "R-TRX-30"
             }

@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::fingerprint::normalize_label;
-use crate::shared::ids::{AccountId, CategoryId, ProjectId};
+use crate::shared::ids::{AccountId, CategoryId, PayeeId, ProjectId};
 use crate::shared::{DomainError, Money};
 
 /// Conditions d'une règle : toutes doivent être vraies (spec 03).
@@ -93,6 +93,9 @@ pub struct Actions {
     pub mark_transfer_to: Option<AccountId>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub set_note: Option<String>,
+    /// Tiers existant de la transaction (R-TIE-16).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_payee: Option<PayeeId>,
 }
 
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -129,6 +132,7 @@ pub struct Suggestion<Id> {
     pub project: Option<ProjectId>,
     pub transfer_to: Option<AccountId>,
     pub note: Option<String>,
+    pub payee: Option<PayeeId>,
     /// Règles appliquées, dans l'ordre.
     pub rules: Vec<Id>,
 }
@@ -216,8 +220,15 @@ impl Conditions {
 /// Évalue les règles par priorité croissante (`rules` déjà triées). La première qui correspond
 /// s'applique ; si elle ne stoppe pas, les suivantes complètent sans écraser (R-IMP-12).
 pub fn evaluate<Id: Copy>(rules: &[Rule<Id>], subject: &Subject<'_>) -> Suggestion<Id> {
-    let mut suggestion =
-        Suggestion { label: None, splits: Vec::new(), project: None, transfer_to: None, note: None, rules: Vec::new() };
+    let mut suggestion = Suggestion {
+        label: None,
+        splits: Vec::new(),
+        project: None,
+        transfer_to: None,
+        note: None,
+        payee: None,
+        rules: Vec::new(),
+    };
     for rule in rules {
         if !rule.conditions.matches(subject) {
             continue;
@@ -237,6 +248,9 @@ pub fn evaluate<Id: Copy>(rules: &[Rule<Id>], subject: &Subject<'_>) -> Suggesti
         }
         if suggestion.note.is_none() {
             suggestion.note.clone_from(&a.set_note);
+        }
+        if suggestion.payee.is_none() {
+            suggestion.payee = a.set_payee;
         }
         suggestion.rules.push(rule.id);
         if rule.stop_processing {
@@ -299,6 +313,19 @@ mod tests {
         assert_eq!(s.splits[0].category_id, Some(first));
         assert_eq!(s.note.as_deref(), Some("streaming"));
         assert_eq!(s.rules, vec![1, 2]);
+    }
+
+    /// R-TIE-16 : une règle suivante complète le tiers sans écraser celui d'une règle précédente.
+    #[test]
+    fn r_tie_16_set_payee_follows_r_imp_12() {
+        let (carrefour, other) = (PayeeId::new(), PayeeId::new());
+        let mut first = rule(1, "carrefour", None, false, None);
+        first.actions.set_payee = Some(carrefour);
+        let mut second = rule(2, "carrefour", Some(CategoryId::new()), true, None);
+        second.actions.set_payee = Some(other);
+        let s = evaluate(&[first, second], &subject("CB CARREFOUR MEYLAN 14/03", -4_250));
+        assert_eq!(s.payee, Some(carrefour));
+        assert_eq!(s.splits.len(), 1);
     }
 
     #[test]

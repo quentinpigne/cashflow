@@ -9,6 +9,7 @@ pub mod budgeting;
 pub mod import;
 pub mod ledger;
 pub mod loans;
+pub mod payees;
 pub mod projection;
 pub mod reconciliation;
 pub mod recurrence;

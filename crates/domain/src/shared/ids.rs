@@ -48,6 +48,8 @@ define_id!(
     RatePeriodId,
     ValuationId,
     CategoryId,
+    PayeeId,
+    PayeeGroupId,
     TransactionId,
     SplitId,
     TransferId,
