@@ -13,16 +13,18 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
 
 import { BonusKind } from '../../api/models/bonus-kind';
 import { BonusView } from '../../api/models/bonus-view';
 import { EmploymentView } from '../../api/models/employment-view';
+import { PayslipView } from '../../api/models/payslip-view';
 import { SalaryChangeReason } from '../../api/models/salary-change-reason';
 import { SalaryView } from '../../api/models/salary-view';
 import { SalariesService } from '../../api/services/salaries.service';
-import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
+import { currentMonth, fromIsoDate, shiftMonth, todayIso, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { BONUS_KIND_LABELS, SALARY_REASON_LABELS } from '../../core/labels';
 import { parseMoney, toEditable } from '../../core/money';
@@ -517,6 +519,192 @@ export class BonusDialog {
       this.ref.close(true);
     } catch (e) {
       this.error.set(errorMessage(e));
+    }
+  }
+}
+
+/** Types et taille acceptés pour une fiche de paie (R-SAL-15). */
+export const PAYSLIP_ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';
+const PAYSLIP_MAX_BYTES = 10 * 1024 * 1024;
+
+/** « 245 Ko », « 1,2 Mo ». */
+export function formatSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+  return `${(bytes / (1024 * 1024)).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Mo`;
+}
+
+export interface PayslipDialogData {
+  employmentId: string;
+  /** Fiche modifiée : seuls le mois et la note changent (R-SAL-17). */
+  payslip: PayslipView | null;
+  /** Fichier déjà choisi, par exemple déposé sur la section. */
+  file: File | null;
+}
+
+/** Envoi ou modification d'une fiche de paie (SAL-09). */
+@Component({
+  selector: 'app-payslip-dialog',
+  imports: [
+    FormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <h2 mat-dialog-title>
+      {{ data.payslip ? 'Modifier la fiche de paie' : 'Nouvelle fiche de paie' }}
+    </h2>
+    <mat-dialog-content class="form">
+      @if (data.payslip; as p) {
+        <p class="file"><mat-icon>description</mat-icon>{{ p.file_name }}</p>
+      } @else {
+        <label class="drop">
+          <input
+            type="file"
+            [accept]="accept"
+            aria-label="Fichier de la fiche de paie"
+            (change)="choose($event)"
+          />
+          <mat-icon>upload_file</mat-icon>
+          <span>{{ file()?.name ?? 'Choisir un PDF, un JPEG ou un PNG (10 Mo au plus)' }}</span>
+        </label>
+      }
+      <div class="pair">
+        <mat-form-field>
+          <mat-label>Mois de paie</mat-label>
+          <mat-select [ngModel]="month()" (ngModelChange)="month.set($event)">
+            @for (m of months; track $index) {
+              <mat-option [value]="$index + 1">{{ m }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Année</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1950"
+            max="2100"
+            [ngModel]="year()"
+            (ngModelChange)="year.set($event)"
+          />
+        </mat-form-field>
+      </div>
+      <mat-form-field>
+        <mat-label>Note</mat-label>
+        <input matInput [ngModel]="note()" (ngModelChange)="note.set($event)" />
+        <mat-hint>Fiche rectificative, solde de tout compte…</mat-hint>
+      </mat-form-field>
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Annuler</button>
+      <button mat-flat-button [disabled]="!payMonth() || busy()" (click)="save()">
+        Enregistrer
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [
+    FORM_STYLES,
+    `
+      .drop {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.25rem;
+        border: 2px dashed var(--mat-sys-outline-variant);
+        border-radius: var(--mat-sys-corner-medium);
+        cursor: pointer;
+        input {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          opacity: 0;
+        }
+      }
+      .file {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+      }
+    `,
+  ],
+})
+export class PayslipDialog {
+  protected readonly data = inject<PayslipDialogData>(MAT_DIALOG_DATA);
+  private readonly api = inject(SalariesService);
+  private readonly ref = inject(MatDialogRef<PayslipDialog>);
+
+  protected readonly accept = PAYSLIP_ACCEPT;
+  protected readonly months = MONTH_NAMES;
+  /** Le mois précédent par défaut : la fiche arrive après le mois travaillé. */
+  private readonly initial = this.data.payslip?.pay_month ?? `${shiftMonth(currentMonth(), -1)}-01`;
+  protected readonly month = signal(Number(this.initial.slice(5, 7)));
+  protected readonly year = signal(Number(this.initial.slice(0, 4)));
+  protected readonly note = signal(this.data.payslip?.note ?? '');
+  protected readonly file = signal<File | null>(null);
+  protected readonly error = signal<string | null>(null);
+  protected readonly busy = signal(false);
+
+  constructor() {
+    if (this.data.file) this.setFile(this.data.file);
+  }
+
+  protected readonly payMonth = computed(() => {
+    const year = Number(this.year());
+    if (!Number.isInteger(year) || year < 1950 || year > 2100) return null;
+    if (!this.data.payslip && !this.file()) return null;
+    return `${year}-${String(this.month()).padStart(2, '0')}-01`;
+  });
+
+  protected choose(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) this.setFile(file);
+  }
+
+  private setFile(file: File): void {
+    if (file.size > PAYSLIP_MAX_BYTES) {
+      this.file.set(null);
+      this.error.set('Le fichier dépasse 10 Mo.');
+      return;
+    }
+    this.file.set(file);
+    this.error.set(null);
+  }
+
+  protected async save(): Promise<void> {
+    const payMonth = this.payMonth();
+    if (!payMonth) return;
+    const id = this.data.employmentId;
+    const note = this.note().trim() || null;
+    this.busy.set(true);
+    try {
+      const file = this.file();
+      if (this.data.payslip) {
+        await firstValueFrom(
+          this.api.updatePayslip({
+            id,
+            payslip_id: this.data.payslip.id,
+            body: { pay_month: payMonth, note },
+          }),
+        );
+      } else if (file) {
+        await firstValueFrom(
+          this.api.createPayslip({ id, body: { file, pay_month: payMonth, note } }),
+        );
+      }
+      this.ref.close(true);
+    } catch (e) {
+      this.error.set(errorMessage(e));
+    } finally {
+      this.busy.set(false);
     }
   }
 }

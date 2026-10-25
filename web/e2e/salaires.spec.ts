@@ -78,3 +78,49 @@ test('E9 : rubrique Salaires et tolérance de l’écart (R-SAL-14, R-SAL-9)', a
   await expect(page.getByRole('switch', { name: 'Salaires' })).toBeDisabled();
   await expect(page.getByLabel("Tolérance de l'écart de salaire")).toHaveValue('5,00');
 });
+
+test('E30 : fiches de paie archivées et mois sans fiche (SAL-09, R-SAL-16, R-SAL-18)', async ({
+  page,
+}) => {
+  await login(page);
+  await openSalaries(page);
+  await page.getByRole('link', { name: /Acme Industries/ }).click();
+  const section = page.locator('section.payslips');
+  await expect(section.getByRole('heading', { name: 'Fiches de paie' })).toBeVisible();
+  // Jeu de démonstration : juin, juillet et septembre ; août est sans fiche.
+  await expect(section.locator('.row.payslip:not(.missing)')).toHaveCount(3);
+  await expect(section.locator('.row.missing')).toHaveText(/Août 2026\s*sans fiche/);
+  const open = section.getByRole('link', { name: 'Ouvrir la fiche fiche-de-paie-2026-09.pdf' });
+  const response = await page.request.get((await open.getAttribute('href'))!);
+  expect(response.headers()['content-type']).toBe('application/pdf');
+  expect(response.headers()['content-security-policy']).toBe('sandbox');
+  if (isMobile(page)) return;
+
+  // Envoyer la fiche d'août : le mois précédent est proposé par défaut.
+  const pdf = {
+    name: 'paie-aout.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 août e2e'),
+  };
+  await section.getByRole('button', { name: 'Ajouter' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Mois de paie')).toHaveText('Septembre');
+  await dialog.getByLabel('Fichier de la fiche de paie').setInputFiles(pdf);
+  await dialog.getByLabel('Mois de paie').click();
+  await page.getByRole('option', { name: 'Août' }).click();
+  await dialog.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(section.locator('.row.missing')).toHaveCount(0);
+
+  // Le même fichier ne s'archive qu'une fois.
+  await section.getByRole('button', { name: 'Ajouter' }).click();
+  await dialog.getByLabel('Fichier de la fiche de paie').setInputFiles(pdf);
+  await dialog.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('déjà archivé (fiche de 08/2026)');
+  await dialog.getByRole('button', { name: 'Annuler' }).click();
+
+  await section.getByRole('button', { name: 'Actions sur la fiche paie-aout.pdf' }).click();
+  await page.getByRole('menuitem', { name: 'Supprimer' }).click();
+  await page.getByRole('button', { name: 'Supprimer' }).click();
+  await expect(section.locator('.row.missing')).toHaveText(/Août 2026\s*sans fiche/);
+});
