@@ -20,5 +20,5 @@ services:
       - data:/data
 
 volumes:
-  # Tout l'état : cashflow.db, backups/, imports/ (ADR-0015).
+  # Tout l'état : cashflow.db, backups/, imports/, documents/ (ADR-0015, ADR-0024).
   data:

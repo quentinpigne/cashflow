@@ -16,7 +16,8 @@ la survie de l'application, ni d'une stack précise : on vient d'en changer une 
   exactement les mêmes données (test aller-retour).
 - **Fichiers source des imports** : au choix au moment de l'export, par une case « inclure les fichiers
   source » décochée par défaut. Cochée, l'export devient une archive ZIP qui contient le JSON et les
-  fichiers, référencés depuis leur lot d'import. La restauration est alors intégrale.
+  fichiers, référencés depuis leur lot d'import, ainsi que les documents archivés (fiches de paie,
+  ADR-0024). La restauration est alors intégrale.
 - **Export tabulaire** (V1) : transactions et ventilations en CSV, pour un tableur.
 - **Sauvegarde** : la base est un fichier unique, copiable à chaud via le mécanisme de sauvegarde du
   moteur. Une sauvegarde automatique horodatée est faite avant chaque migration de schéma.

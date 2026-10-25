@@ -1,8 +1,8 @@
 # Spec 10 — Salaires
 
 Statut : **Validée** (2026-10-22)
-Modèle : [Employment, Salary, SalaryBonus](../modele-de-donnees.md#salaires--spec-10)
-Décision : ADR-0022 (salaires déclarés et capacité d'épargne projetée)
+Modèle : [Employment, Salary, SalaryBonus, Payslip](../modele-de-donnees.md#salaires--spec-10)
+Décision : ADR-0022 (salaires déclarés et capacité d'épargne projetée), ADR-0024 (documents archivés)
 
 ## Concepts
 
@@ -17,6 +17,8 @@ cette catégorie : un écart signale une rémunération oubliée ou une anomalie
 
 Le salaire se **projette** : hausse annuelle selon le scénario, augmentations prévues, changement d'emploi,
 fin d'activité. Il entre dans la **capacité d'épargne** de la projection du patrimoine (R-PRJ-42).
+
+Les **fiches de paie** s'archivent avec leur emploi, pour les retrouver des années plus tard.
 
 La rubrique est **facultative**, comme Biens et Prêts.
 
@@ -87,6 +89,23 @@ La rubrique est **facultative**, comme Biens et Prêts.
   continuité de l'évolution réelle (R-SAL-8), avec ses hypothèses : taux, rémunérations et primes prévues,
   dates de fin d'emploi.
 
+## Fiches de paie
+
+- **R-SAL-15** — Une **fiche de paie** est un document (ADR-0024) rattaché à un emploi et à un **mois de
+  paie** : le mois travaillé qu'elle couvre, entre le mois de début et le mois de fin de l'emploi. Le fichier
+  est un PDF, un JPEG ou un PNG d'au plus 10 Mo, reconnu à son contenu et non à son extension. Plusieurs
+  fiches pour un même mois sont permises (fiche rectificative, solde de tout compte). Note optionnelle.
+- **R-SAL-16** — Un même fichier (même empreinte SHA-256) ne s'archive qu'une fois par emploi : un second envoi
+  est refusé, avec le mois de la fiche existante.
+- **R-SAL-17** — Le fichier d'une fiche est **immuable** : on modifie son mois de paie et sa note ; pour
+  corriger le fichier, on supprime la fiche et on en envoie une autre. Supprimer une fiche, ou son emploi,
+  supprime son document (suppression différée, ADR-0024).
+- **R-SAL-18** — Les fiches s'affichent par année, du mois le plus récent au plus ancien ; chacune s'ouvre
+  dans le navigateur ou se télécharge. Un **mois sans fiche** est un mois de l'emploi sans aucune fiche,
+  compté à partir du mois de la première fiche archivée et jusqu'au mois de fin de l'emploi ou au mois
+  précédant le mois courant, le plus tôt des deux. Il est signalé dans la liste, à titre indicatif, sans
+  alerte.
+
 ## Activation
 
 - **R-SAL-14** — La rubrique **Salaires** s'active dans les réglages, comme Biens et Prêts (R-BIE-7) :
@@ -106,6 +125,7 @@ La rubrique est **facultative**, comme Biens et Prêts.
 | SAL-06 | V2 | Pension de retraite et revenus de remplacement projetés (Q20) |
 | SAL-07 | V2 | Salaire déclaré dans la trésorerie projetée du compte qui le reçoit |
 | SAL-08 | V2 | Préremplir une rémunération à partir des salaires reçus |
+| SAL-09 | V1 | Archiver et consulter les fiches de paie d'un emploi |
 
 Exemple commun : un emploi chez Acme depuis le 2022-09-01, catégorie « Salaires », mois des augmentations
 janvier. Rémunérations : 2022-09 (embauche) 38 000 € brut, 2 400 € net ; 2024-01 (augmentation) 40 000 €,
@@ -137,3 +157,11 @@ janvier. Rémunérations : 2022-09 (embauche) 38 000 € brut, 2 400 € net ; 2
 
 - Sur une nouvelle installation, « Salaires » n'apparaît pas dans le menu ; tant qu'un emploi existe,
   l'interrupteur ne peut pas être désactivé.
+
+### SAL-09 — Fiches de paie
+
+- Fiches archivées : juillet 2026, août 2026 (deux fichiers : la fiche et sa rectificative), octobre 2026,
+  envoyée en avance. Septembre 2026 est signalé « sans fiche » ; les mois d'avant juillet 2026 ne le sont pas.
+- Envoyer une seconde fois le PDF d'août 2026 est refusé : « Ce fichier est déjà archivé (août 2026). »
+- Un scan de 12 Mo est refusé, comme un document Word renommé en `.pdf`.
+- Mettre une fiche en septembre 2026 au lieu d'août : on modifie son mois de paie, le fichier ne change pas.

@@ -51,6 +51,10 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Versement décalé | `paid_next_month` | Le salaire du mois M est versé en M+1. |
 | Revenu annuel | — | Net (ou brut) d'un emploi sur une année civile, primes comprises (R-SAL-7). |
 | Écart de salaire | `salary gap` | Net reçu sur la catégorie d'un emploi − net attendu, pour un mois (R-SAL-9). |
+| Fiche de paie | `Payslip` | Document archivé d'un emploi pour un mois de paie (SAL-09). |
+| Mois de paie | `pay_month` | Mois travaillé que couvre une fiche de paie. |
+| Mois sans fiche | `missing payslip month` | Mois d'un emploi sans fiche de paie, depuis la première archivée (R-SAL-18). |
+| Document | `Document` | Fichier envoyé par l'utilisateur (PDF, JPEG, PNG), conservé sur le disque, immuable (ADR-0024). |
 | Taux de hausse des salaires | `salary_growth_rate` | Hausse annuelle du net projeté, fixée par scénario. |
 | Taux de hausse des dépenses | `expense_growth_rate` | Hausse annuelle des dépenses projetées, fixée par scénario. |
 | Capacité d'épargne | `savings capacity` | Revenus projetés − dépenses projetées − échéances de prêts, pour un mois de projection (R-PRJ-42). |

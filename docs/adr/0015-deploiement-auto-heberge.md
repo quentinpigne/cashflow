@@ -2,7 +2,7 @@
 
 - **Statut** : Accepté
 - **Date** : 2026-10-20
-- **Concerne** : architecture, ADR-0006, ADR-0008, ADR-0009, ADR-0018, ADR-0023
+- **Concerne** : architecture, ADR-0006, ADR-0008, ADR-0009, ADR-0018, ADR-0023, ADR-0024
 
 ## Contexte
 
@@ -17,7 +17,8 @@ Les données sont bancaires. D'autres appareils partagent le réseau domestique 
   de sous-commandes : `serve`, `migrate`, `seed`, `export`, `import-export`, `backup`, `set-password`, `token` (jetons d'accès, ADR-0023).
 - **Image Docker** multi-étapes (build de l'interface, build Rust, image finale minimale non-root),
   publiée pour `linux/amd64` (serveur cible en x86-64) ; `linux/arm64` reste possible sans changement de code.
-- Un volume `/data` contient tout l'état : `cashflow.db`, `imports/` (fichiers source), `backups/`.
+- Un volume `/data` contient tout l'état : `cashflow.db`, `imports/` (fichiers source), `documents/` (fiches de
+  paie, ADR-0024), `backups/`.
 - Un `compose.yaml` : un seul service, `cashflow`, publié sur le réseau local.
 
 ### HTTP en V1, HTTPS par axum ensuite
@@ -45,7 +46,7 @@ retenue :
 - **Sauvegarde automatique quotidienne** par le serveur (`VACUUM INTO` vers `backups/`, horodatée),
   ainsi qu'avant chaque migration. Rétention : 7 quotidiennes, 4 hebdomadaires, 12 mensuelles (réglable).
 - La copie **hors du serveur** (disque externe, NAS, stockage chiffré distant) relève de l'administration
-  du serveur. Elle est documentée, pas implémentée.
+  du serveur ; elle couvre tout le volume, documents compris (ADR-0024). Elle est documentée, pas implémentée.
 
 ### Notifications
 Uniquement **dans l'application** (centre de notifications), écrites en base. Les notifications push (ntfy, Web Push) sont reportées en V2.

@@ -95,6 +95,10 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] CPT-07 — ordre et couleur des comptes
 - [x] Jetons d'accès en lecture seule pour Foodflow (ADR-0023 ; prérequis CSH-00 de Foodflow)
 
+## Compléments V1 — fiches de paie
+
+- [ ] SAL-09 — archiver et consulter les fiches de paie d'un emploi (ADR-0024, spec 10)
+
 ## Mise en service (prochaine étape)
 
 - [ ] Exposition sur Internet derrière un proxy, en HTTPS : passe d'exploitation et de sécurité (Q15, à

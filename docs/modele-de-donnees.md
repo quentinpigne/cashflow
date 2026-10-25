@@ -57,6 +57,8 @@ erDiagram
     Employment ||--o{ Salary : "rémunérations successives"
     Employment ||--o{ SalaryBonus : "primes"
     Category ||--o{ Employment : "salaire reçu sur"
+    Employment ||--o{ Payslip : "fiches de paie"
+    Payslip ||--|| Document : "fichier"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -380,10 +382,38 @@ Une rémunération dont `effective_month` est futur est prévue (R-SAL-4) ; rien
 | `recurring` | booléen | défaut `true` pour `THIRTEENTH_MONTH`, `false` sinon (R-SAL-11) |
 | `note` | texte | optionnel |
 
+### Payslip (fiche de paie)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `employment_id` | `Id` → Employment | requis, suppression en cascade (le document est supprimé par le service) |
+| `pay_month` | `Date` | requis, premier jour d'un mois, entre le mois de début et le mois de fin de l'emploi |
+| `document_id` | `Id` → Document | requis, unique |
+| `note` | texte | optionnel |
+
+Plusieurs fiches par mois de paie sont permises (R-SAL-15). Un même fichier (`Document.sha256`) ne s'archive
+qu'une fois par emploi (R-SAL-16). Le fichier est immuable : seuls `pay_month` et `note` se modifient
+(R-SAL-17).
+
 ### Réglages
 
 `features.salaries` active la rubrique (R-SAL-14) ; `salaries.gap_tolerance` (`Rate`, défaut 5 %) fixe la
 tolérance de l'écart entre attendu et reçu (R-SAL-9).
+
+## Documents — ADR-0024
+
+### Document
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `file_name` | texte ≤ 255 | requis : nom d'origine du fichier |
+| `media_type` | enum | `application/pdf` \| `image/jpeg` \| `image/png`, reconnu au contenu |
+| `size_bytes` | entier | requis, > 0 et ≤ 10 Mo |
+| `sha256` | texte | requis : empreinte du contenu, 64 caractères hexadécimaux |
+
+Le contenu est le fichier `/data/documents/<id>`, immuable. Un document est toujours rattaché : une fiche de
+paie (`Payslip`), plus tard une transaction (TRX-11). Sa suppression déplace le fichier dans
+`documents/trash/`, effacé après 400 jours.
 
 ## Import — [spec 03](specs/03-import.md)
 

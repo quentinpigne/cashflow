@@ -59,12 +59,17 @@ déployées.
   12 mois), une avant chaque migration et une avant chaque déploiement (ADR-0015).
 - **Manuelle** : `docker compose -f deploy/compose.yaml exec cashflow cashflow backup`.
 - **Hors du serveur** : à organiser côté serveur (disque externe, NAS, stockage chiffré distant), par
-  exemple une copie quotidienne de `/data/backups` :
+  exemple une copie quotidienne des sauvegardes de la base et des documents (fiches de paie), qui n'existent
+  qu'en un exemplaire dans le volume (ADR-0024) :
 
   ```sh
   docker run --rm -v cashflow_data:/data:ro -v /mnt/sauvegardes:/out alpine \
-    sh -c 'cp -n /data/backups/*.db /out/'
+    sh -c 'cp -n /data/backups/*.db /out/ && mkdir -p /out/documents && cp -Rn /data/documents/. /out/documents/'
   ```
+
+- **Documents** : un document supprimé reste 400 jours dans `/data/documents/trash/`, préfixé de sa date de
+  suppression ; après la restauration d'une sauvegarde, on le remet à sa place sous son identifiant
+  (ADR-0024).
 
 - **Export ouvert** (ADR-0008) : Réglages › Export, ou
   `docker compose -f deploy/compose.yaml exec cashflow cashflow export > export.json`.

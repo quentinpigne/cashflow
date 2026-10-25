@@ -662,7 +662,7 @@ Ce qui change dans les écrans existants :
 - **Emplois** : liste (employeur, poste, dates, net mensuel en vigueur) ; les emplois terminés sont regroupés
   dans une section repliée. Action « Nouvel emploi ».
 
-## E30 — Fiche d'un emploi (SAL-01 à SAL-03)
+## E30 — Fiche d'un emploi (SAL-01 à SAL-03, SAL-09)
 
 - **En-tête** : employeur, poste, dates, net mensuel en vigueur, menu ⋮ (Modifier, Supprimer).
 - **Rémunérations** : liste chronologique inverse (mois d'effet, motif, brut annuel, net mensuel, variation
@@ -672,13 +672,20 @@ Ce qui change dans les écrans existants :
 - **Revenu annuel** : tableau par année, net et brut, variation (R-SAL-7).
 - **Reçu** : les 12 derniers mois, attendu, reçu, écart ; les écarts signalés en rouge ; un clic sur un mois
   ouvre les transactions de la catégorie sur ce mois (E14 filtrée).
+- **Fiches de paie** (SAL-09) : par année, du plus récent au plus ancien, un groupe replié par année sauf la
+  dernière ; chaque ligne montre le mois de paie, le nom du fichier, sa taille et la note, avec les actions
+  Ouvrir (nouvel onglet), Télécharger et ⋮ (Modifier, Supprimer). Les mois sans fiche apparaissent en gris,
+  « sans fiche » (R-SAL-18). « Ajouter » ouvre le formulaire ; un fichier déposé sur la section l'ouvre
+  prérempli.
 
 Formulaires (popup) :
 - **emploi** : employeur, poste, date de début, date de fin, catégorie de revenu (« Salaires » par défaut),
   mois des augmentations, versement décalé, note ;
 - **rémunération** : mois d'effet (sélecteur de mois), motif, brut annuel de base (indice : « hors primes et
   13e mois »), net mensuel versé (indice : « net payé, après prélèvement à la source »), note ;
-- **prime** : libellé, nature, date de versement, net, brut, récurrente, note.
+- **prime** : libellé, nature, date de versement, net, brut, récurrente, note ;
+- **fiche de paie** : fichier (PDF, JPEG, PNG, 10 Mo au plus), mois de paie (sélecteur de mois, le mois
+  précédent par défaut), note. En modification, le fichier n'est pas modifiable (R-SAL-17).
 
 # Écrans — tiers (spec 11)
 
