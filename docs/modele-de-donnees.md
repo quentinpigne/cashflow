@@ -112,8 +112,8 @@ erDiagram
 | `include_in_net_worth` | booléen | défaut `true` |
 | `include_in_emergency_fund` | booléen | défaut `true` pour `CASH`, `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE` ; `false` sinon (R-CPT-13) |
 | `include_in_budget` | booléen | défaut `true` pour `CASH`, `false` sinon ; toujours `false` pour `VARIABLE_SAVINGS` (R-BUD-1) |
-| `display_order` | entier | défaut 0 |
-| `color` | texte | optionnel |
+| `display_order` | entier | ordre dans la famille ; à la création, après le dernier compte de la famille (CPT-07) |
+| `color` | texte | optionnel, `#RRGGBB` (CPT-07) |
 | `notes` | texte | optionnel |
 
 `AccountKind` → `AccountFamily` (correspondance fixe, cf. spec 01) :

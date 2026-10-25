@@ -20,6 +20,47 @@
   gap: 0.5rem;
 }
 
+.colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+
+  .muted {
+    margin-right: 0.25rem;
+  }
+}
+
+.swatch {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  outline-offset: 2px;
+
+  &[aria-checked='true'] {
+    outline: 2px solid var(--mat-sys-on-surface);
+  }
+
+  &.none {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border-color: var(--mat-sys-outline-variant);
+    color: var(--mat-sys-on-surface-variant);
+
+    mat-icon {
+      font-size: 1.125rem;
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+  }
+}
+
 .error {
   color: var(--mat-sys-error);
 }

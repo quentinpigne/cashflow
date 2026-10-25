@@ -42,6 +42,31 @@
       </mat-form-field>
     }
 
+    <div class="colors" role="radiogroup" aria-label="Couleur du compte">
+      <span class="muted">Couleur</span>
+      <button
+        type="button"
+        class="swatch none"
+        role="radio"
+        aria-label="Sans couleur"
+        [attr.aria-checked]="form.controls.color.value === null"
+        (click)="form.controls.color.setValue(null)"
+      >
+        <mat-icon>block</mat-icon>
+      </button>
+      @for (color of colors; track color.value) {
+        <button
+          type="button"
+          class="swatch"
+          role="radio"
+          [attr.aria-label]="color.label"
+          [attr.aria-checked]="form.controls.color.value === color.value"
+          [style.background]="color.value"
+          (click)="form.controls.color.setValue(color.value)"
+        ></button>
+      }
+    </div>
+
     <div class="pair">
       <mat-form-field>
         <mat-label>Date d'ouverture</mat-label>

@@ -107,3 +107,11 @@ Critères d'acceptation :
   remplace la précédente après confirmation).
 - La valeur du compte suit R-CPT-6 ; le tableau de bord affiche « estimée » si la valorisation
   est ancienne.
+
+### CPT-07 — Ordre et couleur des comptes
+
+- Je choisis une couleur pour un compte parmi une palette, ou aucune ; elle apparaît en pastille devant
+  son nom dans la liste des comptes et sur sa fiche.
+- Dans la liste, un mode « Ordonner » me laisse glisser les comptes d'une même famille pour fixer leur
+  ordre ; il est gardé (`display_order`). Les familles restent dans l'ordre de la spec.
+- Un nouveau compte se range à la fin de sa famille.

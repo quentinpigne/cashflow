@@ -9,6 +9,7 @@ export type { AccountId } from './models/account-id';
 export type { AccountInput } from './models/account-input';
 export type { AccountKind } from './models/account-kind';
 export type { AccountProjectionView } from './models/account-projection-view';
+export type { AccountReorderInput } from './models/account-reorder-input';
 export type { AcquisitionView } from './models/acquisition-view';
 export type { Actions } from './models/actions';
 export type { AlertLevel } from './models/alert-level';

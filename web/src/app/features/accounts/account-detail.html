@@ -6,7 +6,12 @@
           <a mat-icon-button routerLink="/comptes" aria-label="Retour aux comptes"
             ><mat-icon>arrow_back</mat-icon></a
           >
-          <h1>{{ a.name }}</h1>
+          <h1>
+            @if (a.color) {
+              <span class="account-dot" [style.background]="a.color" aria-hidden="true"></span>
+            }
+            {{ a.name }}
+          </h1>
           <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Actions sur le compte">
             <mat-icon>more_vert</mat-icon>
           </button>

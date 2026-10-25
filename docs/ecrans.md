@@ -40,7 +40,7 @@ composant visé, pour guider l'implémentation.
 | Entrée | Écran | Phase 1 |
 |---|---|---|
 | Accueil | [E1](#e1--accueil-tdb-01) | ✓ |
-| Comptes | [E2](#e2--comptes-cpt-01-cpt-03) | ✓ |
+| Comptes | [E2](#e2--comptes-cpt-01-cpt-03-cpt-07) | ✓ |
 | Réglages | [E9](#e9--réglages) | ✓ |
 | Transactions (tous comptes) | — | V1 (TRX-08) |
 | Import, Rapprochement, Budget, Épargne, Projections | — | phases 2 à 6 |
@@ -93,7 +93,7 @@ Blocs, de haut en bas :
    maximum puis « Voir tout ». Chaque ligne permet de choisir la catégorie **sur place**
    `[mat-autocomplete]`, sans ouvrir la transaction.
 4. **Comptes** : liste groupée par famille avec le solde de chaque compte, comme
-   [E2](#e2--comptes-cpt-01-cpt-03) mais sans les comptes clôturés. Un toucher ouvre le compte.
+   [E2](#e2--comptes-cpt-01-cpt-03-cpt-07) mais sans les comptes clôturés. Un toucher ouvre le compte.
 5. **Alertes** : transactions `PENDING` de plus de 10 jours et écarts de rapprochement (R-TDB-10).
    **Bloc absent en phase 1** : toutes les transactions y sont saisies à la main et restent `PENDING`,
    l'alerte se déclencherait partout. Il apparaît en phase 2, avec le pointage par import.
@@ -159,7 +159,7 @@ navigateur (`localStorage`), séparément pour chaque nombre de colonnes (une su
 grand écran) ; « Disposition par défaut » apparaît dès que celle du nombre de colonnes affiché a été
 modifiée. Un encadré sans contenu (aucune alerte, rien à catégoriser) reste masqué à sa place.
 
-## E2 — Comptes (CPT-01, CPT-03)
+## E2 — Comptes (CPT-01, CPT-03, CPT-07)
 
 Liste de tous les comptes, **groupés par famille** (Liquidités, Épargne à taux fixe, Épargne variable),
 avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriques (E25 à E28). Ordre dans un groupe : `display_order`, puis nom.
@@ -169,12 +169,15 @@ avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriq
   les flux.
 - Un compte en devise autre que l'euro porte la devise et la mention « hors totaux » (R-CPT-2).
 - Les **comptes clôturés** sont regroupés dans une section repliée en bas `[mat-expansion-panel]`.
-- Action : « Nouveau compte » ([E4](#e4--créer-ou-modifier-un-compte-cpt-01-cpt-04)).
+- La **couleur** d'un compte (CPT-07) apparaît en pastille devant son nom.
+- Actions : « Nouveau compte » ([E4](#e4--créer-ou-modifier-un-compte-cpt-01-cpt-04-cpt-07)) ; « Ordonner »
+  (CPT-07) passe la liste en mode glisser-déposer `[cdkDrag]` : chaque compte se déplace par sa poignée à
+  l'intérieur de sa famille, les lignes n'ouvrent plus le compte ; « Terminé » en sort.
 
 ## E3 — Détail d'un compte (CPT-03, TRX-02)
 
 **En-tête** :
-- nom, nature, établissement, IBAN masqué (R-CPT-8 ; un bouton l'affiche en clair) ;
+- pastille de couleur (CPT-07), nom, nature, établissement, IBAN masqué (R-CPT-8 ; un bouton l'affiche en clair) ;
 - **solde total** et **solde pointé** (CPT-03). En phase 1, seul le solde total est affiché : sans
   pointage, le solde pointé ne voudrait rien dire. Il apparaît en phase 2 ;
 - « Solde au… » : un sélecteur de date affiche le solde à une date passée ;
@@ -214,14 +217,15 @@ avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriq
 └──────────────────────────┘
 ```
 
-## E4 — Créer ou modifier un compte (CPT-01, CPT-04)
+## E4 — Créer ou modifier un compte (CPT-01, CPT-04, CPT-07)
 
 Formulaire `[mat-dialog]` sur ordinateur, plein écran sur mobile.
 
 1. **Nature** (requis) : liste groupée par famille. Elle n'est plus modifiable dès que le compte a des
    transactions (R-CPT-1).
 2. **Nom** (requis), **établissement** (optionnel, liste des établissements non archivés, R-CPT-10, avec
-   « Nouvel établissement… » en bas de liste).
+   « Nouvel établissement… » en bas de liste), **couleur** (CPT-07 : une rangée de pastilles, dont « sans
+   couleur », par défaut).
 3. **Date d'ouverture** et **solde d'ouverture** (requis, défaut 0).
 4. **Coordonnées bancaires**, section repliée : IBAN (validé à la saisie, R-CPT-8), numéro de compte.
 5. **Options**, section repliée, préremplies selon la nature : compter dans le patrimoine, dans

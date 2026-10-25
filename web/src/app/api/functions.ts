@@ -5,6 +5,8 @@ export type { ListAccounts$Params as ListAccounts$Params } from './fn/accounts/l
 export { listAccounts as listAccounts } from './fn/accounts/list-accounts';
 export type { CreateAccount$Params as CreateAccount$Params } from './fn/accounts/create-account';
 export { createAccount as createAccount } from './fn/accounts/create-account';
+export type { ReorderAccounts$Params as ReorderAccounts$Params } from './fn/accounts/reorder-accounts';
+export { reorderAccounts as reorderAccounts } from './fn/accounts/reorder-accounts';
 export type { GetAccount$Params as GetAccount$Params } from './fn/accounts/get-account';
 export { getAccount as getAccount } from './fn/accounts/get-account';
 export type { UpdateAccount$Params as UpdateAccount$Params } from './fn/accounts/update-account';

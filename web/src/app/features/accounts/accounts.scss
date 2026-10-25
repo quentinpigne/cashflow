@@ -34,6 +34,29 @@
   }
 }
 
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.row.ordering {
+  justify-content: flex-start;
+  background: var(--mat-sys-surface);
+
+  .handle {
+    cursor: grab;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.cdk-drag-preview {
+  box-shadow: var(--mat-sys-level3);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
 .small {
   font: var(--mat-sys-body-small);
 }

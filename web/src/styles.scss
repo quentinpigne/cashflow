@@ -162,3 +162,14 @@ input.amount {
     border-radius: 0 !important;
   }
 }
+
+// Pastille de couleur d'un compte (CPT-07).
+.account-dot {
+  display: inline-block;
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}

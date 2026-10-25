@@ -1,10 +1,18 @@
 <div class="page">
   <div class="page-header">
     <h1>Comptes</h1>
-    <button mat-flat-button (click)="create()">
-      <mat-icon>add</mat-icon>
-      Nouveau compte
-    </button>
+    <div class="actions">
+      @if (groups().length > 0) {
+        <button mat-button (click)="ordering.set(!ordering())">
+          <mat-icon>{{ ordering() ? 'check' : 'swap_vert' }}</mat-icon>
+          {{ ordering() ? 'Terminé' : 'Ordonner' }}
+        </button>
+      }
+      <button mat-flat-button (click)="create()">
+        <mat-icon>add</mat-icon>
+        Nouveau compte
+      </button>
+    </div>
   </div>
 
   @if (store.all.isLoading() && !store.all.hasValue()) {
@@ -25,21 +33,53 @@
             group.totalMinor | money
           }}</span>
         </header>
-        @for (account of group.accounts; track account.id) {
-          <a class="row" [routerLink]="['/comptes', account.id]">
-            <span class="name">
-              <span>{{ account.name }}</span>
-              <span class="muted small">
-                {{ account.institution_name ?? '' }}
-                @if (account.currency !== 'EUR') {
-                  · {{ account.currency }}, hors totaux
-                }
+        @if (ordering()) {
+          <div
+            cdkDropList
+            cdkDropListLockAxis="y"
+            [cdkDropListData]="group.accounts"
+            (cdkDropListDropped)="drop(group, $event)"
+          >
+            @for (account of group.accounts; track account.id) {
+              <div class="row ordering" cdkDrag>
+                <mat-icon class="handle" cdkDragHandle aria-hidden="true">drag_indicator</mat-icon>
+                <span class="name">
+                  <span>
+                    @if (account.color) {
+                      <span class="account-dot" [style.background]="account.color"></span>
+                    }
+                    {{ account.name }}
+                  </span>
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          @for (account of group.accounts; track account.id) {
+            <a class="row" [routerLink]="['/comptes', account.id]">
+              <span class="name">
+                <span>
+                  @if (account.color) {
+                    <span
+                      class="account-dot"
+                      [style.background]="account.color"
+                      aria-hidden="true"
+                    ></span>
+                  }
+                  {{ account.name }}
+                </span>
+                <span class="muted small">
+                  {{ account.institution_name ?? '' }}
+                  @if (account.currency !== 'EUR') {
+                    · {{ account.currency }}, hors totaux
+                  }
+                </span>
               </span>
-            </span>
-            <span class="amount" [class.negative]="account.balance_minor < 0">
-              {{ account.balance_minor | money: account.currency }}
-            </span>
-          </a>
+              <span class="amount" [class.negative]="account.balance_minor < 0">
+                {{ account.balance_minor | money: account.currency }}
+              </span>
+            </a>
+          }
         }
       </section>
     }

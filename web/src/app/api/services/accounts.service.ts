@@ -24,6 +24,8 @@ import { listAccounts } from '../fn/accounts/list-accounts';
 import { ListAccounts$Params } from '../fn/accounts/list-accounts';
 import { reopenAccount } from '../fn/accounts/reopen-account';
 import { ReopenAccount$Params } from '../fn/accounts/reopen-account';
+import { reorderAccounts } from '../fn/accounts/reorder-accounts';
+import { ReorderAccounts$Params } from '../fn/accounts/reorder-accounts';
 import { revealIban } from '../fn/accounts/reveal-iban';
 import { RevealIban$Params } from '../fn/accounts/reveal-iban';
 import { updateAccount } from '../fn/accounts/update-account';
@@ -106,6 +108,41 @@ export class AccountsService extends BaseService {
     const resp = this.createAccount$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Account>): Account => r.body)
+    );
+  }
+
+  /** Path part for operation `reorderAccounts()` */
+  static readonly ReorderAccountsPath = '/api/v1/accounts/reorder';
+
+  /**
+   * Ordre d'affichage des comptes d'une famille (CPT-07).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `reorderAccounts()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  reorderAccounts$Response(params: ReorderAccounts$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = reorderAccounts(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Ordre d'affichage des comptes d'une famille (CPT-07).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `reorderAccounts$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  reorderAccounts(params: ReorderAccounts$Params, context?: HttpContext): Observable<void> {
+    const resp = this.reorderAccounts$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
     );
   }
 

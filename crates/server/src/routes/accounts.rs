@@ -12,6 +12,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(accounts::reveal_iban))
         .routes(routes!(accounts::close))
         .routes(routes!(accounts::reopen))
+        .routes(routes!(accounts::reorder))
         .routes(routes!(institutions::list, institutions::create))
         .routes(routes!(institutions::update))
 }

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use utoipa::IntoParams;
 
 use crate::error::{AppResult, Problem};
-use crate::services::accounts::{self, Account, AccountInput, CloseInput, IbanView};
+use crate::services::accounts::{self, Account, AccountInput, AccountReorderInput, CloseInput, IbanView};
 use crate::state::AppState;
 
 #[derive(Deserialize, IntoParams)]
@@ -98,4 +98,14 @@ pub async fn close(
 )]
 pub async fn reopen(State(state): State<AppState>, Path(id): Path<AccountId>) -> AppResult<Json<Account>> {
     Ok(Json(accounts::reopen(&state.db, id, state.clock.today()).await?))
+}
+
+/// Ordre d'affichage des comptes d'une famille (CPT-07).
+#[utoipa::path(
+    post, operation_id = "reorderAccounts", path = "/accounts/reorder", tag = "accounts", request_body = AccountReorderInput,
+    responses((status = 204), (status = 404, body = Problem))
+)]
+pub async fn reorder(State(state): State<AppState>, Json(input): Json<AccountReorderInput>) -> AppResult<StatusCode> {
+    accounts::reorder(&state.db, &input).await?;
+    Ok(StatusCode::NO_CONTENT)
 }

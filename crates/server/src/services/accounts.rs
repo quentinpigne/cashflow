@@ -1,4 +1,4 @@
-//! Comptes (spec 01 : CPT-01 à CPT-04).
+//! Comptes (spec 01 : CPT-01 à CPT-04, CPT-07).
 
 use std::collections::HashMap;
 
@@ -188,6 +188,42 @@ pub async fn reveal_iban(db: &Db, id: AccountId) -> AppResult<IbanView> {
     Ok(IbanView { iban: formatted })
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct AccountReorderInput {
+    /// Comptes d'une même famille, dans l'ordre voulu.
+    pub ids: Vec<AccountId>,
+}
+
+/// Ordre d'affichage des comptes d'une famille (CPT-07).
+pub async fn reorder(db: &Db, input: &AccountReorderInput) -> AppResult<()> {
+    let mut tx = db.write.begin().await?;
+    for (position, id) in input.ids.iter().enumerate() {
+        let order = i64::try_from(position).map_err(anyhow::Error::from)?;
+        if !db::accounts::set_display_order(&mut *tx, *id, order).await? {
+            return Err(AppError::NotFound("compte"));
+        }
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Un nouveau compte se range à la fin de sa famille (CPT-07).
+async fn next_display_order(db: &Db, family: AccountFamily) -> AppResult<i64> {
+    let rows = db::accounts::list(&db.read).await?;
+    let last = rows.iter().filter(|r| r.kind.family() == family).map(|r| r.display_order).max();
+    Ok(last.map_or(0, |order| order + 1))
+}
+
+/// Couleur d'un compte : `#RRGGBB` (CPT-07).
+fn color(input: Option<&str>) -> AppResult<Option<String>> {
+    let color = clean(input);
+    let valid = |c: &str| c.len() == 7 && c.starts_with('#') && c[1..].chars().all(|d| d.is_ascii_hexdigit());
+    match color {
+        Some(c) if !valid(&c) => Err(AppError::invalid_field("INVALID_COLOR", "color", "couleur attendue : #RRGGBB")),
+        other => Ok(other.map(|c| c.to_lowercase())),
+    }
+}
+
 struct Validated {
     name: String,
     currency: Currency,
@@ -213,7 +249,7 @@ fn validate(input: &AccountInput) -> AppResult<Validated> {
         currency,
         iban,
         account_number,
-        color: clean(input.color.as_deref()),
+        color: color(input.color.as_deref())?,
         notes: clean(input.notes.as_deref()),
     })
 }
@@ -285,6 +321,10 @@ async fn create_terms(
 pub async fn create(db: &Db, input: &AccountInput, today: Date) -> AppResult<Account> {
     let v = validate(input)?;
     check_institution(db, input.institution_id, None).await?;
+    let display_order = match input.display_order {
+        Some(order) => order,
+        None => next_display_order(db, input.kind.family()).await?,
+    };
     let (net_worth, emergency, budget) = flags(input);
     let id = AccountId::new();
     let fields = AccountFields {
@@ -299,7 +339,7 @@ pub async fn create(db: &Db, input: &AccountInput, today: Date) -> AppResult<Acc
         include_in_net_worth: net_worth,
         include_in_emergency_fund: emergency,
         include_in_budget: budget,
-        display_order: input.display_order.unwrap_or(0),
+        display_order,
         color: v.color.as_deref(),
         notes: v.notes.as_deref(),
     };

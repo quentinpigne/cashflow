@@ -131,6 +131,49 @@ test('E4 : créer, clôturer puis supprimer un compte (CPT-01, CPT-04, R-CPT-7)'
   await expect(page.getByText(name)).toHaveCount(0);
 });
 
+test('E2, E4 : colorer un compte et le remonter en tête de sa famille (CPT-07)', async ({
+  page,
+}) => {
+  await login(page);
+  const name = `Zz coffre ${unique()}`;
+  await page.goto('/comptes');
+  await page.getByRole('button', { name: /Nouveau compte/ }).click();
+  await page.getByRole('combobox', { name: 'Nature' }).click();
+  await page.getByRole('option', { name: 'Espèces' }).click();
+  await page.getByLabel('Nom', { exact: true }).fill(name);
+  await page.getByRole('radio', { name: 'Violet' }).click();
+  await page.getByRole('button', { name: 'Créer le compte' }).click();
+  const heading = page.getByRole('heading', { name });
+  await expect(heading.locator('.account-dot')).toHaveCSS('background-color', 'rgb(142, 36, 170)');
+
+  await page.goto('/comptes');
+  const group = page.locator('section.group', { hasText: 'Liquidités' });
+  await expect(group.locator('a.row').last()).toContainText(name);
+  if (!isMobile(page)) {
+    await page.getByRole('button', { name: 'Ordonner' }).click();
+    const handle = group.locator('.row.ordering', { hasText: name }).locator('.handle');
+    const target = group.locator('.row.ordering').first();
+    const from = await handle.boundingBox();
+    const to = await target.boundingBox();
+    if (!from || !to) throw new Error('ligne introuvable');
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 15; i++) {
+      await page.mouse.move(from.x + from.width / 2, from.y + ((to.y + 2 - from.y) * i) / 15);
+    }
+    await page.mouse.up();
+    await page.getByRole('button', { name: 'Terminé' }).click();
+    await page.reload();
+    await expect(group.locator('a.row').first()).toContainText(name);
+  }
+
+  await group.locator('a.row', { hasText: name }).click();
+  await page.getByRole('button', { name: 'Actions sur le compte' }).click();
+  await page.getByRole('menuitem', { name: /Supprimer/ }).click();
+  await page.getByRole('button', { name: 'Supprimer' }).click();
+  await expect(page).toHaveURL(/\/comptes$/);
+});
+
 test('E8 : créer, renommer et supprimer une catégorie (TRX-04)', async ({ page }) => {
   await login(page);
   const name = `Catégorie ${unique()}`;

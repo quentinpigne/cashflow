@@ -5,7 +5,7 @@ use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{AccountId, CategoryId};
 use cashflow_domain::{Date, DomainError};
 
-use super::accounts::{self, AccountInput, CloseInput};
+use super::accounts::{self, AccountInput, AccountReorderInput, CloseInput};
 use super::categories::{self, CategoryInput, MergeInput};
 use super::transactions::{self, SplitInput, TransactionFilter, TransactionInput, TransactionUpdateInput};
 use super::transfers::{self, MarkAsTransferInput, TransferInput};
@@ -131,6 +131,48 @@ async fn r_cpt_5_closing_with_balance_needs_confirmation_and_r_cpt_7_no_delete()
     // Un compte vide se supprime, conditions d'épargne comprises.
     let livret = account(&db, "Livret A", AccountKind::LivretA, 0).await;
     accounts::delete(&db, livret).await.unwrap();
+}
+
+#[tokio::test]
+async fn cpt_07_accounts_are_ordered_and_colored() {
+    let (db, _dir) = setup().await;
+    let a = account(&db, "A", AccountKind::Checking, 0).await;
+    let b = account(&db, "B", AccountKind::Checking, 0).await;
+    let c = account(&db, "C", AccountKind::Checking, 0).await;
+    accounts::reorder(&db, &AccountReorderInput { ids: vec![c, a, b] }).await.unwrap();
+    let names: Vec<_> = accounts::list(&db, d(TODAY)).await.unwrap().into_iter().map(|a| a.name).collect();
+    assert_eq!(names, ["C", "A", "B"]);
+    // Un nouveau compte se range à la fin de sa famille, quel que soit son nom.
+    account(&db, "0 en premier par le nom", AccountKind::Checking, 0).await;
+    let names: Vec<_> = accounts::list(&db, d(TODAY)).await.unwrap().into_iter().map(|a| a.name).collect();
+    assert_eq!(names, ["C", "A", "B", "0 en premier par le nom"]);
+    let unknown = AccountReorderInput { ids: vec![AccountId::new()] };
+    assert!(matches!(accounts::reorder(&db, &unknown).await, Err(AppError::NotFound(_))));
+
+    let with_color = |color: &str| AccountInput {
+        name: "Couleur".into(),
+        kind: AccountKind::Checking,
+        institution_id: None,
+        currency: None,
+        opening_date: d("2026-01-01"),
+        opening_balance_minor: 0,
+        iban: None,
+        account_number: None,
+        include_in_net_worth: None,
+        include_in_emergency_fund: None,
+        include_in_budget: None,
+        display_order: None,
+        color: Some(color.into()),
+        notes: None,
+    };
+    let created = accounts::create(&db, &with_color("#1E88E5"), d(TODAY)).await.unwrap();
+    assert_eq!(created.color.as_deref(), Some("#1e88e5"));
+    for invalid in ["bleu", "#12345", "#12345g", "1e88e5f"] {
+        assert!(matches!(
+            accounts::create(&db, &with_color(invalid), d(TODAY)).await,
+            Err(AppError::Invalid { code: "INVALID_COLOR", .. })
+        ));
+    }
 }
 
 #[tokio::test]

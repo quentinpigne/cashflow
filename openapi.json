@@ -82,6 +82,37 @@
         }
       }
     },
+    "/api/v1/accounts/reorder": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Ordre d'affichage des comptes d'une famille (CPT-07).",
+        "operationId": "reorderAccounts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountReorderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}": {
       "get": {
         "tags": [
@@ -6594,6 +6625,21 @@
           "start_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "AccountReorderInput": {
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountId"
+            },
+            "description": "Comptes d'une même famille, dans l'ordre voulu."
           }
         }
       },

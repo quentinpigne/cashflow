@@ -352,3 +352,13 @@ pub async fn all_valuations(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<(
             .await?;
     rows.into_iter().map(|r| Ok((id_from_db(&r.account_id)?, r.date, Money::from_minor(r.value)))).collect()
 }
+
+/// Ordre d'affichage d'un compte (CPT-07) ; renvoie faux si le compte n'existe pas.
+pub async fn set_display_order(db: impl SqliteExecutor<'_>, id: AccountId, order: i64) -> anyhow::Result<bool> {
+    let id = id.to_string();
+    let now = timestamp();
+    let result = sqlx::query!("UPDATE account SET display_order = ?, updated_at = ? WHERE id = ?", order, now, id)
+        .execute(db)
+        .await?;
+    Ok(result.rows_affected() > 0)
+}

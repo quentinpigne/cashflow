@@ -29,6 +29,7 @@ import { Account } from '../../api/models/account';
 import { AccountKind } from '../../api/models/account-kind';
 import { AccountsService } from '../../api/services/accounts.service';
 import { InstitutionsService } from '../../api/services/institutions.service';
+import { ACCOUNT_COLORS } from '../../core/colors';
 import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, toIsoDate } from '../../core/dates';
 import { errorMessage, problemOf } from '../../core/http-errors';
@@ -91,6 +92,7 @@ export class AccountFormDialog {
   protected readonly institutions = inject(InstitutionsStore);
 
   protected readonly kindLabels = KIND_LABELS;
+  protected readonly colors = ACCOUNT_COLORS;
   protected readonly newInstitution = NEW_INSTITUTION;
   protected readonly kindGroups = FAMILY_ORDER.map((family) => ({
     label: FAMILY_LABELS[family],
@@ -129,6 +131,7 @@ export class AccountFormDialog {
     emergency: [this.account?.include_in_emergency_fund ?? defaultFlags('CHECKING').emergency],
     budget: [this.account?.include_in_budget ?? defaultFlags('CHECKING').budget],
     notes: [this.account?.notes ?? ''],
+    color: [this.account?.color ?? (null as string | null)],
   });
 
   private readonly kind = toSignal(this.form.controls.kind.valueChanges, {
@@ -218,6 +221,7 @@ export class AccountFormDialog {
         include_in_emergency_fund: value.emergency,
         include_in_budget: value.budget,
         notes: value.notes || null,
+        color: value.color,
       };
       if (this.account) {
         const iban = body.iban === undefined ? await this.currentIban() : body.iban;
@@ -228,7 +232,6 @@ export class AccountFormDialog {
               ...body,
               iban,
               display_order: this.account.display_order,
-              color: this.account.color,
             },
           }),
         );

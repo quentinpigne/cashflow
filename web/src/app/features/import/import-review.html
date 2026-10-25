@@ -167,7 +167,7 @@
         @if (line.errors.length > 0) {
           <p class="errors">{{ line.errors.join(' · ') }}</p>
         } @else if (line.match_kind === 'DUPLICATE' && line.decision !== 'CREATE') {
-          @if (line.matched?.score != null) {
+          @if ((line.matched?.score ?? null) !== null) {
             <!-- Même montant, date proche, libellé différent : la même opération d'un autre export (R-IMP-27). -->
             <p class="muted info">
               Doublon probable : « {{ line.matched!.label }} » du
