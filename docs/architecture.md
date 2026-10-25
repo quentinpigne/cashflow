@@ -141,7 +141,9 @@ cashflow/
 │   │   └── src/{shared,accounts,ledger,import,reconciliation,
 │   │            budgeting,savings,projection,reporting}.rs + dossiers homonymes
 │   └── server/                ← binaire `cashflow` et ses sous-commandes
-│       ├── src/api.rs + api/       ← routes axum, DTO, OpenAPI (utoipa), auth, fichiers statiques
+│       ├── src/routes.rs + routes/ ← assemblage des routes axum par domaine, contrat OpenAPI, fichiers statiques
+│       ├── src/handlers.rs + handlers/ ← handlers axum, DTO, description OpenAPI (utoipa)
+│       ├── src/middleware.rs       ← session, alertes de budget
 │       ├── src/services.rs + services/  ← un service par cas d'usage
 │       ├── src/db.rs + db/         ← requêtes sqlx
 │       ├── src/readers.rs + readers/   ← lecteurs CSV/XLSX/OFX/PDF, OCR
@@ -196,8 +198,9 @@ server ──► domain
   optionnelle `openapi` (dérivation des schémas des types exposés par l'API, sans I/O). Les flottants y
   sont interdits par clippy (`disallowed-types`). La frontière de crate fait respecter la pureté par le
   compilateur.
-- Dans `server`, les dépendances entre modules vont dans un seul sens : `api` → `services` → `db` /
-  `readers`. Les routes n'exécutent pas de requête ; les services ne contiennent pas de calcul métier.
+- Dans `server`, les dépendances entre modules vont dans un seul sens : `routes` → `handlers` → `services` →
+  `db` / `readers`, sur le découpage d'axum. Les routes ne font qu'assembler ; les handlers ne calculent pas et
+  n'exécutent pas de requête ; les services ne contiennent pas de calcul métier.
 - Les relevés PDF (IMP-10) sont lus avec `pdf-extract` (pur Rust, au-dessus de `lopdf`), qui donne le texte et
   la position de chaque élément sans bibliothèque native ni service tiers (ADR-0007). `pdfium-render` a été
   écarté : il embarque la bibliothèque PDFium dans l'image. Les paniques éventuelles de la bibliothèque sont

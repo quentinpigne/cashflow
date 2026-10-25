@@ -30,10 +30,11 @@ seule interface (l'API REST). Le code est écrit par une IA et relu par le propr
 Option 3.
 
 ```
-api (axum : routes, DTO, OpenAPI)
-  └─► services (un par cas d'usage)
-        ├─► domain (pur : types, invariants, moteurs de calcul)
-        └─► db (requêtes sqlx)
+routes (axum : assemblage, middlewares)
+  └─► handlers (extraction, DTO, OpenAPI)
+        └─► services (un par cas d'usage)
+              ├─► domain (pur : types, invariants, moteurs de calcul)
+              └─► db (requêtes sqlx)
 ```
 
 - **`domain`** : types (`Money`, `Rate`, identifiants), entités, invariants et **moteurs** sous forme de
@@ -42,10 +43,13 @@ api (axum : routes, DTO, OpenAPI)
 - **`services`** : un service par cas d'usage. Il ouvre la transaction SQLite, charge les données, appelle
   le domaine, écrit le résultat. Pas de logique de calcul.
 - **`db`** : les requêtes sqlx, appelées directement par les services, sans trait intermédiaire.
-- **`api`** : routes axum, DTO et description OpenAPI (ADR-0016).
+- **`handlers`** : handlers axum (extraction de la requête, appel d'un service, mise en forme de la
+  réponse), DTO et description OpenAPI (ADR-0016). Ni calcul ni requête.
+- **`routes`** : assemblage des handlers en routeurs par domaine, middlewares (session), contrat OpenAPI.
+  Ce découpage suit celui d'axum et celui de Foodflow.
 - **Traits seulement là où plusieurs implémentations existent vraiment** : les lecteurs de relevés
   (CSV, XLSX, OFX, PDF) et l'OCR optionnel (ADR-0007).
-- **Deux crates** : `domain` (pur) et `server` (api, services, db, lecteurs de fichiers, binaire). La
+- **Deux crates** : `domain` (pur) et `server` (routes, handlers, services, db, lecteurs de fichiers, binaire). La
   frontière de crate fait respecter la pureté par le compilateur : `domain` n'a ni tokio, ni sqlx, ni
   axum dans ses dépendances, et les flottants y sont interdits par clippy.
 - Un agrégat SQL (par exemple Σ par compte) n'est qu'une **optimisation** d'un calcul du domaine ; un test

@@ -14,15 +14,16 @@ use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
-mod api;
 mod clock;
 mod config;
 mod db;
 mod error;
+mod handlers;
+mod middleware;
 mod readers;
+mod routes;
 mod services;
 mod state;
-mod web;
 
 use clock::Clock;
 use config::DataDir;
@@ -100,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
     let data = DataDir::new(&cli.data_dir);
     match cli.command {
         Command::Openapi => {
-            println!("{}", api::openapi_json().context("sérialisation du contrat OpenAPI")?);
+            println!("{}", routes::openapi_json().context("sérialisation du contrat OpenAPI")?);
             Ok(())
         }
         Command::Serve { addr, web_dir, secure_cookies, today } => {
@@ -182,8 +183,7 @@ async fn open(data: &DataDir) -> anyhow::Result<Db> {
 
 async fn serve(state: AppState, addr: SocketAddr, web_dir: PathBuf) -> anyhow::Result<()> {
     tokio::spawn(services::backup::run_daily(state.db.clone(), state.data.clone()));
-    let app =
-        api::router(state).merge(web::router(web_dir)).layer(CompressionLayer::new()).layer(TraceLayer::new_for_http());
+    let app = routes::router(state, web_dir).layer(CompressionLayer::new()).layer(TraceLayer::new_for_http());
     let listener = TcpListener::bind(addr).await.with_context(|| format!("écoute sur {addr}"))?;
     tracing::info!("serveur démarré sur http://{addr}");
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())

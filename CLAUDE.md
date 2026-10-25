@@ -51,7 +51,7 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
 ## Stack (ADR-0009, ADR-0013, ADR-0015 à ADR-0018)
 
 - Backend Rust : workspace `crates/{domain,server}`, axum, sqlx + SQLite (sans ORM, ADR-0017), rust_decimal, chrono, uuid v7.
-  Couches `api` → `services` → `db` dans `server`, autour du domaine pur (ADR-0013).
+  Couches `routes` → `handlers` → `services` → `db` dans `server`, autour du domaine pur (ADR-0013).
 - Frontend (ADR-0009) : `web/`, Angular (standalone, signals, sans zone.js), Angular Material, Reactive Forms
   typés, ECharts. Pas de NgRx.
 - Déploiement : binaire unique servant API et SPA, image Docker `linux/amd64`, HTTP simple sur le réseau local
@@ -77,9 +77,9 @@ front dans `web/`.
 
 - `domain` : aucune I/O, aucun `f32`/`f64` (interdits par clippy), aucune dépendance à tokio, sqlx ou axum.
   La date du jour est un paramètre, pas une horloge.
-- `server` : les routes (`api`) n'exécutent pas de requête, les services ne contiennent pas de calcul
-  métier (il va dans `domain`), toute requête passe par `db`. Pas de trait « repository » : les traits sont
-  réservés aux lecteurs de relevés et à l'OCR.
+- `server` : les routes ne font qu'assembler, les handlers ne calculent pas et n'exécutent pas de requête,
+  les services ne contiennent pas de calcul métier (il va dans `domain`), toute requête passe par `db`. Pas
+  de trait « repository » : les traits sont réservés aux lecteurs de relevés et à l'OCR.
 - Pas de `unwrap()`/`expect()` hors des tests et du démarrage du binaire. Les erreurs métier sont des
   enums `thiserror` qui portent le code de la règle `R-*` violée.
 - Pas d'`unsafe` (`#![forbid(unsafe_code)]`).
