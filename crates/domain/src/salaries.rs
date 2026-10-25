@@ -126,6 +126,35 @@ impl Job {
         }
         Ok(())
     }
+
+    /// Le mois de paie d'une fiche est un premier du mois pendant l'emploi (R-SAL-15).
+    pub fn check_payslip(&self, pay_month: Date) -> Result<(), DomainError> {
+        if pay_month.day() != 1 || !self.covers(pay_month) {
+            return Err(DomainError::InvalidPayslipMonth);
+        }
+        Ok(())
+    }
+}
+
+/// Mois sans fiche de paie, du plus récent au plus ancien : mois de l'emploi sans aucune fiche, à partir du mois
+/// de la première fiche et jusqu'au mois de fin ou au mois précédant le mois courant, le plus tôt des deux
+/// (R-SAL-18).
+pub fn missing_payslip_months(job: &Job, pay_months: &[Date], today: Date) -> Vec<Date> {
+    let Some(first) = pay_months.iter().min().copied() else {
+        return Vec::new();
+    };
+    let last = previous_month(month_of(today));
+    let last = job.end_date.map_or(last, |end| last.min(month_of(end)));
+    let mut missing = Vec::new();
+    let mut month = first.max(month_of(job.start_date));
+    while month <= last {
+        if !pay_months.contains(&month) {
+            missing.push(month);
+        }
+        month = add_months(month, 1);
+    }
+    missing.reverse();
+    missing
 }
 
 /// Rémunération en vigueur un mois donné : la dernière dont le mois d'effet est au plus tard ce mois (R-SAL-3).
@@ -538,5 +567,33 @@ mod tests {
         assert_eq!(months[3], eur(3_200), "février 2027");
         assert_eq!(months[14], eur(3_264), "janvier 2028");
         assert_eq!(Projector::new(&job, &[], &[], MEDIAN, d(TODAY)).monthly(16)[3], Money::ZERO);
+    }
+
+    #[test]
+    fn r_sal_15_payslip_month_falls_within_the_employment() {
+        let (job, _, _) = acme();
+        assert_eq!(job.check_payslip(d("2022-09-01")), Ok(()));
+        assert_eq!(job.check_payslip(d("2022-08-01")), Err(DomainError::InvalidPayslipMonth));
+        assert_eq!(job.check_payslip(d("2026-08-15")), Err(DomainError::InvalidPayslipMonth));
+        let ended = Job { end_date: Some(d("2026-06-15")), ..job };
+        assert_eq!(ended.check_payslip(d("2026-06-01")), Ok(()));
+        assert_eq!(ended.check_payslip(d("2026-07-01")), Err(DomainError::InvalidPayslipMonth));
+    }
+
+    #[test]
+    fn r_sal_18_missing_months_start_at_the_first_payslip() {
+        let (job, _, _) = acme();
+        // Exemple SAL-09 : juillet, août (deux fiches) et octobre, envoyée en avance.
+        let months = [d("2026-07-01"), d("2026-08-01"), d("2026-08-01"), d("2026-10-01")];
+        assert_eq!(missing_payslip_months(&job, &months, d(TODAY)), vec![d("2026-09-01")]);
+        assert!(missing_payslip_months(&job, &[], d(TODAY)).is_empty());
+    }
+
+    #[test]
+    fn r_sal_18_missing_months_stop_at_the_end_of_the_employment() {
+        let (job, _, _) = acme();
+        let ended = Job { end_date: Some(d("2026-05-31")), ..job };
+        let missing = missing_payslip_months(&ended, &[d("2026-02-01")], d(TODAY));
+        assert_eq!(missing, vec![d("2026-05-01"), d("2026-04-01"), d("2026-03-01")]);
     }
 }

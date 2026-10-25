@@ -61,6 +61,8 @@ define_id!(
     EmploymentId,
     SalaryId,
     SalaryBonusId,
+    PayslipId,
+    DocumentId,
     RecurringRuleId,
     ImportProfileId,
     ImportBatchId,

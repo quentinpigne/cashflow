@@ -108,6 +108,14 @@ pub async fn run_daily(db: Db, data: DataDir) {
         if due && let Err(error) = backup(&db, &data, "daily").await {
             tracing::error!(error = format!("{error:#}"), "échec de la sauvegarde quotidienne");
         }
+        // Les documents supprimés quittent la corbeille après la rétention des sauvegardes (ADR-0024).
+        if due {
+            match super::documents::purge_trash(&data, Utc::now().date_naive()) {
+                Ok(0) => {}
+                Ok(purged) => tracing::info!(purged, "documents effacés de la corbeille"),
+                Err(error) => tracing::error!(error = format!("{error:#}"), "échec de la purge de la corbeille"),
+            }
+        }
     }
 }
 

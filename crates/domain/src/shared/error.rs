@@ -55,6 +55,18 @@ pub enum DomainError {
     InvalidSalary,
     #[error("prime invalide : versée pendant l'emploi, net positif, brut positif s'il est connu")]
     InvalidBonus,
+    #[error("le mois de paie d'une fiche tombe pendant l'emploi")]
+    InvalidPayslipMonth,
+    #[error("ce fichier est déjà archivé (fiche de {})", .pay_month.format("%m/%Y"))]
+    PayslipAlreadyArchived { pay_month: Date },
+
+    // ----- Documents (ADR-0024)
+    #[error("le fichier est vide")]
+    EmptyDocument,
+    #[error("le fichier dépasse 10 Mo")]
+    DocumentTooLarge,
+    #[error("seuls les fichiers PDF, JPEG et PNG sont acceptés")]
+    UnsupportedDocumentType,
 
     // ----- Transactions (spec 02)
     #[error("le montant ne peut pas être nul")]
@@ -171,6 +183,11 @@ impl DomainError {
             InvalidEmployment => "INVALID_EMPLOYMENT",
             InvalidSalary => "INVALID_SALARY",
             InvalidBonus => "INVALID_BONUS",
+            InvalidPayslipMonth => "INVALID_PAYSLIP_MONTH",
+            PayslipAlreadyArchived { .. } => "PAYSLIP_ALREADY_ARCHIVED",
+            EmptyDocument => "EMPTY_DOCUMENT",
+            DocumentTooLarge => "DOCUMENT_TOO_LARGE",
+            UnsupportedDocumentType => "UNSUPPORTED_DOCUMENT_TYPE",
             AmountZero => "AMOUNT_ZERO",
             NoSplit => "NO_SPLIT",
             SplitAmountZero => "SPLIT_AMOUNT_ZERO",
@@ -230,6 +247,8 @@ impl DomainError {
             InvalidEmployment => "R-SAL-1",
             InvalidSalary => "R-SAL-2",
             InvalidBonus => "R-SAL-5",
+            InvalidPayslipMonth | EmptyDocument | DocumentTooLarge | UnsupportedDocumentType => "R-SAL-15",
+            PayslipAlreadyArchived { .. } => "R-SAL-16",
             AmountZero => "R-TRX-1",
             BankLabelImmutable => "R-TRX-2",
             TransactionLocked => "R-TRX-3",

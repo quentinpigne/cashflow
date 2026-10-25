@@ -2,16 +2,18 @@
 
 use std::collections::HashMap;
 
+use cashflow_domain::documents::MediaType;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::salaries::{self, Bonus, BonusKind, Expected, Job, Pay, Projector, SalaryChangeReason};
-use cashflow_domain::shared::ids::{CategoryId, EmploymentId, SalaryBonusId, SalaryId};
-use cashflow_domain::{Date, Money, Rate};
+use cashflow_domain::shared::ids::{CategoryId, EmploymentId, PayslipId, SalaryBonusId, SalaryId};
+use cashflow_domain::{Date, DomainError, Money, Rate};
 use chrono::{Datelike, Months};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::clean;
-use crate::db::salaries::{BonusRow, EmploymentRow, SalaryRow};
+use super::{clean, documents};
+use crate::config::DataDir;
+use crate::db::salaries::{BonusRow, EmploymentRow, PayslipRow, SalaryRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -160,6 +162,22 @@ pub struct BonusInput {
     pub note: Option<String>,
 }
 
+/// Mois de paie et note d'une fiche ; le fichier ne se modifie pas (R-SAL-17).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PayslipInput {
+    /// Premier jour du mois de paie.
+    pub pay_month: Date,
+    pub note: Option<String>,
+}
+
+/// Fiche de paie envoyée (R-SAL-15).
+pub struct PayslipUpload {
+    pub file_name: String,
+    pub content: Vec<u8>,
+    pub pay_month: Date,
+    pub note: Option<String>,
+}
+
 /// Un emploi dans la liste (E29).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct EmploymentSummary {
@@ -200,6 +218,17 @@ pub struct BonusView {
     pub recurring: bool,
     pub note: Option<String>,
     pub planned: bool,
+}
+
+/// Fiche de paie archivée (R-SAL-15).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PayslipView {
+    pub id: PayslipId,
+    pub pay_month: Date,
+    pub file_name: String,
+    pub media_type: MediaType,
+    pub size_bytes: i64,
+    pub note: Option<String>,
 }
 
 /// Revenu annuel (R-SAL-7, R-SAL-8).
@@ -248,6 +277,10 @@ pub struct EmploymentView {
     /// Les 12 derniers mois, mois en cours compris, le plus récent d'abord. L'attendu cumule les emplois de la
     /// même catégorie.
     pub checks: Vec<MonthCheck>,
+    /// Fiches de paie, la plus récente d'abord (R-SAL-18).
+    pub payslips: Vec<PayslipView>,
+    /// Mois sans fiche, le plus récent d'abord (R-SAL-18).
+    pub missing_payslip_months: Vec<Date>,
 }
 
 /// Net d'un emploi pour une année de l'évolution (E29).
@@ -525,6 +558,8 @@ pub async fn get(db: &Db, id: EmploymentId, today: Date) -> AppResult<Employment
         .collect();
     let mut years = annual_views(&p, today);
     years.reverse();
+    let payslips = db::salaries::payslips(&db.read, id).await?;
+    let months: Vec<Date> = payslips.iter().map(|s| s.pay_month).collect();
     Ok(EmploymentView {
         summary: summary(e, &book, today),
         raise_month: e.raise_month,
@@ -535,6 +570,19 @@ pub async fn get(db: &Db, id: EmploymentId, today: Date) -> AppResult<Employment
         bonuses,
         years,
         checks: checks(db, &book, e.income_category_id, CHECKED_MONTHS, today).await?,
+        missing_payslip_months: salaries::missing_payslip_months(&p.job, &months, today),
+        payslips: payslips
+            .into_iter()
+            .rev()
+            .map(|s| PayslipView {
+                id: s.id,
+                pay_month: s.pay_month,
+                file_name: s.file_name,
+                media_type: s.media_type,
+                size_bytes: s.size_bytes,
+                note: s.note,
+            })
+            .collect(),
     })
 }
 
@@ -591,11 +639,18 @@ pub async fn update(db: &Db, id: EmploymentId, input: &EmploymentInput, today: D
     get(db, id, today).await
 }
 
-/// Supprime un emploi, ses rémunérations et ses primes (R-SAL-6).
-pub async fn delete(db: &Db, id: EmploymentId) -> AppResult<()> {
-    if db::salaries::delete(&db.write, id).await? == 0 {
+/// Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).
+pub async fn delete(db: &Db, data: &DataDir, id: EmploymentId, today: Date) -> AppResult<()> {
+    let documents: Vec<_> = db::salaries::payslips(&db.read, id).await?.into_iter().map(|s| s.document_id).collect();
+    let mut tx = db.write.begin().await?;
+    if db::salaries::delete(&mut *tx, id).await? == 0 {
         return Err(AppError::NotFound("emploi"));
     }
+    for document in &documents {
+        db::documents::delete(&mut *tx, *document).await?;
+    }
+    tx.commit().await?;
+    documents::trash(data, &documents, today);
     Ok(())
 }
 
@@ -681,4 +736,84 @@ pub async fn delete_bonus(db: &Db, id: EmploymentId, bonus: SalaryBonusId) -> Ap
         return Err(AppError::NotFound("prime"));
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------- Fiches de paie (SAL-09)
+
+async fn payslip(db: &Db, id: EmploymentId, payslip: PayslipId) -> AppResult<PayslipRow> {
+    db::salaries::payslips(&db.read, id)
+        .await?
+        .into_iter()
+        .find(|s| s.id == payslip)
+        .ok_or(AppError::NotFound("fiche de paie"))
+}
+
+/// Archive une fiche de paie (R-SAL-15, R-SAL-16).
+pub async fn add_payslip(
+    db: &Db,
+    data: &DataDir,
+    id: EmploymentId,
+    upload: PayslipUpload,
+    today: Date,
+) -> AppResult<EmploymentView> {
+    job(&employment(db, id).await?).check_payslip(upload.pay_month)?;
+    let staged = documents::stage(data, &upload.file_name, &upload.content)?;
+    if let Some(existing) =
+        db::salaries::payslips(&db.read, id).await?.into_iter().find(|s| s.sha256 == staged.row.sha256)
+    {
+        return Err(DomainError::PayslipAlreadyArchived { pay_month: existing.pay_month }.into());
+    }
+    let note = clean(upload.note.as_deref());
+    let mut tx = db.write.begin().await?;
+    db::documents::insert(&mut *tx, &staged.row).await?;
+    db::salaries::insert_payslip(&mut *tx, PayslipId::new(), id, upload.pay_month, staged.row.id, note.as_deref())
+        .await?;
+    tx.commit().await?;
+    staged.publish()?;
+    get(db, id, today).await
+}
+
+/// Modifie le mois de paie et la note d'une fiche (R-SAL-17).
+pub async fn update_payslip(
+    db: &Db,
+    id: EmploymentId,
+    payslip: PayslipId,
+    input: &PayslipInput,
+    today: Date,
+) -> AppResult<EmploymentView> {
+    job(&employment(db, id).await?).check_payslip(input.pay_month)?;
+    let note = clean(input.note.as_deref());
+    if db::salaries::update_payslip(&db.write, id, payslip, input.pay_month, note.as_deref()).await? == 0 {
+        return Err(AppError::NotFound("fiche de paie"));
+    }
+    get(db, id, today).await
+}
+
+/// Supprime une fiche et son document (R-SAL-17).
+pub async fn delete_payslip(
+    db: &Db,
+    data: &DataDir,
+    id: EmploymentId,
+    payslip_id: PayslipId,
+    today: Date,
+) -> AppResult<()> {
+    let row = payslip(db, id, payslip_id).await?;
+    let mut tx = db.write.begin().await?;
+    db::salaries::delete_payslip(&mut *tx, id, payslip_id).await?;
+    db::documents::delete(&mut *tx, row.document_id).await?;
+    tx.commit().await?;
+    documents::trash(data, &[row.document_id], today);
+    Ok(())
+}
+
+/// Fichier d'une fiche, avec son nom et son type (R-SAL-18).
+pub async fn payslip_file(
+    db: &Db,
+    data: &DataDir,
+    id: EmploymentId,
+    payslip_id: PayslipId,
+) -> AppResult<(PayslipRow, Vec<u8>)> {
+    let row = payslip(db, id, payslip_id).await?;
+    let content = documents::read(data, row.document_id)?;
+    Ok((row, content))
 }

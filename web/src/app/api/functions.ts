@@ -209,6 +209,14 @@ export type { UpdateBonus$Params as UpdateBonus$Params } from './fn/salaries/upd
 export { updateBonus as updateBonus } from './fn/salaries/update-bonus';
 export type { DeleteBonus$Params as DeleteBonus$Params } from './fn/salaries/delete-bonus';
 export { deleteBonus as deleteBonus } from './fn/salaries/delete-bonus';
+export type { CreatePayslip$Params as CreatePayslip$Params } from './fn/salaries/create-payslip';
+export { createPayslip as createPayslip } from './fn/salaries/create-payslip';
+export type { UpdatePayslip$Params as UpdatePayslip$Params } from './fn/salaries/update-payslip';
+export { updatePayslip as updatePayslip } from './fn/salaries/update-payslip';
+export type { DeletePayslip$Params as DeletePayslip$Params } from './fn/salaries/delete-payslip';
+export { deletePayslip as deletePayslip } from './fn/salaries/delete-payslip';
+export type { DownloadPayslip$Params as DownloadPayslip$Params } from './fn/salaries/download-payslip';
+export { downloadPayslip as downloadPayslip } from './fn/salaries/download-payslip';
 export type { CreateSalary$Params as CreateSalary$Params } from './fn/salaries/create-salary';
 export { createSalary as createSalary } from './fn/salaries/create-salary';
 export type { UpdateSalary$Params as UpdateSalary$Params } from './fn/salaries/update-salary';

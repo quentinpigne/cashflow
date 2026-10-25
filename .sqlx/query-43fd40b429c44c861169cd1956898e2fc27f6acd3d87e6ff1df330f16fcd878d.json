@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE payslip SET pay_month = ?, note = ?, updated_at = ? WHERE id = ? AND employment_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "43fd40b429c44c861169cd1956898e2fc27f6acd3d87e6ff1df330f16fcd878d"
+}

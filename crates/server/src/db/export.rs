@@ -29,6 +29,8 @@ pub const TABLES: &[&str] = &[
     "employment",
     "salary",
     "salary_bonus",
+    "document",
+    "payslip",
     "payee_group",
     "payee",
     "recurring_rule",

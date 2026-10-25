@@ -62,7 +62,7 @@ impl Cli {
             Command::Serve(args) => args.run(data).await,
             Command::Migrate => open(&data).await.map(drop),
             Command::Seed => services::seed::run(&open(&data).await?).await,
-            Command::Demo(args) => args.run(&open(&data).await?).await,
+            Command::Demo(args) => args.run(&open(&data).await?, &data).await,
             Command::Export(args) => args.run(&open(&data).await?).await,
             Command::ImportExport(args) => args.run(&open(&data).await?).await,
             Command::Backup(args) => args.run(&open(&data).await?, &data).await,

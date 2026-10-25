@@ -5,6 +5,7 @@ import { AnnualView } from '../models/annual-view';
 import { BonusView } from '../models/bonus-view';
 import { EmploymentSummary } from '../models/employment-summary';
 import { MonthCheck } from '../models/month-check';
+import { PayslipView } from '../models/payslip-view';
 import { SalaryView } from '../models/salary-view';
 
 /**
@@ -23,8 +24,18 @@ export interface EmploymentView {
    */
   checks: Array<MonthCheck>;
   income_category_name: string;
+
+  /**
+   * Mois sans fiche, le plus récent d'abord (R-SAL-18).
+   */
+  missing_payslip_months: Array<string>;
   notes?: (string | null);
   paid_next_month: boolean;
+
+  /**
+   * Fiches de paie, la plus récente d'abord (R-SAL-18).
+   */
+  payslips: Array<PayslipView>;
   raise_month: number;
 
   /**

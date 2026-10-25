@@ -10,6 +10,7 @@ pub mod budgets;
 pub mod categories;
 pub mod dashboard;
 pub mod demo;
+pub mod documents;
 pub mod export;
 pub mod features;
 pub mod imports;

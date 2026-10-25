@@ -19,6 +19,7 @@ use super::{
     accounts, auth, budgets, categories, imports, institutions, payees, reconciliation, recurring, rules, savings,
     seed, transactions, transfers,
 };
+use crate::config::DataDir;
 use crate::db::Db;
 
 /// Mot de passe du compte de démonstration.
@@ -30,9 +31,53 @@ const LOAN_INSTALLMENT: i64 = 115_920;
 /// 13e mois net, versé en décembre.
 const THIRTEENTH_MONTH: i64 = 320_000;
 
+/// PDF d'une page, fictif, pour les fiches de paie de démonstration (SAL-09).
+fn fictitious_payslip(employer: &str, month: Date, net_minor: i64) -> Vec<u8> {
+    let lines = [
+        "FICHE DE PAIE FICTIVE - DONNEES DE DEMONSTRATION".to_owned(),
+        employer.to_owned(),
+        format!("Periode : {}", month.format("%m/%Y")),
+        format!("Net a payer : {},{:02} EUR", net_minor / 100, net_minor % 100),
+    ];
+    let text: String = lines
+        .iter()
+        .enumerate()
+        .map(|(i, line)| format!("BT /F1 14 Tf 72 {} Td ({line}) Tj ET\n", 760 - 28 * i))
+        .collect();
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_owned(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"
+            .to_owned(),
+        format!("<< /Length {} >>\nstream\n{text}endstream", text.len()),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_owned(),
+    ];
+    let mut pdf = String::from("%PDF-1.4\n");
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(pdf.len());
+        pdf.push_str(&format!("{} 0 obj\n{object}\nendobj\n", i + 1));
+    }
+    let xref = pdf.len();
+    pdf.push_str(&format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1));
+    for offset in offsets {
+        pdf.push_str(&format!("{offset:010} 00000 n \n"));
+    }
+    pdf.push_str(&format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objects.len() + 1));
+    pdf.into_bytes()
+}
+
 /// L'emploi de démonstration : embauche quatre ans avant le début du jeu, deux augmentations, la dernière en
-/// janvier de la première année du jeu, et un 13e mois récurrent (spec 10).
-async fn employment(db: &Db, c: &Categories, start: Date, thirteenth: Option<Date>, today: Date) -> anyhow::Result<()> {
+/// janvier de la première année du jeu, un 13e mois récurrent (spec 10), et les fiches de paie des quatre
+/// derniers mois, sauf l'avant-dernier, signalé sans fiche (SAL-09).
+async fn employment(
+    db: &Db,
+    data: &DataDir,
+    c: &Categories,
+    start: Date,
+    thirteenth: Option<Date>,
+    today: Date,
+) -> anyhow::Result<()> {
     use super::salaries::{BonusInput, EmploymentInput, SalaryInput};
     use cashflow_domain::salaries::{BonusKind, SalaryChangeReason};
     let category = c.get("Salaires", "").context("catégorie Salaires absente")?;
@@ -75,6 +120,17 @@ async fn employment(db: &Db, c: &Categories, start: Date, thirteenth: Option<Dat
             note: None,
         };
         super::salaries::save_bonus(db, id, None, &bonus, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    let current = cashflow_domain::salaries::month_of(today);
+    for back in [1, 3, 4] {
+        let month = current.checked_sub_months(Months::new(back)).context("mois de paie")?;
+        let upload = super::salaries::PayslipUpload {
+            file_name: format!("fiche-de-paie-{}.pdf", month.format("%Y-%m")),
+            content: fictitious_payslip("Acme Industries", month, SALARY),
+            pay_month: month,
+            note: None,
+        };
+        super::salaries::add_payslip(db, data, id, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }
@@ -245,7 +301,7 @@ async fn spend(
 }
 
 /// Remplit une base vide avec le jeu de démonstration.
-pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
+pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
     if !accounts::list(db, today).await.map_err(|e| anyhow::anyhow!("{e}"))?.is_empty() {
         bail!("la base contient déjà des comptes : le jeu de démonstration se charge dans une base vide");
     }
@@ -527,7 +583,7 @@ pub async fn load(db: &Db, today: Date) -> anyhow::Result<()> {
 
     budget(db, &c, start, today, livret_a, life, checking).await?;
     let loan = assets_and_loan(db, &c, &loan_terms, checking, today).await?;
-    employment(db, &c, start, thirteenth, today).await?;
+    employment(db, data, &c, start, thirteenth, today).await?;
     // Chaque mensualité est ventilée selon son échéance : la dette baisse du capital remboursé (CPT-10).
     let payments: Vec<super::loans::LoanPaymentInput> = super::loans::proposals(db, loan, today)
         .await
@@ -852,9 +908,10 @@ mod tests {
 
     #[tokio::test]
     async fn demo_loads_and_balances_are_consistent() {
-        let (db, _dir) = crate::db::test_db().await;
+        let (db, dir) = crate::db::test_db().await;
+        let data = DataDir::new(dir.path());
         let today: Date = "2026-10-20".parse().unwrap();
-        load(&db, today).await.unwrap();
+        load(&db, &data, today).await.unwrap();
         let accounts = accounts::list(&db, today).await.unwrap();
         assert_eq!(accounts.len(), 6);
         // Les comptes d'actif restent positifs : le jeu reste vraisemblable.
@@ -880,6 +937,11 @@ mod tests {
                 .all(|i| i.paid_transaction_id.is_some())
         );
         assert!(dashboard.net_worth.total_minor > 0, "le bien compense le prêt (R-TDB-1)");
-        assert!(load(&db, today).await.is_err(), "le jeu ne se charge que dans une base vide");
+        // Fiches de paie fictives : juillet, juin et septembre ; août est sans fiche (SAL-09).
+        let job = &super::super::salaries::overview(&db, today).await.unwrap().employments[0];
+        let job = super::super::salaries::get(&db, job.id, today).await.unwrap();
+        assert_eq!(job.payslips.len(), 3);
+        assert_eq!(job.missing_payslip_months, ["2026-08-01".parse::<Date>().unwrap()]);
+        assert!(load(&db, &data, today).await.is_err(), "le jeu ne se charge que dans une base vide");
     }
 }

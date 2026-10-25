@@ -17,9 +17,9 @@ pub struct Demo {
 }
 
 impl Demo {
-    pub async fn run(self, db: &Db) -> anyhow::Result<()> {
+    pub async fn run(self, db: &Db, data: &DataDir) -> anyhow::Result<()> {
         let today = self.today.map_or(Clock::System, Clock::Fixed).today();
-        services::demo::load(db, today).await?;
+        services::demo::load(db, data, today).await?;
         eprintln!("Jeu de démonstration chargé. Mot de passe : {}", services::demo::DEMO_PASSWORD);
         Ok(())
     }

@@ -1,11 +1,13 @@
 //! Salaires : emplois, rémunérations et primes (spec 10, ADR-0022).
 
+use cashflow_domain::documents::MediaType;
 use cashflow_domain::salaries::{BonusKind, SalaryChangeReason};
-use cashflow_domain::shared::ids::{CategoryId, EmploymentId, SalaryBonusId, SalaryId};
+use cashflow_domain::shared::ids::{CategoryId, DocumentId, EmploymentId, PayslipId, SalaryBonusId, SalaryId};
 use cashflow_domain::{Date, Money};
 use sqlx::SqliteExecutor;
 
 use super::codec::{enum_from_db, enum_to_db, id_from_db, opt_id_from_db};
+use super::documents::media_type_from_db;
 use crate::clock::timestamp;
 
 #[derive(Debug, Clone)]
@@ -283,4 +285,107 @@ pub async fn received(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyh
             })
         })
         .collect()
+}
+
+// ---------------------------------------------------------------- Fiches de paie (R-SAL-15)
+
+#[derive(Debug, Clone)]
+pub struct PayslipRow {
+    pub id: PayslipId,
+    pub pay_month: Date,
+    pub document_id: DocumentId,
+    pub note: Option<String>,
+    pub file_name: String,
+    pub media_type: MediaType,
+    pub size_bytes: i64,
+    pub sha256: String,
+}
+
+/// Fiches de paie d'un emploi, du mois le plus ancien au plus récent.
+pub async fn payslips(db: impl SqliteExecutor<'_>, employment: EmploymentId) -> anyhow::Result<Vec<PayslipRow>> {
+    let employment = employment.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT p.id, p.pay_month AS "pay_month: Date", p.document_id, p.note,
+                  d.file_name, d.media_type, d.size_bytes, d.sha256
+           FROM payslip p JOIN document d ON d.id = p.document_id
+           WHERE p.employment_id = ? ORDER BY p.pay_month, p.created_at"#,
+        employment
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(PayslipRow {
+                id: id_from_db(&r.id)?,
+                pay_month: r.pay_month,
+                document_id: id_from_db(&r.document_id)?,
+                note: r.note,
+                file_name: r.file_name,
+                media_type: media_type_from_db(&r.media_type)?,
+                size_bytes: r.size_bytes,
+                sha256: r.sha256,
+            })
+        })
+        .collect()
+}
+
+pub async fn insert_payslip(
+    db: impl SqliteExecutor<'_>,
+    id: PayslipId,
+    employment: EmploymentId,
+    pay_month: Date,
+    document: DocumentId,
+    note: Option<&str>,
+) -> anyhow::Result<()> {
+    let (id, employment, document) = (id.to_string(), employment.to_string(), document.to_string());
+    let now = timestamp();
+    sqlx::query!(
+        "INSERT INTO payslip (id, employment_id, pay_month, document_id, note, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+        id,
+        employment,
+        pay_month,
+        document,
+        note,
+        now,
+        now
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+/// Modifie le mois de paie et la note ; le fichier ne change pas (R-SAL-17).
+pub async fn update_payslip(
+    db: impl SqliteExecutor<'_>,
+    employment: EmploymentId,
+    id: PayslipId,
+    pay_month: Date,
+    note: Option<&str>,
+) -> anyhow::Result<u64> {
+    let (id, employment) = (id.to_string(), employment.to_string());
+    let now = timestamp();
+    Ok(sqlx::query!(
+        "UPDATE payslip SET pay_month = ?, note = ?, updated_at = ? WHERE id = ? AND employment_id = ?",
+        pay_month,
+        note,
+        now,
+        id,
+        employment
+    )
+    .execute(db)
+    .await?
+    .rows_affected())
+}
+
+pub async fn delete_payslip(
+    db: impl SqliteExecutor<'_>,
+    employment: EmploymentId,
+    id: PayslipId,
+) -> anyhow::Result<u64> {
+    let (id, employment) = (id.to_string(), employment.to_string());
+    Ok(sqlx::query!("DELETE FROM payslip WHERE id = ? AND employment_id = ?", id, employment)
+        .execute(db)
+        .await?
+        .rows_affected())
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO payslip (id, employment_id, pay_month, document_id, note, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "f43730ace1cf8dcda0dc4e2980065ea228e685eaf6566ca076a0f540887b274e"
+}

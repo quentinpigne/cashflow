@@ -158,4 +158,94 @@ mod tests {
         access_tokens::revoke(&db, "foodflow").await.unwrap();
         assert_eq!(call(&app, Method::GET, "/api/v1/categories", Some(&token)).await, StatusCode::UNAUTHORIZED);
     }
+
+    /// Ouvre une session et renvoie son cookie.
+    async fn login(app: &Router) -> String {
+        let request = Request::post("/api/v1/auth/login")
+            .header(header::CONTENT_TYPE, "application/json")
+            .extension(axum::extract::ConnectInfo(std::net::SocketAddr::from(([127, 0, 0, 1], 4000))))
+            .body(Body::from(r#"{"password":"motdepasse"}"#))
+            .expect("requête");
+        let response = app.clone().oneshot(request).await.expect("réponse");
+        let cookie = response.headers().get(header::SET_COOKIE).expect("cookie").to_str().expect("texte");
+        cookie.split(';').next().expect("cookie").to_owned()
+    }
+
+    fn multipart(month: &str, content: &[u8]) -> (String, Vec<u8>) {
+        let boundary = "frontiere";
+        let mut body = format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"pay_month\"\r\n\r\n{month}\r\n\
+             --{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"paie août.pdf\"\r\n\
+             Content-Type: application/pdf\r\n\r\n"
+        )
+        .into_bytes();
+        body.extend_from_slice(content);
+        body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+        (format!("multipart/form-data; boundary={boundary}"), body)
+    }
+
+    #[tokio::test]
+    async fn payslip_is_uploaded_then_served_sandboxed_sal_09_adr_0024() {
+        let (db, dir) = crate::db::test_db().await;
+        crate::services::seed::run(&db).await.unwrap();
+        auth::set_password(&db, "Moi", "motdepasse").await.unwrap();
+        let data = DataDir::new(dir.path());
+        data.ensure().unwrap();
+        let category = crate::db::categories::list(&db.read).await.unwrap().into_iter().find(|c| c.name == "Salaires");
+        let input = crate::services::salaries::EmploymentInput {
+            employer: "Acme".into(),
+            job_title: None,
+            start_date: "2025-01-01".parse().unwrap(),
+            end_date: None,
+            income_category_id: category.expect("catégorie Salaires").id,
+            raise_month: None,
+            paid_next_month: false,
+            notes: None,
+        };
+        let today = "2026-10-22".parse().unwrap();
+        let employment = crate::services::salaries::create(&db, &input, today).await.unwrap().summary.id;
+        let state = AppState { db, clock: Clock::Fixed(today), data, limiter: Arc::default(), secure_cookies: false };
+        let app = router(state, dir.path().join("web"));
+        let cookie = login(&app).await;
+        let uri = format!("/api/v1/employments/{employment}/payslips");
+
+        let send = |content: Vec<u8>| {
+            let (content_type, body) = multipart("2026-08-01", &content);
+            Request::post(&uri)
+                .header(header::COOKIE, &cookie)
+                .header(header::CONTENT_TYPE, content_type)
+                .body(Body::from(body))
+                .expect("requête")
+        };
+        // Au-delà de 2 Mo (limite par défaut d'axum), jusqu'à 10 Mo.
+        let mut pdf = b"%PDF-1.7\n".to_vec();
+        pdf.resize(3 * 1024 * 1024, b' ');
+        let response = app.clone().oneshot(send(pdf.clone())).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let view: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let payslip = view["payslips"][0]["id"].as_str().expect("fiche").to_owned();
+        assert_eq!(view["payslips"][0]["file_name"], "paie août.pdf");
+
+        let too_big = vec![b'%'; 11 * 1024 * 1024];
+        let response = app.clone().oneshot(send(too_big)).await.unwrap();
+        assert!(response.status().is_client_error());
+
+        let request = Request::get(format!("{uri}/{payslip}/file?download=true"))
+            .header(header::COOKIE, &cookie)
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let headers = response.headers();
+        assert_eq!(headers[header::CONTENT_TYPE], "application/pdf");
+        assert_eq!(headers[header::CONTENT_SECURITY_POLICY], "sandbox");
+        assert_eq!(headers[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+        assert_eq!(
+            headers[header::CONTENT_DISPOSITION],
+            "attachment; filename=\"paie aot.pdf\"; filename*=UTF-8''paie%20ao%C3%BBt.pdf"
+        );
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.len(), pdf.len());
+    }
 }

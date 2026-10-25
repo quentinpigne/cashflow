@@ -7,9 +7,10 @@ use cashflow_domain::shared::ids::{AccountId, CategoryId, EmploymentId};
 
 use super::features::{self, FeaturesInput};
 use super::projections::{self, NetWorthQuery, SalaryProjectionQuery, ScenarioInput};
-use super::salaries::{self, BonusInput, EmploymentInput, SalaryInput};
+use super::salaries::{self, BonusInput, EmploymentInput, PayslipInput, PayslipUpload, SalaryInput};
 use super::tests::{account, category, d, setup, tx};
 use super::{dashboard, transactions};
+use crate::config::DataDir;
 use crate::db::Db;
 use crate::error::AppError;
 
@@ -69,7 +70,7 @@ async fn employed(db: &Db, f: &Fixture) -> EmploymentId {
 
 #[tokio::test]
 async fn sal_01_r_sal_1_r_sal_2_r_sal_6_employment_pay_and_bonus() {
-    let (db, _dir) = setup().await;
+    let (db, dir) = setup().await;
     let f = fixture(&db).await;
     let today = d("2026-04-10");
     let wrong = EmploymentInput { income_category_id: f.spending, ..job(&f) };
@@ -106,7 +107,7 @@ async fn sal_01_r_sal_1_r_sal_2_r_sal_6_employment_pay_and_bonus() {
     assert_eq!(code(error), "EMPLOYMENT_PERIOD_EXCLUDES_PAY");
 
     // R-SAL-6 : rémunérations et primes partent avec l'emploi.
-    salaries::delete(&db, id).await.unwrap();
+    salaries::delete(&db, &DataDir::new(dir.path()), id, today).await.unwrap();
     assert!(crate::db::salaries::salaries(&db.read).await.unwrap().is_empty());
     assert!(crate::db::salaries::bonuses(&db.read).await.unwrap().is_empty());
 }
@@ -221,4 +222,67 @@ async fn sal_04_r_sal_13_salary_projection_by_scenario() {
     assert_eq!(median.years[1].year, 2027);
     assert_eq!(median.years[1].net_minor, 12 * 275_400);
     assert_eq!(median.years[0].net_minor, 12 * 270_000);
+}
+
+fn payslip(month: &str, content: &[u8]) -> PayslipUpload {
+    PayslipUpload { file_name: format!("paie-{month}.pdf"), content: content.to_vec(), pay_month: d(month), note: None }
+}
+
+#[tokio::test]
+async fn sal_09_r_sal_15_to_r_sal_18_payslips_are_archived_with_their_employment() {
+    let (db, dir) = setup().await;
+    let data = DataDir::new(dir.path());
+    data.ensure().unwrap();
+    let f = fixture(&db).await;
+    let id = employed(&db, &f).await;
+    let today = d("2026-10-22");
+
+    // R-SAL-15 : un PDF, un JPEG ou un PNG, pendant l'emploi.
+    let word = payslip("2026-07-01", b"PK\x03\x04word/document.xml");
+    let error = salaries::add_payslip(&db, &data, id, word, today).await.unwrap_err();
+    assert_eq!(code(error), "UNSUPPORTED_DOCUMENT_TYPE");
+    let before = payslip("2024-12-01", b"%PDF-1.7 decembre");
+    let error = salaries::add_payslip(&db, &data, id, before, today).await.unwrap_err();
+    assert_eq!(code(error), "INVALID_PAYSLIP_MONTH");
+
+    // Exemple SAL-09 : juillet, août et sa rectificative, octobre en avance.
+    for (month, content) in [
+        ("2026-07-01", &b"%PDF-1.7 juillet"[..]),
+        ("2026-08-01", b"%PDF-1.7 aout"),
+        ("2026-08-01", b"%PDF-1.7 aout rectificative"),
+        ("2026-10-01", b"\x89PNG\r\n\x1a\n octobre"),
+    ] {
+        salaries::add_payslip(&db, &data, id, payslip(month, content), today).await.unwrap();
+    }
+    let view = salaries::get(&db, id, today).await.unwrap();
+    let months: Vec<String> = view.payslips.iter().map(|p| p.pay_month.to_string()).collect();
+    assert_eq!(months, ["2026-10-01", "2026-08-01", "2026-08-01", "2026-07-01"], "R-SAL-18 : le plus récent d'abord");
+    assert_eq!(view.missing_payslip_months, [d("2026-09-01")], "R-SAL-18");
+    assert_eq!(view.payslips[0].media_type.as_str(), "image/png");
+
+    // R-SAL-16 : un même fichier ne s'archive qu'une fois.
+    let again = payslip("2026-09-01", b"%PDF-1.7 aout");
+    let error = salaries::add_payslip(&db, &data, id, again, today).await.unwrap_err();
+    assert_eq!(code(error), "PAYSLIP_ALREADY_ARCHIVED");
+
+    // R-SAL-17 : le mois et la note se modifient, pas le fichier.
+    let rectified = view.payslips[1].id;
+    let input = PayslipInput { pay_month: d("2026-09-01"), note: Some(" rectificative ".into()) };
+    let view = salaries::update_payslip(&db, id, rectified, &input, today).await.unwrap();
+    assert!(view.missing_payslip_months.is_empty());
+    let (row, content) = salaries::payslip_file(&db, &data, id, rectified).await.unwrap();
+    assert_eq!(content, b"%PDF-1.7 aout rectificative");
+    assert_eq!(row.pay_month, d("2026-09-01"));
+    assert_eq!(row.note.as_deref(), Some("rectificative"));
+
+    // Supprimer une fiche met son fichier à la corbeille (ADR-0024).
+    salaries::delete_payslip(&db, &data, id, rectified, today).await.unwrap();
+    assert!(matches!(salaries::payslip_file(&db, &data, id, rectified).await, Err(AppError::NotFound(_))));
+    assert_eq!(std::fs::read_dir(data.documents_trash()).unwrap().count(), 1);
+
+    // L'emploi emporte ses fiches et leurs documents.
+    salaries::delete(&db, &data, id, today).await.unwrap();
+    let documents: i64 = sqlx::query_scalar("SELECT count(*) FROM document").fetch_one(&db.read).await.unwrap();
+    assert_eq!(documents, 0);
+    assert_eq!(std::fs::read_dir(data.documents_trash()).unwrap().count(), 4);
 }

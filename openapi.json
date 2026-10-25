@@ -2371,7 +2371,7 @@
         "tags": [
           "salaries"
         ],
-        "summary": "Supprime un emploi, ses rémunérations et ses primes (R-SAL-6).",
+        "summary": "Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).",
         "operationId": "deleteEmployment",
         "parameters": [
           {
@@ -2535,6 +2535,220 @@
         ],
         "responses": {
           "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/payslips": {
+      "post": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Archive une fiche de paie (R-SAL-15, R-SAL-16).",
+        "operationId": "createPayslip",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PayslipForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/payslips/{payslip_id}": {
+      "put": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Modifie le mois de paie et la note d'une fiche (R-SAL-17).",
+        "operationId": "updatePayslip",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "payslip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PayslipId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayslipInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Supprime une fiche et son document (R-SAL-17).",
+        "operationId": "deletePayslip",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "payslip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PayslipId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employments/{id}/payslips/{payslip_id}/file": {
+      "get": {
+        "tags": [
+          "salaries"
+        ],
+        "summary": "Fichier d'une fiche de paie, affiché ou téléchargé (R-SAL-18, ADR-0024).",
+        "operationId": "downloadPayslip",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "payslip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PayslipId"
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "description": "Télécharger plutôt qu'afficher dans le navigateur.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fichier de la fiche (PDF, JPEG ou PNG)",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
           "404": {
             "content": {
               "application/json": {
@@ -9148,7 +9362,9 @@
           "salaries",
           "bonuses",
           "years",
-          "checks"
+          "checks",
+          "payslips",
+          "missing_payslip_months"
         ],
         "properties": {
           "bonuses": {
@@ -9168,6 +9384,14 @@
           "income_category_name": {
             "type": "string"
           },
+          "missing_payslip_months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Mois sans fiche, le plus récent d'abord (R-SAL-18)."
+          },
           "notes": {
             "type": [
               "string",
@@ -9176,6 +9400,13 @@
           },
           "paid_next_month": {
             "type": "boolean"
+          },
+          "payslips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayslipView"
+            },
+            "description": "Fiches de paie, la plus récente d'abord (R-SAL-18)."
           },
           "raise_month": {
             "type": "integer",
@@ -10936,6 +11167,15 @@
           }
         }
       },
+      "MediaType": {
+        "type": "string",
+        "description": "Type d'un document, reconnu à la signature de son contenu (ADR-0024).",
+        "enum": [
+          "application/pdf",
+          "image/jpeg",
+          "image/png"
+        ]
+      },
       "MergeInput": {
         "type": "object",
         "required": [
@@ -11946,6 +12186,92 @@
             ]
           },
           "transaction_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PayslipForm": {
+        "type": "object",
+        "description": "Formulaire d'envoi d'une fiche de paie (`multipart/form-data`).",
+        "required": [
+          "file",
+          "pay_month"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "PDF, JPEG ou PNG, 10 Mo au plus (R-SAL-15)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pay_month": {
+            "type": "string",
+            "format": "date",
+            "description": "Premier jour du mois de paie."
+          }
+        }
+      },
+      "PayslipId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "PayslipInput": {
+        "type": "object",
+        "description": "Mois de paie et note d'une fiche ; le fichier ne se modifie pas (R-SAL-17).",
+        "required": [
+          "pay_month"
+        ],
+        "properties": {
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pay_month": {
+            "type": "string",
+            "format": "date",
+            "description": "Premier jour du mois de paie."
+          }
+        }
+      },
+      "PayslipView": {
+        "type": "object",
+        "description": "Fiche de paie archivée (R-SAL-15).",
+        "required": [
+          "id",
+          "pay_month",
+          "file_name",
+          "media_type",
+          "size_bytes"
+        ],
+        "properties": {
+          "file_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/PayslipId"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pay_month": {
+            "type": "string",
+            "format": "date"
+          },
+          "size_bytes": {
             "type": "integer",
             "format": "int64"
           }
