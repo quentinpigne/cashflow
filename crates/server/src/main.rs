@@ -86,8 +86,23 @@ enum Command {
         #[arg(long)]
         password_stdin: bool,
     },
+    /// Gère les jetons d'accès en lecture seule d'une application tierce, comme Foodflow (ADR-0023).
+    Token {
+        #[command(subcommand)]
+        action: TokenAction,
+    },
     /// Écrit le contrat OpenAPI sur la sortie standard (ADR-0016).
     Openapi,
+}
+
+#[derive(Subcommand)]
+enum TokenAction {
+    /// Crée un jeton et l'écrit sur la sortie standard : il ne sera plus jamais affiché.
+    Create { name: String },
+    /// Liste les jetons : nom, création, dernier usage.
+    List,
+    /// Révoque un jeton.
+    Revoke { name: String },
 }
 
 #[tokio::main]
@@ -163,6 +178,27 @@ async fn main() -> anyhow::Result<()> {
             };
             services::auth::set_password(&db, &display_name, &password).await?;
             eprintln!("Mot de passe défini ; toutes les sessions sont fermées.");
+            Ok(())
+        }
+        Command::Token { action } => {
+            let db = open(&data).await?;
+            match action {
+                TokenAction::Create { name } => {
+                    let token = services::access_tokens::create(&db, &name).await?;
+                    eprintln!("Jeton « {} » créé. Il ne sera plus affiché :", name.trim());
+                    println!("{token}");
+                }
+                TokenAction::List => {
+                    for token in services::access_tokens::list(&db).await? {
+                        let used = token.last_used_at.as_deref().unwrap_or("jamais utilisé");
+                        println!("{}\tcréé le {}\tdernier usage : {used}", token.name, token.created_at);
+                    }
+                }
+                TokenAction::Revoke { name } => {
+                    services::access_tokens::revoke(&db, &name).await?;
+                    eprintln!("Jeton « {} » révoqué.", name.trim());
+                }
+            }
             Ok(())
         }
     }

@@ -1,6 +1,7 @@
 //! Services : un par cas d'usage. Ils ouvrent la transaction SQLite, chargent les données, appellent le
 //! domaine et écrivent le résultat (ADR-0013). Aucun calcul métier ici.
 
+pub mod access_tokens;
 pub mod accounts;
 pub mod assets;
 pub mod auth;

@@ -73,6 +73,7 @@ define_id!(
     ProjectId,
     UserId,
     SessionId,
+    AccessTokenId,
     NotificationId,
 );
 

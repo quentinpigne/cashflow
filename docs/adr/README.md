@@ -41,3 +41,4 @@ retenu et ses conséquences. Il sert à comprendre plus tard *pourquoi* le proje
 | [0020](0020-tableau-d-amortissement-calcule.md) | Tableau d'amortissement calculé à partir des conditions du prêt | Accepté |
 | [0021](0021-virement-porte-par-une-ventilation.md) | Virement porté par une ventilation | Accepté |
 | [0022](0022-salaires-et-capacite-d-epargne.md) | Salaires déclarés et capacité d'épargne projetée | Accepté |
+| [0023](0023-jetons-d-acces-en-lecture-seule.md) | Jetons d'accès en lecture seule pour une application tierce | Accepté |

@@ -17,6 +17,8 @@ pub enum AppError {
     Invalid { code: &'static str, message: String, field: Option<&'static str> },
     #[error("authentification requise")]
     Unauthorized,
+    #[error("route interdite à un jeton d'accès")]
+    Forbidden,
     #[error("mot de passe incorrect")]
     WrongPassword,
     #[error("trop de tentatives : réessayer dans {retry_after_secs} s")]
@@ -74,6 +76,7 @@ impl IntoResponse for AppError {
             AppError::NotFound(_) => (StatusCode::NOT_FOUND, "NOT_FOUND", None, None, None),
             AppError::Invalid { code, field, .. } => (StatusCode::UNPROCESSABLE_ENTITY, *code, None, *field, None),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", None, None, None),
+            AppError::Forbidden => (StatusCode::FORBIDDEN, "FORBIDDEN", None, None, None),
             AppError::WrongPassword => (StatusCode::UNAUTHORIZED, "WRONG_PASSWORD", None, None, None),
             AppError::TooManyAttempts { retry_after_secs } => {
                 (StatusCode::TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS", None, None, Some(*retry_after_secs))

@@ -75,4 +75,6 @@ déployées.
 |---|---|
 | Journaux | `docker compose -f deploy/compose.yaml logs -f` |
 | Changer le mot de passe | `docker compose -f deploy/compose.yaml exec cashflow cashflow set-password` |
+| Jeton d'accès pour Foodflow (affiché une seule fois, ADR-0023) | `docker compose -f deploy/compose.yaml exec cashflow cashflow token create foodflow` |
+| Lister / révoquer les jetons | `… exec cashflow cashflow token list` ; `… exec cashflow cashflow token revoke foodflow` |
 | Instance d'essai jetable (données fictives, port 3001) | `docker compose -f deploy/compose.yaml -p cashflow-essai run --rm -p 3001:3000 --entrypoint sh cashflow -c 'cashflow demo && cashflow serve'` |

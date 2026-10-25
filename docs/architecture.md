@@ -114,7 +114,8 @@ Les cas de référence chiffrés des specs (intérêts, TRI, ventilations, indic
 - Aucune donnée réelle ni aucun secret dans le dépôt (cf. CLAUDE.md). `.gitignore` initial : base de
   données, fichiers importés, `.env*` sauf `.env.example`.
 - Accès : réseau local uniquement, mot de passe unique et session par cookie (ADR-0015). HTTP simple en
-  V1, HTTPS servi par axum plus tard (ADR-0015).
+  V1, HTTPS servi par axum plus tard (ADR-0015). Une application tierce (Foodflow) lit quelques routes avec
+  un jeton d'accès en lecture seule, géré par `cashflow token` (ADR-0023).
 - Chiffrement au repos : chiffrement du disque du serveur (ADR-0015).
 - Journalisation : jamais de libellé, de montant ou d'IBAN dans les logs au niveau INFO.
 - OCR : ADR-0007.

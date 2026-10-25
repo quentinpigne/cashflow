@@ -138,6 +138,13 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Taux d'épargne | `savings_rate` | (revenus − dépenses) / revenus sur une période. |
 | Épargne de précaution | `emergency_fund_months` | Liquidités disponibles / dépenses mensuelles moyennes. |
 
+## Authentification
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Session | `Session` | Connexion d'un appareil, ouverte avec le mot de passe et portée par un cookie (ADR-0015). |
+| Jeton d'accès | `AccessToken` | Secret remis à une application tierce (Foodflow) pour lire certaines routes de l'API, sans session (ADR-0023). |
+
 ## Termes à éviter
 
 | Ne pas dire | Dire | Pourquoi |

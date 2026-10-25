@@ -1,6 +1,6 @@
-//! Utilisateur unique et sessions (ADR-0006, ADR-0015).
+//! Utilisateur unique, sessions et jetons d'accès (ADR-0006, ADR-0015, ADR-0023).
 
-use cashflow_domain::shared::ids::{SessionId, UserId};
+use cashflow_domain::shared::ids::{AccessTokenId, SessionId, UserId};
 use sqlx::SqliteExecutor;
 
 use super::codec::id_from_db;
@@ -112,4 +112,84 @@ pub async fn delete_all_sessions(db: impl SqliteExecutor<'_>) -> anyhow::Result<
 pub async fn delete_expired_sessions(db: impl SqliteExecutor<'_>, now: &str) -> anyhow::Result<()> {
     sqlx::query!("DELETE FROM session WHERE expires_at < ?", now).execute(db).await?;
     Ok(())
+}
+
+pub struct AccessTokenRow {
+    pub id: AccessTokenId,
+    pub name: String,
+    pub last_used_at: Option<String>,
+    pub created_at: String,
+}
+
+pub async fn insert_access_token(
+    db: impl SqliteExecutor<'_>,
+    user: UserId,
+    name: &str,
+    token_hash: &str,
+) -> anyhow::Result<()> {
+    let id = AccessTokenId::new().to_string();
+    let user = user.to_string();
+    let now = timestamp();
+    sqlx::query!(
+        "INSERT INTO access_token (id, user_id, name, token_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        id,
+        user,
+        name,
+        token_hash,
+        now,
+        now
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn find_access_token(
+    db: impl SqliteExecutor<'_>,
+    token_hash: &str,
+) -> anyhow::Result<Option<AccessTokenRow>> {
+    let row =
+        sqlx::query!("SELECT id, name, last_used_at, created_at FROM access_token WHERE token_hash = ?", token_hash)
+            .fetch_optional(db)
+            .await?;
+    row.map(|r| {
+        Ok(AccessTokenRow {
+            id: id_from_db(&r.id)?,
+            name: r.name,
+            last_used_at: r.last_used_at,
+            created_at: r.created_at,
+        })
+    })
+    .transpose()
+}
+
+pub async fn list_access_tokens(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<AccessTokenRow>> {
+    let rows =
+        sqlx::query!("SELECT id, name, last_used_at, created_at FROM access_token ORDER BY name").fetch_all(db).await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(AccessTokenRow {
+                id: id_from_db(&r.id)?,
+                name: r.name,
+                last_used_at: r.last_used_at,
+                created_at: r.created_at,
+            })
+        })
+        .collect()
+}
+
+/// Note le dernier usage du jeton (ADR-0023).
+pub async fn touch_access_token(db: impl SqliteExecutor<'_>, token: AccessTokenId) -> anyhow::Result<()> {
+    let id = token.to_string();
+    let now = timestamp();
+    sqlx::query!("UPDATE access_token SET last_used_at = ?, updated_at = ? WHERE id = ?", now, now, id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
+/// Révoque un jeton ; renvoie faux s'il n'existe pas.
+pub async fn delete_access_token(db: impl SqliteExecutor<'_>, name: &str) -> anyhow::Result<bool> {
+    let result = sqlx::query!("DELETE FROM access_token WHERE name = ?", name).execute(db).await?;
+    Ok(result.rows_affected() > 0)
 }

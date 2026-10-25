@@ -2,7 +2,7 @@
 
 - **Statut** : Accepté
 - **Date** : 2026-10-20
-- **Concerne** : architecture, ADR-0006, ADR-0008, ADR-0009, ADR-0018
+- **Concerne** : architecture, ADR-0006, ADR-0008, ADR-0009, ADR-0018, ADR-0023
 
 ## Contexte
 
@@ -14,7 +14,7 @@ Les données sont bancaires. D'autres appareils partagent le réseau domestique 
 
 ### Empaquetage
 - **Un seul binaire** `cashflow` qui sert l'API **et** les fichiers statiques de l'interface. Il dispose
-  de sous-commandes : `serve`, `migrate`, `seed`, `export`, `import-export`, `backup`, `set-password`.
+  de sous-commandes : `serve`, `migrate`, `seed`, `export`, `import-export`, `backup`, `set-password`, `token` (jetons d'accès, ADR-0023).
 - **Image Docker** multi-étapes (build de l'interface, build Rust, image finale minimale non-root),
   publiée pour `linux/amd64` (serveur cible en x86-64) ; `linux/arm64` reste possible sans changement de code.
 - Un volume `/data` contient tout l'état : `cashflow.db`, `imports/` (fichiers source), `backups/`.
@@ -38,6 +38,8 @@ retenue :
 - Limitation des tentatives de connexion (backoff exponentiel par IP).
 - Pas de gestion de comptes ni de récupération par e-mail : la récupération se fait par `set-password`
   en ligne de commande sur le serveur.
+- Une application tierce (Foodflow) n'utilise pas de session : elle lit l'API avec un jeton d'accès en
+  lecture seule (ADR-0023).
 
 ### Sauvegardes (précise ADR-0008)
 - **Sauvegarde automatique quotidienne** par le serveur (`VACUUM INTO` vers `backups/`, horodatée),

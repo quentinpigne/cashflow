@@ -511,7 +511,7 @@ de ses lignes ne se chevauchent pas (R-BUD-11).
 | `alert_thresholds` | `Json` | optionnel, comme pour `BudgetLine` |
 | `note` | texte | optionnel |
 
-## Authentification — ADR-0006, ADR-0015
+## Authentification — ADR-0006, ADR-0015, ADR-0023
 
 ### AppUser
 
@@ -531,6 +531,19 @@ Une seule ligne en V1 (ADR-0006). Aucune donnée métier ne référence encore `
 | `device_label` | texte | optionnel (navigateur ou appareil, pour la liste des sessions) |
 | `expires_at` | `Timestamp` | requis (30 jours glissants) |
 | `last_seen_at` | `Timestamp` | requis |
+
+### AccessToken (ADR-0023)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `user_id` | `Id` → AppUser | requis |
+| `name` | texte ≤ 80 | requis, unique (« foodflow ») |
+| `token_hash` | texte | requis, unique (SHA-256 ; le jeton en clair n'est jamais stocké) |
+| `last_used_at` | `Timestamp` | optionnel (noté au plus une fois par heure) |
+
+Jeton d'une application tierce, en lecture seule sur une liste de routes fixée dans le code. Sans
+expiration ; la révocation le supprime. Ni `set-password` ni la déconnexion de tous les appareils ne le
+ferment. Pas exporté, comme les sessions.
 
 ## Notifications
 
