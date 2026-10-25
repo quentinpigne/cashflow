@@ -1,6 +1,6 @@
 # Roadmap
 
-Statut : **Validée** (2026-10-20)
+Statut : **Validée** (2026-10-20) ; **V1 livrée** (2026-10-25), en attente de mise en service sur données réelles.
 
 Ordre de réalisation proposé. Chaque phase livre quelque chose d'**utilisable** et repose sur la
 précédente. Les identifiants renvoient aux features des specs.
@@ -16,79 +16,92 @@ précédente. Les identifiants renvoient aux features des specs.
 - [x] Écrans de la phase 1 — `ecrans.md` (2026-10-20)
 - [x] Passer les documents transverses à `Validée` (2026-10-20)
 
-## Phase 1 — Socle : registre exact (MVP)
+## Phase 1 — Socle : registre exact (MVP) — livrée le 2026-10-20
 
 Objectif : saisir et consulter ses comptes avec des soldes exacts.
 
-- Squelette : workspace Cargo (`domain`, `server`), `web/` (Angular), CI (ADR-0009, ADR-0013, ADR-0018)
-- Authentification mono-utilisateur, `compose.yaml` en HTTP, sauvegardes automatiques (ADR-0015)
-- Déploiement en une commande sur le serveur, jeu de données de démonstration (ADR-0018)
-- Chaîne OpenAPI → client TypeScript (ADR-0016)
-- Types `Money` / `Rate` / `Id` / `Date` avec leurs tests
-- CPT-01, CPT-02, CPT-03, CPT-04 — comptes et soldes calculés
-- TRX-01, TRX-02, TRX-03, TRX-04, TRX-05 — transactions, ventilation, catégories, virements
-- Données initiales : établissements, catégories par défaut
-- Export JSON complet (ADR-0008)
-- TDB-01 (version minimale : comptes, soldes, transactions à catégoriser)
+- [x] Squelette : workspace Cargo (`domain`, `server`), `web/` (Angular), CI (ADR-0009, ADR-0013, ADR-0018)
+- [x] Authentification mono-utilisateur, `compose.yaml` en HTTP, sauvegardes automatiques (ADR-0015)
+- [x] Déploiement en une commande sur le serveur, jeu de données de démonstration (ADR-0018)
+- [x] Chaîne OpenAPI → client TypeScript (ADR-0016)
+- [x] Types `Money` / `Rate` / `Id` / `Date` avec leurs tests
+- [x] CPT-01, CPT-02, CPT-03, CPT-04 — comptes et soldes calculés
+- [x] TRX-01, TRX-02, TRX-03, TRX-04, TRX-05 — transactions, ventilation, catégories, virements
+- [x] Données initiales : établissements, catégories par défaut
+- [x] Export JSON complet (ADR-0008)
+- [x] TDB-01 (version minimale : comptes, soldes, transactions à catégoriser)
 
-**Critère de sortie** : les tests de propriété sur Σ ventilations, solde et virements passent ; un
-mois réel saisi à la main donne le bon solde.
+**Critère de sortie** : les tests de propriété sur Σ ventilations, solde et virements passent ✅ ; un
+mois réel saisi à la main donne le bon solde (à vérifier à la mise en service).
 
-## Phase 2 — Import et vérification (MVP)
+## Phase 2 — Import et vérification (MVP) — livrée le 2026-10-21
 
 Objectif : ne plus saisir à la main ; prouver l'exactitude.
 
-- IMP-01 à IMP-06 — CSV/XLSX, profils, doublons, revue, pointage, validation
-- RAP-01, RAP-02, RAP-03 — points de contrôle, rapprochement, verrouillage
-- Golden files à partir d'exports anonymisés de ta ou tes banques
+- [x] IMP-01 à IMP-06 — CSV/XLSX, profils, doublons, revue, pointage, validation
+- [x] RAP-01, RAP-02, RAP-03 — points de contrôle, rapprochement, verrouillage
+- [x] Golden files à partir d'exports anonymisés de ta ou tes banques
 
 **Critère de sortie** : 3 mois de relevés réels importés, solde rapproché à 0,00 € à chaque fin de
-mois, réimport sans doublon.
+mois, réimport sans doublon (à vérifier à la mise en service).
 
-## Phase 3 — Confort d'import et analyse (V1)
+## Phase 3 — Confort d'import et analyse (V1) — livrée le 2026-10-23
 
-- IMP-07 (annulation), IMP-08 (règles), IMP-09 (OFX), IMP-10 (PDF LCL), IMP-11 (virements entre lots)
-- RAP-04 à RAP-07
-- TRX-06 (catégorisation en masse), TRX-08 (vue transverse)
-- TDB-02, TDB-03 — dépenses par catégorie, évolution, taux d'épargne
+- [x] IMP-07 (annulation), IMP-08 (règles), IMP-09 (OFX), IMP-10 (PDF LCL), IMP-11 (virements entre lots)
+- [x] RAP-04 à RAP-07
+- [x] TRX-06 (catégorisation en masse), TRX-08 (vue transverse)
+- [x] TDB-02, TDB-03 — dépenses par catégorie, évolution, taux d'épargne
 
-## Phase 4 — Budgets (V1)
+## Phase 4 — Budgets (V1) — livrée le 2026-10-21
 
-- BUD-01 à BUD-05 — périmètre, lignes mensuelles, vue du mois, report, lignes annuelles
-- BUD-06 — projets (ainsi que l'action `set_project` des règles)
-- BUD-07 — objectifs d'épargne
-- BUD-08, BUD-10 — alertes, centre de notifications, assistant de création
-- TDB-06, TDB-07
+- [x] BUD-01 à BUD-05 — périmètre, lignes mensuelles, vue du mois, report, lignes annuelles
+- [x] BUD-06 — projets (ainsi que l'action `set_project` des règles)
+- [x] BUD-07 — objectifs d'épargne
+- [x] BUD-08, BUD-10 — alertes, centre de notifications, assistant de création
+- [x] TDB-06, TDB-07
 
-## Phase 5 — Épargne (V1)
+## Phase 5 — Épargne (V1) — livrée le 2026-10-21
 
-- CPT-05, EPA-01 à EPA-04 — taux déterminé, moteur de quinzaines, intérêts courus, plafond
-- CPT-06, EPA-05, EPA-06 — valorisations, performance
-- TDB-05
+- [x] CPT-05, EPA-01 à EPA-04 — taux déterminé, moteur de quinzaines, intérêts courus, plafond
+- [x] CPT-06, EPA-05, EPA-06 — valorisations, performance
+- [x] TDB-05
 
-## Phase 6 — Projections (V1)
+## Phase 6 — Projections (V1) — livrée le 2026-10-21
 
-- TRX-07 — récurrences (nécessaires à la trésorerie et aux versements programmés)
-- PRJ-01 à PRJ-05
-- TDB-04
+- [x] TRX-07 — récurrences (nécessaires à la trésorerie et aux versements programmés)
+- [x] PRJ-01 à PRJ-05
+- [x] TDB-04
 
-## Compléments V1 (2026-10-22)
+## Compléments V1 (2026-10-22, livrés)
 
-- BIE-01 à BIE-03 — biens hors des comptes, estimations, acquisition (ADR-0019, spec 09)
-- PRE-01 à PRE-04 — prêts hors des comptes, tableau d'amortissement, ventilation des mensualités
+- [x] BIE-01 à BIE-03 — biens hors des comptes, estimations, acquisition (ADR-0019, spec 09)
+- [x] PRE-01 à PRE-04 — prêts hors des comptes, tableau d'amortissement, ventilation des mensualités
   (ADR-0019, ADR-0020, spec 09)
-- TDB-08 — encadrés Biens et Prêts sur l'accueil
+- [x] TDB-08 — encadrés Biens et Prêts sur l'accueil
 
-## Compléments V1 — salaires (2026-10-22)
+## Compléments V1 — salaires (2026-10-22, livrés)
 
-- SAL-01 à SAL-05 — emplois, rémunérations et primes, évolution, comparaison au reçu, projection du salaire,
+- [x] SAL-01 à SAL-05 — emplois, rémunérations et primes, évolution, comparaison au reçu, projection du salaire,
   activation (ADR-0022, spec 10)
-- PRJ-10 — capacité d'épargne dans la projection du patrimoine (ADR-0022, spec 07)
+- [x] PRJ-10 — capacité d'épargne dans la projection du patrimoine (ADR-0022, spec 07)
 
-## Compléments V1 — tiers (2026-10-23)
+## Compléments V1 — tiers (2026-10-23, livrés)
 
-- TIE-01 à TIE-04 — tiers et groupes de tiers, affectation aux transactions, import et règles, dépenses par
+- [x] TIE-01 à TIE-04 — tiers et groupes de tiers, affectation aux transactions, import et règles, dépenses par
   tiers et par groupe (spec 11)
+
+## Compléments V1 — ordre des comptes et accès Foodflow (2026-10-25, livrés)
+
+- [x] CPT-07 — ordre et couleur des comptes
+- [x] Jetons d'accès en lecture seule pour Foodflow (ADR-0023 ; prérequis CSH-00 de Foodflow)
+
+## Mise en service (prochaine étape)
+
+- [ ] Exposition sur Internet derrière un proxy, en HTTPS : passe d'exploitation et de sécurité (Q15, à
+      concevoir ; remet en cause « réseau local uniquement » d'ADR-0015)
+- [ ] Déploiement sur le serveur et premières données réelles. Dès lors, un ADR `Accepté` ne se modifie
+      plus sur le fond (CLAUDE.md)
+- [ ] Critères de sortie des phases 1 et 2 vérifiés sur données réelles
 
 ## Phase 7 — V2 (à prioriser plus tard)
 
