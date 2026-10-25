@@ -47,6 +47,9 @@ routes (axum : assemblage, middlewares)
   réponse), DTO et description OpenAPI (ADR-0016). Ni calcul ni requête.
 - **`routes`** : assemblage des handlers en routeurs par domaine, middlewares (session), contrat OpenAPI.
   Ce découpage suit celui d'axum et celui de Foodflow.
+- **`cli`** : l'autre point d'entrée, au même niveau que `routes`. Il porte les sous-commandes du binaire
+  (`serve`, sauvegarde, export, mot de passe, jetons…), un fichier par sous-commande, et appelle les
+  services. `main.rs` ne fait qu'initialiser les journaux et lancer la ligne de commande.
 - **Traits seulement là où plusieurs implémentations existent vraiment** : les lecteurs de relevés
   (CSV, XLSX, OFX, PDF) et l'OCR optionnel (ADR-0007).
 - **Deux crates** : `domain` (pur) et `server` (routes, handlers, services, db, lecteurs de fichiers, binaire). La

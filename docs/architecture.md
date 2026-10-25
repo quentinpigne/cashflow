@@ -142,6 +142,7 @@ cashflow/
 │   │   └── src/{shared,accounts,ledger,import,reconciliation,
 │   │            budgeting,savings,projection,reporting}.rs + dossiers homonymes
 │   └── server/                ← binaire `cashflow` et ses sous-commandes
+│       ├── src/cli.rs + cli/  ← ligne de commande : un fichier par sous-commande (serve, données, mot de passe, jetons)
 │       ├── src/routes.rs + routes/ ← assemblage des routes axum par domaine, contrat OpenAPI, fichiers statiques
 │       ├── src/handlers.rs + handlers/ ← handlers axum, DTO, description OpenAPI (utoipa)
 │       ├── src/middleware.rs       ← session, alertes de budget

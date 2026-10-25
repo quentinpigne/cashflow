@@ -51,7 +51,7 @@ Questions encore ouvertes, **à ne jamais trancher seul** (proposer, puis demand
 ## Stack (ADR-0009, ADR-0013, ADR-0015 à ADR-0018)
 
 - Backend Rust : workspace `crates/{domain,server}`, axum, sqlx + SQLite (sans ORM, ADR-0017), rust_decimal, chrono, uuid v7.
-  Couches `routes` → `handlers` → `services` → `db` dans `server`, autour du domaine pur (ADR-0013).
+  Couches `routes` → `handlers` → `services` → `db` dans `server`, autour du domaine pur ; `cli` (sous-commandes du binaire) appelle aussi les services (ADR-0013).
 - Frontend (ADR-0009) : `web/`, Angular (standalone, signals, sans zone.js), Angular Material, Reactive Forms
   typés, ECharts. Pas de NgRx.
 - Déploiement : binaire unique servant API et SPA, image Docker `linux/amd64`, HTTP simple sur le réseau local
