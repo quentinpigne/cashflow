@@ -9,6 +9,8 @@
 imports/
 exports/
 backups/
+# … sauf le client d'API généré (web/src/app/api/fn/imports)
+!web/src/app/api/fn/imports/
 
 # Secrets
 .env
