@@ -1,31 +1,31 @@
 #!/bin/sh
-# Déploiement sur le serveur (ADR-0018) : récupère la version, sauvegarde la base, reconstruit et relance.
+# Déploiement sur le serveur (ADR-0018) : récupère la version, télécharge l'image publiée par la CI,
+# sauvegarde la base et relance. Le serveur ne construit rien.
 # Usage : deploy/deploy.sh            déploie le dernier commit de la branche courante
-#         deploy/deploy.sh <commit>   redéploie une version déjà construite (retour arrière)
+#         deploy/deploy.sh <commit>   redéploie une version précédente (retour arrière)
 set -eu
 cd "$(dirname "$0")/.."
 COMPOSE="docker compose -f deploy/compose.yaml"
 
 if [ $# -eq 0 ]; then
   git pull --ff-only
-  VERSION=$(git rev-parse --short HEAD)
-  BUILD=1
+  VERSION=$(git rev-parse --short=7 HEAD)
 else
-  VERSION=$1
-  BUILD=0
-  docker image inspect "cashflow:$VERSION" > /dev/null || { echo "Image cashflow:$VERSION introuvable." >&2; exit 1; }
+  VERSION=$(git rev-parse --short=7 "$1^{commit}")
 fi
 export CASHFLOW_VERSION="$VERSION"
+
+# La CI ne publie l'image d'un commit qu'une fois tous ses contrôles passés.
+echo "Téléchargement de l'image $VERSION…"
+$COMPOSE pull cashflow || {
+  echo "Image $VERSION introuvable : la CI de ce commit est-elle terminée et verte ?" >&2
+  exit 1
+}
 
 # Sauvegarde avant déploiement, si l'application tourne (ADR-0018).
 if [ -n "$($COMPOSE ps --status running -q cashflow 2>/dev/null)" ]; then
   echo "Sauvegarde avant déploiement…"
   $COMPOSE exec -T cashflow cashflow backup --reason pre-deploy
-fi
-
-if [ "$BUILD" -eq 1 ]; then
-  echo "Construction de cashflow:$VERSION…"
-  $COMPOSE build
 fi
 
 $COMPOSE up -d

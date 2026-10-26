@@ -4,11 +4,8 @@ name: cashflow
 
 services:
   cashflow:
-    # Chaque image est étiquetée par son commit, pour pouvoir revenir à la précédente.
-    image: cashflow:${CASHFLOW_VERSION:-latest}
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
+    # Construite et publiée par la CI, étiquetée par son commit, pour pouvoir revenir à la précédente.
+    image: ghcr.io/quentinpigne/cashflow:${CASHFLOW_VERSION:-latest}
     restart: unless-stopped
     # HTTP sur le réseau local en V1 (ADR-0015) : rien n'est exposé sur Internet.
     ports:

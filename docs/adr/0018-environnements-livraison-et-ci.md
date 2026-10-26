@@ -49,13 +49,15 @@ Avant de présenter une modification comme terminée, l'IA :
 ### Intégration continue (GitHub Actions)
 - À chaque push et à chaque pull request : lint, tests, vérification qu'`openapi.json`, le client
   généré et `.sqlx/` sont à jour, construction de l'image Docker. Tous les contrôles sont **bloquants**.
+- Pour un push sur `main` dont tous les contrôles sont passés, la CI **publie l'image** sur le registre
+  de GitHub (`ghcr.io`), étiquetée par son commit : le serveur n'a pas la puissance de la construire.
 - La CI **ne déploie pas** : le serveur n'est pas joignable depuis GitHub, et ne doit pas l'être.
 
 ### Livraison
 - Le déploiement se fait **sur le serveur**, par une procédure courte documentée dans le guide
-  d'installation : récupération de la version (`git pull` d'un commit dont la CI est verte), sauvegarde
-  de la base, construction de l'image, redémarrage.
-- Chaque image est **étiquetée par son commit**. L'image précédente est conservée.
+  d'installation : récupération de la version (`git pull`), téléchargement de l'image de ce commit
+  (absente si la CI n'est pas verte), sauvegarde de la base, redémarrage.
+- Chaque image est **étiquetée par son commit**. Les images précédentes restent sur le registre.
 - **Retour arrière** : relancer l'image précédente et, si une migration a eu lieu, restaurer la
   sauvegarde prise juste avant le déploiement.
 
@@ -70,4 +72,4 @@ Avant de présenter une modification comme terminée, l'IA :
   migration (ADR-0015).
 - Le Mac doit disposer de la toolchain Rust et de Node. Pas d'outil de commandes (`just`, `make`) pour
   l'instant : les commandes `cargo` et `npm` sont documentées dans `architecture.md`.
-- Le serveur doit disposer de Docker et de Git.
+- Le serveur doit disposer de Docker et de Git, et pouvoir lire l'image sur `ghcr.io`.

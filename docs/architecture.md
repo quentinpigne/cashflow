@@ -270,4 +270,5 @@ Pas d'outil de commandes (ADR-0018) : les commandes `cargo` se lancent à la rac
 
 GitHub Actions (`.github/workflows/ci.yml`) : lint et tests Rust et TypeScript, vérification
 qu'`openapi.json`, le client généré et `.sqlx/` sont à jour, tests de bout en bout Playwright, build de
-l'image Docker. Tous ces contrôles sont bloquants ; la CI ne déploie pas (ADR-0018).
+l'image Docker, publiée sur `ghcr.io` pour un push sur `main` dont tous les contrôles sont passés. Tous ces
+contrôles sont bloquants ; la CI ne déploie pas, le serveur télécharge l'image (ADR-0018).

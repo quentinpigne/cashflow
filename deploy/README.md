@@ -3,9 +3,15 @@
 Cashflow tourne dans **un seul environnement**, sur le serveur personnel (ADR-0015, ADR-0018) : une image
 Docker, un volume qui contient toutes les données, en HTTP sur le réseau local pour la V1.
 
+L'image est **construite par la CI** et publiée sur `ghcr.io/quentinpigne/cashflow`, étiquetée par son commit
+(et `latest`), seulement pour un push sur `main` dont tous les contrôles sont passés. Le serveur ne construit
+rien : il télécharge l'image.
+
 ## Prérequis sur le serveur
 
 - Docker avec le plugin compose, et Git.
+- L'accès à l'image : rien à faire si le paquet `cashflow` est public sur GitHub ; s'il est privé,
+  `docker login ghcr.io -u <utilisateur>` une fois, avec un jeton (classic) limité à `read:packages`.
 - Le **disque chiffré** (LUKS ou équivalent) : c'est le chiffrement au repos retenu pour la base (Q11,
   ADR-0015). À vérifier **avant d'y saisir de vraies données**.
 - Le port 3000 accessible depuis le réseau local seulement (pas de redirection sur la box).
@@ -14,7 +20,7 @@ Docker, un volume qui contient toutes les données, en HTTP sur le réseau local
 
 ```sh
 git clone <dépôt> cashflow && cd cashflow
-deploy/deploy.sh                                             # construit l'image et lance l'application
+deploy/deploy.sh                                             # télécharge l'image et lance l'application
 docker compose -f deploy/compose.yaml exec cashflow cashflow set-password
 ```
 
@@ -23,20 +29,20 @@ catégories par défaut, barèmes réglementés) sont chargées au premier déma
 
 ## Mettre à jour
 
-Seulement un commit dont la CI est verte (ADR-0018) :
+Une fois la CI du commit terminée et verte (sinon son image n'existe pas, et le script s'arrête) :
 
 ```sh
 deploy/deploy.sh
 ```
 
-Le script récupère la version (`git pull`), **sauvegarde la base**, construit l'image étiquetée par le
-commit (`cashflow:<commit>`), puis relance. Les migrations de schéma s'appliquent au démarrage, après une
-sauvegarde automatique supplémentaire. Le journal `deploy/deployments.log` garde la liste des versions
-déployées.
+Le script récupère la version (`git pull`), télécharge l'image du commit
+(`ghcr.io/quentinpigne/cashflow:<commit>`), **sauvegarde la base**, puis relance. Les migrations de schéma
+s'appliquent au démarrage, après une sauvegarde automatique supplémentaire. Le journal
+`deploy/deployments.log` garde la liste des versions déployées.
 
 ## Revenir en arrière
 
-1. Relancer la version précédente, dont l'image est conservée :
+1. Relancer la version précédente, dont l'image reste sur le registre :
 
    ```sh
    tail deploy/deployments.log          # repérer le commit précédent
