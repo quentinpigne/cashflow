@@ -1,7 +1,7 @@
 # Installation et déploiement
 
 Cashflow tourne dans **un seul environnement**, sur le serveur personnel (ADR-0015, ADR-0018) : une image
-Docker, un volume qui contient toutes les données, en HTTP sur le réseau local pour la V1.
+Docker, un dossier de l'hôte monté sur `/data` qui contient toutes les données, en HTTP sur le réseau local pour la V1.
 
 L'image est **construite par la CI** et publiée sur `ghcr.io/quentinpigne/cashflow`, étiquetée par son commit
 (et `latest`), seulement pour un push sur `main` dont tous les contrôles sont passés. Le serveur ne construit
@@ -18,8 +18,14 @@ rien : il télécharge l'image.
 
 ## Premier démarrage
 
+Les données vivent dans un dossier de l'hôte, désigné par `CASHFLOW_DATA_PATH` dans `deploy/.env` (non
+versionné). Le conteneur tourne avec l'uid **10001** (utilisateur `cashflow` de l'image) : le dossier doit lui
+appartenir, sinon l'application ne peut pas y écrire.
+
 ```sh
 git clone <dépôt> cashflow && cd cashflow
+sudo mkdir -p /srv/cashflow && sudo chown 10001:10001 /srv/cashflow   # sur le disque chiffré
+echo 'CASHFLOW_DATA_PATH=/srv/cashflow' > deploy/.env
 deploy/deploy.sh                                             # télécharge l'image et lance l'application
 docker compose -f deploy/compose.yaml exec cashflow cashflow set-password
 ```
@@ -61,16 +67,18 @@ s'appliquent au démarrage, après une sauvegarde automatique supplémentaire. L
 
 ## Sauvegardes
 
-- **Automatiques**, dans le volume (`/data/backups`) : une par jour (rétention 7 jours, 4 semaines,
+- **Automatiques**, dans le dossier de données (`$CASHFLOW_DATA_PATH/backups`, `/data/backups` dans le
+  conteneur) : une par jour (rétention 7 jours, 4 semaines,
   12 mois), une avant chaque migration et une avant chaque déploiement (ADR-0015).
 - **Manuelle** : `docker compose -f deploy/compose.yaml exec cashflow cashflow backup`.
 - **Hors du serveur** : à organiser côté serveur (disque externe, NAS, stockage chiffré distant), par
   exemple une copie quotidienne des sauvegardes de la base et des documents (fiches de paie), qui n'existent
-  qu'en un exemplaire dans le volume (ADR-0024) :
+  qu'en un exemplaire dans le dossier de données (ADR-0024) :
 
   ```sh
-  docker run --rm -v cashflow_data:/data:ro -v /mnt/sauvegardes:/out alpine \
-    sh -c 'cp -n /data/backups/*.db /out/ && mkdir -p /out/documents && cp -Rn /data/documents/. /out/documents/'
+  . deploy/.env
+  sudo cp -n "$CASHFLOW_DATA_PATH"/backups/*.db /mnt/sauvegardes/
+  sudo mkdir -p /mnt/sauvegardes/documents && sudo cp -Rn "$CASHFLOW_DATA_PATH"/documents/. /mnt/sauvegardes/documents/
   ```
 
 - **Documents** : un document supprimé reste 400 jours dans `/data/documents/trash/`, préfixé de sa date de
@@ -88,4 +96,4 @@ s'appliquent au démarrage, après une sauvegarde automatique supplémentaire. L
 | Changer le mot de passe | `docker compose -f deploy/compose.yaml exec cashflow cashflow set-password` |
 | Jeton d'accès pour Foodflow (affiché une seule fois, ADR-0023) | `docker compose -f deploy/compose.yaml exec cashflow cashflow token create foodflow` |
 | Lister / révoquer les jetons | `… exec cashflow cashflow token list` ; `… exec cashflow cashflow token revoke foodflow` |
-| Instance d'essai jetable (données fictives, port 3001) | `docker compose -f deploy/compose.yaml -p cashflow-essai run --rm -p 3001:3000 --entrypoint sh cashflow -c 'cashflow demo && cashflow serve'` |
+| Instance d'essai jetable (données fictives, port 3001) | `docker run --rm -p 3001:3000 --entrypoint sh ghcr.io/quentinpigne/cashflow -c 'cashflow demo && cashflow serve'` (sans le compose, pour ne pas toucher au dossier de données) |

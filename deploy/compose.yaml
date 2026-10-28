@@ -13,9 +13,7 @@ services:
     environment:
       TZ: ${TZ:-Europe/Paris}
       RUST_LOG: ${RUST_LOG:-info}
+    # Tout l'état : cashflow.db, backups/, imports/, documents/ (ADR-0015, ADR-0024). Dossier de l'hôte,
+    # défini dans deploy/.env, appartenant à l'uid 10001 de l'image (cf. deploy/README.md).
     volumes:
-      - data:/data
-
-volumes:
-  # Tout l'état : cashflow.db, backups/, imports/, documents/ (ADR-0015, ADR-0024).
-  data:
+      - ${CASHFLOW_DATA_PATH:?définir CASHFLOW_DATA_PATH dans deploy/.env}:/data
