@@ -259,8 +259,15 @@ ADR-0021) ; une jambe de virement a une ventilation unique (R-TRX-32).
 | `group_id` | `Id` → PayeeGroup | optionnel ; mis à `null` à la suppression du groupe (R-TIE-4) |
 | `archived` | booléen | défaut `false` |
 | `note` | texte | optionnel |
+| `address_line` | texte ≤ 200 | optionnel (R-TIE-23) |
+| `postal_code` | texte ≤ 10 | optionnel ; 5 chiffres si `country_code` = `FR` |
+| `city` | texte ≤ 80 | requis dès qu'un champ de l'adresse est renseigné |
+| `country_code` | texte 2 | ISO 3166-1 alpha-2 en majuscules ; requis avec `city` |
+| `latitude_e6` | entier | optionnel, millionièmes de degré, entre −90 000 000 et 90 000 000 ; seulement avec une adresse (R-TIE-25) |
+| `longitude_e6` | entier | optionnel, entre −180 000 000 et 180 000 000 ; présent si et seulement si `latitude_e6` l'est |
 
-Index : `group_id`.
+Index : `group_id`. Le département se déduit du code postal, il n'est pas stocké (R-TIE-24). Décision :
+ADR-0025.
 
 ## Biens et prêts — [spec 09](specs/09-biens-et-prets.md)
 
@@ -591,5 +598,6 @@ ferment. Pas exporté, comme les sessions.
 
 ### AppSetting
 
-Paires clé/valeur typées : activation de l'OCR et fournisseur (ADR-0007), tolérance de date
+Paires clé/valeur typées : activation de l'OCR et fournisseur (ADR-0007), activation de la recherche
+d'adresse `geocoding.enabled` (R-TIE-26, ADR-0025), tolérance de date
 pour les correspondances d'import, période de référence de l'épargne de précaution, etc.

@@ -1,7 +1,8 @@
 # Spec 11 — Tiers
 
-Statut : **Validée** (2026-10-23)
+Statut : **Validée** (2026-10-23 ; adresse et lieu : 2026-10-28)
 Modèle : [Payee, PayeeGroup](../modele-de-donnees.md#tiers--spec-11)
+Décision : [ADR-0025](../adr/0025-adresse-des-tiers-et-geocodage.md) (adresse et géocodage)
 
 ## Concepts
 
@@ -94,6 +95,39 @@ Aucun tiers n'est créé automatiquement à partir des libellés (cf. TIE-05, V2
 - **R-TIE-22** — Comme les autres agrégats, ceux des tiers portent sur les comptes en EUR (R-CPT-2), et les
   flux sont rattachés à la période par leur `date` (R-TRX-7).
 
+## Adresse et lieu
+
+Le **lieu** d'une transaction est l'adresse de son tiers : c'est le magasin qui est à Meylan, pas le
+paiement. Décision : ADR-0025.
+
+- **R-TIE-23** — Un tiers a optionnellement une **adresse** : ligne d'adresse (≤ 200 caractères), code postal
+  (≤ 10), ville (≤ 80) et pays (code ISO 3166-1 alpha-2, « FR » proposé à la saisie). Dès qu'un champ de
+  l'adresse est renseigné, la **ville** et le **pays** sont requis. Un code postal français a 5 chiffres.
+- **R-TIE-24** — Le **département** d'une adresse française se déduit de son code postal, rien n'est stocké :
+  les deux premiers chiffres (« 38240 » → 38), sauf la Corse (200xx et 201xx → 2A, 202xx à 206xx → 2B) et
+  l'outre-mer (971 à 974 et 976, sur trois chiffres). Un autre code (98xxx…) n'a pas de département.
+- **R-TIE-25** — Une adresse peut porter des **coordonnées** (latitude et longitude en millionièmes de degré,
+  des entiers). Il n'y a pas de coordonnées sans adresse. Elles viennent de la recherche d'adresse
+  (R-TIE-26) : modifier ensuite un champ de l'adresse à la main les efface, elles ne lui correspondraient
+  plus.
+- **R-TIE-26** — **Recherche d'adresse** (géocodage) : désactivée par défaut, elle s'active dans les réglages.
+  Le texte saisi est envoyé par le serveur à la Base Adresse Nationale, ce que le champ indique (ADR-0007).
+  Choisir une proposition remplit la ligne d'adresse, le code postal, la ville, le pays (FR) et les
+  coordonnées. Elle ne couvre que la France ; désactivée ou injoignable, l'adresse se saisit à la main.
+- **R-TIE-27** — Fusionner un tiers dans un autre (R-TIE-7) garde l'adresse du tiers cible ; s'il n'en a pas,
+  il reprend celle du tiers fusionné.
+- **R-TIE-28** — **Analyse par lieu** : sur une période, les dépenses (ou les revenus) et le non catégorisé
+  des tiers (R-TIE-20, R-TIE-21) sont regroupés par **pays**, par **département** ou par **ville** de leur
+  adresse. Une ville est identifiée par son pays, son département et son nom sans distinction de casse. Les
+  tiers sans adresse forment la ligne « Sans adresse » ; par département, les adresses à l'étranger forment
+  la ligne « Étranger » et celles dont le département ne se déduit pas, « Département inconnu ». Chaque lieu
+  se déplie en ses tiers. Comme l'analyse par tiers, elle ne porte que sur les transactions qui ont un tiers.
+- **R-TIE-29** — **Carte** : les départements de France métropolitaine sont coloriés selon le montant de la
+  période (R-TIE-28, par département), et les tiers qui ont des coordonnées y sont placés, d'une taille
+  proportionnelle à leur montant. Le fond de carte est embarqué dans l'application : aucun service de
+  cartographie n'est appelé. Le nombre de tiers de la période absents de la carte (sans coordonnées, outre-mer,
+  étranger) est indiqué.
+
 ## Features
 
 | ID | Priorité | Feature |
@@ -103,6 +137,8 @@ Aucun tiers n'est créé automatiquement à partir des libellés (cf. TIE-05, V2
 | TIE-03 | V1 | Tiers à l'import : action de règle `set_payee`, suggestion apprise, revue d'import |
 | TIE-04 | V1 | Dépenses et revenus par tiers et par groupe : analyse, fiche d'un tiers ou d'un groupe, filtre des transactions |
 | TIE-05 | V2 | Proposer des tiers à partir des libellés bancaires (libellés proches regroupés) |
+| TIE-06 | V1 | Adresse d'un tiers : saisie, recherche d'adresse par la BAN (activable), affichage sur la fiche |
+| TIE-07 | V1 | Dépenses et revenus par lieu : par pays, département ou ville, et carte |
 
 ### TIE-01 — Critères d'acceptation
 
@@ -139,3 +175,22 @@ Aucun tiers n'est créé automatiquement à partir des libellés (cf. TIE-05, V2
   catégorisés chez « Carrefour Meylan », tous deux tiers du groupe « Carrefour », alors en mars : dépenses du
   groupe = 95 €, non catégorisé = 15 € en sorties, et dépenses de « Carrefour Meylan » = 75 € (R-TIE-20,
   R-TIE-21).
+
+### TIE-06 — Critères d'acceptation
+
+- Étant donné un tiers, quand je saisis le code postal « 38240 » sans ville, alors l'enregistrement est refusé
+  (R-TIE-23).
+- Étant donné la recherche d'adresse activée, quand je choisis la proposition « 8 Boulevard du Port 80000
+  Amiens », alors le tiers a pour ville « Amiens », pour pays FR et des coordonnées (R-TIE-26).
+- Étant donné un tiers géocodé, quand je corrige son code postal à la main, alors ses coordonnées sont
+  effacées (R-TIE-25).
+- Étant donné la recherche d'adresse désactivée, quand j'appelle la recherche, alors elle est refusée et
+  aucune requête ne part vers la BAN (R-TIE-26).
+
+### TIE-07 — Critères d'acceptation
+
+- Étant donné en mars −40 € chez « Boulangerie » (Meylan, 38240), −60 € chez « Carrefour Meylan » (MEYLAN,
+  38240), −30 € chez « Fnac » (Grenoble, 38000) et −10 € chez « Amazon » (sans adresse), alors par ville :
+  Meylan = 100 € (2 tiers), Grenoble = 30 €, Sans adresse = 10 € ; par département : Isère (38) = 130 €
+  (R-TIE-24, R-TIE-28).
+- Étant donné une adresse en Corse « 20090 Ajaccio », alors son département est 2A (R-TIE-24).

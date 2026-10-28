@@ -726,6 +726,31 @@ Dans les réglages, comme les catégories (E8).
 - Sélection multiple : « Changer de groupe » pour plusieurs tiers d'un coup.
 - Les tiers archivés sont regroupés en bas, repliés, avec « Désarchiver ».
 
+## Adresse et lieu (TIE-06, TIE-07)
+
+Statut : **Validée** (2026-10-28). Décision : ADR-0025.
+
+- **Dialogue d'un tiers** (E31, E32) : section **Adresse** repliable sous le groupe. Si la recherche d'adresse
+  est activée, un champ **Rechercher une adresse** `[mat-autocomplete]` en tête, avec la mention « Envoyé à
+  la Base Adresse Nationale (api-adresse.data.gouv.fr) » ; choisir une proposition remplit les champs et les
+  coordonnées (R-TIE-26). Puis ligne d'adresse, code postal et ville côte à côte, pays (liste, France par
+  défaut). Une icône indique si l'adresse est localisée ; corriger un champ à la main retire la localisation
+  (R-TIE-25). « Effacer l'adresse » vide tout.
+- **E31 Tiers** : la ville (et le pays s'il n'est pas la France) s'affiche à côté du nom.
+- **E32 Fiche** : l'adresse sous le nom (avec « Voir sur une carte » si elle est localisée : lien vers
+  OpenStreetMap, ouvert dans un nouvel onglet, sur action explicite). Le menu ⋮ libelle l'action
+  « Modifier (nom, groupe, adresse) ».
+- **E9 Réglages** : interrupteur **« Recherche d'adresse (Base Adresse Nationale) »**, désactivé par défaut,
+  avec l'explication : « Le texte saisi dans la recherche d'adresse d'un tiers est envoyé à
+  api-adresse.data.gouv.fr. »
+- **E15 Analyses** : onglet **Par lieu** (TIE-07), après Par tiers : période, dépenses ou revenus (comme Par
+  tiers) et niveau **pays / département / ville**. Tableau : lieu, montant, non catégorisé, nombre de tiers,
+  période précédente ; un lieu se déplie en ses tiers, un tiers ouvre sa fiche (E32). Les lignes « Sans
+  adresse », « Étranger », « Département inconnu » viennent en dernier (R-TIE-28). À côté, la **carte** de
+  France métropolitaine (R-TIE-29) : départements en dégradé selon le montant, tiers localisés en cercles
+  proportionnels ; survol : nom et montant ; clic sur un tiers : sa fiche. Sous la carte : « N tiers hors de la
+  carte ».
+
 ## E32 — Fiche d'un tiers ou d'un groupe (TIE-04)
 
 - **En-tête** : nom, groupe (lien) pour un tiers ou liste de ses tiers pour un groupe, note, menu ⋮ (mêmes

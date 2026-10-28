@@ -90,6 +90,11 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 |---|---|---|
 | Tiers | `Payee` | Personne ou organisme de l'autre côté d'une transaction : magasin, employeur, administration, proche. Facultatif, porté par la transaction (spec 11). |
 | Groupe de tiers | `PayeeGroup` | Regroupement de tiers, sur un seul niveau : l'enseigne « Carrefour » pour ses magasins, « Famille »… Jamais affecté directement à une transaction. |
+| Adresse (d'un tiers) | `PayeeAddress` | Ligne d'adresse, code postal, ville et pays d'un tiers (R-TIE-23). Facultative. |
+| Coordonnées | `GeoPoint` | Latitude et longitude d'une adresse, en millionièmes de degré (`latitude_e6`, `longitude_e6`), entiers. |
+| Département | `Department` | Département français, déduit du code postal (R-TIE-24) ; code `38`, `2A`, `974`. |
+| Lieu | `Location` | Pays, département ou ville selon lequel l'analyse par lieu regroupe les tiers (R-TIE-28). |
+| Recherche d'adresse, géocodage | `Geocoding` | Proposition d'adresses et de coordonnées par la Base Adresse Nationale (BAN), à partir d'un texte saisi (R-TIE-26, ADR-0025). |
 
 ## Import et rapprochement
 

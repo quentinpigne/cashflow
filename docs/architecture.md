@@ -118,7 +118,8 @@ Les cas de référence chiffrés des specs (intérêts, TRI, ventilations, indic
   un jeton d'accès en lecture seule, géré par `cashflow token` (ADR-0023).
 - Chiffrement au repos : chiffrement du disque du serveur (ADR-0015).
 - Journalisation : jamais de libellé, de montant ou d'IBAN dans les logs au niveau INFO.
-- OCR : ADR-0007.
+- OCR : ADR-0007. Recherche d'adresse des tiers : la BAN, appelée par le serveur, désactivée par défaut
+  (ADR-0025).
 
 ## Migrations de schéma
 
@@ -149,6 +150,7 @@ cashflow/
 │       ├── src/services.rs + services/  ← un service par cas d'usage
 │       ├── src/db.rs + db/         ← requêtes sqlx
 │       ├── src/readers.rs + readers/   ← lecteurs CSV/XLSX/OFX/PDF, OCR
+│       ├── src/geocoding.rs   ← client de la Base Adresse Nationale (ADR-0025)
 │       ├── migrations/        ← migrations sqlx (immuables une fois publiées)
 │       └── seed/              ← données initiales (JSON), sans donnée personnelle
 ├── web/                       ← SPA Angular (Angular CLI)
