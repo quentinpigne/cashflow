@@ -123,6 +123,7 @@ mat-chip-listbox {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    margin-top: 0.5rem;
 
     .label {
       flex: 1;
@@ -161,11 +162,14 @@ mat-chip-listbox {
   margin-bottom: 0.25rem;
 }
 
-.payee {
+// Champ de catégorie ou de tiers, suivi de l'origine de la suggestion.
+.pick {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-top: 0.5rem;
 
+  app-category-picker,
   app-payee-picker {
     flex: 1;
   }
