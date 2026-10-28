@@ -97,6 +97,7 @@ import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconci
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 0.75rem;
       h2 {
         margin: 0;
         font: var(--mat-sys-title-medium);
@@ -117,7 +118,12 @@ import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconci
         }
       }
     }
+    .actions {
+      display: flex;
+      align-items: center;
+    }
     .state {
+      display: flex;
       color: var(--mat-sys-on-surface-variant);
       &.ok {
         color: var(--mat-sys-primary);

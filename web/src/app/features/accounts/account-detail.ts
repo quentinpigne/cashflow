@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -120,6 +128,11 @@ export class AccountDetailPage {
   protected readonly showFilters = signal(false);
   protected readonly limit = signal(PAGE);
   protected readonly selected = signal<string | null>(null);
+  /** Années de relevés dépliées : gardées ici, la section étant recréée à chaque rechargement. */
+  protected readonly statementYears = linkedSignal<string, ReadonlySet<string>>({
+    source: this.id,
+    computation: () => new Set(),
+  });
   protected readonly sort = signal<Sort>({ active: 'date', direction: 'desc' });
   protected readonly iban = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);

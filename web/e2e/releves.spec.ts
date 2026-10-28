@@ -9,6 +9,10 @@ test('E3 : relevés archivés et mois sans relevé (CPT-11, R-CPT-19, R-CPT-21)'
   await openAccount(page, 'Compte courant');
   const section = page.locator('app-account-statements');
   await expect(section.getByRole('heading', { name: 'Relevés' })).toBeVisible();
+  // Les années sont repliées par défaut.
+  const year = section.locator('details', { hasText: '2026' });
+  await expect(year).not.toHaveAttribute('open');
+  await year.locator('summary').click();
   // Jeu de démonstration : mai, juin, juillet et septembre ; août est sans relevé.
   await expect(section.locator('.row:not(.missing)')).toHaveCount(4);
   await expect(section.locator('.row.missing')).toHaveText(/Août 2026\s*sans relevé/);

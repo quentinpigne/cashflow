@@ -288,7 +288,7 @@
                 {{ t.balance_after_minor | money: a.currency }}
               </td>
             </ng-container>
-            <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
             <tr
               mat-row
               *matRowDef="let t; columns: columns"
@@ -309,7 +309,7 @@
       } @else if (page.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       }
-      <app-account-statements [accountId]="a.id" />
+      <app-account-statements [accountId]="a.id" [(expanded)]="statementYears" />
     }
   </div>
 

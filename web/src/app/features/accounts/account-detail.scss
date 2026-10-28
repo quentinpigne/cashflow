@@ -91,6 +91,13 @@
     text-align: right;
   }
 
+  // Case à cocher et cadenas centrés sur le même axe (la case a une zone tactile de 40px).
+  .mat-column-status {
+    width: 2.5rem;
+    padding: 0 0.5rem;
+    text-align: center;
+  }
+
   tr.mat-mdc-row {
     cursor: pointer;
 

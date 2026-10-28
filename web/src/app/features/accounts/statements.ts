@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  model,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -58,8 +66,8 @@ interface StatementYear {
         <h2>Relevés</h2>
         <button mat-stroked-button (click)="add(null)"><mat-icon>add</mat-icon>Ajouter</button>
       </header>
-      @for (y of years(); track y.year; let first = $first) {
-        <details [open]="first">
+      @for (y of years(); track y.year) {
+        <details [open]="expanded().has(y.year)" (toggle)="toggle(y.year, $event)">
           <summary>
             {{ y.year }}
             <span class="muted small">{{ y.count }} relevé{{ y.count > 1 ? 's' : '' }}</span>
@@ -194,6 +202,8 @@ export class AccountStatements {
 
   protected readonly size = formatSize;
   protected readonly dragging = signal(false);
+  /** Années dépliées : toutes repliées par défaut. */
+  readonly expanded = model<ReadonlySet<string>>(new Set());
 
   /** Relevés et mois sans relevé, par année, du plus récent au plus ancien (R-CPT-21). */
   protected readonly years = computed<StatementYear[]>(() => {
@@ -216,6 +226,16 @@ export class AccountStatements {
     }
     return years;
   });
+
+  protected toggle(year: string, event: Event): void {
+    const open = (event.target as HTMLDetailsElement).open;
+    this.expanded.update((years) => {
+      const next = new Set(years);
+      if (open) next.add(year);
+      else next.delete(year);
+      return next;
+    });
+  }
 
   protected fileUrl(statement: StatementView, download: boolean): string {
     const url = `/api/v1/accounts/${this.accountId()}/statements/${statement.id}/file`;
