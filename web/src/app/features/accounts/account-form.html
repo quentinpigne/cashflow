@@ -88,32 +88,34 @@
         <mat-expansion-panel-header>
           <mat-panel-title>Coordonnées bancaires</mat-panel-title>
         </mat-expansion-panel-header>
-        <mat-form-field class="full-width">
-          <mat-label>IBAN</mat-label>
-          <input
-            matInput
-            formControlName="iban"
-            autocomplete="off"
-            [placeholder]="account?.iban_masked ?? 'FR76 …'"
-          />
-          @if (account?.iban_masked) {
-            <mat-hint>Laisser vide pour conserver {{ account?.iban_masked }}</mat-hint>
-          }
-          @if (ibanError()) {
-            <mat-hint class="error">{{ ibanError() }}</mat-hint>
-          }
-        </mat-form-field>
-        <mat-form-field class="full-width">
-          <mat-label>Numéro de compte</mat-label>
-          <input matInput formControlName="accountNumber" maxlength="30" />
-        </mat-form-field>
+        <div class="fields">
+          <mat-form-field class="full-width">
+            <mat-label>IBAN</mat-label>
+            <input
+              matInput
+              formControlName="iban"
+              autocomplete="off"
+              [placeholder]="account?.iban_masked ?? 'FR76 …'"
+            />
+            @if (account?.iban_masked) {
+              <mat-hint>Laisser vide pour conserver {{ account?.iban_masked }}</mat-hint>
+            }
+            @if (ibanError()) {
+              <mat-hint class="error">{{ ibanError() }}</mat-hint>
+            }
+          </mat-form-field>
+          <mat-form-field class="full-width">
+            <mat-label>Numéro de compte</mat-label>
+            <input matInput formControlName="accountNumber" maxlength="30" />
+          </mat-form-field>
+        </div>
       </mat-expansion-panel>
 
       <mat-expansion-panel>
         <mat-expansion-panel-header>
           <mat-panel-title>Options</mat-panel-title>
         </mat-expansion-panel-header>
-        <div class="options">
+        <div class="fields">
           <div class="checks">
             <mat-checkbox formControlName="netWorth">Compter dans le patrimoine</mat-checkbox>
             <mat-checkbox formControlName="emergency"
