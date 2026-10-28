@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.id, t.balance_date AS \"date!: Date\", s.amount AS \"amount!: i64\", t.label AS \"label!\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN category c ON c.id = s.category_id\n           WHERE t.account_id = ? AND t.balance_date BETWEEN ? AND ? AND c.kind = 'EXPENSE'\n             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))",
+  "query": "SELECT t.id, t.balance_date AS \"date!: Date\", s.amount AS \"amount!: i64\", t.label AS \"label!\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN category c ON c.id = s.category_id\n           WHERE t.account_id = ? AND t.balance_date BETWEEN ? AND ? AND c.kind = 'EXPENSE'\n             AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n             AND NOT EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id)",
   "describe": {
     "columns": [
       {
@@ -58,5 +58,5 @@
       true
     ]
   },
-  "hash": "1982215070df5674139885fa4f695df0fc9fe37d2a94c667b1cab2580d329a2a"
+  "hash": "2cf754dad5666c8765e96155659036777f0e8ef865ee7f067660f00d912a224e"
 }

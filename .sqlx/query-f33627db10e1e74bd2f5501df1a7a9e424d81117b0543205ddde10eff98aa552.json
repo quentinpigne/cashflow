@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.payee_id AS \"payee_id!\", t.id AS \"transaction_id!\", t.date AS \"date!: Date\", s.amount,\n                  s.category_id, c.kind AS \"category_kind?\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.payee_id IS NOT NULL AND t.date BETWEEN ? AND ?",
+  "query": "SELECT t.payee_id AS \"payee_id!\", t.id AS \"transaction_id!\", t.date AS \"date!: Date\", s.amount,\n                  s.category_id, c.kind AS \"category_kind?\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.payee_id IS NOT NULL AND t.date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -101,5 +101,5 @@
       false
     ]
   },
-  "hash": "41d86cfff1e721ca0a8988724e777242773985e3ad4718000a3447346337b7e3"
+  "hash": "f33627db10e1e74bd2f5501df1a7a9e424d81117b0543205ddde10eff98aa552"
 }

@@ -56,7 +56,8 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 - **R-BUD-1** — Chaque compte porte un drapeau `include_in_budget`. Valeurs par défaut : `true` pour
   la famille `CASH`, `false` pour `FIXED_SAVINGS`. Il est toujours `false` pour `VARIABLE_SAVINGS`,
   dont les transactions ne sont que des apports (R-EPA-20). Les ventilations de remboursement et
-  d'acquisition n'alimentent jamais les lignes de budget (R-TRX-37).
+  d'acquisition n'alimentent jamais les lignes de budget (R-TRX-37), ni celles d'une catégorie hors
+  analyses (R-TRX-24).
 - **R-BUD-2** — Seules les ventilations des transactions de comptes `include_in_budget` alimentent les
   lignes de dépense et de revenu. Les jambes de virement interne n'alimentent jamais ces lignes
   (R-TRX-32), seulement les objectifs d'épargne (R-BUD-30).

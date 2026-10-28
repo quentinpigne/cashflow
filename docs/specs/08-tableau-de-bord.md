@@ -18,8 +18,8 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
 |---|---|---|
 | **Patrimoine** (net) | Σ des soldes calculés (comptes `CASH` et `FIXED_SAVINGS`) et des valeurs (comptes `VARIABLE_SAVINGS`, R-CPT-6) des comptes `include_in_net_worth`, + Σ des valeurs des biens (R-BIE-2) − Σ des capitaux restants dus des prêts (R-PRE-4) comptés dans le patrimoine, à la date D. Le détail affiche l'actif brut (comptes et biens) et les dettes (prêts) séparément. | R-TDB-1 |
 | **Variation de patrimoine** | Patrimoine(fin M) − patrimoine(fin M−1), décomposée en **épargne du mois** (flux) et **effet de marché + intérêts** (le reste) | R-TDB-2 |
-| **Revenus** | Σ des ventilations sur des catégories `INCOME` | R-TDB-3 |
-| **Dépenses** | −Σ des ventilations sur des catégories `EXPENSE` (les remboursements viennent en déduction) | R-TDB-4 |
+| **Revenus** | Σ des ventilations sur des catégories `INCOME`, hors catégories hors analyses (R-TRX-24) | R-TDB-3 |
+| **Dépenses** | −Σ des ventilations sur des catégories `EXPENSE`, hors catégories hors analyses (R-TRX-24) (les remboursements viennent en déduction) | R-TDB-4 |
 | **Non catégorisé** | Σ des ventilations sans catégorie, hors virements, remboursements et acquisitions (R-TRX-37), séparément en entrées et en sorties | R-TDB-5 |
 | **Épargne du mois** | Revenus − dépenses | R-TDB-6 |
 | **Taux d'épargne** | Épargne du mois / revenus. Non défini si les revenus valent 0. Moyenne glissante sur 12 mois affichée à côté. | R-TDB-7 |

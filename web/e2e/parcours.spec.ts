@@ -106,6 +106,29 @@ test('E1 : catégoriser sur place depuis l’accueil (R-TDB-5)', async ({ page }
   }
 });
 
+test('E1, E8 : ranger une opération hors analyses (R-TRX-24, R-TRX-25)', async ({ page }) => {
+  await login(page);
+  const card = page.locator('section.uncategorized');
+  const title = card.getByRole('heading');
+  const before = Number((await title.textContent())?.match(/\((\d+)\)/)?.[1]);
+  await pickCategory(
+    page,
+    card.locator('.todo').first(),
+    'Hors analyses',
+    'Hors analyses (général)',
+    false,
+  );
+  if (before > 1) {
+    await expect(title).toHaveText(`À catégoriser (${before - 1})`);
+  } else {
+    await expect(card).toBeHidden();
+  }
+  // La catégorie est fournie de base, marquée dans les réglages.
+  await page.goto('/reglages/categories');
+  const row = page.locator('.row.root', { hasText: 'Hors analyses' });
+  await expect(row.locator('.tag')).toHaveText('hors analyses');
+});
+
 test('E4 : créer, clôturer puis supprimer un compte (CPT-01, CPT-04, R-CPT-7)', async ({
   page,
 }) => {

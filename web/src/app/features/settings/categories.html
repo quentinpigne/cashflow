@@ -24,7 +24,12 @@
       <div class="node" cdkDrag>
         <div class="row root">
           <mat-icon class="handle" cdkDragHandle aria-hidden="true">drag_indicator</mat-icon>
-          <span class="name">{{ category.name }}</span>
+          <span class="name"
+            >{{ category.name }}
+            @if (category.excluded_from_analyses) {
+              <span class="tag">hors analyses</span>
+            }
+          </span>
           <span class="muted usage">{{ category.usage }}</span>
           <button
             mat-icon-button
@@ -39,6 +44,14 @@
             </button>
             <button mat-menu-item (click)="create(category)">
               <mat-icon>subdirectory_arrow_right</mat-icon>Ajouter une sous-catégorie
+            </button>
+            <button mat-menu-item (click)="setExcluded(category, !category.excluded_from_analyses)">
+              <mat-icon>{{ category.excluded_from_analyses ? 'insights' : 'block' }}</mat-icon>
+              {{
+                category.excluded_from_analyses
+                  ? 'Inclure dans les analyses'
+                  : 'Exclure des analyses'
+              }}
             </button>
             <button mat-menu-item (click)="setArchived(category, true)">
               <mat-icon>archive</mat-icon>Archiver
@@ -59,7 +72,12 @@
           @for (child of activeChildren(category); track child.id) {
             <div class="row child" cdkDrag>
               <mat-icon class="handle" cdkDragHandle aria-hidden="true">drag_indicator</mat-icon>
-              <span class="name">{{ child.name }}</span>
+              <span class="name"
+                >{{ child.name }}
+                @if (child.excluded_from_analyses || category.excluded_from_analyses) {
+                  <span class="tag">hors analyses</span>
+                }
+              </span>
               <span class="muted usage">{{ child.usage }}</span>
               <button
                 mat-icon-button
@@ -72,6 +90,16 @@
                 <button mat-menu-item (click)="rename(child)">
                   <mat-icon>edit</mat-icon>Renommer
                 </button>
+                @if (!category.excluded_from_analyses) {
+                  <button mat-menu-item (click)="setExcluded(child, !child.excluded_from_analyses)">
+                    <mat-icon>{{ child.excluded_from_analyses ? 'insights' : 'block' }}</mat-icon>
+                    {{
+                      child.excluded_from_analyses
+                        ? 'Inclure dans les analyses'
+                        : 'Exclure des analyses'
+                    }}
+                  </button>
+                }
                 <button mat-menu-item (click)="setArchived(child, true)">
                   <mat-icon>archive</mat-icon>Archiver
                 </button>

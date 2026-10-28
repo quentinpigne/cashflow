@@ -188,6 +188,7 @@ Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu)
 | `kind` | `CategoryKind` | `INCOME` \| `EXPENSE`, identique à celui du parent |
 | `parent_id` | `Id` → Category | optionnel, profondeur max 2 |
 | `archived` | booléen | défaut `false` |
+| `excluded_from_analyses` | booléen | défaut `false` : catégorie hors analyses (R-TRX-24) |
 | `display_order` | entier | — |
 | `color`, `icon` | texte | optionnels |
 

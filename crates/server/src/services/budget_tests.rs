@@ -288,3 +288,44 @@ async fn r_bud_60_alerts_can_be_disabled_per_line() {
     // Les seuils globaux ne peuvent pas être vides.
     assert!(budgets::set_thresholds(&db, &budgets::Thresholds { thresholds: Vec::new() }).await.is_err());
 }
+
+#[tokio::test]
+async fn r_trx_24_excluded_category_is_neither_income_nor_expense() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let food = category(&db, "Alim B", CategoryKind::Expense, None).await;
+    let input = super::categories::CategoryInput {
+        name: "Hors analyses B".into(),
+        kind: CategoryKind::Expense,
+        parent_id: None,
+        archived: false,
+        excluded_from_analyses: true,
+        display_order: None,
+        color: None,
+        icon: None,
+    };
+    let excluded = super::categories::create(&db, &input).await.unwrap();
+    // Une sous-catégorie l'est aussi.
+    let child = category(&db, "Ancien B", CategoryKind::Expense, Some(excluded)).await;
+    for (date, amount, category) in [
+        ("2026-03-05", -6_000, Some(food)),
+        ("2026-03-06", -2_500, Some(excluded)),
+        ("2026-03-07", -1_000, Some(child)),
+    ] {
+        transactions::create(&db, &tx(checking, date, amount, category)).await.unwrap();
+    }
+
+    let march = view(&db, "2026-03").await;
+    assert_eq!(march.off_budget.iter().map(|l| l.amount_minor).collect::<Vec<_>>(), [6_000]);
+    assert_eq!(march.uncategorized_out_minor, 0);
+    assert_eq!(march.balance_minor, -6_000);
+
+    let report = reports::CategoryReportQuery { month: Some("2026-03".into()), kind: None, exclude_projects: None };
+    let report = reports::categories(&db, &report, d(TODAY)).await.unwrap();
+    assert_eq!(report.total_minor, 6_000);
+    assert!(report.lines.iter().all(|l| l.category_id == Some(food)));
+
+    let dashboard = super::dashboard::get(&db, d(TODAY)).await.unwrap();
+    assert_eq!(dashboard.month.expenses_minor, 6_000);
+    assert_eq!(dashboard.uncategorized.total, 0);
+}

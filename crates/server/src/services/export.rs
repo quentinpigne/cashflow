@@ -82,6 +82,7 @@ mod tests {
                 kind: CategoryKind::Expense,
                 parent_id: None,
                 archived: false,
+                excluded_from_analyses: false,
                 display_order: None,
                 color: None,
                 icon: None,

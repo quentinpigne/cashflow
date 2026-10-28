@@ -206,7 +206,8 @@ pub struct CapacityFact {
     pub amount: Money,
     /// `None` : non catégorisée.
     pub category_kind: Option<CategoryKind>,
-    /// Virement, remboursement ou acquisition : ni revenu ni dépense.
+    /// Virement, remboursement, acquisition (R-TRX-37) ou catégorie hors analyses (R-TRX-24) : ni revenu ni
+    /// dépense.
     pub is_movement: bool,
     pub is_eur: bool,
     /// Compte de liquidités.

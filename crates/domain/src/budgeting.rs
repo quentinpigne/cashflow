@@ -199,7 +199,8 @@ pub struct BudgetSplit<C, P> {
     pub project: Option<(P, bool)>,
     /// Le compte de la transaction est dans le périmètre du budget (R-BUD-1, R-BUD-2).
     pub in_budget: bool,
-    /// Jambe de virement interne : n'alimente aucune ligne de dépense ou de revenu (R-BUD-2).
+    /// Jambe de virement interne, remboursement, acquisition ou catégorie hors analyses (R-TRX-24) : n'alimente
+    /// aucune ligne de dépense ou de revenu (R-BUD-2).
     pub is_movement: bool,
 }
 

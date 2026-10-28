@@ -12,6 +12,12 @@ export interface Category {
   children: Array<Category>;
   color?: (string | null);
   display_order: number;
+
+  /**
+   * Ventilations exclues des revenus, dépenses, budgets et analyses (R-TRX-24) ; vaut aussi pour les
+   * sous-catégories.
+   */
+  excluded_from_analyses: boolean;
   icon?: (string | null);
   id: CategoryId;
   kind: CategoryKind;

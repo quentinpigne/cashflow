@@ -61,7 +61,8 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
 - **R-TRX-11** — Une ventilation a un montant non nul. Son signe peut différer de celui de la
   transaction (ex. un achat de 100 € dont 20 € de consigne remboursée), mais l'interface le signale.
 - **R-TRX-12** — Une ventilation sans catégorie est « non catégorisée ». Le tableau de bord
-  remonte le total non catégorisé.
+  remonte le total non catégorisé. Pour qu'une ventilation n'y figure plus sans être analysée, on la
+  range dans une catégorie hors analyses (R-TRX-24).
 - **R-TRX-13** — La nature de la catégorie (`INCOME`/`EXPENSE`) ne contraint pas le signe : une
   ventilation positive sur une catégorie de dépense est un **remboursement** et vient en déduction
   des dépenses de cette catégorie.
@@ -82,6 +83,14 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
   conservée dans l'historique) ou se **fusionne** dans une autre, ce qui réaffecte toutes ses
   ventilations.
 - **R-TRX-23** — Un jeu de catégories par défaut est proposé au premier lancement (cf. heritage.md).
+- **R-TRX-24** — Une catégorie peut être **hors analyses** : ses ventilations, et celles de ses
+  sous-catégories, sont exclues des revenus, des dépenses, des budgets, des analyses, des projections et du
+  total non catégorisé, comme un virement. Elles restent dans les soldes. C'est la place d'une opération
+  qu'on ne peut ou ne veut pas catégoriser (opération ancienne oubliée, inclassable) : elle quitte « À
+  catégoriser » sans fausser les dépenses d'une vraie catégorie.
+- **R-TRX-25** — Une catégorie de dépense « Hors analyses » est proposée une fois, y compris sur une base
+  déjà en service ; supprimée ou renommée, elle n'est pas recréée. Une seule suffit : rien n'y est compté,
+  sa nature est donc sans effet, et une entrée d'argent peut y être rangée (R-TRX-13).
 
 ### Virements internes
 

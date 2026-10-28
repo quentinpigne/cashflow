@@ -4,6 +4,7 @@
 //! - Barèmes réglementés : complétés à chaque démarrage (nouvelles périodes de taux).
 //! - Établissements et catégories : proposés **au premier lancement** seulement (R-TRX-23), pour ne
 //!   jamais recréer ce que l'utilisateur a supprimé ou renommé.
+//! - Catégories « Hors analyses » : proposées une fois, y compris sur une base déjà en service (R-TRX-25).
 
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{CategoryId, InstitutionId, RateScheduleId};
@@ -16,6 +17,9 @@ use crate::db::{self, Db};
 
 /// Catégorie de revenu des intérêts générés (R-EPA-10), reliée aux conditions d'épargne.
 pub const INTEREST_CATEGORY: &str = "Intérêts";
+
+/// Catégorie hors analyses proposée, en dépense : rien n'y est compté, sa nature est sans effet (R-TRX-25).
+pub const EXCLUDED_CATEGORY: &str = "Hors analyses";
 
 const CATEGORIES: &str = include_str!("../../seed/categories.json");
 const INSTITUTIONS: &str = include_str!("../../seed/institutions.json");
@@ -107,14 +111,24 @@ pub async fn run(db: &Db) -> anyhow::Result<()> {
             for (kind, nodes) in [(CategoryKind::Expense, seed.expense), (CategoryKind::Income, seed.income)] {
                 for (order, node) in nodes.into_iter().enumerate() {
                     let parent = CategoryId::new();
-                    insert_category(&mut tx, parent, &node.name, kind, None, order).await?;
+                    insert_category(&mut tx, parent, &node.name, kind, None, order, false).await?;
                     for (child_order, child) in node.children.iter().enumerate() {
-                        insert_category(&mut tx, CategoryId::new(), child, kind, Some(parent), child_order).await?;
+                        insert_category(&mut tx, CategoryId::new(), child, kind, Some(parent), child_order, false)
+                            .await?;
                     }
                 }
             }
         }
         db::settings::set(&mut *tx, "seed.categories", &true).await?;
+    }
+
+    if db::settings::get::<bool>(&mut *tx, "seed.excluded_categories").await?.is_none() {
+        let kind = CategoryKind::Expense;
+        if !db::categories::name_taken(&mut *tx, EXCLUDED_CATEGORY, kind, None, None).await? {
+            // En dernier parmi les catégories racines.
+            insert_category(&mut tx, CategoryId::new(), EXCLUDED_CATEGORY, kind, None, 1_000, true).await?;
+        }
+        db::settings::set(&mut *tx, "seed.excluded_categories", &true).await?;
     }
 
     tx.commit().await?;
@@ -130,12 +144,14 @@ async fn insert_category(
     kind: CategoryKind,
     parent: Option<CategoryId>,
     order: usize,
+    excluded_from_analyses: bool,
 ) -> anyhow::Result<()> {
     let fields = CategoryFields {
         name,
         kind,
         parent_id: parent,
         archived: false,
+        excluded_from_analyses,
         display_order: i64::try_from(order)?,
         color: None,
         icon: None,
@@ -168,5 +184,24 @@ mod tests {
 
         let livret_a = db::accounts::find_schedule_by_name(&db.read, "Livret A (réglementé)").await.unwrap();
         assert!(livret_a.is_some());
+    }
+
+    #[tokio::test]
+    async fn r_trx_25_excluded_category_is_proposed_once_even_on_a_used_base() {
+        let (db, _dir) = crate::db::test_db().await;
+        // Base déjà en service, d'avant la catégorie hors analyses : catégories proposées, pas celle-ci.
+        db::settings::set(&db.write, "seed.categories", &true).await.unwrap();
+        run(&db).await.unwrap();
+        let excluded = |rows: Vec<crate::db::categories::CategoryRow>| {
+            rows.into_iter().filter(|c| c.name == EXCLUDED_CATEGORY).collect::<Vec<_>>()
+        };
+        let found = excluded(db::categories::list(&db.read).await.unwrap());
+        assert_eq!(found.len(), 1);
+        assert!(found[0].excluded_from_analyses && found[0].parent_id.is_none());
+
+        // Supprimée, elle n'est pas recréée.
+        db::categories::delete(&db.write, found[0].id).await.unwrap();
+        run(&db).await.unwrap();
+        assert!(excluded(db::categories::list(&db.read).await.unwrap()).is_empty());
     }
 }

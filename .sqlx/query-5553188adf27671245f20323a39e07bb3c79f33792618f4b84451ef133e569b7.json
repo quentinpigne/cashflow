@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS \"archived: bool\", c.display_order, c.color, c.icon,\n                  (SELECT count(*) FROM split s WHERE s.category_id = c.id) AS \"usage!: i64\"\n           FROM category c ORDER BY c.display_order, c.name COLLATE NOCASE",
+  "query": "SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS \"archived: bool\",\n                  c.excluded_from_analyses AS \"excluded_from_analyses: bool\", c.display_order, c.color, c.icon,\n                  (SELECT count(*) FROM split s WHERE s.category_id = c.id) AS \"usage!: i64\"\n           FROM category c WHERE c.id = ?",
   "describe": {
     "columns": [
       {
@@ -59,8 +59,19 @@
         }
       },
       {
-        "name": "display_order",
+        "name": "excluded_from_analyses: bool",
         "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "excluded_from_analyses"
+          }
+        }
+      },
+      {
+        "name": "display_order",
+        "ordinal": 6,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -71,7 +82,7 @@
       },
       {
         "name": "color",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -82,7 +93,7 @@
       },
       {
         "name": "icon",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -93,13 +104,13 @@
       },
       {
         "name": "usage!: i64",
-        "ordinal": 8,
+        "ordinal": 9,
         "type_info": "Integer",
         "origin": "Expression"
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
@@ -108,10 +119,11 @@
       true,
       false,
       false,
+      false,
       true,
       true,
       false
     ]
   },
-  "hash": "d34daa53e2e8e668cbc36432391730cb66fc46bea0d4d9f20638a81c7d1277c3"
+  "hash": "5553188adf27671245f20323a39e07bb3c79f33792618f4b84451ef133e569b7"
 }

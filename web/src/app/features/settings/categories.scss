@@ -36,6 +36,14 @@
   font: var(--mat-sys-body-small);
 }
 
+.tag {
+  margin-left: 0.5rem;
+  font: var(--mat-sys-label-small);
+  background: var(--mat-sys-secondary-container);
+  border-radius: 0.5rem;
+  padding: 0.125rem 0.5rem;
+}
+
 .archived {
   margin-top: 1rem;
 }

@@ -7,6 +7,11 @@ export interface CategoryInput {
   archived?: boolean;
   color?: (string | null);
   display_order?: (number | null);
+
+  /**
+   * R-TRX-24.
+   */
+  excluded_from_analyses?: boolean;
   icon?: (string | null);
   kind: CategoryKind;
   name: string;

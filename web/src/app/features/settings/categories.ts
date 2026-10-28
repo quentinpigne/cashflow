@@ -94,6 +94,7 @@ export class CategoriesPage {
     change: Partial<{
       name: string;
       archived: boolean;
+      excluded_from_analyses: boolean;
       parent_id: string | null;
       display_order: number;
     }>,
@@ -103,6 +104,7 @@ export class CategoriesPage {
       kind: category.kind,
       parent_id: change.parent_id !== undefined ? change.parent_id : (category.parent_id ?? null),
       archived: change.archived ?? category.archived,
+      excluded_from_analyses: change.excluded_from_analyses ?? category.excluded_from_analyses,
       display_order: change.display_order ?? category.display_order,
       color: category.color ?? null,
       icon: category.icon ?? null,
@@ -145,6 +147,22 @@ export class CategoriesPage {
         ),
       archived
         ? `« ${category.name} » archivée : masquée en saisie, conservée dans l'historique.`
+        : undefined,
+    );
+  }
+
+  /** Hors analyses : ni revenu ni dépense, comme un virement (R-TRX-24). */
+  protected async setExcluded(category: Category, excluded: boolean): Promise<void> {
+    await this.run(
+      () =>
+        firstValueFrom(
+          this.api.updateCategory({
+            id: category.id,
+            body: this.body(category, { excluded_from_analyses: excluded }),
+          }),
+        ),
+      excluded
+        ? `« ${category.name} » hors analyses : ni revenu ni dépense, plus « à catégoriser ».`
         : undefined,
     );
   }

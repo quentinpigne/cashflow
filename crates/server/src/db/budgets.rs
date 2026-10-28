@@ -319,7 +319,8 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
                   coalesce(p.exclude_from_period_budgets, 0) AS "project_excluded!: bool",
                   a.include_in_budget AS "in_budget!: bool", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
-                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))
+                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
+                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
                       AS "is_movement!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id

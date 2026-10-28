@@ -18,6 +18,9 @@ pub struct Category {
     pub kind: CategoryKind,
     pub parent_id: Option<CategoryId>,
     pub archived: bool,
+    /// Ventilations exclues des revenus, dépenses, budgets et analyses (R-TRX-24) ; vaut aussi pour les
+    /// sous-catégories.
+    pub excluded_from_analyses: bool,
     pub display_order: i64,
     pub color: Option<String>,
     pub icon: Option<String>,
@@ -35,6 +38,7 @@ fn node(row: CategoryRow, children: Vec<Category>) -> Category {
         kind: row.kind,
         parent_id: row.parent_id,
         archived: row.archived,
+        excluded_from_analyses: row.excluded_from_analyses,
         display_order: row.display_order,
         color: row.color,
         icon: row.icon,
@@ -50,6 +54,9 @@ pub struct CategoryInput {
     pub parent_id: Option<CategoryId>,
     #[serde(default)]
     pub archived: bool,
+    /// R-TRX-24.
+    #[serde(default)]
+    pub excluded_from_analyses: bool,
     pub display_order: Option<i64>,
     pub color: Option<String>,
     pub icon: Option<String>,
@@ -110,6 +117,7 @@ pub async fn create(db: &Db, input: &CategoryInput) -> AppResult<CategoryId> {
         kind: input.kind,
         parent_id: input.parent_id,
         archived: input.archived,
+        excluded_from_analyses: input.excluded_from_analyses,
         display_order: input.display_order.unwrap_or(i64::MAX / 2),
         color: color.as_deref(),
         icon: icon.as_deref(),
@@ -140,6 +148,7 @@ pub async fn update(db: &Db, id: CategoryId, input: &CategoryInput) -> AppResult
         kind: current.kind,
         parent_id: input.parent_id,
         archived: input.archived,
+        excluded_from_analyses: input.excluded_from_analyses,
         display_order: input.display_order.unwrap_or(current.display_order),
         color: color.as_deref(),
         icon: icon.as_deref(),
@@ -159,6 +168,7 @@ pub async fn reorder(db: &Db, input: &ReorderInput) -> AppResult<()> {
             kind: row.kind,
             parent_id: row.parent_id,
             archived: row.archived,
+            excluded_from_analyses: row.excluded_from_analyses,
             display_order: row.display_order,
             color: row.color.as_deref(),
             icon: row.icon.as_deref(),

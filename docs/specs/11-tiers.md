@@ -89,7 +89,8 @@ Aucun tiers n'est créé automatiquement à partir des libellés (cf. TIE-05, V2
 - **R-TIE-20** — Pour un tiers, sur une période, les **dépenses**, les **revenus** et le **non catégorisé**
   sont ceux de spec 08 (R-TDB-3, R-TDB-4, R-TDB-5), restreints aux ventilations des transactions de ce tiers.
   Pour un groupe, on somme ceux de ses tiers. Les ventilations de virement, de remboursement et d'acquisition
-  sont exclues, comme partout (R-TRX-37). Rien n'est stocké.
+  sont exclues, comme partout (R-TRX-37), ainsi que celles d'une catégorie hors analyses (R-TRX-24). Rien
+  n'est stocké.
 - **R-TIE-21** — Le non catégorisé d'un tiers est affiché à côté de ses dépenses et revenus, jamais ajouté
   à l'un ou l'autre : un total ne cache pas une transaction à catégoriser.
 - **R-TIE-22** — Comme les autres agrégats, ceux des tiers portent sur les comptes en EUR (R-CPT-2), et les

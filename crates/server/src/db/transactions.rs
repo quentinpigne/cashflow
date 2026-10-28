@@ -560,7 +560,8 @@ pub async fn split_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> a
     let rows = sqlx::query!(
         r#"SELECT t.date AS "date: Date", s.amount, c.kind AS "category_kind?", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
-                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))
+                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
+                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
                       AS "is_movement!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
@@ -728,7 +729,8 @@ pub async fn categorized_facts(
         r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, s.project_id IS NOT NULL AS "has_project!: bool",
                   c.kind AS "category_kind?", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
-                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))
+                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
+                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
                       AS "is_movement!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id

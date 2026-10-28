@@ -79,6 +79,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Ventilation | `Split` | Part d'une transaction affectée à une catégorie. Toute transaction a au moins une ventilation. |
 | Catégorie | `Category` | Poste de classement d'une ventilation (« Alimentation > Restaurants »). Nature revenu ou dépense. |
 | Nature de catégorie | `CategoryKind` | `INCOME` (revenu) ou `EXPENSE` (dépense). |
+| Catégorie hors analyses | `excluded_from_analyses` | Catégorie dont les ventilations ne sont ni revenu ni dépense, comme un virement : exclues des budgets, analyses, projections et du non catégorisé, mais comptées dans les soldes (R-TRX-24). |
 | Virement interne | `Transfer` | Lien entre deux ventilations de sens opposé, de deux transactions sur deux comptes suivis (ADR-0021). Ni revenu ni dépense. |
 | Ventilation de virement | `transfer split` | Ventilation, unique, d'une jambe de virement : sans catégorie, exclue des revenus, des dépenses et des budgets. |
 | Jambe (de virement) | `leg` | L'une des deux transactions d'un virement interne. |

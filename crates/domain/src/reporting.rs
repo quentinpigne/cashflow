@@ -46,6 +46,8 @@ pub struct SplitFact {
     pub amount: Money,
     /// `None` : non catégorisée.
     pub category_kind: Option<CategoryKind>,
+    /// Virement, remboursement, acquisition (R-TRX-37) ou catégorie hors analyses (R-TRX-24) : ni revenu, ni
+    /// dépense, ni non catégorisé.
     pub is_movement: bool,
     pub is_eur: bool,
 }
@@ -168,6 +170,7 @@ pub struct CategorizedFact<C> {
     /// Catégorie de la ventilation ; `None` : non catégorisée.
     pub category: Option<C>,
     pub kind: Option<CategoryKind>,
+    /// Comme [`SplitFact::is_movement`].
     pub is_movement: bool,
     pub is_eur: bool,
 }

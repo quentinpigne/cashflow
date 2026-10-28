@@ -9169,6 +9169,7 @@
           "name",
           "kind",
           "archived",
+          "excluded_from_analyses",
           "display_order",
           "usage",
           "children"
@@ -9193,6 +9194,10 @@
           "display_order": {
             "type": "integer",
             "format": "int64"
+          },
+          "excluded_from_analyses": {
+            "type": "boolean",
+            "description": "Ventilations exclues des revenus, dépenses, budgets et analyses (R-TRX-24) ; vaut aussi pour les\nsous-catégories."
           },
           "icon": {
             "type": [
@@ -9279,6 +9284,10 @@
               "null"
             ],
             "format": "int64"
+          },
+          "excluded_from_analyses": {
+            "type": "boolean",
+            "description": "R-TRX-24."
           },
           "icon": {
             "type": [

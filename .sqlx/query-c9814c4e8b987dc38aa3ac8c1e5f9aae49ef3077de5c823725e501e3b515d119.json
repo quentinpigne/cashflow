@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE category SET name = ?, parent_id = ?, archived = ?, excluded_from_analyses = ?, display_order = ?, color = ?,\n                             icon = ?, updated_at = ?\n         WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "c9814c4e8b987dc38aa3ac8c1e5f9aae49ef3077de5c823725e501e3b515d119"
+}

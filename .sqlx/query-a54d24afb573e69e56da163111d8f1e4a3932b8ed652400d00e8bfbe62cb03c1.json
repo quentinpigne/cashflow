@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id,\n                  coalesce(p.exclude_from_period_budgets, 0) AS \"project_excluded!: bool\",\n                  a.include_in_budget AS \"in_budget!: bool\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id)))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN project p ON p.id = s.project_id\n           WHERE t.date BETWEEN ? AND ?",
+  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id IS NOT NULL AS \"has_project!: bool\",\n                  c.kind AS \"category_kind?\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -37,36 +37,25 @@
         }
       },
       {
-        "name": "project_id",
+        "name": "has_project!: bool",
         "ordinal": 3,
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "split",
-            "name": "project_id"
-          }
-        }
-      },
-      {
-        "name": "project_excluded!: bool",
-        "ordinal": 4,
         "type_info": "Integer",
         "origin": "Expression"
       },
       {
-        "name": "in_budget!: bool",
-        "ordinal": 5,
-        "type_info": "Integer",
+        "name": "category_kind?",
+        "ordinal": 4,
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "account",
-            "name": "include_in_budget"
+            "table": "category",
+            "name": "kind"
           }
         }
       },
       {
         "name": "currency",
-        "ordinal": 6,
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -77,7 +66,7 @@
       },
       {
         "name": "is_movement!: bool",
-        "ordinal": 7,
+        "ordinal": 6,
         "type_info": "Integer",
         "origin": "Expression"
       }
@@ -89,12 +78,11 @@
       false,
       false,
       true,
+      false,
       true,
-      false,
-      false,
       false,
       false
     ]
   },
-  "hash": "cdc80ff4395c2e977bd662dc74b297464d51829b3bee57ddef00523e97a652bf"
+  "hash": "a54d24afb573e69e56da163111d8f1e4a3932b8ed652400d00e8bfbe62cb03c1"
 }

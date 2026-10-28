@@ -14,6 +14,7 @@ pub struct CategoryRow {
     pub kind: CategoryKind,
     pub parent_id: Option<CategoryId>,
     pub archived: bool,
+    pub excluded_from_analyses: bool,
     pub display_order: i64,
     pub color: Option<String>,
     pub icon: Option<String>,
@@ -26,6 +27,7 @@ pub struct CategoryFields<'a> {
     pub kind: CategoryKind,
     pub parent_id: Option<CategoryId>,
     pub archived: bool,
+    pub excluded_from_analyses: bool,
     pub display_order: i64,
     pub color: Option<&'a str>,
     pub icon: Option<&'a str>,
@@ -33,7 +35,8 @@ pub struct CategoryFields<'a> {
 
 pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<CategoryRow>> {
     let rows = sqlx::query!(
-        r#"SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS "archived: bool", c.display_order, c.color, c.icon,
+        r#"SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS "archived: bool",
+                  c.excluded_from_analyses AS "excluded_from_analyses: bool", c.display_order, c.color, c.icon,
                   (SELECT count(*) FROM split s WHERE s.category_id = c.id) AS "usage!: i64"
            FROM category c ORDER BY c.display_order, c.name COLLATE NOCASE"#
     )
@@ -47,6 +50,7 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<CategoryRow
                 kind: enum_from_db(&r.kind)?,
                 parent_id: opt_id_from_db(r.parent_id.as_deref())?,
                 archived: r.archived,
+                excluded_from_analyses: r.excluded_from_analyses,
                 display_order: r.display_order,
                 color: r.color,
                 icon: r.icon,
@@ -59,7 +63,8 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<CategoryRow
 pub async fn find(db: impl SqliteExecutor<'_>, id: CategoryId) -> anyhow::Result<Option<CategoryRow>> {
     let id = id.to_string();
     let row = sqlx::query!(
-        r#"SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS "archived: bool", c.display_order, c.color, c.icon,
+        r#"SELECT c.id, c.name, c.kind, c.parent_id, c.archived AS "archived: bool",
+                  c.excluded_from_analyses AS "excluded_from_analyses: bool", c.display_order, c.color, c.icon,
                   (SELECT count(*) FROM split s WHERE s.category_id = c.id) AS "usage!: i64"
            FROM category c WHERE c.id = ?"#,
         id
@@ -73,6 +78,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: CategoryId) -> anyhow::Result
             kind: enum_from_db(&r.kind)?,
             parent_id: opt_id_from_db(r.parent_id.as_deref())?,
             archived: r.archived,
+            excluded_from_analyses: r.excluded_from_analyses,
             display_order: r.display_order,
             color: r.color,
             icon: r.icon,
@@ -141,13 +147,15 @@ pub async fn insert(db: impl SqliteExecutor<'_>, id: CategoryId, f: &CategoryFie
     let parent = f.parent_id.map(|p| p.to_string());
     let now = timestamp();
     sqlx::query!(
-        "INSERT INTO category (id, name, kind, parent_id, archived, display_order, color, icon, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO category (id, name, kind, parent_id, archived, excluded_from_analyses, display_order, color, icon,
+                               created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         id,
         f.name,
         kind,
         parent,
         f.archived,
+        f.excluded_from_analyses,
         f.display_order,
         f.color,
         f.icon,
@@ -164,11 +172,13 @@ pub async fn update(db: impl SqliteExecutor<'_>, id: CategoryId, f: &CategoryFie
     let parent = f.parent_id.map(|p| p.to_string());
     let now = timestamp();
     sqlx::query!(
-        "UPDATE category SET name = ?, parent_id = ?, archived = ?, display_order = ?, color = ?, icon = ?, updated_at = ?
+        "UPDATE category SET name = ?, parent_id = ?, archived = ?, excluded_from_analyses = ?, display_order = ?, color = ?,
+                             icon = ?, updated_at = ?
          WHERE id = ?",
         f.name,
         parent,
         f.archived,
+        f.excluded_from_analyses,
         f.display_order,
         f.color,
         f.icon,

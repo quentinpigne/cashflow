@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO category (id, name, kind, parent_id, archived, excluded_from_analyses, display_order, color, icon,\n                               created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "97840697e24c7ee6e67dd82d4aef2c9ed5ff53c986042db866f1f59951e43430"
+}

@@ -333,6 +333,9 @@ Dans les réglages. Deux onglets `[mat-tab-group]` : **Dépenses** et **Revenus*
   conservée dans l'historique), **Fusionner dans…** (réaffecte toutes les ventilations après
   confirmation, en indiquant leur nombre), Supprimer si elle n'a jamais servi (R-TRX-22).
 - Les catégories archivées sont regroupées en bas, repliées, avec « Désarchiver ».
+- Action **Exclure des analyses** / **Inclure dans les analyses** (R-TRX-24) ; une catégorie ainsi réglée
+  porte la marque « hors analyses » dans l'arbre, ses sous-catégories aussi (l'action n'est alors pas
+  proposée sur elles).
 
 ## E9 — Réglages
 
