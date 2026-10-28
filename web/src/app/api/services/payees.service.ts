@@ -10,6 +10,7 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { AddressSuggestion } from '../models/address-suggestion';
 import { createPayee } from '../fn/payees/create-payee';
 import { CreatePayee$Params } from '../fn/payees/create-payee';
 import { createPayeeGroup } from '../fn/payees/create-payee-group';
@@ -20,6 +21,7 @@ import { deletePayeeGroup } from '../fn/payees/delete-payee-group';
 import { DeletePayeeGroup$Params } from '../fn/payees/delete-payee-group';
 import { listPayees } from '../fn/payees/list-payees';
 import { ListPayees$Params } from '../fn/payees/list-payees';
+import { LocationReport } from '../models/location-report';
 import { mergePayee } from '../fn/payees/merge-payee';
 import { MergePayee$Params } from '../fn/payees/merge-payee';
 import { MergePayeeResult } from '../models/merge-payee-result';
@@ -28,6 +30,8 @@ import { PayeeGroupCreated } from '../models/payee-group-created';
 import { payeeGroupSummary } from '../fn/payees/payee-group-summary';
 import { PayeeGroupSummary$Params } from '../fn/payees/payee-group-summary';
 import { PayeeList } from '../models/payee-list';
+import { payeeLocationReport } from '../fn/payees/payee-location-report';
+import { PayeeLocationReport$Params } from '../fn/payees/payee-location-report';
 import { payeeReport } from '../fn/payees/payee-report';
 import { PayeeReport } from '../models/payee-report';
 import { PayeeReport$Params } from '../fn/payees/payee-report';
@@ -36,6 +40,8 @@ import { PayeeSummary } from '../models/payee-summary';
 import { PayeeSummary$Params } from '../fn/payees/payee-summary';
 import { regroupPayees } from '../fn/payees/regroup-payees';
 import { RegroupPayees$Params } from '../fn/payees/regroup-payees';
+import { searchAddress } from '../fn/payees/search-address';
+import { SearchAddress$Params } from '../fn/payees/search-address';
 import { updatePayee } from '../fn/payees/update-payee';
 import { UpdatePayee$Params } from '../fn/payees/update-payee';
 import { updatePayeeGroup } from '../fn/payees/update-payee-group';
@@ -49,6 +55,41 @@ import { UpdatePayeeGroup$Params } from '../fn/payees/update-payee-group';
 export class PayeesService extends BaseService {
   constructor(config: ApiConfiguration, http: HttpClient) {
     super(config, http);
+  }
+
+  /** Path part for operation `searchAddress()` */
+  static readonly SearchAddressPath = '/api/v1/geocoding/search';
+
+  /**
+   * Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `searchAddress()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  searchAddress$Response(params: SearchAddress$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<AddressSuggestion>>> {
+    const obs = searchAddress(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `searchAddress$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  searchAddress(params: SearchAddress$Params, context?: HttpContext): Observable<Array<AddressSuggestion>> {
+    const resp = this.searchAddress$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<AddressSuggestion>>): Array<AddressSuggestion> => r.body)
+    );
   }
 
   /** Path part for operation `createPayeeGroup()` */
@@ -409,6 +450,41 @@ export class PayeesService extends BaseService {
     const resp = this.payeeSummary$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<PayeeSummary>): PayeeSummary => r.body)
+    );
+  }
+
+  /** Path part for operation `payeeLocationReport()` */
+  static readonly PayeeLocationReportPath = '/api/v1/reports/payee-locations';
+
+  /**
+   * Dépenses ou revenus par pays, département ou ville, et carte (TIE-07).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `payeeLocationReport()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  payeeLocationReport$Response(params?: PayeeLocationReport$Params, context?: HttpContext): Observable<StrictHttpResponse<LocationReport>> {
+    const obs = payeeLocationReport(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Dépenses ou revenus par pays, département ou ville, et carte (TIE-07).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `payeeLocationReport$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  payeeLocationReport(params?: PayeeLocationReport$Params, context?: HttpContext): Observable<LocationReport> {
+    const resp = this.payeeLocationReport$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<LocationReport>): LocationReport => r.body)
     );
   }
 

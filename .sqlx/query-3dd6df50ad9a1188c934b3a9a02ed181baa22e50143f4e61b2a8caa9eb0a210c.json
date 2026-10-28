@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO payee (id, name, group_id, archived, note, address_line, postal_code, city, country_code,\n                            latitude_e6, longitude_e6, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "3dd6df50ad9a1188c934b3a9a02ed181baa22e50143f4e61b2a8caa9eb0a210c"
+}

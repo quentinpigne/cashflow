@@ -150,6 +150,7 @@ async fn assets_and_loan(
             loans: Some(true),
             salaries: Some(true),
             salary_gap_tolerance_ppm: None,
+            geocoding: None,
         },
     )
     .await
@@ -614,7 +615,7 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
 /// Tiers et groupes de tiers (spec 11), affectés aux transactions déjà saisies d'après leur libellé ; une règle
 /// affecte le tiers des stations-service (R-TIE-16).
 async fn payees(db: &Db) -> anyhow::Result<()> {
-    use super::payees::{PayeeGroupInput, PayeeInput};
+    use super::payees::{AddressInput, PayeeGroupInput, PayeeInput};
     use cashflow_domain::import::rules::{Actions, Conditions, LabelCondition, LabelField, LabelOp};
     let err = |e: crate::error::AppError| anyhow::anyhow!("{e}");
     let mut groups = HashMap::new();
@@ -639,13 +640,33 @@ async fn payees(db: &Db) -> anyhow::Result<()> {
         ("Dr Martin", Some("Santé")),
         ("CPAM", Some("Santé")),
     ];
+    // Adresses fictives, au centre de la ville (R-TIE-23) ; le médecin n'a pas été localisé (R-TIE-25).
+    let addresses = HashMap::from([
+        ("Carrefour Meylan", ("38240", "Meylan", Some((45_231_000, 5_781_000)))),
+        ("Carrefour Market Grenoble", ("38000", "Grenoble", Some((45_188_000, 5_724_000)))),
+        ("Biocoop Grenoble", ("38100", "Grenoble", Some((45_176_000, 5_731_000)))),
+        ("TotalEnergies Meylan", ("38240", "Meylan", Some((45_226_000, 5_792_000)))),
+        ("Le Bistrot du Coin", ("69002", "Lyon", Some((45_757_000, 4_832_000)))),
+        ("Pizzeria Napoli", ("38000", "Grenoble", Some((45_191_000, 5_727_000)))),
+        ("Marché de Meylan", ("38240", "Meylan", Some((45_233_000, 5_779_000)))),
+        ("Dr Martin", ("38240", "Meylan", None)),
+    ]);
     let mut ids = HashMap::new();
     for (name, group) in list {
+        let address = addresses.get(name).map(|(postal_code, city, point)| AddressInput {
+            postal_code: Some((*postal_code).into()),
+            city: Some((*city).into()),
+            country_code: Some("FR".into()),
+            latitude_e6: point.map(|p| p.0),
+            longitude_e6: point.map(|p| p.1),
+            ..Default::default()
+        });
         let input = PayeeInput {
             name: name.into(),
             group_id: group.and_then(|g| groups.get(g).copied()),
             archived: false,
             note: None,
+            address,
         };
         ids.insert(name, payees::create(db, &input).await.map_err(err)?);
     }

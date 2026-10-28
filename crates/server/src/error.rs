@@ -25,6 +25,9 @@ pub enum AppError {
     TooManyAttempts { retry_after_secs: u64 },
     #[error("aucun mot de passe défini : lancer `cashflow set-password` sur le serveur")]
     NoPassword,
+    /// Un service externe (la Base Adresse Nationale) ne répond pas ou répond en erreur.
+    #[error("{0} ne répond pas")]
+    Upstream(&'static str),
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -82,6 +85,7 @@ impl IntoResponse for AppError {
                 (StatusCode::TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS", None, None, Some(*retry_after_secs))
             }
             AppError::NoPassword => (StatusCode::CONFLICT, "NO_PASSWORD", None, None, None),
+            AppError::Upstream(_) => (StatusCode::BAD_GATEWAY, "UPSTREAM_UNAVAILABLE", None, None, None),
             AppError::Internal(error) => {
                 tracing::error!(error = format!("{error:#}"), "erreur interne");
                 (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL", None, None, None)

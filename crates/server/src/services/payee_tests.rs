@@ -9,7 +9,8 @@ use cashflow_domain::shared::ids::{AccountId, CategoryId, PayeeGroupId, PayeeId}
 
 use super::imports::{self, CommitInput, Upload};
 use super::payees::{
-    self, MergePayeeInput, PayeeGroupInput, PayeeInput, PayeeReportQuery, ReportGrouping, ReportPeriod,
+    self, AddressInput, LocationGrouping, LocationKind, LocationReportQuery, MergePayeeInput, PayeeGroupInput,
+    PayeeInput, PayeeReportQuery, ReportGrouping, ReportPeriod,
 };
 use super::reconciliation::{self, CheckpointInput};
 use super::recurring::{self, MaterializeInput, RecurringRuleInput};
@@ -26,7 +27,9 @@ async fn group(db: &Db, name: &str) -> PayeeGroupId {
 }
 
 async fn payee(db: &Db, name: &str, group: Option<PayeeGroupId>) -> PayeeId {
-    payees::create(db, &PayeeInput { name: name.into(), group_id: group, archived: false, note: None }).await.unwrap()
+    payees::create(db, &PayeeInput { name: name.into(), group_id: group, archived: false, note: None, address: None })
+        .await
+        .unwrap()
 }
 
 fn paid(account: AccountId, date: &str, amount: i64, category: Option<CategoryId>, payee: PayeeId) -> TransactionInput {
@@ -51,7 +54,8 @@ fn label_rule(name: &str, contains: &str, actions: Actions) -> RuleInput {
 async fn r_tie_1_r_tie_2_names_are_unique_whatever_the_case() {
     let (db, _dir) = setup().await;
     payee(&db, "Carrefour Meylan", None).await;
-    let duplicate = PayeeInput { name: "CARREFOUR MEYLAN".into(), group_id: None, archived: false, note: None };
+    let duplicate =
+        PayeeInput { name: "CARREFOUR MEYLAN".into(), group_id: None, archived: false, note: None, address: None };
     assert_eq!(domain_error(payees::create(&db, &duplicate).await), DomainError::PayeeNameTaken);
     group(&db, "Carrefour").await;
     let duplicate = PayeeGroupInput { name: "carrefour".into(), note: None };
@@ -396,4 +400,138 @@ async fn r_tie_19_rules_on_demand_fill_missing_payees_only() {
         assert_eq!(detail.splits[0].category_id, Some(food));
     }
     assert_eq!(transactions::get(&db, already).await.unwrap().payee_id, Some(other));
+}
+
+// ---------------------------------------------------------------- Adresse et lieu (TIE-06, TIE-07)
+
+fn address(postal_code: &str, city: &str, country: &str, point: Option<(i32, i32)>) -> Option<AddressInput> {
+    Some(AddressInput {
+        postal_code: Some(postal_code.into()),
+        city: Some(city.into()),
+        country_code: Some(country.into()),
+        latitude_e6: point.map(|p| p.0),
+        longitude_e6: point.map(|p| p.1),
+        ..Default::default()
+    })
+}
+
+async fn located(db: &Db, name: &str, address: Option<AddressInput>) -> PayeeId {
+    payees::create(db, &PayeeInput { name: name.into(), group_id: None, archived: false, note: None, address })
+        .await
+        .unwrap()
+}
+
+async fn address_of(db: &Db, id: PayeeId) -> Option<payees::AddressView> {
+    payees::list(db).await.unwrap().payees.into_iter().find(|p| p.id == id).unwrap().address
+}
+
+/// Critères d'acceptation de TIE-06.
+#[tokio::test]
+async fn r_tie_23_r_tie_25_address_is_checked_and_hand_edits_drop_coordinates() {
+    let (db, _dir) = setup().await;
+    let no_city = Some(AddressInput { postal_code: Some("38240".into()), ..Default::default() });
+    let refused = payees::create(
+        &db,
+        &PayeeInput { name: "Boulangerie".into(), group_id: None, archived: false, note: None, address: no_city },
+    )
+    .await;
+    assert_eq!(domain_error(refused), DomainError::AddressIncomplete);
+
+    let point = Some((49_897_442, 2_290_084));
+    let shop = located(&db, "Boulangerie", address("80000", "Amiens", "fr", point)).await;
+    let saved = address_of(&db, shop).await.unwrap();
+    assert_eq!((saved.country_code.as_str(), saved.department_code.as_deref()), ("FR", Some("80")));
+    assert_eq!(saved.latitude_e6, Some(49_897_442));
+
+    // Correction à la main du code postal : les coordonnées reprises telles quelles sont retirées (R-TIE-25).
+    let corrected = PayeeInput {
+        name: "Boulangerie".into(),
+        group_id: None,
+        archived: false,
+        note: None,
+        address: address("80090", "Amiens", "FR", point),
+    };
+    payees::update(&db, shop, &corrected).await.unwrap();
+    assert_eq!(address_of(&db, shop).await.unwrap().latitude_e6, None);
+    // Sans adresse, le tiers n'en a plus.
+    payees::update(&db, shop, &PayeeInput { address: None, ..corrected }).await.unwrap();
+    assert!(address_of(&db, shop).await.is_none());
+}
+
+#[tokio::test]
+async fn r_tie_27_merge_keeps_the_target_address_or_takes_the_source_one() {
+    let (db, _dir) = setup().await;
+    let source = located(&db, "Carrefour Meylan", address("38240", "Meylan", "FR", None)).await;
+    let target = located(&db, "Carrefour", None).await;
+    payees::merge(&db, source, &MergePayeeInput { target_id: target }).await.unwrap();
+    assert_eq!(address_of(&db, target).await.unwrap().city, "Meylan");
+
+    let other = located(&db, "Carrefour Grenoble", address("38000", "Grenoble", "FR", None)).await;
+    payees::merge(&db, other, &MergePayeeInput { target_id: target }).await.unwrap();
+    assert_eq!(address_of(&db, target).await.unwrap().city, "Meylan");
+}
+
+#[tokio::test]
+async fn r_tie_26_address_search_is_refused_while_disabled() {
+    let (db, _dir) = setup().await;
+    // Ne joint rien : la recherche doit être refusée avant tout appel.
+    let geocoder = crate::geocoding::Geocoder::new("http://127.0.0.1:9").unwrap();
+    let refused = payees::search_address(&db, &geocoder, "8 bd du port").await;
+    assert!(matches!(refused, Err(AppError::Invalid { code: "GEOCODING_DISABLED", .. })));
+    let input = super::features::FeaturesInput { geocoding: Some(true), ..Default::default() };
+    super::features::update(&db, &input).await.unwrap();
+    // Trop court : aucune proposition, sans appel.
+    assert!(payees::search_address(&db, &geocoder, "8 ").await.unwrap().is_empty());
+    let unreachable = payees::search_address(&db, &geocoder, "8 bd du port").await;
+    assert!(matches!(unreachable, Err(AppError::Upstream(_))));
+}
+
+/// Critère d'acceptation de TIE-07.
+#[tokio::test]
+async fn r_tie_24_r_tie_28_r_tie_29_report_by_city_department_and_map() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let food = category(&db, "Alimentation", CategoryKind::Expense, None).await;
+    let bakery = located(&db, "Boulangerie", address("38240", "Meylan", "FR", Some((45_231_000, 5_781_000)))).await;
+    let carrefour = located(&db, "Carrefour Meylan", address("38240", "MEYLAN", "FR", None)).await;
+    let fnac = located(&db, "Fnac", address("38000", "Grenoble", "FR", Some((45_188_000, 5_724_000)))).await;
+    let amazon = located(&db, "Amazon", None).await;
+    let pub_ = located(&db, "Pub", address("SW1A 1AA", "London", "GB", None)).await;
+    for (p, amount) in [(bakery, -4_000), (carrefour, -6_000), (fnac, -3_000), (amazon, -1_000), (pub_, -500)] {
+        transactions::create(&db, &paid(checking, "2026-03-10", amount, Some(food), p)).await.unwrap();
+    }
+    let query = |group_by| LocationReportQuery {
+        period: Some(ReportPeriod::Month),
+        month: Some("2026-03".into()),
+        group_by: Some(group_by),
+        ..Default::default()
+    };
+
+    let by_city = payees::location_report(&db, &query(LocationGrouping::City), d(TODAY)).await.unwrap();
+    let summary: Vec<_> = by_city.lines.iter().map(|l| (l.name.as_str(), l.amount_minor, l.payees.len())).collect();
+    // « Meylan » et « MEYLAN » sont la même ville, nommée comme chez son tiers principal (Carrefour).
+    assert_eq!(
+        summary,
+        [("MEYLAN", 10_000, 2), ("Grenoble", 3_000, 1), ("London", 500, 1), ("Sans adresse", 1_000, 1)]
+    );
+    assert_eq!(by_city.total_minor, 14_500);
+
+    let by_department = payees::location_report(&db, &query(LocationGrouping::Department), d(TODAY)).await.unwrap();
+    let isere = &by_department.lines[0];
+    assert_eq!(
+        (isere.name.as_str(), isere.department_code.as_deref(), isere.amount_minor),
+        ("Isère", Some("38"), 13_000)
+    );
+    let kinds: Vec<_> = by_department.lines.iter().map(|l| l.kind).collect();
+    assert_eq!(kinds, [LocationKind::Department, LocationKind::Abroad, LocationKind::NoAddress]);
+
+    // Carte : l'Isère, deux tiers localisés ; Carrefour (sans coordonnées), Londres et Amazon hors carte.
+    assert_eq!(by_city.departments.len(), 1);
+    assert_eq!(by_city.departments[0].amount_minor, 13_000);
+    assert_eq!(by_city.points.len(), 2);
+    assert_eq!(by_city.off_map, 3);
+
+    let by_country = payees::location_report(&db, &query(LocationGrouping::Country), d(TODAY)).await.unwrap();
+    let countries: Vec<_> = by_country.lines.iter().map(|l| (l.name.as_str(), l.amount_minor)).collect();
+    assert_eq!(countries, [("FR", 13_000), ("GB", 500), ("Sans adresse", 1_000)]);
 }

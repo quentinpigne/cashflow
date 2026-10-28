@@ -12,6 +12,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::clock::Clock;
 use crate::config::DataDir;
+use crate::geocoding::{self, Geocoder};
 use crate::state::AppState;
 use crate::{routes, services};
 
@@ -25,6 +26,9 @@ pub struct Serve {
     /// Cookie de session `Secure` : à activer quand l'application est servie en HTTPS (ADR-0015).
     #[arg(long, env = "CASHFLOW_SECURE_COOKIES", default_value_t = false)]
     secure_cookies: bool,
+    /// Adresse de la Base Adresse Nationale, pour la recherche d'adresse des tiers (ADR-0025).
+    #[arg(long, env = "CASHFLOW_GEOCODING_URL", default_value = geocoding::DEFAULT_URL)]
+    geocoding_url: String,
     /// Date du jour figée (AAAA-MM-JJ), pour les tests de bout en bout.
     #[arg(long, env = "CASHFLOW_TODAY", hide = true)]
     today: Option<chrono::NaiveDate>,
@@ -35,7 +39,9 @@ impl Serve {
         let db = super::open(&data).await?;
         services::seed::run(&db).await?;
         let clock = self.today.map_or(Clock::System, Clock::Fixed);
-        let state = AppState { db, clock, data, limiter: Arc::default(), secure_cookies: self.secure_cookies };
+        let geocoder = Geocoder::new(self.geocoding_url)?;
+        let state =
+            AppState { db, clock, data, limiter: Arc::default(), secure_cookies: self.secure_cookies, geocoder };
 
         tokio::spawn(services::backup::run_daily(state.db.clone(), state.data.clone()));
         let app = routes::router(state, self.web_dir).layer(CompressionLayer::new()).layer(TraceLayer::new_for_http());

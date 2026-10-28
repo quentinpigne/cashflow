@@ -1,0 +1,160 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.id, p.name, p.group_id, p.archived AS \"archived: bool\", p.note,\n                  p.address_line, p.postal_code, p.city, p.country_code, p.latitude_e6, p.longitude_e6,\n                  (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id) AS \"transaction_count!: i64\",\n                  (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id)\n                  + (SELECT count(*) FROM recurring_rule r WHERE r.payee_id = p.id)\n                  + (SELECT count(*) FROM categorization_rule c WHERE json_extract(c.actions, '$.set_payee') = p.id)\n                      AS \"usage!: i64\"\n           FROM payee p WHERE p.id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "group_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "group_id"
+          }
+        }
+      },
+      {
+        "name": "archived: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "archived"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "name": "address_line",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "address_line"
+          }
+        }
+      },
+      {
+        "name": "postal_code",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "postal_code"
+          }
+        }
+      },
+      {
+        "name": "city",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "city"
+          }
+        }
+      },
+      {
+        "name": "country_code",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "country_code"
+          }
+        }
+      },
+      {
+        "name": "latitude_e6",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "latitude_e6"
+          }
+        }
+      },
+      {
+        "name": "longitude_e6",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "payee",
+            "name": "longitude_e6"
+          }
+        }
+      },
+      {
+        "name": "transaction_count!: i64",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "usage!: i64",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "7c970d7fdaf4f36d4eb1303b83441c79908917307408b7c99b70ddffca75fdd7"
+}

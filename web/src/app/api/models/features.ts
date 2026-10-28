@@ -9,6 +9,11 @@ export interface Features {
   asset_count: number;
   assets: boolean;
   employment_count: number;
+
+  /**
+   * Recherche d'adresse des tiers par la Base Adresse Nationale, désactivée par défaut (R-TIE-26, ADR-0007).
+   */
+  geocoding: boolean;
   loan_count: number;
   loans: boolean;
   salaries: boolean;

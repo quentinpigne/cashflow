@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::clock::Clock;
 use crate::config::DataDir;
 use crate::db::Db;
+use crate::geocoding::Geocoder;
 use crate::services::auth::LoginLimiter;
 
 #[derive(Clone)]
@@ -15,4 +16,6 @@ pub struct AppState {
     pub limiter: Arc<LoginLimiter>,
     /// Drapeau `Secure` du cookie de session : actif dès que le serveur est servi en HTTPS (ADR-0015).
     pub secure_cookies: bool,
+    /// Recherche d'adresse par la BAN, appelée seulement si elle est activée (ADR-0025).
+    pub geocoder: Geocoder,
 }

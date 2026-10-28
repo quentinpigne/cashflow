@@ -2,13 +2,14 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use cashflow_domain::shared::ids::{PayeeGroupId, PayeeId};
-use serde::Serialize;
-use utoipa::ToSchema;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 use crate::error::{AppResult, Problem};
+use crate::geocoding::AddressSuggestion;
 use crate::services::payees::{
-    self, MergePayeeInput, MergePayeeResult, PayeeGroupInput, PayeeInput, PayeeList, PayeeReport, PayeeReportQuery,
-    PayeeSummary, RegroupInput,
+    self, LocationReport, LocationReportQuery, MergePayeeInput, MergePayeeResult, PayeeGroupInput, PayeeInput,
+    PayeeList, PayeeReport, PayeeReportQuery, PayeeSummary, RegroupInput,
 };
 use crate::state::AppState;
 
@@ -153,4 +154,37 @@ pub async fn report(
     Query(query): Query<PayeeReportQuery>,
 ) -> AppResult<Json<PayeeReport>> {
     Ok(Json(payees::report(&state.db, &query, state.clock.today()).await?))
+}
+
+/// Dépenses ou revenus par pays, département ou ville, et carte (TIE-07).
+#[utoipa::path(
+    get, operation_id = "payeeLocationReport", path = "/reports/payee-locations", tag = "payees",
+    params(LocationReportQuery), responses((status = 200, body = LocationReport), (status = 422, body = Problem))
+)]
+pub async fn location_report(
+    State(state): State<AppState>,
+    Query(query): Query<LocationReportQuery>,
+) -> AppResult<Json<LocationReport>> {
+    Ok(Json(payees::location_report(&state.db, &query, state.clock.today()).await?))
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct AddressSearchQuery {
+    /// Texte saisi, envoyé à la Base Adresse Nationale ; moins de 3 caractères : aucune proposition.
+    pub q: String,
+}
+
+/// Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).
+#[utoipa::path(
+    get, operation_id = "searchAddress", path = "/geocoding/search", tag = "payees", params(AddressSearchQuery),
+    responses(
+        (status = 200, body = Vec<AddressSuggestion>), (status = 422, body = Problem), (status = 502, body = Problem)
+    )
+)]
+pub async fn search_address(
+    State(state): State<AppState>,
+    Query(query): Query<AddressSearchQuery>,
+) -> AppResult<Json<Vec<AddressSuggestion>>> {
+    Ok(Json(payees::search_address(&state.db, &state.geocoder, &query.q).await?))
 }

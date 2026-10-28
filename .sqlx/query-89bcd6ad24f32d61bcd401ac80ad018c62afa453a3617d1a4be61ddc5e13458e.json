@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE payee SET (address_line, postal_code, city, country_code, latitude_e6, longitude_e6, updated_at) =\n             (SELECT s.address_line, s.postal_code, s.city, s.country_code, s.latitude_e6, s.longitude_e6, ?1\n              FROM payee s WHERE s.id = ?2)\n         WHERE id = ?3 AND city IS NULL AND EXISTS (SELECT 1 FROM payee s WHERE s.id = ?2 AND s.city IS NOT NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "89bcd6ad24f32d61bcd401ac80ad018c62afa453a3617d1a4be61ddc5e13458e"
+}

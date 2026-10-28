@@ -298,4 +298,54 @@ mod tests {
         let left: i64 = sqlx::query_scalar("SELECT count(*) FROM transfer").fetch_one(&db.write).await.unwrap();
         assert_eq!(left, 0);
     }
+
+    /// Recréer la table des tiers garde les tiers, leur groupe et les transactions qui les désignent (ADR-0025).
+    #[tokio::test]
+    async fn adr_0025_payees_keep_their_transactions_when_the_table_is_rebuilt() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::connect(&dir.path().join("test.db")).await.unwrap();
+        migrate_until(&db, 20261028000001).await;
+        let now = "2026-10-28T00:00:00Z";
+        let id = |n: u32| format!("0192f000-0000-7000-8000-{n:012}");
+        let statements = [
+            "INSERT INTO payee_group (id, name, created_at, updated_at) VALUES (?1, 'Carrefour', ?4, ?4)",
+            "INSERT INTO payee (id, name, group_id, created_at, updated_at) VALUES (?2, 'Carrefour Meylan', ?1, ?4, ?4)",
+            "INSERT INTO account (id, name, kind, opening_date, opening_balance, created_at, updated_at)
+             VALUES (?3, 'Courant', 'CHECKING', '2026-01-01', 0, ?4, ?4)",
+        ];
+        for statement in statements {
+            sqlx::query(statement).bind(id(1)).bind(id(2)).bind(id(3)).bind(now).execute(&db.write).await.unwrap();
+        }
+        sqlx::query(
+            "INSERT INTO ledger_transaction (id, account_id, date, amount, label, clearing_status, origin, payee_id,
+                                             created_at, updated_at)
+             VALUES (?1, ?2, '2026-03-01', -5000, 'Courses', 'PENDING', 'MANUAL', ?3, ?4, ?4)",
+        )
+        .bind(id(4))
+        .bind(id(3))
+        .bind(id(2))
+        .bind(now)
+        .execute(&db.write)
+        .await
+        .unwrap();
+
+        db.migrate().await.unwrap();
+
+        let (group, city): (String, Option<String>) = sqlx::query_as("SELECT group_id, city FROM payee WHERE id = ?")
+            .bind(id(2))
+            .fetch_one(&db.write)
+            .await
+            .unwrap();
+        assert_eq!((group, city), (id(1), None));
+        let broken: Vec<(String,)> = sqlx::query_as("PRAGMA foreign_key_check").fetch_all(&db.write).await.unwrap();
+        assert!(broken.is_empty());
+        let enforced: i64 = sqlx::query_scalar("PRAGMA foreign_keys").fetch_one(&db.write).await.unwrap();
+        assert_eq!(enforced, 1);
+        // La transaction désigne toujours le tiers : il ne se supprime pas (R-TIE-5).
+        let removed = sqlx::query("DELETE FROM payee WHERE id = ?").bind(id(2)).execute(&db.write).await;
+        assert!(removed.is_err());
+        // Une ville sans pays est refusée par la base (R-TIE-23).
+        let partial = sqlx::query("UPDATE payee SET city = 'Meylan' WHERE id = ?").bind(id(2)).execute(&db.write).await;
+        assert!(partial.is_err());
+    }
 }

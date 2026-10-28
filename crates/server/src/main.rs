@@ -10,6 +10,7 @@ mod clock;
 mod config;
 mod db;
 mod error;
+mod geocoding;
 mod handlers;
 mod middleware;
 mod readers;

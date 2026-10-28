@@ -105,7 +105,13 @@ mod tests {
     use super::*;
     use crate::clock::Clock;
     use crate::config::DataDir;
+    use crate::geocoding::Geocoder;
     use crate::services::{access_tokens, auth};
+
+    /// Géocodeur qui ne joint rien : aucun test n'appelle la BAN.
+    fn test_geocoder() -> Geocoder {
+        Geocoder::new("http://127.0.0.1:9").unwrap()
+    }
 
     async fn call(app: &Router, method: Method, uri: &str, token: Option<&str>) -> StatusCode {
         let mut request = Request::builder().method(method).uri(uri);
@@ -127,6 +133,7 @@ mod tests {
             data: DataDir::new(dir.path()),
             limiter: Arc::default(),
             secure_cookies: false,
+            geocoder: test_geocoder(),
         };
         let app = router(state, dir.path().join("web"));
         let id = "01900000-0000-7000-8000-000000000000";
@@ -204,7 +211,14 @@ mod tests {
         };
         let today = "2026-10-22".parse().unwrap();
         let employment = crate::services::salaries::create(&db, &input, today).await.unwrap().summary.id;
-        let state = AppState { db, clock: Clock::Fixed(today), data, limiter: Arc::default(), secure_cookies: false };
+        let state = AppState {
+            db,
+            clock: Clock::Fixed(today),
+            data,
+            limiter: Arc::default(),
+            secure_cookies: false,
+            geocoder: test_geocoder(),
+        };
         let app = router(state, dir.path().join("web"));
         let cookie = login(&app).await;
         let uri = format!("/api/v1/employments/{employment}/payslips");

@@ -1,6 +1,7 @@
 //! Tiers et groupes de tiers (spec 11).
 
 use cashflow_domain::ledger::category::CategoryKind;
+use cashflow_domain::payees::location::{GeoPoint, PayeeAddress};
 use cashflow_domain::shared::ids::{CategoryId, PayeeGroupId, PayeeId, TransactionId};
 use cashflow_domain::{Date, Money};
 use sqlx::{SqliteConnection, SqliteExecutor};
@@ -15,6 +16,7 @@ pub struct PayeeRow {
     pub group_id: Option<PayeeGroupId>,
     pub archived: bool,
     pub note: Option<String>,
+    pub address: Option<PayeeAddress>,
     pub transaction_count: i64,
     /// Transactions, récurrences et règles qui le désignent (R-TIE-5).
     pub usage: i64,
@@ -32,6 +34,46 @@ pub struct PayeeFields<'a> {
     pub group_id: Option<PayeeGroupId>,
     pub archived: bool,
     pub note: Option<&'a str>,
+    pub address: Option<&'a PayeeAddress>,
+}
+
+/// Adresse lue en base, déjà contrôlée à l'écriture (R-TIE-23, R-TIE-25 ; `CHECK` de la table).
+fn address_from_db(
+    line: Option<String>,
+    postal_code: Option<String>,
+    city: Option<String>,
+    country_code: Option<String>,
+    latitude_e6: Option<i64>,
+    longitude_e6: Option<i64>,
+) -> anyhow::Result<Option<PayeeAddress>> {
+    let (Some(city), Some(country_code)) = (city, country_code) else { return Ok(None) };
+    let point = match (latitude_e6, longitude_e6) {
+        (Some(lat), Some(lon)) => Some(GeoPoint::new(i32::try_from(lat)?, i32::try_from(lon)?)?),
+        _ => None,
+    };
+    Ok(Some(PayeeAddress { line, postal_code, city, country_code, point }))
+}
+
+/// Colonnes d'une adresse, à écrire.
+struct AddressColumns<'a> {
+    line: Option<&'a str>,
+    postal_code: Option<&'a str>,
+    city: Option<&'a str>,
+    country_code: Option<&'a str>,
+    latitude_e6: Option<i32>,
+    longitude_e6: Option<i32>,
+}
+
+fn address_columns(address: Option<&PayeeAddress>) -> AddressColumns<'_> {
+    let point = address.and_then(|a| a.point);
+    AddressColumns {
+        line: address.and_then(|a| a.line.as_deref()),
+        postal_code: address.and_then(|a| a.postal_code.as_deref()),
+        city: address.map(|a| a.city.as_str()),
+        country_code: address.map(|a| a.country_code.as_str()),
+        latitude_e6: point.map(|p| p.latitude_e6),
+        longitude_e6: point.map(|p| p.longitude_e6),
+    }
 }
 
 macro_rules! payee_row {
@@ -43,6 +85,14 @@ macro_rules! payee_row {
             group_id: opt_id_from_db(r.group_id.as_deref())?,
             archived: r.archived,
             note: r.note,
+            address: address_from_db(
+                r.address_line,
+                r.postal_code,
+                r.city,
+                r.country_code,
+                r.latitude_e6,
+                r.longitude_e6,
+            )?,
             transaction_count: r.transaction_count,
             usage: r.usage,
         })
@@ -52,6 +102,7 @@ macro_rules! payee_row {
 pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<PayeeRow>> {
     let rows = sqlx::query!(
         r#"SELECT p.id, p.name, p.group_id, p.archived AS "archived: bool", p.note,
+                  p.address_line, p.postal_code, p.city, p.country_code, p.latitude_e6, p.longitude_e6,
                   (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id) AS "transaction_count!: i64",
                   (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id)
                   + (SELECT count(*) FROM recurring_rule r WHERE r.payee_id = p.id)
@@ -68,6 +119,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: PayeeId) -> anyhow::Result<Op
     let id = id.to_string();
     let row = sqlx::query!(
         r#"SELECT p.id, p.name, p.group_id, p.archived AS "archived: bool", p.note,
+                  p.address_line, p.postal_code, p.city, p.country_code, p.latitude_e6, p.longitude_e6,
                   (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id) AS "transaction_count!: i64",
                   (SELECT count(*) FROM ledger_transaction t WHERE t.payee_id = p.id)
                   + (SELECT count(*) FROM recurring_rule r WHERE r.payee_id = p.id)
@@ -94,14 +146,23 @@ pub async fn name_taken(db: impl SqliteExecutor<'_>, name: &str, except: Option<
 pub async fn insert(db: impl SqliteExecutor<'_>, id: PayeeId, f: &PayeeFields<'_>) -> anyhow::Result<()> {
     let id = id.to_string();
     let group = f.group_id.map(|g| g.to_string());
+    let a = address_columns(f.address);
     let now = timestamp();
     sqlx::query!(
-        "INSERT INTO payee (id, name, group_id, archived, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO payee (id, name, group_id, archived, note, address_line, postal_code, city, country_code,
+                            latitude_e6, longitude_e6, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         id,
         f.name,
         group,
         f.archived,
         f.note,
+        a.line,
+        a.postal_code,
+        a.city,
+        a.country_code,
+        a.latitude_e6,
+        a.longitude_e6,
         now,
         now
     )
@@ -113,13 +174,22 @@ pub async fn insert(db: impl SqliteExecutor<'_>, id: PayeeId, f: &PayeeFields<'_
 pub async fn update(db: impl SqliteExecutor<'_>, id: PayeeId, f: &PayeeFields<'_>) -> anyhow::Result<()> {
     let id = id.to_string();
     let group = f.group_id.map(|g| g.to_string());
+    let a = address_columns(f.address);
     let now = timestamp();
     sqlx::query!(
-        "UPDATE payee SET name = ?, group_id = ?, archived = ?, note = ?, updated_at = ? WHERE id = ?",
+        "UPDATE payee SET name = ?, group_id = ?, archived = ?, note = ?, address_line = ?, postal_code = ?, city = ?,
+                          country_code = ?, latitude_e6 = ?, longitude_e6 = ?, updated_at = ?
+         WHERE id = ?",
         f.name,
         group,
         f.archived,
         f.note,
+        a.line,
+        a.postal_code,
+        a.city,
+        a.country_code,
+        a.latitude_e6,
+        a.longitude_e6,
         now,
         id
     )
@@ -165,6 +235,18 @@ pub async fn merge(conn: &mut SqliteConnection, source: PayeeId, target: PayeeId
         target,
         now,
         source
+    )
+    .execute(&mut *conn)
+    .await?;
+    // Le tiers cible garde son adresse ; sans adresse, il reprend celle du tiers fusionné (R-TIE-27).
+    sqlx::query!(
+        "UPDATE payee SET (address_line, postal_code, city, country_code, latitude_e6, longitude_e6, updated_at) =
+             (SELECT s.address_line, s.postal_code, s.city, s.country_code, s.latitude_e6, s.longitude_e6, ?1
+              FROM payee s WHERE s.id = ?2)
+         WHERE id = ?3 AND city IS NULL AND EXISTS (SELECT 1 FROM payee s WHERE s.id = ?2 AND s.city IS NOT NULL)",
+        now,
+        source,
+        target
     )
     .execute(&mut *conn)
     .await?;

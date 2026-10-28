@@ -16,4 +16,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(payees::update_group, payees::delete_group))
         .routes(routes!(payees::group_summary))
         .routes(routes!(payees::report))
+        .routes(routes!(payees::location_report))
+        .routes(routes!(payees::search_address))
 }

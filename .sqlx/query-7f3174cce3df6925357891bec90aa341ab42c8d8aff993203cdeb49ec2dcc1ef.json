@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE payee SET name = ?, group_id = ?, archived = ?, note = ?, address_line = ?, postal_code = ?, city = ?,\n                          country_code = ?, latitude_e6 = ?, longitude_e6 = ?, updated_at = ?\n         WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "7f3174cce3df6925357891bec90aa341ab42c8d8aff993203cdeb49ec2dcc1ef"
+}
