@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +23,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
+import { BatchDetail } from '../../api/models/batch-detail';
 import { CommitResult } from '../../api/models/commit-result';
 import { ImportDecision } from '../../api/models/import-decision';
 import { ImportLineView } from '../../api/models/import-line-view';
@@ -93,10 +102,26 @@ export class ImportReviewPage {
     stream: ({ params }) => this.api.getImport({ id: params.id }),
   });
 
-  protected readonly reviewing = computed(() => this.batch.value()?.summary.status === 'REVIEWING');
+  /**
+   * Import affiché : le précédent reste à l'écran pendant un rechargement du même import (création
+   * d'un tiers, décision…), sinon la page se vide et revient en haut.
+   */
+  protected readonly current = linkedSignal<
+    { id: string; value: BatchDetail | undefined },
+    BatchDetail | undefined
+  >({
+    source: () => ({
+      id: this.id(),
+      value: this.batch.hasValue() ? this.batch.value() : undefined,
+    }),
+    computation: (source, previous) =>
+      source.value ?? (previous?.source.id === source.id ? previous.value : undefined),
+  });
+
+  protected readonly reviewing = computed(() => this.current()?.summary.status === 'REVIEWING');
 
   protected readonly lines = computed<ImportLineView[]>(() => {
-    const lines = this.batch.value()?.lines ?? [];
+    const lines = this.current()?.lines ?? [];
     const view = this.view();
     return lines.filter((l) => {
       switch (view) {
@@ -124,7 +149,7 @@ export class ImportReviewPage {
   });
 
   protected readonly counts = computed(() => {
-    const lines = this.batch.value()?.lines ?? [];
+    const lines = this.current()?.lines ?? [];
     return {
       all: lines.length,
       create: lines.filter((l) => l.errors.length === 0 && l.decision === 'CREATE').length,
@@ -220,7 +245,7 @@ export class ImportReviewPage {
       : [{ amount_minor: total, category_id: null, note: null }];
     const data: SplitEditorData = {
       totalMinor: total,
-      currency: this.batch.value()?.currency ?? 'EUR',
+      currency: this.current()?.currency ?? 'EUR',
       kind: total < 0 ? 'EXPENSE' : 'INCOME',
       splits: current,
     };
