@@ -1,6 +1,7 @@
 //! Comptes et établissements (spec 01).
 
 pub mod iban;
+pub mod statements;
 
 use serde::{Deserialize, Serialize};
 

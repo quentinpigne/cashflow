@@ -19,6 +19,16 @@ export type { RevealIban$Params as RevealIban$Params } from './fn/accounts/revea
 export { revealIban as revealIban } from './fn/accounts/reveal-iban';
 export type { ReopenAccount$Params as ReopenAccount$Params } from './fn/accounts/reopen-account';
 export { reopenAccount as reopenAccount } from './fn/accounts/reopen-account';
+export type { ListStatements$Params as ListStatements$Params } from './fn/accounts/list-statements';
+export { listStatements as listStatements } from './fn/accounts/list-statements';
+export type { CreateStatement$Params as CreateStatement$Params } from './fn/accounts/create-statement';
+export { createStatement as createStatement } from './fn/accounts/create-statement';
+export type { UpdateStatement$Params as UpdateStatement$Params } from './fn/accounts/update-statement';
+export { updateStatement as updateStatement } from './fn/accounts/update-statement';
+export type { DeleteStatement$Params as DeleteStatement$Params } from './fn/accounts/delete-statement';
+export { deleteStatement as deleteStatement } from './fn/accounts/delete-statement';
+export type { DownloadStatement$Params as DownloadStatement$Params } from './fn/accounts/download-statement';
+export { downloadStatement as downloadStatement } from './fn/accounts/download-statement';
 export type { ListCheckpoints$Params as ListCheckpoints$Params } from './fn/reconciliation/list-checkpoints';
 export { listCheckpoints as listCheckpoints } from './fn/reconciliation/list-checkpoints';
 export type { CreateCheckpoint$Params as CreateCheckpoint$Params } from './fn/reconciliation/create-checkpoint';

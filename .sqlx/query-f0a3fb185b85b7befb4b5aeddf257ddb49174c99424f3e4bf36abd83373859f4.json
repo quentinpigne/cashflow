@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE bank_statement SET statement_month = ?, note = ?, updated_at = ? WHERE id = ? AND account_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "f0a3fb185b85b7befb4b5aeddf257ddb49174c99424f3e4bf36abd83373859f4"
+}

@@ -516,6 +516,11 @@ fn stored_file(data: &DataDir, batch: ImportBatchId, file_name: &str) -> PathBuf
     data.imports().join(format!("{batch}-{}", sanitized(file_name)))
 }
 
+/// Contenu du fichier source conservé d'un lot, s'il existe encore (R-IMP-21).
+pub fn stored_source(data: &DataDir, batch: ImportBatchId) -> Option<Vec<u8>> {
+    std::fs::read(find_stored_file(data, batch)?).ok()
+}
+
 fn find_stored_file(data: &DataDir, batch: ImportBatchId) -> Option<PathBuf> {
     let prefix = batch.to_string();
     std::fs::read_dir(data.imports())
@@ -1087,8 +1092,14 @@ pub async fn cancel(db: &Db, data: &DataDir, id: ImportBatchId) -> AppResult<()>
 // ---------------------------------------------------------------- Validation et annulation
 
 /// Valide le lot de façon atomique (R-IMP-15) : transactions créées et pointées, virements, points de
-/// contrôle du relevé (R-IMP-16).
-pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResult<CommitResult> {
+/// contrôle du relevé (R-IMP-16), relevé PDF archivé sur le compte (R-IMP-28).
+pub async fn commit(
+    db: &Db,
+    data: &DataDir,
+    id: ImportBatchId,
+    input: &CommitInput,
+    today: Date,
+) -> AppResult<CommitResult> {
     let batch = reviewing(db, id).await?;
     let lines = db::imports::lines_of(&db.read, id).await?;
     let mut tx = db.write.begin().await?;
@@ -1342,8 +1353,25 @@ pub async fn commit(db: &Db, id: ImportBatchId, input: &CommitInput) -> AppResul
             db::rules::add_hit(&mut *tx, rule).await?;
         }
     }
+    // Relevé PDF archivé sur le compte (R-IMP-28) : son document n'est visible qu'une fois le lot validé.
+    let statement = match stored_source(data, id) {
+        Some(content) => {
+            let import = super::statements::FromImport {
+                account: account.id,
+                file_name: batch.file_name.clone(),
+                content,
+                period: batch.period_start.zip(batch.period_end),
+                period_end: batch.period_end,
+            };
+            super::statements::archive_import(&mut tx, data, &import, today).await?
+        }
+        None => None,
+    };
     db::imports::set_batch_status(&mut *tx, id, BatchStatus::Committed, true).await?;
     tx.commit().await?;
+    if let Some(staged) = statement {
+        staged.publish()?;
+    }
     let all = reconciliation::list(db, account.id).await?;
     result.checkpoints = all.into_iter().filter(|c| checkpoints.contains(&c.id)).collect();
     result.loan_payments = super::loans::proposals_among(db, &touched).await?;

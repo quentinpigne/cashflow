@@ -173,8 +173,9 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   référencé par le lot, et supprimable à la main (le lot et ses lignes restent). Il peut être inclus
   dans l'export (ADR-0008).
 - **R-IMP-28** — À la validation d'un lot dont le fichier source est un **PDF**, ce fichier est aussi archivé
-  comme **relevé du compte** (R-CPT-18), au mois de la fin de période du lot (à défaut, le mois de la
-  validation), avec la période du lot. Le relevé est une copie : il a sa propre vie, indépendante du lot et de
+  comme **relevé du compte** (R-CPT-18), avec la période du lot, au mois qui couvre le plus de jours de cette
+  période (un relevé LCL du 3 septembre au 2 octobre est celui de septembre ; à égalité, le plus ancien) ; sans
+  période, au mois de la date de fin du lot, à défaut au mois de la validation. Le relevé est une copie : il a sa propre vie, indépendante du lot et de
   son fichier source (R-CPT-20). Un fichier déjà archivé pour ce compte ne l'est pas une seconde fois
   (R-CPT-19).
 - **R-IMP-18** — Contrôle interne du relevé : si le relevé fournit un solde de début et un solde de

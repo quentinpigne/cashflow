@@ -62,6 +62,7 @@ define_id!(
     SalaryId,
     SalaryBonusId,
     PayslipId,
+    BankStatementId,
     DocumentId,
     RecurringRuleId,
     ImportProfileId,

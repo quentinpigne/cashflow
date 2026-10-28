@@ -84,14 +84,14 @@ async fn imp_01_reimporting_a_file_creates_no_duplicate() {
     let first = import(&db, &data, checking, MARCH).await;
     assert_eq!(first.lines.len(), 4);
     assert!(first.lines.iter().all(|l| l.decision == Some(ImportDecision::Create)));
-    let result = imports::commit(&db, first.summary.id, &CommitInput::default()).await.unwrap();
+    let result = imports::commit(&db, &data, first.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(result.created, 4, "les deux cafés identiques sont deux transactions (R-IMP-5)");
 
     let second = import(&db, &data, checking, MARCH).await;
     assert!(
         second.lines.iter().all(|l| l.match_kind == MatchKind::Duplicate && l.decision == Some(ImportDecision::Skip))
     );
-    let result = imports::commit(&db, second.summary.id, &CommitInput::default()).await.unwrap();
+    let result = imports::commit(&db, &data, second.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(result.created, 0);
     let preview = imports::preview(&db, &upload(checking, MARCH), d(TODAY)).await.unwrap();
     assert!(preview.already_imported, "R-IMP-7");
@@ -116,7 +116,7 @@ async fn imp_05_manual_transaction_is_pointed_and_keeps_its_date() {
     let line = batch.lines.iter().find(|l| l.bank_label.as_deref() == Some("CB BOULANGERIE DUPONT 10/03")).unwrap();
     assert_eq!(line.decision, Some(ImportDecision::Match));
     assert_eq!(line.matched.as_ref().map(|m| m.transaction_id), Some(manual));
-    imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
 
     let pointed = transactions::get(&db, manual).await.unwrap();
     assert_eq!(pointed.clearing_status, ClearingStatus::Cleared);
@@ -190,7 +190,7 @@ async fn r_imp_12_rules_suggest_categories_and_transfers() {
     assert_eq!(netflix.splits[0].category_id, Some(streaming));
     assert_eq!(batch.lines[1].transfer_to, Some(livret));
 
-    let result = imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    let result = imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(result.transfers, 1);
     assert_eq!(accounts::get(&db, livret, d(TODAY)).await.unwrap().balance_minor, 20_000);
     let created = transactions::get(&db, batch_transaction(&db, &data, batch.summary.id, 0).await).await.unwrap();
@@ -217,7 +217,7 @@ async fn rap_01_to_04_statement_checkpoint_reconcile_lock_and_unlock() {
     let (db, data, _dir) = setup().await;
     let checking = account(&db, "Courant", AccountKind::Checking, 100_000).await;
     let batch = import(&db, &data, checking, "Date;Libellé;Montant\n10/01/2026;LOYER;-250,00\n").await;
-    imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
 
     // Critère d'acceptation de RAP-01 : 1 000 − 250 = 750 au 31 janvier.
     let wrong = reconciliation::create(
@@ -291,7 +291,7 @@ async fn r_imp_16_closing_balance_creates_a_checkpoint() {
     settings["statement_balances"] = serde_json::json!({ "closing": { "cell": "C4" } });
     up.settings = Some(serde_json::from_value(settings).unwrap());
     let created = imports::start(&db, &data, &up, d(TODAY)).await.unwrap();
-    let result = imports::commit(&db, created.batch_id, &CommitInput::default()).await.unwrap();
+    let result = imports::commit(&db, &data, created.batch_id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(result.checkpoints.len(), 1);
     assert_eq!(result.checkpoints[0].date, d("2026-03-12"));
     assert_eq!(result.checkpoints[0].gap_minor, 0, "écart nul : l'écran propose de rapprocher (R-RAP-11)");
@@ -313,7 +313,7 @@ async fn r_imp_17_revert_restores_previous_state() {
     };
     let manual = transactions::create(&db, &manual).await.unwrap();
     let batch = import(&db, &data, checking, MARCH).await;
-    imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(transactions::list(&db, checking, &Default::default()).await.unwrap().total, 4);
 
     imports::revert(&db, batch.summary.id).await.unwrap();
@@ -388,7 +388,7 @@ async fn r_imp_22_loan_payment_is_proposed_after_import() {
         "Date;Libellé;Montant\n05/03/2026;ECHEANCE PRET;-1109,20\n06/03/2026;CAFE;-2,50\n",
     )
     .await;
-    let result = imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    let result = imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(result.loan_payments.len(), 1);
     let proposal = &result.loan_payments[0];
     assert_eq!((proposal.installment_number, proposal.principal_minor, proposal.interest_minor), (1, 60_920, 50_000));
@@ -430,7 +430,7 @@ async fn imp_10_lcl_pdf_statement_is_imported_with_purchase_dates() {
     assert_eq!(batch.lines.len(), 7);
     assert_eq!(batch.statement.gap_minor, Some(0), "contrôle du relevé (R-IMP-18)");
 
-    let result = imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    let result = imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(result.created, 7);
     assert!(result.checkpoints.iter().all(|c| c.gap_minor == 0));
     let card = batch_transaction(&db, &data, batch.summary.id, 6).await;
@@ -493,7 +493,7 @@ async fn r_imp_27_same_operations_from_another_format_are_probable_duplicates() 
         save_profile_as: None,
     };
     let batch = imports::start(&db, &data, &pdf, d(TODAY)).await.unwrap();
-    imports::commit(&db, batch.batch_id, &CommitInput::default()).await.unwrap();
+    imports::commit(&db, &data, batch.batch_id, &CommitInput::default(), d(TODAY)).await.unwrap();
 
     // Même période en CSV : libellés différents, mêmes montants et dates.
     let csv = "Date;Libellé;Montant\n04/12/2025;VIR SEPA EMPLOYEUR;2400,00\n05/12/2025;CB BOULANGERIE;-4,20\n\

@@ -31,14 +31,8 @@ const LOAN_INSTALLMENT: i64 = 115_920;
 /// 13e mois net, versé en décembre.
 const THIRTEENTH_MONTH: i64 = 320_000;
 
-/// PDF d'une page, fictif, pour les fiches de paie de démonstration (SAL-09).
-fn fictitious_payslip(employer: &str, month: Date, net_minor: i64) -> Vec<u8> {
-    let lines = [
-        "FICHE DE PAIE FICTIVE - DONNEES DE DEMONSTRATION".to_owned(),
-        employer.to_owned(),
-        format!("Periode : {}", month.format("%m/%Y")),
-        format!("Net a payer : {},{:02} EUR", net_minor / 100, net_minor % 100),
-    ];
+/// PDF d'une page, fictif, pour les fiches de paie (SAL-09) et les relevés (CPT-11) de démonstration.
+fn fictitious_pdf(lines: &[String]) -> Vec<u8> {
     let text: String = lines
         .iter()
         .enumerate()
@@ -65,6 +59,27 @@ fn fictitious_payslip(employer: &str, month: Date, net_minor: i64) -> Vec<u8> {
     }
     pdf.push_str(&format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objects.len() + 1));
     pdf.into_bytes()
+}
+
+/// Relevés fictifs du compte courant (CPT-11) : les cinq derniers mois, sauf l'avant-dernier, signalé sans
+/// relevé.
+async fn statements(db: &Db, data: &DataDir, checking: AccountId, today: Date) -> anyhow::Result<()> {
+    let current = cashflow_domain::salaries::month_of(today);
+    for back in [5, 4, 3, 1] {
+        let month = current.checked_sub_months(Months::new(back)).context("mois du relevé")?;
+        let upload = super::statements::StatementUpload {
+            file_name: format!("releve-{}.pdf", month.format("%Y-%m")),
+            content: fictitious_pdf(&[
+                "RELEVE DE COMPTE FICTIF - DONNEES DE DEMONSTRATION".to_owned(),
+                "Compte courant".to_owned(),
+                format!("Mois : {}", month.format("%m/%Y")),
+            ]),
+            statement_month: month,
+            note: None,
+        };
+        super::statements::add(db, data, checking, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
+    Ok(())
 }
 
 /// L'emploi de démonstration : embauche quatre ans avant le début du jeu, deux augmentations, la dernière en
@@ -126,7 +141,12 @@ async fn employment(
         let month = current.checked_sub_months(Months::new(back)).context("mois de paie")?;
         let upload = super::salaries::PayslipUpload {
             file_name: format!("fiche-de-paie-{}.pdf", month.format("%Y-%m")),
-            content: fictitious_payslip("Acme Industries", month, SALARY),
+            content: fictitious_pdf(&[
+                "FICHE DE PAIE FICTIVE - DONNEES DE DEMONSTRATION".to_owned(),
+                "Acme Industries".to_owned(),
+                format!("Periode : {}", month.format("%m/%Y")),
+                format!("Net a payer : {},{:02} EUR", SALARY / 100, SALARY % 100),
+            ]),
             pay_month: month,
             note: None,
         };
@@ -313,6 +333,7 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
 
     let start = (today - Months::new(MONTHS)).with_day(1).context("date de début")?;
     let checking = account(db, "Compte courant", AccountKind::Checking, Some("LCL"), start, 185_000, today).await?;
+    statements(db, data, checking, today).await?;
     let wallet = account(db, "Espèces", AccountKind::CashWallet, None, start, 6_000, today).await?;
     let livret_a =
         account(db, "Livret A", AccountKind::LivretA, Some("La Banque Postale"), start, 450_000, today).await?;
@@ -963,6 +984,11 @@ mod tests {
         let job = super::super::salaries::get(&db, job.id, today).await.unwrap();
         assert_eq!(job.payslips.len(), 3);
         assert_eq!(job.missing_payslip_months, ["2026-08-01".parse::<Date>().unwrap()]);
+        // Relevés fictifs du compte courant : août est sans relevé (CPT-11).
+        let checking = accounts.iter().find(|a| a.name == "Compte courant").unwrap().id;
+        let statements = super::super::statements::list(&db, checking, today).await.unwrap();
+        assert_eq!(statements.statements.len(), 4);
+        assert_eq!(statements.missing_months, ["2026-08-01".parse::<Date>().unwrap()]);
         assert!(load(&db, &data, today).await.is_err(), "le jeu ne se charge que dans une base vide");
     }
 }

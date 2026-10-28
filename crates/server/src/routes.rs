@@ -178,10 +178,11 @@ mod tests {
         cookie.split(';').next().expect("cookie").to_owned()
     }
 
-    fn multipart(month: &str, content: &[u8]) -> (String, Vec<u8>) {
+    /// Formulaire d'envoi d'un document : le mois (`month_field`) et le fichier « paie août.pdf ».
+    fn multipart(month_field: &str, month: &str, content: &[u8]) -> (String, Vec<u8>) {
         let boundary = "frontiere";
         let mut body = format!(
-            "--{boundary}\r\nContent-Disposition: form-data; name=\"pay_month\"\r\n\r\n{month}\r\n\
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"{month_field}\"\r\n\r\n{month}\r\n\
              --{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"paie août.pdf\"\r\n\
              Content-Type: application/pdf\r\n\r\n"
         )
@@ -224,7 +225,7 @@ mod tests {
         let uri = format!("/api/v1/employments/{employment}/payslips");
 
         let send = |content: Vec<u8>| {
-            let (content_type, body) = multipart("2026-08-01", &content);
+            let (content_type, body) = multipart("pay_month", "2026-08-01", &content);
             Request::post(&uri)
                 .header(header::COOKIE, &cookie)
                 .header(header::CONTENT_TYPE, content_type)
@@ -261,5 +262,70 @@ mod tests {
         );
         let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(body.len(), pdf.len());
+    }
+
+    #[tokio::test]
+    async fn statement_is_uploaded_then_served_sandboxed_cpt_11_adr_0024() {
+        let (db, dir) = crate::db::test_db().await;
+        crate::services::seed::run(&db).await.unwrap();
+        auth::set_password(&db, "Moi", "motdepasse").await.unwrap();
+        let data = DataDir::new(dir.path());
+        data.ensure().unwrap();
+        let today = "2026-10-22".parse().unwrap();
+        let input = crate::services::accounts::AccountInput {
+            name: "Courant".into(),
+            kind: cashflow_domain::accounts::AccountKind::Checking,
+            institution_id: None,
+            currency: None,
+            opening_date: "2025-01-01".parse().unwrap(),
+            opening_balance_minor: 0,
+            iban: None,
+            account_number: None,
+            include_in_net_worth: None,
+            include_in_emergency_fund: None,
+            include_in_budget: None,
+            display_order: None,
+            color: None,
+            notes: None,
+        };
+        let account = crate::services::accounts::create(&db, &input, today).await.unwrap().id;
+        let state = AppState {
+            db,
+            clock: Clock::Fixed(today),
+            data,
+            limiter: Arc::default(),
+            secure_cookies: false,
+            geocoder: test_geocoder(),
+        };
+        let app = router(state, dir.path().join("web"));
+        let cookie = login(&app).await;
+        let uri = format!("/api/v1/accounts/{account}/statements");
+
+        // Au-delà de 2 Mo (limite par défaut d'axum).
+        let mut pdf = b"%PDF-1.7\n".to_vec();
+        pdf.resize(3 * 1024 * 1024, b' ');
+        let (content_type, body) = multipart("statement_month", "2026-09-01", &pdf);
+        let request = Request::post(&uri)
+            .header(header::COOKIE, &cookie)
+            .header(header::CONTENT_TYPE, content_type)
+            .body(Body::from(body))
+            .expect("requête");
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let view: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(view["statements"][0]["statement_month"], "2026-09-01");
+        let statement = view["statements"][0]["id"].as_str().expect("relevé").to_owned();
+
+        let request = Request::get(format!("{uri}/{statement}/file"))
+            .header(header::COOKIE, &cookie)
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let headers = response.headers();
+        assert_eq!(headers[header::CONTENT_TYPE], "application/pdf");
+        assert_eq!(headers[header::CONTENT_SECURITY_POLICY], "sandbox");
+        assert!(headers[header::CONTENT_DISPOSITION].to_str().unwrap().starts_with("inline;"));
     }
 }

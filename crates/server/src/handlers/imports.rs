@@ -166,7 +166,7 @@ pub async fn commit(
     Path(id): Path<ImportBatchId>,
     Json(input): Json<CommitInput>,
 ) -> AppResult<Json<CommitResult>> {
-    Ok(Json(imports::commit(&state.db, id, &input).await?))
+    Ok(Json(imports::commit(&state.db, &state.data, id, &input, state.clock.today()).await?))
 }
 
 /// Annule un lot validé (R-IMP-17).

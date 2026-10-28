@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.id, s.statement_month AS \"statement_month: Date\", s.period_start AS \"period_start: Date\",\n                  s.period_end AS \"period_end: Date\", s.document_id, s.note,\n                  d.file_name, d.media_type, d.size_bytes\n           FROM bank_statement s JOIN document d ON d.id = s.document_id\n           WHERE s.account_id = ? ORDER BY s.statement_month, s.created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bank_statement",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "statement_month: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bank_statement",
+            "name": "statement_month"
+          }
+        }
+      },
+      {
+        "name": "period_start: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bank_statement",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "name": "period_end: Date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bank_statement",
+            "name": "period_end"
+          }
+        }
+      },
+      {
+        "name": "document_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bank_statement",
+            "name": "document_id"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bank_statement",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "name": "file_name",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "name": "media_type",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "media_type"
+          }
+        }
+      },
+      {
+        "name": "size_bytes",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "size_bytes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c7b4a6b6cd0cc387337ae945ffcad5bb121e9a9634b96d8340763a6424b76b02"
+}

@@ -18,7 +18,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…), à une date. |
 | Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |
 | Relevé de compte | `BankStatement` | Document PDF archivé d'un compte pour un mois de relevé (CPT-11). |
-| Mois du relevé | `statement_month` | Mois que couvre un relevé de compte, celui de la fin de sa période. |
+| Mois du relevé | `statement_month` | Mois que couvre un relevé de compte : celui qui contient le plus de jours de sa période (R-IMP-28). |
 | Mois sans relevé | `missing statement month` | Mois d'un compte sans relevé, depuis le premier archivé (R-CPT-21). |
 
 ## Biens et prêts

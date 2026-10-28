@@ -11,17 +11,26 @@ import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
 import { Account } from '../models/account';
+import { AccountStatements } from '../models/account-statements';
 import { closeAccount } from '../fn/accounts/close-account';
 import { CloseAccount$Params } from '../fn/accounts/close-account';
 import { createAccount } from '../fn/accounts/create-account';
 import { CreateAccount$Params } from '../fn/accounts/create-account';
+import { createStatement } from '../fn/accounts/create-statement';
+import { CreateStatement$Params } from '../fn/accounts/create-statement';
 import { deleteAccount } from '../fn/accounts/delete-account';
 import { DeleteAccount$Params } from '../fn/accounts/delete-account';
+import { deleteStatement } from '../fn/accounts/delete-statement';
+import { DeleteStatement$Params } from '../fn/accounts/delete-statement';
+import { downloadStatement } from '../fn/accounts/download-statement';
+import { DownloadStatement$Params } from '../fn/accounts/download-statement';
 import { getAccount } from '../fn/accounts/get-account';
 import { GetAccount$Params } from '../fn/accounts/get-account';
 import { IbanView } from '../models/iban-view';
 import { listAccounts } from '../fn/accounts/list-accounts';
 import { ListAccounts$Params } from '../fn/accounts/list-accounts';
+import { listStatements } from '../fn/accounts/list-statements';
+import { ListStatements$Params } from '../fn/accounts/list-statements';
 import { reopenAccount } from '../fn/accounts/reopen-account';
 import { ReopenAccount$Params } from '../fn/accounts/reopen-account';
 import { reorderAccounts } from '../fn/accounts/reorder-accounts';
@@ -30,6 +39,8 @@ import { revealIban } from '../fn/accounts/reveal-iban';
 import { RevealIban$Params } from '../fn/accounts/reveal-iban';
 import { updateAccount } from '../fn/accounts/update-account';
 import { UpdateAccount$Params } from '../fn/accounts/update-account';
+import { updateStatement } from '../fn/accounts/update-statement';
+import { UpdateStatement$Params } from '../fn/accounts/update-statement';
 
 
 /**
@@ -337,6 +348,181 @@ export class AccountsService extends BaseService {
     const resp = this.reopenAccount$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Account>): Account => r.body)
+    );
+  }
+
+  /** Path part for operation `listStatements()` */
+  static readonly ListStatementsPath = '/api/v1/accounts/{id}/statements';
+
+  /**
+   * Relevés archivés d'un compte et mois sans relevé (CPT-11, R-CPT-21).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `listStatements()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listStatements$Response(params: ListStatements$Params, context?: HttpContext): Observable<StrictHttpResponse<AccountStatements>> {
+    const obs = listStatements(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Relevés archivés d'un compte et mois sans relevé (CPT-11, R-CPT-21).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `listStatements$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listStatements(params: ListStatements$Params, context?: HttpContext): Observable<AccountStatements> {
+    const resp = this.listStatements$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<AccountStatements>): AccountStatements => r.body)
+    );
+  }
+
+  /** Path part for operation `createStatement()` */
+  static readonly CreateStatementPath = '/api/v1/accounts/{id}/statements';
+
+  /**
+   * Archive un relevé envoyé depuis le compte (R-CPT-18, R-CPT-19).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `createStatement()` instead.
+   *
+   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
+   */
+  createStatement$Response(params: CreateStatement$Params, context?: HttpContext): Observable<StrictHttpResponse<AccountStatements>> {
+    const obs = createStatement(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Archive un relevé envoyé depuis le compte (R-CPT-18, R-CPT-19).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `createStatement$Response()` instead.
+   *
+   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
+   */
+  createStatement(params: CreateStatement$Params, context?: HttpContext): Observable<AccountStatements> {
+    const resp = this.createStatement$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<AccountStatements>): AccountStatements => r.body)
+    );
+  }
+
+  /** Path part for operation `updateStatement()` */
+  static readonly UpdateStatementPath = '/api/v1/accounts/{id}/statements/{statement_id}';
+
+  /**
+   * Modifie le mois et la note d'un relevé (R-CPT-20).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `updateStatement()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  updateStatement$Response(params: UpdateStatement$Params, context?: HttpContext): Observable<StrictHttpResponse<AccountStatements>> {
+    const obs = updateStatement(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Modifie le mois et la note d'un relevé (R-CPT-20).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `updateStatement$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  updateStatement(params: UpdateStatement$Params, context?: HttpContext): Observable<AccountStatements> {
+    const resp = this.updateStatement$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<AccountStatements>): AccountStatements => r.body)
+    );
+  }
+
+  /** Path part for operation `deleteStatement()` */
+  static readonly DeleteStatementPath = '/api/v1/accounts/{id}/statements/{statement_id}';
+
+  /**
+   * Supprime un relevé et son document (R-CPT-20).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `deleteStatement()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteStatement$Response(params: DeleteStatement$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = deleteStatement(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Supprime un relevé et son document (R-CPT-20).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `deleteStatement$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteStatement(params: DeleteStatement$Params, context?: HttpContext): Observable<void> {
+    const resp = this.deleteStatement$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `downloadStatement()` */
+  static readonly DownloadStatementPath = '/api/v1/accounts/{id}/statements/{statement_id}/file';
+
+  /**
+   * Fichier d'un relevé, affiché ou téléchargé (R-CPT-21, ADR-0024).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `downloadStatement()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  downloadStatement$Response(params: DownloadStatement$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
+    const obs = downloadStatement(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Fichier d'un relevé, affiché ou téléchargé (R-CPT-21, ADR-0024).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `downloadStatement$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  downloadStatement(params: DownloadStatement$Params, context?: HttpContext): Observable<any> {
+    const resp = this.downloadStatement$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<any>): any => r.body)
     );
   }
 

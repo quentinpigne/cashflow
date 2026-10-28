@@ -47,6 +47,12 @@ pub enum DomainError {
     InstallmentPaymentLocked,
     #[error("ce champ n'est pas modifiable après la création du compte")]
     AccountFieldLocked,
+    #[error("relevé invalide : un premier du mois, une période dont le début précède la fin")]
+    InvalidStatement,
+    #[error("un relevé de compte est un fichier PDF")]
+    StatementNotPdf,
+    #[error("ce fichier est déjà archivé (relevé de {})", .statement_month.format("%m/%Y"))]
+    StatementAlreadyArchived { statement_month: Date },
 
     // ----- Salaires (spec 10)
     #[error("emploi invalide : fin postérieure au début, mois des augmentations de 1 à 12")]
@@ -188,6 +194,9 @@ impl DomainError {
             InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
             InstallmentPaymentLocked => "INSTALLMENT_PAYMENT_LOCKED",
             AccountFieldLocked => "ACCOUNT_FIELD_LOCKED",
+            InvalidStatement => "INVALID_STATEMENT",
+            StatementNotPdf => "STATEMENT_NOT_PDF",
+            StatementAlreadyArchived { .. } => "STATEMENT_ALREADY_ARCHIVED",
             InvalidEmployment => "INVALID_EMPLOYMENT",
             InvalidSalary => "INVALID_SALARY",
             InvalidBonus => "INVALID_BONUS",
@@ -249,6 +258,8 @@ impl DomainError {
             DateOutsideAccountPeriod { .. } | AccountClosed => "R-CPT-3",
             ClosingBeforeOpening | ClosingBalanceNotZero { .. } => "R-CPT-5",
             AccountNotEmpty => "R-CPT-7",
+            InvalidStatement | StatementNotPdf => "R-CPT-18",
+            StatementAlreadyArchived { .. } => "R-CPT-19",
             InvalidLoanTerms => "R-PRE-2",
             InvalidLoan => "R-PRE-1",
             InvalidAsset => "R-BIE-1",

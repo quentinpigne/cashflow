@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, account_id, file_name, period_start AS \"period_start: Date\", period_end AS \"period_end: Date\",\n                  committed_at\n           FROM import_batch WHERE status = 'COMMITTED' ORDER BY created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "file_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "name": "period_start: Date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "name": "period_end: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "period_end"
+          }
+        }
+      },
+      {
+        "name": "committed_at",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "import_batch",
+            "name": "committed_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "f03b7576f8f68c9e8d0fe5c56d6846d395ff64382aff4894e56d197be3f3d974"
+}

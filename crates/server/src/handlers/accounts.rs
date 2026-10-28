@@ -65,7 +65,7 @@ pub async fn update(
     responses((status = 204), (status = 422, body = Problem))
 )]
 pub async fn delete(State(state): State<AppState>, Path(id): Path<AccountId>) -> AppResult<StatusCode> {
-    accounts::delete(&state.db, id).await?;
+    accounts::delete(&state.db, &state.data, id, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

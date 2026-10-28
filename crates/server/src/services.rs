@@ -25,6 +25,7 @@ pub mod rules;
 pub mod salaries;
 pub mod savings;
 pub mod seed;
+pub mod statements;
 pub mod transactions;
 pub mod transfers;
 
@@ -76,5 +77,7 @@ mod projection_tests;
 mod salary_tests;
 #[cfg(test)]
 mod savings_tests;
+#[cfg(test)]
+mod statement_tests;
 #[cfg(test)]
 mod tests;

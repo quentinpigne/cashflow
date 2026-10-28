@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bank_statement (id, account_id, statement_month, period_start, period_end, document_id, note,\n                                     created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "708606c8a1ce349d90efae19bbf98f328c838a541382cee075a21029f5f50bf4"
+}

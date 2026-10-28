@@ -9,7 +9,7 @@ use cashflow_domain::shared::ids::{AccountId, AssetId, CategoryId, LoanId, Trans
 use super::assets::{self, AssetInput, AssetValuationInput};
 use super::features::{self, FeaturesInput};
 use super::loans::{self, BalanceInput, LoanInput, LoanPaymentInput, LoanPreviewInput, ScheduleInput};
-use super::tests::{account, category, d, setup, split, tx};
+use super::tests::{TODAY, account, category, d, setup, split, tx};
 use super::{accounts, transactions};
 use crate::db::Db;
 use crate::error::AppError;
@@ -238,7 +238,8 @@ async fn r_pre_8_a_paid_installment_is_locked_until_its_split_is_undone() {
 
 #[tokio::test]
 async fn r_pre_11_deleting_a_loan_releases_its_payments_and_payer() {
-    let (db, _dir) = setup().await;
+    let (db, dir) = setup().await;
+    let data = crate::config::DataDir::new(dir.path());
     let f = fixture(&db).await;
     let id = create(&db, &f).await;
     let payment = spend(&db, f.checking, "2026-01-05", -115_920).await;
@@ -256,7 +257,7 @@ async fn r_pre_11_deleting_a_loan_releases_its_payments_and_payer() {
     )
     .await
     .unwrap();
-    assert_eq!(code(accounts::delete(&db, f.checking).await.unwrap_err()), "ACCOUNT_NOT_EMPTY");
+    assert_eq!(code(accounts::delete(&db, &data, f.checking, d(TODAY)).await.unwrap_err()), "ACCOUNT_NOT_EMPTY");
     loans::delete(&db, id).await.unwrap();
     let detail = transactions::get(&db, payment).await.unwrap();
     assert_eq!((detail.splits.len(), detail.splits[0].category_id), (1, None));

@@ -116,7 +116,8 @@ async fn r_cpt_3_transaction_outside_account_period_is_refused() {
 
 #[tokio::test]
 async fn r_cpt_5_closing_with_balance_needs_confirmation_and_r_cpt_7_no_delete() {
-    let (db, _dir) = setup().await;
+    let (db, dir) = setup().await;
+    let data = crate::config::DataDir::new(dir.path());
     let checking = account(&db, "Courant", AccountKind::Checking, 1_000).await;
     transactions::create(&db, &tx(checking, "2026-02-01", -400, None)).await.unwrap();
     let close = |confirm| CloseInput { closed_on: d("2026-03-01"), confirm };
@@ -126,11 +127,11 @@ async fn r_cpt_5_closing_with_balance_needs_confirmation_and_r_cpt_7_no_delete()
     ));
     let closed = accounts::close(&db, checking, &close(true), d(TODAY)).await.unwrap();
     assert_eq!(closed.closed_on, Some(d("2026-03-01")));
-    assert_eq!(domain_error(accounts::delete(&db, checking).await), DomainError::AccountNotEmpty);
+    assert_eq!(domain_error(accounts::delete(&db, &data, checking, d(TODAY)).await), DomainError::AccountNotEmpty);
 
     // Un compte vide se supprime, conditions d'épargne comprises.
     let livret = account(&db, "Livret A", AccountKind::LivretA, 0).await;
-    accounts::delete(&db, livret).await.unwrap();
+    accounts::delete(&db, &data, livret, d(TODAY)).await.unwrap();
 }
 
 #[tokio::test]

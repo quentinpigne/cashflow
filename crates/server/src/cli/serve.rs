@@ -39,6 +39,12 @@ impl Serve {
         let db = super::open(&data).await?;
         services::seed::run(&db).await?;
         let clock = self.today.map_or(Clock::System, Clock::Fixed);
+        // Reprise unique des relevés PDF importés avant l'archive des relevés (CPT-11, ADR-0024).
+        match services::statements::take_over_imports(&db, &data, clock.today()).await {
+            Ok(0) => {}
+            Ok(archived) => tracing::info!(archived, "relevés repris des imports PDF"),
+            Err(error) => tracing::error!(%error, "reprise des relevés importés impossible"),
+        }
         let geocoder = Geocoder::new(self.geocoding_url)?;
         let state =
             AppState { db, clock, data, limiter: Arc::default(), secure_cookies: self.secure_cookies, geocoder };

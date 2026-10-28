@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use super::{clean, required};
+use crate::config::DataDir;
 use crate::db::accounts::{AccountFields, AccountRow, TermsFields};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
@@ -431,8 +432,9 @@ pub async fn reopen(db: &Db, id: AccountId, today: Date) -> AppResult<Account> {
     get(db, id, today).await
 }
 
-/// Supprime un compte vide ; un compte qui a des transactions se clôture (R-CPT-7).
-pub async fn delete(db: &Db, id: AccountId) -> AppResult<()> {
+/// Supprime un compte vide, avec ses relevés et leurs documents (R-CPT-20) ; un compte qui a des transactions se
+/// clôture (R-CPT-7).
+pub async fn delete(db: &Db, data: &DataDir, id: AccountId, today: Date) -> AppResult<()> {
     db::accounts::find(&db.read, id).await?.ok_or(AppError::NotFound("compte"))?;
     // Seules les transactions l'empêchent : valorisations et points de contrôle partent avec le compte.
     if db::accounts::transaction_date_bounds(&db.read, id).await?.is_some()
@@ -446,9 +448,15 @@ pub async fn delete(db: &Db, id: AccountId) -> AppResult<()> {
             "ce compte paie les mensualités d'un prêt : changer d'abord le compte payeur du prêt (R-CPT-15)",
         ));
     }
+    let documents: Vec<_> =
+        db::statements::of_account(&db.read, id).await?.into_iter().map(|s| s.document_id).collect();
     let mut tx = db.write.begin().await?;
     db::accounts::delete_terms(&mut tx, id).await?;
     db::accounts::delete(&mut *tx, id).await?;
+    for document in &documents {
+        db::documents::delete(&mut *tx, *document).await?;
+    }
     tx.commit().await?;
+    super::documents::trash(data, &documents, today);
     Ok(())
 }

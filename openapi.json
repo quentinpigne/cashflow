@@ -718,6 +718,257 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/statements": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Relevés archivés d'un compte et mois sans relevé (CPT-11, R-CPT-21).",
+        "operationId": "listStatements",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountStatements"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Archive un relevé envoyé depuis le compte (R-CPT-18, R-CPT-19).",
+        "operationId": "createStatement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/StatementForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountStatements"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/statements/{statement_id}": {
+      "put": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Modifie le mois et la note d'un relevé (R-CPT-20).",
+        "operationId": "updateStatement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "statement_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BankStatementId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatementInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountStatements"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Supprime un relevé et son document (R-CPT-20).",
+        "operationId": "deleteStatement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "statement_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BankStatementId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/statements/{statement_id}/file": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Fichier d'un relevé, affiché ou téléchargé (R-CPT-21, ADR-0024).",
+        "operationId": "downloadStatement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccountId"
+            }
+          },
+          {
+            "name": "statement_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BankStatementId"
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "description": "Télécharger plutôt qu'afficher dans le navigateur.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fichier PDF du relevé",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{id}/terms": {
       "get": {
         "tags": [
@@ -6985,6 +7236,31 @@
           }
         }
       },
+      "AccountStatements": {
+        "type": "object",
+        "description": "Relevés d'un compte et mois sans relevé (R-CPT-21).",
+        "required": [
+          "statements",
+          "missing_months"
+        ],
+        "properties": {
+          "missing_months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Du plus récent au plus ancien."
+          },
+          "statements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementView"
+            },
+            "description": "Du mois le plus ancien au plus récent."
+          }
+        }
+      },
       "AcquisitionView": {
         "type": "object",
         "description": "Une transaction ventilée en acquisition de ce bien (R-BIE-8).",
@@ -7816,6 +8092,10 @@
             "format": "int64"
           }
         }
+      },
+      "BankStatementId": {
+        "type": "string",
+        "format": "uuid"
       },
       "BatchCreated": {
         "type": "object",
@@ -14684,6 +14964,32 @@
           }
         }
       },
+      "StatementForm": {
+        "type": "object",
+        "description": "Formulaire d'envoi d'un relevé (`multipart/form-data`).",
+        "required": [
+          "file",
+          "statement_month"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "PDF, 10 Mo au plus (R-CPT-18)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "statement_month": {
+            "type": "string",
+            "format": "date",
+            "description": "Premier jour du mois du relevé."
+          }
+        }
+      },
       "StatementInfo": {
         "type": "object",
         "properties": {
@@ -14721,6 +15027,76 @@
               "string",
               "null"
             ],
+            "format": "date"
+          }
+        }
+      },
+      "StatementInput": {
+        "type": "object",
+        "description": "Mois et note d'un relevé ; le fichier ne se modifie pas (R-CPT-20).",
+        "required": [
+          "statement_month"
+        ],
+        "properties": {
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "statement_month": {
+            "type": "string",
+            "format": "date",
+            "description": "Premier jour du mois du relevé."
+          }
+        }
+      },
+      "StatementView": {
+        "type": "object",
+        "description": "Relevé archivé (R-CPT-18).",
+        "required": [
+          "id",
+          "statement_month",
+          "file_name",
+          "media_type",
+          "size_bytes"
+        ],
+        "properties": {
+          "file_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/BankStatementId"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "period_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "statement_month": {
+            "type": "string",
             "format": "date"
           }
         }

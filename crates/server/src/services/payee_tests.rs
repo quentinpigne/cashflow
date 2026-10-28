@@ -329,7 +329,7 @@ async fn r_tie_16_r_tie_17_r_tie_18_import_suggests_payees() {
     )
     .await
     .unwrap();
-    imports::commit(&db, earlier.summary.id, &CommitInput::default()).await.unwrap();
+    imports::commit(&db, &data, earlier.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     let filter = TransactionFilter { payee_id: Some(edf), ..Default::default() };
     assert_eq!(transactions::list_all(&db, &filter).await.unwrap().total, 1, "le tiers choisi en revue est créé");
 
@@ -347,7 +347,7 @@ async fn r_tie_16_r_tie_17_r_tie_18_import_suggests_payees() {
     assert_eq!((power.payee_id, power.payee_learned), (Some(edf), true));
     assert_eq!(power.splits[0].category_id, Some(energy));
     assert_eq!(by_label("CAFE").payee_id, None);
-    imports::commit(&db, batch.summary.id, &CommitInput::default()).await.unwrap();
+    imports::commit(&db, &data, batch.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
     assert_eq!(transactions::list_all(&db, &filter).await.unwrap().total, 2);
 }
 

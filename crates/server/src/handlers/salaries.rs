@@ -1,12 +1,12 @@
 use axum::Json;
 use axum::extract::{Multipart, Path, Query, State};
-use axum::http::{StatusCode, header};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use cashflow_domain::Date;
 use cashflow_domain::shared::ids::{EmploymentId, PayslipId, SalaryBonusId, SalaryId};
-use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
+use super::{FileQuery, document_response};
 use crate::error::{AppError, AppResult, Problem};
 use crate::services::salaries::{
     self, BonusInput, EmploymentInput, EmploymentView, PayslipInput, PayslipUpload, SalariesOverview, SalaryInput,
@@ -222,13 +222,6 @@ pub async fn delete_payslip(
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[derive(Deserialize, IntoParams)]
-pub struct FileQuery {
-    /// Télécharger plutôt qu'afficher dans le navigateur.
-    #[serde(default)]
-    download: bool,
-}
-
 /// Fichier d'une fiche de paie, affiché ou téléchargé (R-SAL-18, ADR-0024).
 #[utoipa::path(
     get, operation_id = "downloadPayslip", path = "/employments/{id}/payslips/{payslip_id}/file", tag = "salaries",
@@ -241,29 +234,5 @@ pub async fn download_payslip(
     Query(query): Query<FileQuery>,
 ) -> AppResult<impl IntoResponse> {
     let (row, content) = salaries::payslip_file(&state.db, &state.data, id, payslip).await?;
-    let disposition = if query.download { "attachment" } else { "inline" };
-    // Nom ASCII de repli, et nom exact encodé (RFC 6266) pour les accents.
-    let ascii: String =
-        row.file_name.chars().filter(|c| (c.is_ascii_graphic() || *c == ' ') && !matches!(c, '"' | '\\')).collect();
-    let encoded: String = row
-        .file_name
-        .bytes()
-        .map(|b| {
-            if b.is_ascii_alphanumeric() || b"-._~".contains(&b) {
-                char::from(b).to_string()
-            } else {
-                format!("%{b:02X}")
-            }
-        })
-        .collect();
-    Ok((
-        [
-            (header::CONTENT_TYPE, row.media_type.as_str().to_owned()),
-            (header::CONTENT_DISPOSITION, format!("{disposition}; filename=\"{ascii}\"; filename*=UTF-8''{encoded}")),
-            (header::X_CONTENT_TYPE_OPTIONS, "nosniff".to_owned()),
-            (header::CONTENT_SECURITY_POLICY, "sandbox".to_owned()),
-            (header::CACHE_CONTROL, "private, no-store".to_owned()),
-        ],
-        content,
-    ))
+    Ok(document_response(&row.file_name, row.media_type, content, query.download))
 }
