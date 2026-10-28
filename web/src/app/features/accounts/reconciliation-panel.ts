@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 import { Checkpoint } from '../../api/models/checkpoint';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
 import { DataVersion } from '../../core/data-version';
+import { keptValue } from '../../core/resources';
 import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
@@ -30,7 +31,7 @@ import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconci
           <mat-icon>add</mat-icon>Point de contrôle
         </button>
       </header>
-      @for (c of points.value() ?? []; track c.id) {
+      @for (c of currentPoints() ?? []; track c.id) {
         <div class="row">
           <span
             class="state"
@@ -146,6 +147,7 @@ export class ReconciliationPanel {
     params: () => ({ id: this.accountId(), version: this.version.value() }),
     stream: ({ params }) => this.api.listCheckpoints({ id: params.id }),
   });
+  protected readonly currentPoints = keptValue(this.points, this.accountId);
 
   protected stateLabel(c: Checkpoint): string {
     if (c.reconciled) return 'Rapproché';

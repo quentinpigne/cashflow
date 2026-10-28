@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  linkedSignal,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +23,7 @@ import { TransactionListItem } from '../../api/models/transaction-list-item';
 import { AccountsService } from '../../api/services/accounts.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
+import { keptValue } from '../../core/resources';
 import { formatDate, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { ClearingStatus } from '../../api/models/clearing-status';
@@ -128,11 +121,6 @@ export class AccountDetailPage {
   protected readonly showFilters = signal(false);
   protected readonly limit = signal(PAGE);
   protected readonly selected = signal<string | null>(null);
-  /** Années de relevés dépliées : gardées ici, la section étant recréée à chaque rechargement. */
-  protected readonly statementYears = linkedSignal<string, ReadonlySet<string>>({
-    source: this.id,
-    computation: () => new Set(),
-  });
   protected readonly sort = signal<Sort>({ active: 'date', direction: 'desc' });
   protected readonly iban = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -169,8 +157,12 @@ export class AccountDetailPage {
     },
   });
 
+  /** Compte et transactions affichés, gardés pendant un rechargement : la page ne revient pas en haut. */
+  protected readonly current = keptValue(this.account, this.id);
+  protected readonly currentPage = keptValue(this.page, this.id);
+
   protected readonly items = computed<TransactionListItem[]>(() => {
-    const items = this.page.hasValue() ? this.page.value().items : [];
+    const items = this.currentPage()?.items ?? [];
     const { active, direction } = this.sort();
     if (!direction || active === 'date') {
       return direction === 'asc' ? [...items].reverse() : items;

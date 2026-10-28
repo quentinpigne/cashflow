@@ -20,6 +20,7 @@ import { AccountFamily } from '../../api/models/account-family';
 import { ValuationView } from '../../api/models/valuation-view';
 import { SavingsService } from '../../api/services/savings.service';
 import { DataVersion } from '../../core/data-version';
+import { keptValue } from '../../core/resources';
 import { fromIsoDate, toIsoDate, todayIso } from '../../core/dates';
 import { errorMessage, problemOf } from '../../core/http-errors';
 import { formatRatePpm, parseMoney } from '../../core/money';
@@ -142,7 +143,7 @@ export class ValuationDialog {
   imports: [MatButtonModule, MatIconModule, MatTooltipModule, MoneyPipe, FrDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (variable() && performance.value(); as p) {
+    @if (variable() && currentPerformance(); as p) {
       <section class="card panel">
         <header><h2>Performance</h2></header>
         <dl class="figures">
@@ -217,7 +218,7 @@ export class ValuationDialog {
         <h2>Valorisations</h2>
         <button mat-stroked-button (click)="add()"><mat-icon>add</mat-icon>Ajouter</button>
       </header>
-      @for (v of valuations.value() ?? []; track v.id) {
+      @for (v of currentValuations() ?? []; track v.id) {
         <div class="row">
           <span>{{ v.date | frDate }}</span>
           <span class="muted small">{{ v.note }}</span>
@@ -324,6 +325,8 @@ export class ValuationPanel {
       this.variable() ? { id: this.accountId(), version: this.version.value() } : undefined,
     stream: ({ params }) => this.api.getPerformance({ id: params.id }),
   });
+  protected readonly currentValuations = keptValue(this.valuations, this.accountId);
+  protected readonly currentPerformance = keptValue(this.performance, this.accountId);
 
   protected rate(ppm: number | null | undefined): string {
     return ppm === null || ppm === undefined ? '—' : formatRatePpm(ppm);

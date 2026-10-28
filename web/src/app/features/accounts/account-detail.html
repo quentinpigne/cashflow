@@ -1,6 +1,6 @@
 <div class="layout" [class.with-panel]="selected() && !layout.mobile()">
   <div class="page main">
-    @if (account.value(); as a) {
+    @if (current(); as a) {
       <header class="head">
         <div class="page-header">
           <a mat-icon-button routerLink="/comptes" aria-label="Retour aux comptes"
@@ -90,7 +90,7 @@
       <p class="empty">Compte introuvable.</p>
     }
 
-    @if (account.value(); as a) {
+    @if (current(); as a) {
       @if (computed(a.family)) {
         <app-reconciliation-panel [accountId]="a.id" />
       }
@@ -184,7 +184,7 @@
         </div>
       }
 
-      @if (page.value(); as p) {
+      @if (currentPage(); as p) {
         @if (p.total === 0) {
           <div class="empty">
             @if (chips().length > 0) {
@@ -309,7 +309,7 @@
       } @else if (page.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       }
-      <app-account-statements [accountId]="a.id" [(expanded)]="statementYears" />
+      <app-account-statements [accountId]="a.id" />
     }
   </div>
 

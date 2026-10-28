@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  model,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -27,6 +19,7 @@ import { firstValueFrom } from 'rxjs';
 import { StatementView } from '../../api/models/statement-view';
 import { AccountsService } from '../../api/services/accounts.service';
 import { DataVersion } from '../../core/data-version';
+import { keptValue } from '../../core/resources';
 import { currentMonth, shiftMonth } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
@@ -199,15 +192,16 @@ export class AccountStatements {
     params: () => ({ id: this.accountId(), version: this.version.value() }),
     stream: ({ params }) => this.api.listStatements({ id: params.id }),
   });
+  private readonly currentList = keptValue(this.list, this.accountId);
 
   protected readonly size = formatSize;
   protected readonly dragging = signal(false);
   /** Années dépliées : toutes repliées par défaut. */
-  readonly expanded = model<ReadonlySet<string>>(new Set());
+  protected readonly expanded = signal<ReadonlySet<string>>(new Set());
 
   /** Relevés et mois sans relevé, par année, du plus récent au plus ancien (R-CPT-21). */
   protected readonly years = computed<StatementYear[]>(() => {
-    const list = this.list.value();
+    const list = this.currentList();
     if (!list) return [];
     const entries: StatementEntry[] = [
       ...list.statements.map((s) => ({ month: s.statement_month, statement: s })),

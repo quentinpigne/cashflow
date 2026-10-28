@@ -31,6 +31,7 @@ import { InterestMethod } from '../../api/models/interest-method';
 import { TermsView } from '../../api/models/terms-view';
 import { SavingsService } from '../../api/services/savings.service';
 import { DataVersion } from '../../core/data-version';
+import { keptValue } from '../../core/resources';
 import { todayIso } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { formatRate, parseMoney, toEditable } from '../../core/money';
@@ -199,12 +200,12 @@ export class TermsDialog {
         </span>
         <button mat-button (click)="editTerms()"><mat-icon>tune</mat-icon>Conditions</button>
       </header>
-      @if (terms.value(); as t) {
+      @if (currentTerms(); as t) {
         <p class="muted small">
           {{ t.schedule_name }} · taux actuel <strong>{{ rate(t.current_rate_ppm) }}</strong>
         </p>
       }
-      @if (interest.value(); as i) {
+      @if (currentInterest(); as i) {
         @if (!i.supported) {
           <p class="muted">
             Le calcul de cette méthode arrive dans une version ultérieure : seules les quinzaines
@@ -386,6 +387,11 @@ export class InterestPanel {
     params: () => ({ id: this.accountId(), year: this.year(), version: this.version.value() }),
     stream: ({ params }) => this.api.getInterest({ id: params.id, year: params.year }),
   });
+  protected readonly currentTerms = keptValue(this.terms, this.accountId);
+  protected readonly currentInterest = keptValue(
+    this.interest,
+    () => `${this.accountId()}/${this.year()}`,
+  );
 
   protected rate(ppm: number): string {
     return formatRate(ppm);
@@ -406,7 +412,7 @@ export class InterestPanel {
   }
 
   protected async editTerms(): Promise<void> {
-    const terms = this.terms.value();
+    const terms = this.currentTerms();
     if (!terms) return;
     const ref = this.dialog.open(TermsDialog, { data: { accountId: this.accountId(), terms } });
     if (await firstValueFrom(ref.afterClosed())) {

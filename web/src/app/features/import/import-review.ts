@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  linkedSignal,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,7 +15,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-import { BatchDetail } from '../../api/models/batch-detail';
 import { CommitResult } from '../../api/models/commit-result';
 import { ImportDecision } from '../../api/models/import-decision';
 import { ImportLineView } from '../../api/models/import-line-view';
@@ -32,6 +23,7 @@ import { ImportsService } from '../../api/services/imports.service';
 import { LoansService } from '../../api/services/loans.service';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
 import { DataVersion } from '../../core/data-version';
+import { keptValue } from '../../core/resources';
 import { errorMessage, problemOf } from '../../core/http-errors';
 import { BATCH_STATUS_LABELS, DECISION_LABELS } from '../../core/labels';
 import { CategoryPicker } from '../../shared/category-picker';
@@ -102,21 +94,8 @@ export class ImportReviewPage {
     stream: ({ params }) => this.api.getImport({ id: params.id }),
   });
 
-  /**
-   * Import affiché : le précédent reste à l'écran pendant un rechargement du même import (création
-   * d'un tiers, décision…), sinon la page se vide et revient en haut.
-   */
-  protected readonly current = linkedSignal<
-    { id: string; value: BatchDetail | undefined },
-    BatchDetail | undefined
-  >({
-    source: () => ({
-      id: this.id(),
-      value: this.batch.hasValue() ? this.batch.value() : undefined,
-    }),
-    computation: (source, previous) =>
-      source.value ?? (previous?.source.id === source.id ? previous.value : undefined),
-  });
+  /** Import affiché, gardé pendant un rechargement (création d'un tiers, décision…). */
+  protected readonly current = keptValue(this.batch, this.id);
 
   protected readonly reviewing = computed(() => this.current()?.summary.status === 'REVIEWING');
 
