@@ -114,11 +114,13 @@
           <mat-panel-title>Options</mat-panel-title>
         </mat-expansion-panel-header>
         <div class="options">
-          <mat-checkbox formControlName="netWorth">Compter dans le patrimoine</mat-checkbox>
-          <mat-checkbox formControlName="emergency"
-            >Compter dans l'épargne de précaution</mat-checkbox
-          >
-          <mat-checkbox formControlName="budget">Compter dans les budgets</mat-checkbox>
+          <div class="checks">
+            <mat-checkbox formControlName="netWorth">Compter dans le patrimoine</mat-checkbox>
+            <mat-checkbox formControlName="emergency"
+              >Compter dans l'épargne de précaution</mat-checkbox
+            >
+            <mat-checkbox formControlName="budget">Compter dans les budgets</mat-checkbox>
+          </div>
           <mat-form-field>
             <mat-label>Devise</mat-label>
             <input matInput formControlName="currency" maxlength="3" />

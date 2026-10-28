@@ -17,7 +17,12 @@
 .options {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--field-gap);
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
 }
 
 .colors {

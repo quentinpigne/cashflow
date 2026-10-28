@@ -127,7 +127,7 @@ const NEW_GROUP = '__new__';
           }
         </div>
         @if (features.geocoding()) {
-          <mat-form-field subscriptSizing="dynamic" class="search">
+          <mat-form-field subscriptSizing="dynamic">
             <mat-label>Rechercher une adresse</mat-label>
             <mat-icon matPrefix>search</mat-icon>
             <input
@@ -211,6 +211,7 @@ const NEW_GROUP = '__new__';
     .form {
       display: flex;
       flex-direction: column;
+      gap: var(--field-gap);
       min-width: min(22rem, 80vw);
     }
 
@@ -218,7 +219,7 @@ const NEW_GROUP = '__new__';
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin: 0.5rem 0;
+      margin-top: 0.5rem;
 
       h3 {
         margin: 0;
@@ -240,7 +241,7 @@ const NEW_GROUP = '__new__';
 
     .row {
       display: flex;
-      gap: 0.5rem;
+      gap: var(--field-gap);
 
       .postal {
         flex: 0 0 8rem;
@@ -250,10 +251,6 @@ const NEW_GROUP = '__new__';
         flex: 1;
         min-width: 0;
       }
-    }
-
-    .search {
-      margin-bottom: 1rem;
     }
   `,
 })

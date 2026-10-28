@@ -192,7 +192,7 @@ import { confirm } from '../../shared/confirm-dialog';
       font: var(--mat-sys-body-small);
     }
     .tolerance {
-      margin-top: 0.75rem;
+      margin-top: var(--field-gap);
       width: min(20rem, 100%);
     }
   `,

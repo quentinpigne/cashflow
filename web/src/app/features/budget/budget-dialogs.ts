@@ -574,7 +574,7 @@ export class LineEditDialog {
   styles: `
     .thresholds {
       display: flex;
-      gap: 0.5rem;
+      gap: var(--field-gap);
     }
     .error {
       color: var(--mat-sys-error);
