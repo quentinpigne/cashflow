@@ -564,7 +564,7 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
     }
 
     // Une règle et un profil d'import, pour le relevé fictif de `fixtures/demo` (IMP-02, IMP-08).
-    if let Some(streaming) = c.get("Abonnements", "Autres") {
+    if let Some(streaming) = c.get("Abonnements", "Streaming (vidéo, musique)") {
         let rule = rules::RuleInput {
             name: "Netflix".into(),
             priority: 0,

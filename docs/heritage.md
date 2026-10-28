@@ -90,6 +90,9 @@ Remarques :
   identifiant stable, jamais par entier positionnel.
 - La catégorie de revenu « Remboursements » de l'ancien seed n'est pas reprise : un remboursement vient
   en déduction de la catégorie de dépense d'origine (R-TRX-13).
+- Le jeu actuel est dans `crates/server/seed/categories.json`. Il a été complété en 2026-10 (abonnements
+  de streaming, de logiciels et d'IA, cinéma, jeux vidéo, etc.) ; une base déjà en service reçoit les
+  catégories qui lui manquent par migration.
 - À compléter : Santé, Loisirs, Voyages, Impôts et taxes, Assurances, Enfants, Animaux, Dons, Frais
   bancaires, Prêts (dépense, avec les sous-catégories Intérêts et Assurance emprunteur des
   conditions de prêt, R-PRE-2), Intérêts (revenu, utilisé par R-EPA-10).
