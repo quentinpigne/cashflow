@@ -11,6 +11,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(budgets::list_lines, budgets::create_line))
         .routes(routes!(budgets::update_line))
         .routes(routes!(budgets::change_amount))
+        .routes(routes!(budgets::change_categories))
         .routes(routes!(budgets::reset_rollover))
         .routes(routes!(budgets::end_line))
         .routes(routes!(budgets::delete_override))

@@ -231,11 +231,19 @@ pub async fn merge(conn: &mut SqliteConnection, source: CategoryId, target: Cate
     };
     // Références vers la source et, si ses sous-catégories disparaissent, vers elles aussi.
     let with_children = !target_is_root;
+    // Une ligne de budget qui portait déjà la cible garde un seul lien vers elle.
     sqlx::query!(
-        "UPDATE budget_line SET category_id = ?1, updated_at = ?2
-         WHERE category_id = ?3 OR (?4 AND category_id IN (SELECT id FROM category WHERE parent_id = ?3))",
+        "UPDATE OR IGNORE budget_line_category SET category_id = ?1
+         WHERE category_id = ?2 OR (?3 AND category_id IN (SELECT id FROM category WHERE parent_id = ?2))",
         target,
-        now,
+        source,
+        with_children
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM budget_line_category
+         WHERE category_id = ?1 OR (?2 AND category_id IN (SELECT id FROM category WHERE parent_id = ?1))",
         source,
         with_children
     )

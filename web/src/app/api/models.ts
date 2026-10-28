@@ -69,6 +69,7 @@ export type { CashDayView } from './models/cash-day-view';
 export type { CashEventKind } from './models/cash-event-kind';
 export type { CashEventView } from './models/cash-event-view';
 export type { CashProjectionView } from './models/cash-projection-view';
+export type { CategoriesChange } from './models/categories-change';
 export type { CategorizationRuleId } from './models/categorization-rule-id';
 export type { CategorizeInput } from './models/categorize-input';
 export type { Category } from './models/category';

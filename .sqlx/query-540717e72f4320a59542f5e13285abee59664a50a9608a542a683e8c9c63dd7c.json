@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT budget_line_id, category_id FROM budget_line_category ORDER BY rowid",
+  "describe": {
+    "columns": [
+      {
+        "name": "budget_line_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line_category",
+            "name": "budget_line_id"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "budget_line_category",
+            "name": "category_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "540717e72f4320a59542f5e13285abee59664a50a9608a542a683e8c9c63dd7c"
+}

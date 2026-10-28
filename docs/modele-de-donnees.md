@@ -82,7 +82,8 @@ erDiagram
     CategorizationRule }o--o{ Category : "affecte"
     ProjectionScenario }o--o{ Account : "hypothèses par compte"
     Project ||--o{ Split : "regroupe"
-    Category ||--o{ BudgetLine : "budgétée par"
+    BudgetLine ||--o{ BudgetLineCategory : "porte"
+    Category ||--o{ BudgetLineCategory : "budgétée par"
     Account ||--o{ BudgetLine : "objectif d'épargne vers"
     BudgetLine ||--o{ BudgetOverride : "surchargée par"
 ```
@@ -528,7 +529,8 @@ Décision : ADR-0014.
 | Champ | Type | Contraintes |
 |---|---|---|
 | `kind` | enum | `EXPENSE` \| `INCOME` \| `SAVINGS` |
-| `category_id` | `Id` → Category | requis si `EXPENSE`/`INCOME` (nature identique), `null` si `SAVINGS` |
+| `name` | texte ≤ 60 | optionnel : nom d'une ligne sur plusieurs catégories (« Voiture ») ; `null` si `SAVINGS` |
+| catégories | `BudgetLineCategory` | au moins une si `EXPENSE`/`INCOME` (nature identique), aucune si `SAVINGS` (R-BUD-10) |
 | `target_account_id` | `Id` → Account | requis si `SAVINGS` (famille `FIXED_SAVINGS` ou `VARIABLE_SAVINGS`), `null` sinon |
 | `periodicity` | enum | `MONTHLY` \| `YEARLY` ; `SAVINGS` est toujours `MONTHLY` |
 | `year_start_month` | entier 1–12 | défaut 1, utilisé si `YEARLY` |
@@ -541,6 +543,16 @@ Décision : ADR-0014.
 
 Contrainte : pour une catégorie (ou un compte cible), les intervalles [`effective_from`, `effective_to`]
 de ses lignes ne se chevauchent pas (R-BUD-11).
+
+
+### BudgetLineCategory
+
+Catégories d'une version de ligne (R-BUD-10). Une nouvelle version reçoit les siennes.
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `budget_line_id` | `Id` → BudgetLine | requis ; supprimé avec la version |
+| `category_id` | `Id` → Category | requis ; unique par version. À une date donnée, une catégorie est dans au plus une ligne en vigueur (R-BUD-11) |
 
 ### BudgetOverride
 

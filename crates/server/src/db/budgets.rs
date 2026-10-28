@@ -26,7 +26,10 @@ fn month_from_db(value: &str) -> anyhow::Result<Month> {
 pub struct LineRow {
     pub id: BudgetLineId,
     pub kind: BudgetKind,
-    pub category_id: Option<CategoryId>,
+    /// Nom donné à la ligne ; absent, elle porte le nom de sa catégorie.
+    pub name: Option<String>,
+    /// Catégories d'une ligne de dépense ou de revenu (R-BUD-10) ; aucune pour un objectif d'épargne.
+    pub category_ids: Vec<CategoryId>,
     pub target_account_id: Option<AccountId>,
     pub periodicity: Periodicity,
     pub year_start_month: u32,
@@ -38,20 +41,29 @@ pub struct LineRow {
     pub previous_version_id: Option<BudgetLineId>,
 }
 
-pub async fn lines(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<LineRow>> {
+pub async fn lines(conn: &mut SqliteConnection) -> anyhow::Result<Vec<LineRow>> {
+    let links = sqlx::query!("SELECT budget_line_id, category_id FROM budget_line_category ORDER BY rowid")
+        .fetch_all(&mut *conn)
+        .await?;
+    let mut categories: std::collections::HashMap<BudgetLineId, Vec<CategoryId>> = std::collections::HashMap::new();
+    for link in links {
+        categories.entry(id_from_db(&link.budget_line_id)?).or_default().push(id_from_db(&link.category_id)?);
+    }
     let rows = sqlx::query!(
-        r#"SELECT id, kind, category_id, target_account_id, periodicity, year_start_month, amount,
+        r#"SELECT id, kind, name, target_account_id, periodicity, year_start_month, amount,
                   rollover AS "rollover: bool", effective_from, effective_to, alert_thresholds, previous_version_id
            FROM budget_line ORDER BY effective_from, id"#
     )
-    .fetch_all(db)
+    .fetch_all(&mut *conn)
     .await?;
     rows.into_iter()
         .map(|r| {
+            let id = id_from_db(&r.id)?;
             Ok(LineRow {
-                id: id_from_db(&r.id)?,
+                id,
                 kind: enum_from_db(&r.kind)?,
-                category_id: opt_id_from_db(r.category_id.as_deref())?,
+                name: r.name,
+                category_ids: categories.remove(&id).unwrap_or_default(),
                 target_account_id: opt_id_from_db(r.target_account_id.as_deref())?,
                 periodicity: enum_from_db(&r.periodicity)?,
                 year_start_month: u32::try_from(r.year_start_month)?,
@@ -66,10 +78,10 @@ pub async fn lines(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<LineRow>> 
         .collect()
 }
 
-pub async fn upsert_line(db: impl SqliteExecutor<'_>, l: &LineRow) -> anyhow::Result<()> {
+/// Enregistre une version de ligne et ses catégories.
+pub async fn upsert_line(conn: &mut SqliteConnection, l: &LineRow) -> anyhow::Result<()> {
     let id = l.id.to_string();
     let kind = enum_to_db(&l.kind);
-    let category = l.category_id.map(|c| c.to_string());
     let target = l.target_account_id.map(|a| a.to_string());
     let periodicity = enum_to_db(&l.periodicity);
     let amount = l.amount.minor();
@@ -79,16 +91,16 @@ pub async fn upsert_line(db: impl SqliteExecutor<'_>, l: &LineRow) -> anyhow::Re
     let previous = l.previous_version_id.map(|p| p.to_string());
     let now = timestamp();
     sqlx::query!(
-        "INSERT INTO budget_line (id, kind, category_id, target_account_id, periodicity, year_start_month, amount, rollover,
+        "INSERT INTO budget_line (id, kind, name, target_account_id, periodicity, year_start_month, amount, rollover,
                                   effective_from, effective_to, alert_thresholds, previous_version_id, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?13)
-         ON CONFLICT (id) DO UPDATE SET year_start_month = excluded.year_start_month, amount = excluded.amount,
-                                        rollover = excluded.rollover, effective_from = excluded.effective_from,
-                                        effective_to = excluded.effective_to, alert_thresholds = excluded.alert_thresholds,
-                                        updated_at = excluded.updated_at",
+         ON CONFLICT (id) DO UPDATE SET name = excluded.name, year_start_month = excluded.year_start_month,
+                                        amount = excluded.amount, rollover = excluded.rollover,
+                                        effective_from = excluded.effective_from, effective_to = excluded.effective_to,
+                                        alert_thresholds = excluded.alert_thresholds, updated_at = excluded.updated_at",
         id,
         kind,
-        category,
+        l.name,
         target,
         periodicity,
         l.year_start_month,
@@ -100,8 +112,15 @@ pub async fn upsert_line(db: impl SqliteExecutor<'_>, l: &LineRow) -> anyhow::Re
         previous,
         now
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await?;
+    sqlx::query!("DELETE FROM budget_line_category WHERE budget_line_id = ?", id).execute(&mut *conn).await?;
+    for category in &l.category_ids {
+        let category = category.to_string();
+        sqlx::query!("INSERT INTO budget_line_category (budget_line_id, category_id) VALUES (?, ?)", id, category)
+            .execute(&mut *conn)
+            .await?;
+    }
     Ok(())
 }
 

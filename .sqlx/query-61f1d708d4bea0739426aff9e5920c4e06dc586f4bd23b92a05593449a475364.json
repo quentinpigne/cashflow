@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE OR IGNORE budget_line_category SET category_id = ?1\n         WHERE category_id = ?2 OR (?3 AND category_id IN (SELECT id FROM category WHERE parent_id = ?2))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "61f1d708d4bea0739426aff9e5920c4e06dc586f4bd23b92a05593449a475364"
+}

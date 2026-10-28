@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, pickCategory } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -32,6 +32,30 @@ test('E18 : modifier une ligne pour ce mois seulement (R-BUD-51)', async ({ page
   // Le mois suivant garde le montant habituel.
   await page.getByRole('button', { name: 'Mois suivant' }).click();
   await expect(page.getByRole('button', { name: 'Modifier Restaurants' })).toContainText('80,00');
+});
+
+test('E18 : ligne sur plusieurs catégories, changées à partir d’un mois (R-BUD-10)', async ({
+  page,
+}) => {
+  test.skip(isMobile(page), 'données partagées : modifié une seule fois, sur ordinateur');
+  await login(page);
+  await page.goto('/budget?mois=2026-12');
+  await page.getByRole('button', { name: 'Modifier Voiture' }).click();
+  const dialog = page.getByRole('dialog');
+  const chips = dialog.locator('mat-chip');
+  await expect(chips).toHaveText([/Carburant/, /Péage/]);
+  await pickCategory(page, dialog, 'Stationnement', 'Stationnement', false);
+  await expect(chips).toHaveCount(3);
+  await expect(dialog.getByText(/Nouvelles catégories à partir de décembre 2026/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('button', { name: 'Modifier Voiture' }).click();
+  await expect(chips).toHaveCount(3);
+  await dialog.getByRole('button', { name: 'Annuler' }).click();
+  // Le mois précédent garde ses deux catégories.
+  await page.getByRole('button', { name: 'Mois précédent' }).click();
+  await page.getByRole('button', { name: 'Modifier Voiture' }).click();
+  await expect(chips).toHaveCount(2);
 });
 
 test('E20 : créer un projet et y rattacher une transaction (BUD-06)', async ({ page }) => {

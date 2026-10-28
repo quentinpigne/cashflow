@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO budget_line (id, kind, name, target_account_id, periodicity, year_start_month, amount, rollover,\n                                  effective_from, effective_to, alert_thresholds, previous_version_id, created_at, updated_at)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?13)\n         ON CONFLICT (id) DO UPDATE SET name = excluded.name, year_start_month = excluded.year_start_month,\n                                        amount = excluded.amount, rollover = excluded.rollover,\n                                        effective_from = excluded.effective_from, effective_to = excluded.effective_to,\n                                        alert_thresholds = excluded.alert_thresholds, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "1ac77b11bb5562c52c0dee5d6257a8db119a6bd2adcd39ce21658a7c98a761a5"
+}

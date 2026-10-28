@@ -5,8 +5,9 @@ use cashflow_domain::shared::ids::{BudgetLineId, ProjectId};
 
 use crate::error::{AppResult, Problem};
 use crate::services::budgets::{
-    self, AmountChange, AttachInput, AttachResult, BudgetLineInput, BudgetLineVersion, LineSettings, MonthBudgetView,
-    MonthInput, MonthQuery, Notifications, ProjectInput, ProjectView, ReadInput, Suggestions, Thresholds,
+    self, AmountChange, AttachInput, AttachResult, BudgetLineInput, BudgetLineVersion, CategoriesChange, LineSettings,
+    MonthBudgetView, MonthInput, MonthQuery, Notifications, ProjectInput, ProjectView, ReadInput, Suggestions,
+    Thresholds,
 };
 use crate::state::AppState;
 
@@ -61,6 +62,20 @@ pub async fn change_amount(
     Json(input): Json<AmountChange>,
 ) -> AppResult<Json<BudgetLineVersion>> {
     Ok(Json(budgets::change_amount(&state.db, id, &input).await?))
+}
+
+/// Nouveau nom et nouvelles catégories à partir d'un mois : nouvelle version (R-BUD-10, R-BUD-51).
+#[utoipa::path(
+    post, operation_id = "changeBudgetCategories", path = "/budget/lines/{id}/categories", tag = "budgets",
+    params(("id" = BudgetLineId, Path)), request_body = CategoriesChange,
+    responses((status = 200, body = BudgetLineVersion), (status = 422, body = Problem))
+)]
+pub async fn change_categories(
+    State(state): State<AppState>,
+    Path(id): Path<BudgetLineId>,
+    Json(input): Json<CategoriesChange>,
+) -> AppResult<Json<BudgetLineVersion>> {
+    Ok(Json(budgets::change_categories(&state.db, id, &input).await?))
 }
 
 /// Remet le report à zéro à partir d'un mois (R-BUD-18).

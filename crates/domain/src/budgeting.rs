@@ -106,7 +106,8 @@ pub enum Periodicity {
 pub struct LineVersion<L, C, A> {
     pub id: L,
     pub kind: BudgetKind,
-    pub category: Option<C>,
+    /// Catégories d'une ligne de dépense ou de revenu (R-BUD-10) ; aucune pour un objectif d'épargne.
+    pub categories: Vec<C>,
     pub target_account: Option<A>,
     pub periodicity: Periodicity,
     /// Premier mois de l'année budgétaire d'une ligne annuelle (R-BUD-15).
@@ -156,7 +157,7 @@ pub struct Override<L> {
 }
 
 /// Valide les champs d'une version de ligne (modèle de données, R-BUD-10, R-BUD-19, R-BUD-30).
-pub fn check_line<L, C, A>(line: &LineVersion<L, C, A>) -> Result<(), DomainError> {
+pub fn check_line<L, C: Eq + Hash, A>(line: &LineVersion<L, C, A>) -> Result<(), DomainError> {
     if !line.amount.is_positive() {
         return Err(DomainError::BudgetAmountNotPositive);
     }
@@ -165,12 +166,14 @@ pub fn check_line<L, C, A>(line: &LineVersion<L, C, A>) -> Result<(), DomainErro
     }
     match line.kind {
         BudgetKind::Savings => {
-            if line.target_account.is_none() || line.category.is_some() || line.periodicity != Periodicity::Monthly {
+            if line.target_account.is_none() || !line.categories.is_empty() || line.periodicity != Periodicity::Monthly
+            {
                 return Err(DomainError::InvalidBudgetLine);
             }
         }
         BudgetKind::Expense | BudgetKind::Income => {
-            if line.category.is_none() || line.target_account.is_some() {
+            let distinct: std::collections::HashSet<&C> = line.categories.iter().collect();
+            if line.categories.is_empty() || distinct.len() != line.categories.len() || line.target_account.is_some() {
                 return Err(DomainError::InvalidBudgetLine);
             }
             if line.kind == BudgetKind::Income && line.rollover {
@@ -227,13 +230,13 @@ pub enum Destination<L> {
     Ignored,
 }
 
-/// Ligne la plus spécifique d'une catégorie : la sienne, sinon celle de sa parente (R-BUD-12).
+/// Ligne la plus spécifique d'une catégorie : celle qui la porte, sinon celle qui porte sa parente (R-BUD-12).
 pub fn most_specific<L: Copy, C: Copy + Eq + Hash, A>(
     lines: &[&LineVersion<L, C, A>],
     category: C,
     parent: Option<C>,
 ) -> Option<L> {
-    let find = |c: C| lines.iter().find(|l| l.kind != BudgetKind::Savings && l.category == Some(c)).map(|l| l.id);
+    let find = |c: C| lines.iter().find(|l| l.kind != BudgetKind::Savings && l.categories.contains(&c)).map(|l| l.id);
     find(category).or_else(|| parent.and_then(find))
 }
 
@@ -574,7 +577,7 @@ mod tests {
         LineVersion {
             id,
             kind: BudgetKind::Expense,
-            category: Some(category),
+            categories: vec![category],
             target_account: None,
             periodicity: Periodicity::Monthly,
             year_start_month: 1,
@@ -619,6 +622,38 @@ mod tests {
         let actual = |id| month.lines.iter().find(|l| l.line == id).unwrap().actual;
         assert_eq!(actual(10), eur(6_000));
         assert_eq!(actual(20), eur(4_000));
+    }
+
+    /// Critère d'acceptation de BUD-02 / R-BUD-10 : une ligne sur plusieurs catégories.
+    #[test]
+    fn r_bud_10_line_over_several_categories() {
+        const AUTO: u32 = 1;
+        const CARBURANT: u32 = 2;
+        const PEAGE: u32 = 3;
+        const ENTRETIEN: u32 = 4;
+        let car = LineVersion { categories: vec![CARBURANT, PEAGE], ..line(10, CARBURANT, 20_000, "2027-01") };
+        let lines = [car, line(20, AUTO, 10_000, "2027-01")];
+        let parents = HashMap::from([(CARBURANT, AUTO), (PEAGE, AUTO), (ENTRETIEN, AUTO)]);
+        let splits = [
+            spend("2027-03-05", -6_000, CARBURANT),
+            spend("2027-03-06", -1_500, PEAGE),
+            spend("2027-03-07", -9_000, ENTRETIEN),
+        ];
+        let data = BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents }.build();
+        let month = data.month(m("2027-03"));
+        let line = |id| month.lines.iter().find(|l| l.line == id).unwrap();
+        assert_eq!((line(10).actual, line(10).remaining()), (eur(7_500), eur(12_500)));
+        // Entretien n'est pas dans « Voiture » : il va à la ligne de sa parente (R-BUD-12).
+        assert_eq!(line(20).actual, eur(9_000));
+    }
+
+    #[test]
+    fn r_bud_10_line_categories_are_required_and_distinct() {
+        let empty = LineVersion { categories: Vec::new(), ..line(10, 1, 1_000, "2027-01") };
+        assert_eq!(check_line(&empty), Err(DomainError::InvalidBudgetLine));
+        let twice = LineVersion { categories: vec![1, 1], ..line(10, 1, 1_000, "2027-01") };
+        assert_eq!(check_line(&twice), Err(DomainError::InvalidBudgetLine));
+        assert_eq!(check_line(&LineVersion { categories: vec![1, 2], ..line(10, 1, 1_000, "2027-01") }), Ok(()));
     }
 
     /// Critère d'acceptation de BUD-04 / R-BUD-17.
@@ -706,7 +741,7 @@ mod tests {
         let goal = LineVersion {
             id: 10,
             kind: BudgetKind::Savings,
-            category: None,
+            categories: Vec::new(),
             target_account: Some(5),
             periodicity: Periodicity::Monthly,
             year_start_month: 1,

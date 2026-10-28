@@ -12,7 +12,7 @@ façon YNAB, ou hybride. Le point de décision du 2026-10-20 a fixé les besoins
 | Question | Réponse |
 |---|---|
 | Usage | Piloter pendant le mois **et** analyser après coup |
-| Granularité | Postes de budget = catégories d'analyse |
+| Granularité | Postes de budget = catégories d'analyse, un poste pouvant en regrouper plusieurs (« Voiture » : Carburant et Péage) |
 | Budgets projet multi-catégories | Oui, important |
 | Périodes | Mensuelle, annuelle, ponctuelle (projet) |
 | Dépense de projet dans le budget mensuel | Au choix, par projet |
@@ -31,20 +31,23 @@ façon YNAB, ou hybride. Le point de décision du 2026-10-20 a fixé les besoins
 2. **Enveloppes (YNAB)** — ❌ Double classement (catégorie + enveloppe) alors que postes et catégories
    sont identiques. ❌ La base zéro stricte n'est pas souhaitée.
 3. **Lignes par catégorie + projets explicites + objectifs d'épargne** — ✅ Un seul classement au
-   quotidien (la catégorie). Le projet n'est qu'une affectation **optionnelle** de la ventilation.
+   quotidien (la catégorie). Une ligne peut regrouper plusieurs catégories sans créer de second
+   classement : elle se déduit de la catégorie. Le projet n'est qu'une affectation **optionnelle** de la
+   ventilation.
    ✅ Le report par ligne apporte la souplesse des enveloppes là où on la veut.
 
 ## Décision
 
 Option 3 :
-- `BudgetLine` : catégorie ou compte cible, nature `EXPENSE` / `INCOME` / `SAVINGS`, périodicité
+- `BudgetLine` : une ou plusieurs catégories (avec un nom facultatif) ou un compte cible, nature
+  `EXPENSE` / `INCOME` / `SAVINGS`, périodicité
   `MONTHLY` / `YEARLY`, montant, report optionnel, période de validité (versions).
 - `BudgetOverride` : surcharge d'une ligne pour un mois ou une année budgétaire.
 - `Project` : budget ponctuel ; la ventilation porte un `project_id` optionnel ; un drapeau par projet
   l'exclut ou non des lignes de période.
 - `Account.include_in_budget` définit le périmètre.
 - Rattachement d'une ventilation à une ligne : implicite, par la **ligne la plus spécifique** de sa
-  catégorie (R-BUD-12).
+  catégorie (R-BUD-12). Une catégorie est dans au plus une ligne en vigueur (R-BUD-11).
 
 ## Conséquences
 

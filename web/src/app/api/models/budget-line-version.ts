@@ -13,12 +13,13 @@ import { Periodicity } from '../models/periodicity';
  */
 export interface BudgetLineVersion {
   amount_minor: number;
-  category_id?: (CategoryId | null);
+  category_ids: Array<CategoryId>;
   effective_from: string;
   effective_to?: (string | null);
   id: BudgetLineId;
   kind: BudgetKind;
   line_id: BudgetLineId;
+  name?: (string | null);
   overrides: Array<OverrideView>;
   periodicity: Periodicity;
   rollover: boolean;

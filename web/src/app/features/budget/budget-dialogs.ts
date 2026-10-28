@@ -25,10 +25,10 @@ import { DataVersion } from '../../core/data-version';
 import { currentMonth, formatMonthKey } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { parseMoney, toEditable } from '../../core/money';
-import { CategoryPicker } from '../../shared/category-picker';
 import { confirm } from '../../shared/confirm-dialog';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AccountsStore } from '../../shared/stores';
+import { AccountsStore, CategoriesStore } from '../../shared/stores';
+import { LineCategories } from './line-categories';
 
 const MONTH_NAMES = [
   'janvier',
@@ -57,6 +57,11 @@ function parseThresholds(first: string, second: string): number[] | null {
   return values;
 }
 
+/** Nom par défaut d'une ligne sur plusieurs catégories : leurs noms, sans le parent. */
+function lineName(store: CategoriesStore, ids: string[]): string {
+  return ids.map((id) => store.byId().get(id)?.name ?? '').join(' + ');
+}
+
 export interface LineCreateData {
   month: string;
   kind?: BudgetKind;
@@ -74,7 +79,7 @@ export interface LineCreateData {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    CategoryPicker,
+    LineCategories,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -102,11 +107,23 @@ export interface LineCreateData {
           </mat-select>
         </mat-form-field>
       } @else {
-        <app-category-picker
+        <app-line-categories
           [kind]="kind() === 'INCOME' ? 'INCOME' : 'EXPENSE'"
-          [value]="category()"
-          (valueChange)="category.set($event)"
+          [value]="categories()"
+          (valueChange)="categories.set($event)"
         />
+        @if (categories().length > 1) {
+          <mat-form-field>
+            <mat-label>Nom de la ligne</mat-label>
+            <input
+              matInput
+              maxlength="60"
+              [placeholder]="defaultName()"
+              [ngModel]="name()"
+              (ngModelChange)="name.set($event)"
+            />
+          </mat-form-field>
+        }
         <mat-button-toggle-group
           [value]="periodicity()"
           (change)="periodicity.set($event.value)"
@@ -176,12 +193,18 @@ export class LineCreateDialog {
   protected readonly data = inject<LineCreateData>(MAT_DIALOG_DATA);
   private readonly api = inject(BudgetsService);
   private readonly accounts = inject(AccountsStore);
+  private readonly categoriesStore = inject(CategoriesStore);
   private readonly ref = inject(MatDialogRef<LineCreateDialog>);
 
   protected readonly monthNames = MONTH_NAMES;
   protected readonly monthLabel = formatMonthKey(this.data.month).toLowerCase();
   protected readonly kind = signal<BudgetKind>(this.data.kind ?? 'EXPENSE');
-  protected readonly category = signal<string | null>(null);
+  protected readonly categories = signal<string[]>([]);
+  /** Nom d'une ligne sur plusieurs catégories (« Voiture ») ; vide, la ligne les énumère. */
+  protected readonly name = signal('');
+  protected readonly defaultName = computed(() =>
+    lineName(this.categoriesStore, this.categories()),
+  );
   protected readonly account = signal<string | null>(null);
   protected readonly periodicity = signal<Periodicity>('MONTHLY');
   protected readonly yearStart = signal(1);
@@ -199,8 +222,8 @@ export class LineCreateDialog {
 
   protected readonly valid = computed(() => {
     const amount = parseMoney(this.amount());
-    const target = this.kind() === 'SAVINGS' ? this.account() : this.category();
-    return amount !== null && amount > 0 && !!target;
+    const target = this.kind() === 'SAVINGS' ? !!this.account() : this.categories().length > 0;
+    return amount !== null && amount > 0 && target;
   });
 
   protected async save(): Promise<void> {
@@ -212,7 +235,8 @@ export class LineCreateDialog {
         this.api.createBudgetLine({
           body: {
             kind: this.kind(),
-            category_id: savings ? null : this.category(),
+            name: savings || this.categories().length < 2 ? null : this.name().trim() || null,
+            category_ids: savings ? [] : this.categories(),
             target_account_id: savings ? this.account() : null,
             periodicity: savings ? 'MONTHLY' : this.periodicity(),
             year_start_month: this.yearStart(),
@@ -250,6 +274,7 @@ export interface LineEditData {
     MatInputModule,
     MatRadioModule,
     MoneyPipe,
+    LineCategories,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -262,6 +287,31 @@ export interface LineEditData {
           Montant habituel : {{ line.amount_minor | money }}.
         }
       </p>
+      @if (line.kind !== 'SAVINGS') {
+        <app-line-categories
+          [kind]="line.kind === 'INCOME' ? 'INCOME' : 'EXPENSE'"
+          [value]="categories()"
+          (valueChange)="categories.set($event)"
+        />
+        @if (categories().length > 1) {
+          <mat-form-field>
+            <mat-label>Nom de la ligne</mat-label>
+            <input
+              matInput
+              maxlength="60"
+              [placeholder]="defaultName()"
+              [ngModel]="name()"
+              (ngModelChange)="name.set($event)"
+            />
+          </mat-form-field>
+        }
+        @if (categoriesChanged()) {
+          <p class="muted small">
+            Nouvelles catégories à partir de {{ monthLabel }} : les mois précédents gardent leur
+            réel, et le report repart de zéro.
+          </p>
+        }
+      }
       <mat-form-field>
         <mat-label>{{ line.periodicity === 'YEARLY' ? 'Montant par an' : 'Montant' }}</mat-label>
         <input
@@ -395,6 +445,7 @@ export class LineEditDialog {
   private readonly data = inject<LineEditData>(MAT_DIALOG_DATA);
   private readonly api = inject(BudgetsService);
   private readonly dialog = inject(MatDialog);
+  private readonly categoriesStore = inject(CategoriesStore);
   private readonly ref = inject(MatDialogRef<LineEditDialog>);
 
   protected readonly line = this.data.line;
@@ -403,6 +454,20 @@ export class LineEditDialog {
   protected readonly past = this.data.month < currentMonth();
   private readonly initialAmount = this.line.override_minor ?? this.line.amount_minor;
 
+  protected readonly categories = signal<string[]>(this.line.category_ids);
+  protected readonly name = signal(this.line.named ? this.line.name : '');
+  protected readonly defaultName = computed(() =>
+    lineName(this.categoriesStore, this.categories()),
+  );
+  /** Nom envoyé : seulement pour une ligne sur plusieurs catégories. */
+  private readonly sentName = computed(() =>
+    this.categories().length < 2 ? null : this.name().trim() || null,
+  );
+  protected readonly categoriesChanged = computed(
+    () =>
+      JSON.stringify(this.categories()) !== JSON.stringify(this.line.category_ids) ||
+      this.sentName() !== (this.line.named ? this.line.name : null),
+  );
   protected readonly amount = signal(toEditable(this.initialAmount));
   protected readonly scope = signal<AmountScope>('FROM_MONTH');
   protected readonly rollover = signal(this.line.rollover);
@@ -436,6 +501,7 @@ export class LineEditDialog {
   protected readonly valid = computed(() => {
     const amount = parseMoney(this.amount());
     if (amount === null || amount < 0) return false;
+    if (this.line.kind !== 'SAVINGS' && this.categories().length === 0) return false;
     return this.alertMode() !== 'CUSTOM' || parseThresholds(this.first(), this.second()) !== null;
   });
 
@@ -470,6 +536,19 @@ export class LineEditDialog {
           this.api.updateBudgetLine({
             id: this.line.id,
             body: { rollover: this.rollover(), alert_thresholds: thresholds },
+          }),
+        );
+      }
+      // Puis les catégories : la nouvelle version du mois reçoit ensuite le montant.
+      if (this.categoriesChanged()) {
+        await firstValueFrom(
+          this.api.changeBudgetCategories({
+            id: this.line.id,
+            body: {
+              month: this.data.month,
+              name: this.sentName(),
+              category_ids: this.categories(),
+            },
           }),
         );
       }

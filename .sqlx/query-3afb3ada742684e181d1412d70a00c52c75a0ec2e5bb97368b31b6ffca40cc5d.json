@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM budget_line_category\n         WHERE category_id = ?1 OR (?2 AND category_id IN (SELECT id FROM category WHERE parent_id = ?1))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3afb3ada742684e181d1412d70a00c52c75a0ec2e5bb97368b31b6ffca40cc5d"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO budget_line_category (budget_line_id, category_id) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "46e6cdb4ca995baa88d721beb2ea5003a6bcd5d6ce3586065a6c166f7252c5d9"
+}

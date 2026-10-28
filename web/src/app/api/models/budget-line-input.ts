@@ -8,13 +8,22 @@ import { Periodicity } from '../models/periodicity';
 export interface BudgetLineInput {
   alert_thresholds?: (Array<number> | null);
   amount_minor: number;
-  category_id?: (CategoryId | null);
+
+  /**
+   * Catégories d'une ligne de dépense ou de revenu, au moins une (R-BUD-10).
+   */
+  category_ids?: Array<CategoryId>;
 
   /**
    * Premier mois, `AAAA-MM`.
    */
   from: string;
   kind: BudgetKind;
+
+  /**
+   * Nom de la ligne, utile quand elle porte plusieurs catégories (« Voiture »).
+   */
+  name?: (string | null);
   periodicity?: Periodicity;
   rollover?: boolean;
   target_account_id?: (AccountId | null);

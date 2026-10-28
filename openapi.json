@@ -1903,6 +1903,55 @@
         }
       }
     },
+    "/api/v1/budget/lines/{id}/categories": {
+      "post": {
+        "tags": [
+          "budgets"
+        ],
+        "summary": "Nouveau nom et nouvelles catégories à partir d'un mois : nouvelle version (R-BUD-10, R-BUD-51).",
+        "operationId": "changeBudgetCategories",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/BudgetLineId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoriesChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetLineVersion"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/budget/lines/{id}/end": {
       "post": {
         "tags": [
@@ -8386,15 +8435,12 @@
             "type": "integer",
             "format": "int64"
           },
-          "category_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CategoryId"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            },
+            "description": "Catégories d'une ligne de dépense ou de revenu, au moins une (R-BUD-10)."
           },
           "from": {
             "type": "string",
@@ -8402,6 +8448,13 @@
           },
           "kind": {
             "$ref": "#/components/schemas/BudgetKind"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nom de la ligne, utile quand elle porte plusieurs catégories (« Voiture »)."
           },
           "periodicity": {
             "$ref": "#/components/schemas/Periodicity"
@@ -8434,7 +8487,9 @@
           "line_id",
           "kind",
           "periodicity",
+          "category_ids",
           "name",
+          "named",
           "year_start_month",
           "amount_minor",
           "planned_minor",
@@ -8480,15 +8535,12 @@
             "type": "integer",
             "format": "int64"
           },
-          "category_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CategoryId"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            },
+            "description": "Catégories de la ligne (R-BUD-10) ; aucune pour un objectif d'épargne."
           },
           "effective_from": {
             "type": "string"
@@ -8511,7 +8563,12 @@
             "description": "Première version de la ligne : identité stable d'une version à l'autre."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Nom donné à la ligne, sinon celui de sa catégorie (ou de ses catégories) ou de son compte cible."
+          },
+          "named": {
+            "type": "boolean",
+            "description": "Le nom a été donné à la ligne."
           },
           "override_minor": {
             "type": [
@@ -8526,7 +8583,7 @@
               "string",
               "null"
             ],
-            "description": "Catégorie parente, pour l'affichage."
+            "description": "Catégorie parente d'une ligne sur une seule catégorie, sans nom donné, pour l'affichage."
           },
           "periodicity": {
             "$ref": "#/components/schemas/Periodicity"
@@ -8568,6 +8625,7 @@
           "line_id",
           "kind",
           "periodicity",
+          "category_ids",
           "amount_minor",
           "rollover",
           "effective_from",
@@ -8578,15 +8636,11 @@
             "type": "integer",
             "format": "int64"
           },
-          "category_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CategoryId"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
           },
           "effective_from": {
             "type": "string"
@@ -8605,6 +8659,12 @@
           },
           "line_id": {
             "$ref": "#/components/schemas/BudgetLineId"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "overrides": {
             "type": "array",
@@ -9140,6 +9200,31 @@
             ],
             "format": "int64",
             "description": "Dépense variable moyenne d'un mois, si elle est incluse (R-PRJ-11)."
+          }
+        }
+      },
+      "CategoriesChange": {
+        "type": "object",
+        "description": "Nom et catégories d'une ligne, à partir d'un mois : nouvelle version (R-BUD-10, R-BUD-51).",
+        "required": [
+          "month",
+          "category_ids"
+        ],
+        "properties": {
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            }
+          },
+          "month": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

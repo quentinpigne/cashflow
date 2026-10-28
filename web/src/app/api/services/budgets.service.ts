@@ -18,6 +18,8 @@ import { budgetSuggestions } from '../fn/budgets/budget-suggestions';
 import { BudgetSuggestions$Params } from '../fn/budgets/budget-suggestions';
 import { changeBudgetAmount } from '../fn/budgets/change-budget-amount';
 import { ChangeBudgetAmount$Params } from '../fn/budgets/change-budget-amount';
+import { changeBudgetCategories } from '../fn/budgets/change-budget-categories';
+import { ChangeBudgetCategories$Params } from '../fn/budgets/change-budget-categories';
 import { createBudgetLine } from '../fn/budgets/create-budget-line';
 import { CreateBudgetLine$Params } from '../fn/budgets/create-budget-line';
 import { createProject } from '../fn/budgets/create-project';
@@ -226,6 +228,41 @@ export class BudgetsService extends BaseService {
    */
   changeBudgetAmount(params: ChangeBudgetAmount$Params, context?: HttpContext): Observable<BudgetLineVersion> {
     const resp = this.changeBudgetAmount$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BudgetLineVersion>): BudgetLineVersion => r.body)
+    );
+  }
+
+  /** Path part for operation `changeBudgetCategories()` */
+  static readonly ChangeBudgetCategoriesPath = '/api/v1/budget/lines/{id}/categories';
+
+  /**
+   * Nouveau nom et nouvelles catégories à partir d'un mois : nouvelle version (R-BUD-10, R-BUD-51).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `changeBudgetCategories()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  changeBudgetCategories$Response(params: ChangeBudgetCategories$Params, context?: HttpContext): Observable<StrictHttpResponse<BudgetLineVersion>> {
+    const obs = changeBudgetCategories(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Nouveau nom et nouvelles catégories à partir d'un mois : nouvelle version (R-BUD-10, R-BUD-51).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `changeBudgetCategories$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  changeBudgetCategories(params: ChangeBudgetCategories$Params, context?: HttpContext): Observable<BudgetLineVersion> {
+    const resp = this.changeBudgetCategories$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<BudgetLineVersion>): BudgetLineVersion => r.body)
     );

@@ -10,7 +10,7 @@ Le budget combine trois mécanismes, qui reposent tous sur les ventilations (ADR
 
 | Mécanisme | Ce qu'il suit | Rattachement |
 |---|---|---|
-| **Ligne de budget** (`BudgetLine`) | Une catégorie de dépense ou de revenu, par **mois** ou par **an** | Implicite, par la catégorie de la ventilation |
+| **Ligne de budget** (`BudgetLine`) | Une ou plusieurs catégories de dépense ou de revenu (« Voiture » : Carburant et Péage), par **mois** ou par **an** | Implicite, par la catégorie de la ventilation |
 | **Objectif d'épargne** (`BudgetLine` de nature `SAVINGS`) | Les virements vers **un compte d'épargne** donné, par mois | Implicite, par les virements internes vers ce compte |
 | **Projet** (`Project`) | Un budget ponctuel, multi-catégories et multi-mois (vacances, travaux) | **Explicite** : la ventilation porte `project_id` |
 
@@ -66,13 +66,19 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 
 ### Lignes de dépense et de revenu
 
-- **R-BUD-10** — Une ligne de budget porte sur **une** catégorie, avec une nature (`EXPENSE` ou `INCOME`,
-  égale à celle de la catégorie), une périodicité (`MONTHLY` ou `YEARLY`) et un montant prévu positif.
-- **R-BUD-11** — À une date donnée, une catégorie a **au plus une** ligne en vigueur, quelle que soit sa
-  périodicité.
-- **R-BUD-12** — **Ligne la plus spécifique** : une ventilation alimente la ligne de sa propre catégorie
-  si elle existe, sinon celle de sa catégorie parente si elle existe, sinon elle est « hors budget ».
-  Une ligne sur « Alimentation » capte donc les sous-catégories qui n'ont pas leur propre ligne.
+- **R-BUD-10** — Une ligne de budget porte sur **une ou plusieurs** catégories, toutes de sa nature
+  (`EXPENSE` ou `INCOME`), avec une périodicité (`MONTHLY` ou `YEARLY`) et un montant prévu positif. Le
+  montant, le report, les surcharges et les alertes valent pour la ligne entière : une dépense dans l'une
+  de ses catégories prend sur le même montant. Une ligne sur plusieurs catégories peut recevoir un nom
+  (« Voiture ») ; sans nom, elle porte celui de sa catégorie, ou énumère ses catégories. Changer les
+  catégories ou le nom d'une ligne crée une nouvelle version à partir d'un mois (R-BUD-51) : les mois
+  passés gardent leur réel.
+- **R-BUD-11** — À une date donnée, une catégorie appartient **au plus à une** ligne en vigueur, quelle
+  que soit sa périodicité.
+- **R-BUD-12** — **Ligne la plus spécifique** : une ventilation alimente la ligne qui porte sa propre
+  catégorie si elle existe, sinon celle qui porte sa catégorie parente si elle existe, sinon elle est
+  « hors budget ». Une ligne sur « Alimentation » capte donc les sous-catégories qui ne sont dans aucune
+  ligne.
 - **R-BUD-13** — Réel d'une ligne de dépense = −Σ des ventilations rattachées sur la période. Les
   remboursements (ventilations positives) viennent en déduction (R-TRX-13). Réel d'une ligne de
   revenu = +Σ des ventilations.
@@ -141,7 +147,8 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 - **R-BUD-50** — Le budget est un ensemble de **versions de lignes**, chacune valable de
   `effective_from` (un mois) à `effective_to` (un mois, optionnel). Le budget d'un mois M est
   l'ensemble des versions en vigueur en M, auxquelles on applique les surcharges de M.
-- **R-BUD-51** — Modifier le montant d'une ligne propose deux portées :
+- **R-BUD-51** — Modifier le montant d'une ligne propose deux portées (ses catégories et son nom, seulement
+  la première, R-BUD-10) :
   - **« À partir de ce mois »** : la version courante est close au mois M−1 et une nouvelle version
     démarre en M. Les mois passés ne changent pas.
   - **« Ce mois seulement »** : une surcharge (`BudgetOverride`) est créée pour M (ou pour l'année
@@ -192,6 +199,13 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 - Étant donné une ligne mensuelle « Alimentation » de 800 € et une ligne « Restaurants » (sous-catégorie
   d'Alimentation) de 150 €, quand je dépense 60 € en « Supermarché » et 40 € en « Restaurants », alors la
   ligne Alimentation affiche 60 € de réel et la ligne Restaurants 40 €.
+
+**BUD-02 / R-BUD-10 — ligne sur plusieurs catégories**
+- Étant donné une ligne mensuelle « Voiture » de 200 € sur Carburant et Péage, et une ligne « Auto &
+  transports » de 100 €, quand je dépense 60 € en Carburant, 15 € en Péage et 90 € en Entretien, alors
+  « Voiture » affiche 75 € de réel et 125 € de reste, et « Auto & transports » 90 €.
+- Étant donné cette ligne « Voiture », quand je crée une ligne sur Péage seul, alors elle est refusée
+  (R-BUD-11).
 
 **BUD-04 / R-BUD-17 — report**
 - Étant donné une ligne « Supermarché » de 600 € avec report depuis janvier, un réel de 550 € en janvier

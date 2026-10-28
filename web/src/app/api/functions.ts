@@ -157,6 +157,8 @@ export type { UpdateBudgetLine$Params as UpdateBudgetLine$Params } from './fn/bu
 export { updateBudgetLine as updateBudgetLine } from './fn/budgets/update-budget-line';
 export type { ChangeBudgetAmount$Params as ChangeBudgetAmount$Params } from './fn/budgets/change-budget-amount';
 export { changeBudgetAmount as changeBudgetAmount } from './fn/budgets/change-budget-amount';
+export type { ChangeBudgetCategories$Params as ChangeBudgetCategories$Params } from './fn/budgets/change-budget-categories';
+export { changeBudgetCategories as changeBudgetCategories } from './fn/budgets/change-budget-categories';
 export type { EndBudgetLine$Params as EndBudgetLine$Params } from './fn/budgets/end-budget-line';
 export { endBudgetLine as endBudgetLine } from './fn/budgets/end-budget-line';
 export type { DeleteBudgetOverride$Params as DeleteBudgetOverride$Params } from './fn/budgets/delete-budget-override';

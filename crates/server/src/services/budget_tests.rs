@@ -19,7 +19,8 @@ use crate::db::Db;
 fn line(kind: BudgetKind, category: CategoryId, amount: i64, from: &str) -> BudgetLineInput {
     BudgetLineInput {
         kind,
-        category_id: Some(category),
+        name: None,
+        category_ids: vec![category],
         target_account_id: None,
         periodicity: Periodicity::Monthly,
         year_start_month: 1,
@@ -128,7 +129,8 @@ async fn bud_07_savings_goal_follows_internal_transfers() {
     let livret = account(&db, "Livret A", AccountKind::LivretA, 0).await;
     let goal = BudgetLineInput {
         kind: BudgetKind::Savings,
-        category_id: None,
+        name: None,
+        category_ids: Vec::new(),
         target_account_id: Some(livret),
         ..line(BudgetKind::Savings, CategoryId::new(), 20_000, "2026-01")
     };
@@ -328,4 +330,54 @@ async fn r_trx_24_excluded_category_is_neither_income_nor_expense() {
     let dashboard = super::dashboard::get(&db, d(TODAY)).await.unwrap();
     assert_eq!(dashboard.month.expenses_minor, 6_000);
     assert_eq!(dashboard.uncategorized.total, 0);
+}
+
+#[tokio::test]
+async fn r_bud_10_r_bud_11_line_over_several_categories() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let auto = category(&db, "Auto B", CategoryKind::Expense, None).await;
+    let fuel = category(&db, "Carburant B", CategoryKind::Expense, Some(auto)).await;
+    let toll = category(&db, "Péage B", CategoryKind::Expense, Some(auto)).await;
+    let parking = category(&db, "Stationnement B", CategoryKind::Expense, Some(auto)).await;
+    let car = BudgetLineInput {
+        name: Some(" Voiture ".into()),
+        category_ids: vec![fuel, toll],
+        ..line(BudgetKind::Expense, fuel, 20_000, "2026-01")
+    };
+    let created = budgets::create_line(&db, &car).await.unwrap();
+    assert_eq!(created.name.as_deref(), Some("Voiture"));
+    for (date, amount, category) in [
+        ("2026-03-05", -6_000, fuel),
+        ("2026-03-06", -1_500, toll),
+        ("2026-03-07", -800, parking),
+        ("2026-04-02", -900, parking),
+    ] {
+        transactions::create(&db, &tx(checking, date, amount, Some(category))).await.unwrap();
+    }
+    let march = view(&db, "2026-03").await;
+    assert_eq!(actual(&march, "Voiture"), 7_500);
+    assert_eq!(march.lines[0].remaining_minor, 12_500);
+    assert_eq!(march.off_budget.iter().map(|l| l.amount_minor).collect::<Vec<_>>(), [800]);
+
+    // R-BUD-11 : une catégorie appartient au plus à une ligne en vigueur.
+    let toll_alone = budgets::create_line(&db, &line(BudgetKind::Expense, toll, 3_000, "2026-03")).await;
+    assert_eq!(domain_error(toll_alone), DomainError::BudgetLineOverlap);
+
+    // Stationnement rejoint la ligne à partir d'avril : mars ne change pas.
+    let change = budgets::CategoriesChange {
+        month: "2026-04".into(),
+        name: Some("Voiture".into()),
+        category_ids: vec![fuel, toll, parking],
+    };
+    budgets::change_categories(&db, created.id, &change).await.unwrap();
+    assert_eq!(actual(&view(&db, "2026-03").await, "Voiture"), 7_500);
+    assert_eq!(actual(&view(&db, "2026-04").await, "Voiture"), 900);
+
+    // Fusionner Péage dans Carburant : la ligne garde un seul lien vers Carburant.
+    super::categories::merge(&db, toll, &super::categories::MergeInput { target_id: fuel }).await.unwrap();
+    let versions = budgets::versions(&db).await.unwrap();
+    assert!(versions.iter().all(|v| v.category_ids.iter().filter(|c| **c == fuel).count() == 1));
+    assert!(versions.iter().all(|v| !v.category_ids.contains(&toll)));
+    assert_eq!(actual(&view(&db, "2026-03").await, "Voiture"), 7_500);
 }

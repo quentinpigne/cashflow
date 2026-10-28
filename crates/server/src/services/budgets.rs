@@ -53,10 +53,14 @@ pub struct BudgetLineMonth {
     pub line_id: BudgetLineId,
     pub kind: BudgetKind,
     pub periodicity: Periodicity,
-    pub category_id: Option<CategoryId>,
+    /// Catégories de la ligne (R-BUD-10) ; aucune pour un objectif d'épargne.
+    pub category_ids: Vec<CategoryId>,
     pub target_account_id: Option<AccountId>,
+    /// Nom donné à la ligne, sinon celui de sa catégorie (ou de ses catégories) ou de son compte cible.
     pub name: String,
-    /// Catégorie parente, pour l'affichage.
+    /// Le nom a été donné à la ligne.
+    pub named: bool,
+    /// Catégorie parente d'une ligne sur une seule catégorie, sans nom donné, pour l'affichage.
     pub parent_name: Option<String>,
     pub year_start_month: u32,
     /// Montant de la version (mensuel ou annuel).
@@ -117,7 +121,8 @@ pub struct BudgetLineVersion {
     pub line_id: BudgetLineId,
     pub kind: BudgetKind,
     pub periodicity: Periodicity,
-    pub category_id: Option<CategoryId>,
+    pub name: Option<String>,
+    pub category_ids: Vec<CategoryId>,
     pub target_account_id: Option<AccountId>,
     pub amount_minor: i64,
     pub rollover: bool,
@@ -135,7 +140,12 @@ pub struct OverrideView {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct BudgetLineInput {
     pub kind: BudgetKind,
-    pub category_id: Option<CategoryId>,
+    /// Nom de la ligne, utile quand elle porte plusieurs catégories (« Voiture »).
+    #[serde(default)]
+    pub name: Option<String>,
+    /// Catégories d'une ligne de dépense ou de revenu, au moins une (R-BUD-10).
+    #[serde(default)]
+    pub category_ids: Vec<CategoryId>,
     pub target_account_id: Option<AccountId>,
     #[serde(default = "monthly")]
     pub periodicity: Periodicity,
@@ -173,6 +183,15 @@ pub struct AmountChange {
     pub month: String,
     pub amount_minor: i64,
     pub scope: AmountScope,
+}
+
+/// Nom et catégories d'une ligne, à partir d'un mois : nouvelle version (R-BUD-10, R-BUD-51).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CategoriesChange {
+    pub month: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    pub category_ids: Vec<CategoryId>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -224,7 +243,7 @@ fn version(row: &LineRow) -> LineVersion<BudgetLineId, CategoryId, AccountId> {
     LineVersion {
         id: row.id,
         kind: row.kind,
-        category: row.category_id,
+        categories: row.category_ids.clone(),
         target_account: row.target_account_id,
         periodicity: row.periodicity,
         year_start_month: row.year_start_month,
@@ -301,7 +320,7 @@ struct Loaded {
 
 impl Loaded {
     async fn load(db: &Db, month: Month) -> AppResult<Self> {
-        let rows = db::budgets::lines(&db.read).await?;
+        let rows = db::budgets::lines(&mut *db.read.acquire().await?).await?;
         let overrides = db::budgets::overrides(&db.read).await?;
         // Les reports remontent au début de chaque version ; les lignes annuelles, au début de leur année.
         let start = rows
@@ -403,13 +422,21 @@ async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetVie
         .iter()
         .filter_map(|l| {
             let row = rows.get(&l.line)?;
-            let (name, parent_name) = match (row.category_id, row.target_account_id) {
-                (Some(c), _) => {
-                    let (name, parent) = names.get(&c).cloned().unwrap_or_default();
+            let (name, parent_name) = match (&row.name, row.category_ids.as_slice(), row.target_account_id) {
+                (Some(name), _, _) => (name.clone(), None),
+                (None, [c], _) => {
+                    let (name, parent) = names.get(c).cloned().unwrap_or_default();
                     (name, parent.and_then(|p| names.get(&p).map(|n| n.0.clone())))
                 }
-                (None, Some(a)) => (accounts.get(&a).cloned().unwrap_or_default(), None),
-                (None, None) => (String::new(), None),
+                (None, [], Some(a)) => (accounts.get(&a).cloned().unwrap_or_default(), None),
+                (None, categories, _) => (
+                    categories
+                        .iter()
+                        .map(|c| names.get(c).map(|n| n.0.as_str()).unwrap_or_default())
+                        .collect::<Vec<_>>()
+                        .join(" + "),
+                    None,
+                ),
             };
             let period = match row.periodicity {
                 Periodicity::Monthly => month,
@@ -421,9 +448,10 @@ async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetVie
                 line_id: roots.get(&row.id).copied().unwrap_or(row.id),
                 kind: row.kind,
                 periodicity: row.periodicity,
-                category_id: row.category_id,
+                category_ids: row.category_ids.clone(),
                 target_account_id: row.target_account_id,
                 name,
+                named: row.name.is_some(),
                 parent_name,
                 year_start_month: row.year_start_month,
                 amount_minor: row.amount.minor(),
@@ -496,7 +524,7 @@ async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetVie
 
 /// Toutes les versions de lignes, avec leurs surcharges (historique, R-BUD-53).
 pub async fn versions(db: &Db) -> AppResult<Vec<BudgetLineVersion>> {
-    let rows = db::budgets::lines(&db.read).await?;
+    let rows = db::budgets::lines(&mut *db.read.acquire().await?).await?;
     let overrides = db::budgets::overrides(&db.read).await?;
     let roots = roots(&rows);
     Ok(rows
@@ -506,7 +534,8 @@ pub async fn versions(db: &Db) -> AppResult<Vec<BudgetLineVersion>> {
             line_id: roots.get(&r.id).copied().unwrap_or(r.id),
             kind: r.kind,
             periodicity: r.periodicity,
-            category_id: r.category_id,
+            name: r.name.clone(),
+            category_ids: r.category_ids.clone(),
             target_account_id: r.target_account_id,
             amount_minor: r.amount.minor(),
             rollover: r.rollover,
@@ -530,12 +559,12 @@ fn overlaps(a: &LineRow, b: &LineRow) -> bool {
     a.effective_from <= b_to && b.effective_from <= a_to
 }
 
-/// R-BUD-11 : une catégorie (ou un compte cible) a au plus une ligne en vigueur à la fois.
+/// R-BUD-11 : une catégorie (ou un compte cible) appartient au plus à une ligne en vigueur à la fois.
 fn check_overlap(rows: &[LineRow], line: &LineRow) -> AppResult<()> {
     let same_target = |r: &LineRow| {
         r.id != line.id
             && r.id != line.previous_version_id.unwrap_or(line.id)
-            && ((line.category_id.is_some() && r.category_id == line.category_id)
+            && (r.category_ids.iter().any(|c| line.category_ids.contains(c))
                 || (line.target_account_id.is_some() && r.target_account_id == line.target_account_id))
     };
     if rows.iter().filter(|r| same_target(r)).any(|r| overlaps(r, line)) {
@@ -548,7 +577,8 @@ pub async fn create_line(db: &Db, input: &BudgetLineInput) -> AppResult<BudgetLi
     let row = LineRow {
         id: BudgetLineId::new(),
         kind: input.kind,
-        category_id: input.category_id,
+        name: line_name(input.name.as_deref())?,
+        category_ids: input.category_ids.clone(),
         target_account_id: input.target_account_id,
         periodicity: input.periodicity,
         year_start_month: input.year_start_month,
@@ -562,14 +592,7 @@ pub async fn create_line(db: &Db, input: &BudgetLineInput) -> AppResult<BudgetLi
     if !(1..=12).contains(&row.year_start_month) {
         return Err(AppError::invalid_field("INVALID_MONTH", "year_start_month", "mois entre 1 et 12"));
     }
-    budgeting::check_line(&version(&row))?;
-    if let Some(category) = row.category_id {
-        let category = db::categories::find(&db.read, category).await?.ok_or(AppError::NotFound("catégorie"))?;
-        let expected = if row.kind == BudgetKind::Income { CategoryKind::Income } else { CategoryKind::Expense };
-        if category.kind != expected {
-            return Err(DomainError::InvalidBudgetLine.into());
-        }
-    }
+    check_categories(db, &row).await?;
     if let Some(account) = row.target_account_id {
         let account = db::accounts::find(&db.read, account).await?.ok_or(AppError::NotFound("compte"))?;
         if !matches!(account.kind.family(), AccountFamily::FixedSavings | AccountFamily::VariableSavings) {
@@ -581,11 +604,36 @@ pub async fn create_line(db: &Db, input: &BudgetLineInput) -> AppResult<BudgetLi
         }
     }
     let mut tx = db.write.begin().await?;
-    let rows = db::budgets::lines(&mut *tx).await?;
+    let rows = db::budgets::lines(&mut tx).await?;
     check_overlap(&rows, &row)?;
-    db::budgets::upsert_line(&mut *tx, &row).await?;
+    db::budgets::upsert_line(&mut tx, &row).await?;
     tx.commit().await?;
     one_version(db, row.id).await
+}
+
+/// Nom d'une ligne : absent ou vide, la ligne porte le nom de sa catégorie.
+fn line_name(value: Option<&str>) -> AppResult<Option<String>> {
+    let Some(name) = value.map(str::trim).filter(|n| !n.is_empty()) else { return Ok(None) };
+    if name.chars().count() > 60 {
+        return Err(AppError::invalid_field("TOO_LONG", "name", "60 caractères au plus"));
+    }
+    Ok(Some(name.to_owned()))
+}
+
+/// Champs de la ligne (R-BUD-10), et catégories de la nature de la ligne. Un objectif d'épargne n'a pas de nom.
+async fn check_categories(db: &Db, row: &LineRow) -> AppResult<()> {
+    budgeting::check_line(&version(row))?;
+    if row.kind == BudgetKind::Savings && row.name.is_some() {
+        return Err(DomainError::InvalidBudgetLine.into());
+    }
+    let expected = if row.kind == BudgetKind::Income { CategoryKind::Income } else { CategoryKind::Expense };
+    for category in &row.category_ids {
+        let category = db::categories::find(&db.read, *category).await?.ok_or(AppError::NotFound("catégorie"))?;
+        if category.kind != expected {
+            return Err(DomainError::InvalidBudgetLine.into());
+        }
+    }
+    Ok(())
 }
 
 async fn one_version(db: &Db, id: BudgetLineId) -> AppResult<BudgetLineVersion> {
@@ -607,27 +655,26 @@ fn version_at(rows: &[LineRow], id: BudgetLineId, month: Month) -> AppResult<Lin
     })
 }
 
-/// Démarre une nouvelle version au mois `month` : la version courante est close au mois précédent
-/// (R-BUD-51, R-BUD-18). Ses surcharges postérieures passent à la nouvelle version.
+/// Démarre une nouvelle version au mois `month`, aux champs de `changed` (montant, nom, catégories) : la
+/// version courante est close au mois précédent (R-BUD-51, R-BUD-18). Ses surcharges postérieures passent à la
+/// nouvelle version.
 async fn new_version(
     conn: &mut sqlx::SqliteConnection,
     current: &LineRow,
     month: Month,
-    amount: Money,
+    changed: LineRow,
 ) -> AppResult<BudgetLineId> {
     if current.effective_from == month {
-        let row = LineRow { amount, ..current.clone() };
-        db::budgets::upsert_line(&mut *conn, &row).await?;
-        return Ok(row.id);
+        db::budgets::upsert_line(&mut *conn, &changed).await?;
+        return Ok(changed.id);
     }
     let closed = LineRow { effective_to: Some(month.previous()), ..current.clone() };
     let next = LineRow {
         id: BudgetLineId::new(),
-        amount,
         effective_from: month,
         effective_to: current.effective_to,
         previous_version_id: Some(current.id),
-        ..current.clone()
+        ..changed
     };
     db::budgets::upsert_line(&mut *conn, &closed).await?;
     db::budgets::upsert_line(&mut *conn, &next).await?;
@@ -645,7 +692,7 @@ pub async fn change_amount(db: &Db, id: BudgetLineId, input: &AmountChange) -> A
     let result = match input.scope {
         AmountScope::FromMonth => {
             budgeting::check_line(&LineVersion { amount, ..version(&current) })?;
-            new_version(&mut tx, &current, month, amount).await?
+            new_version(&mut tx, &current, month, LineRow { amount, ..current.clone() }).await?
         }
         AmountScope::ThisMonth => {
             if amount.is_negative() {
@@ -667,6 +714,27 @@ pub async fn change_amount(db: &Db, id: BudgetLineId, input: &AmountChange) -> A
     one_version(db, result).await
 }
 
+/// Change le nom et les catégories d'une ligne à partir d'un mois : nouvelle version, les mois passés gardent
+/// leur réel (R-BUD-10, R-BUD-51). Le report repart de zéro, comme pour toute nouvelle version (R-BUD-18).
+pub async fn change_categories(db: &Db, id: BudgetLineId, input: &CategoriesChange) -> AppResult<BudgetLineVersion> {
+    let month = parse_month(&input.month)?;
+    let mut tx = db.write.begin().await?;
+    let (rows, _) = find_line(&mut tx, id).await?;
+    let current = version_at(&rows, id, month)?;
+    let changed = LineRow {
+        name: line_name(input.name.as_deref())?,
+        category_ids: input.category_ids.clone(),
+        ..current.clone()
+    };
+    check_categories(db, &changed).await?;
+    // La nouvelle version prend la suite de la courante : seules les autres lignes comptent (R-BUD-11).
+    let candidate = LineRow { effective_from: month, previous_version_id: Some(current.id), ..changed.clone() };
+    check_overlap(&rows, &candidate)?;
+    let result = new_version(&mut tx, &current, month, changed).await?;
+    tx.commit().await?;
+    one_version(db, result).await
+}
+
 /// Supprime la surcharge d'une période.
 pub async fn delete_override(db: &Db, id: BudgetLineId, period: &str) -> AppResult<()> {
     db::budgets::delete_override(&db.write, id, parse_month(period)?).await?;
@@ -683,7 +751,7 @@ pub async fn update_settings(db: &Db, id: BudgetLineId, input: &LineSettings) ->
         ..row
     };
     budgeting::check_line(&version(&row))?;
-    db::budgets::upsert_line(&mut *tx, &row).await?;
+    db::budgets::upsert_line(&mut tx, &row).await?;
     tx.commit().await?;
     one_version(db, id).await
 }
@@ -694,7 +762,7 @@ pub async fn reset_rollover(db: &Db, id: BudgetLineId, input: &MonthInput) -> Ap
     let mut tx = db.write.begin().await?;
     let (rows, _) = find_line(&mut tx, id).await?;
     let current = version_at(&rows, id, month)?;
-    let result = new_version(&mut tx, &current, month, current.amount).await?;
+    let result = new_version(&mut tx, &current, month, current.clone()).await?;
     tx.commit().await?;
     one_version(db, result).await
 }
@@ -712,7 +780,7 @@ pub async fn end_line(db: &Db, id: BudgetLineId, input: &MonthInput) -> AppResul
             db::budgets::delete_line(&mut tx, row.id).await?;
         } else if row.effective_to.is_none_or(|to| to >= month) {
             let closed = LineRow { effective_to: Some(month.previous()), ..row.clone() };
-            db::budgets::upsert_line(&mut *tx, &closed).await?;
+            db::budgets::upsert_line(&mut tx, &closed).await?;
             db::budgets::delete_overrides_after(&mut *tx, row.id, month.previous()).await?;
         }
     }
@@ -750,11 +818,11 @@ pub async fn suggestions(db: &Db, today: Date) -> AppResult<Suggestions> {
         *amounts.entry((category.id, Month::of(fact.date))).or_insert(Money::ZERO) += signed;
     }
     let current = Month::of(today);
-    let with_line: HashSet<CategoryId> = db::budgets::lines(&db.read)
+    let with_line: HashSet<CategoryId> = db::budgets::lines(&mut *db.read.acquire().await?)
         .await?
         .into_iter()
         .filter(|l| version(l).in_force(current) || l.effective_from > current)
-        .filter_map(|l| l.category_id)
+        .flat_map(|l| l.category_ids)
         .collect();
     let mut result: Vec<BudgetSuggestion> = categories
         .iter()

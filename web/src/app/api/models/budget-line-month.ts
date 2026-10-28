@@ -30,7 +30,11 @@ export interface BudgetLineMonth {
   amount_minor: number;
   available_minor: number;
   carried_minor: number;
-  category_id?: (CategoryId | null);
+
+  /**
+   * Catégories de la ligne (R-BUD-10) ; aucune pour un objectif d'épargne.
+   */
+  category_ids: Array<CategoryId>;
   effective_from: string;
   effective_to?: (string | null);
 
@@ -44,7 +48,16 @@ export interface BudgetLineMonth {
    * Première version de la ligne : identité stable d'une version à l'autre.
    */
   line_id: BudgetLineId;
+
+  /**
+   * Nom donné à la ligne, sinon celui de sa catégorie (ou de ses catégories) ou de son compte cible.
+   */
   name: string;
+
+  /**
+   * Le nom a été donné à la ligne.
+   */
+  named: boolean;
 
   /**
    * Surcharge de ce mois (ou de cette année budgétaire), si elle existe.
@@ -52,7 +65,7 @@ export interface BudgetLineMonth {
   override_minor?: (number | null);
 
   /**
-   * Catégorie parente, pour l'affichage.
+   * Catégorie parente d'une ligne sur une seule catégorie, sans nom donné, pour l'affichage.
    */
   parent_name?: (string | null);
   periodicity: Periodicity;

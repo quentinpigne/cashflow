@@ -856,7 +856,8 @@ async fn budget(
     let from = Month::of(start).to_string();
     let line = |kind, category: Option<CategoryId>, amount_minor, rollover| budgets::BudgetLineInput {
         kind,
-        category_id: category,
+        name: None,
+        category_ids: category.into_iter().collect(),
         target_account_id: None,
         periodicity: Periodicity::Monthly,
         year_start_month: 1,
@@ -875,7 +876,15 @@ async fn budget(
         line(BudgetKind::Expense, c.get("Logement", "Gaz, électricité, eau"), 9_000, false),
         line(BudgetKind::Expense, c.get("Alimentation & restauration", "Supermarché / épicerie"), 41_000, true),
         line(BudgetKind::Expense, c.get("Alimentation & restauration", "Restaurants"), 8_000, false),
-        line(BudgetKind::Expense, c.get("Auto & transports", ""), 8_000, false),
+        // Une ligne sur plusieurs catégories (R-BUD-10).
+        budgets::BudgetLineInput {
+            name: Some("Voiture".into()),
+            category_ids: [c.get("Auto & transports", "Carburant"), c.get("Auto & transports", "Péage")]
+                .into_iter()
+                .flatten()
+                .collect(),
+            ..line(BudgetKind::Expense, None, 8_000, false)
+        },
         line(BudgetKind::Expense, c.get("Abonnements", ""), 5_000, false),
         // Budget fixe : pas d'alerte (R-BUD-60).
         budgets::BudgetLineInput {
@@ -894,7 +903,7 @@ async fn budget(
             ..line(BudgetKind::Savings, None, amount, false)
         });
     }
-    for input in lines.iter().filter(|l| l.category_id.is_some() || l.target_account_id.is_some()) {
+    for input in lines.iter().filter(|l| !l.category_ids.is_empty() || l.target_account_id.is_some()) {
         budgets::create_line(db, input).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
 

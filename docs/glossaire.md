@@ -120,7 +120,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 
 | Terme | Identifiant | Définition |
 |---|---|---|
-| Ligne de budget | `BudgetLine` | Montant prévu pour une catégorie (dépense ou revenu) ou un objectif d'épargne, par mois ou par an. Versionnée dans le temps. |
+| Ligne de budget | `BudgetLine` | Montant prévu pour une ou plusieurs catégories (dépense ou revenu, « Voiture » : Carburant et Péage) ou un objectif d'épargne, par mois ou par an. Versionnée dans le temps. |
 | Objectif d'épargne | `BudgetLine` `SAVINGS` | Montant mensuel de virements internes visé vers un compte d'épargne. |
 | Surcharge | `BudgetOverride` | Montant spécifique d'une ligne pour un mois (ou une année) donné. |
 | Projet | `Project` | Budget ponctuel multi-catégories (vacances, travaux), auquel on rattache explicitement des ventilations. |
@@ -166,7 +166,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Type de compte | Nature (`AccountKind`) ou famille (`AccountFamily`) | « Type » ne dit pas s'il s'agit de la nature précise ou de la famille. |
 | Solde courant (stocké) | Solde calculé | Le solde n'est pas stocké (ADR-0002). |
 | Custom label | Libellé (`label`) | Simplification. |
-| Budget (pour une catégorie) | Ligne de budget | Une catégorie classe ; une ligne de budget prévoit un montant pour elle. |
+| Budget (pour une catégorie) | Ligne de budget | Une catégorie classe ; une ligne de budget prévoit un montant pour elle, ou pour plusieurs. |
 | Enveloppe | Ligne de budget avec report, ou projet | Le modèle « enveloppes » n'a pas été retenu (ADR-0014). |
 | Bénéficiaire, marchand, destinataire | Tiers (`Payee`) | Un tiers peut aussi me verser de l'argent (employeur) : « bénéficiaire » ne couvre qu'un sens. |
 | Enseigne (comme entité) | Groupe de tiers (`PayeeGroup`) | Un groupe peut réunir autre chose que des magasins. |

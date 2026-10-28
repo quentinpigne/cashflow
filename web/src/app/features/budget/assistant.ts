@@ -241,7 +241,7 @@ export class BudgetAssistantPage {
           this.api.createBudgetLine({
             body: {
               kind: row.suggestion.kind,
-              category_id: row.suggestion.category_id,
+              category_ids: [row.suggestion.category_id],
               amount_minor: amount,
               from: currentMonth(),
             },

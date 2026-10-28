@@ -47,6 +47,7 @@ pub const TABLES: &[&str] = &[
     "balance_checkpoint",
     "projection_scenario",
     "budget_line",
+    "budget_line_category",
     "budget_override",
     "notification",
 ];

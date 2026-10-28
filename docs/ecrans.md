@@ -487,8 +487,11 @@ Ce qui change dans les écrans existants :
   (R-BUD-52) ; report ; alertes aux seuils habituels, à des seuils propres ou **pas d'alerte** (budget
   fixe, signalé par une icône sur la ligne, R-BUD-60) ; « Remettre le report à zéro » ; « Revenir au montant
   habituel » ; « Supprimer à partir de ce mois » (R-BUD-53).
-- « Ajouter une ligne » : dépense, revenu ou épargne ; catégorie ou compte d'épargne ; par mois ou par
-  an (mois de début de l'année budgétaire) ; montant ; report ; « Pas d'alerte ».
+- « Ajouter une ligne » : dépense, revenu ou épargne ; une ou plusieurs catégories (puces, « Ajouter une
+  catégorie ») et, à partir de deux, un nom (« Voiture »), ou compte d'épargne ; par mois ou par an (mois de
+  début de l'année budgétaire) ; montant ; report ; « Pas d'alerte ».
+- La modification d'une ligne permet aussi de changer ses catégories et son nom, **à partir du mois
+  affiché** (R-BUD-10).
 - Menu ⋮ : assistant (E19), seuils d'alerte globaux.
 - Sans aucune ligne : invitation à lancer l'assistant.
 
