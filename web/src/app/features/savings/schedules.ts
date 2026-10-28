@@ -110,11 +110,6 @@ interface Draft {
     </div>
   `,
   styles: `
-    .page-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
     .card {
       margin-bottom: 1rem;
     }

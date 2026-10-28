@@ -61,7 +61,7 @@ interface PayslipYear {
     <div class="page">
       @if (job.value(); as j) {
         <header class="head">
-          <div class="title">
+          <div class="page-header">
             <a mat-icon-button routerLink="/salaires" aria-label="Retour aux salaires"
               ><mat-icon>arrow_back</mat-icon></a
             >

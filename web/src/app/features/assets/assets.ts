@@ -406,7 +406,7 @@ export class AssetsPage {
     <div class="page">
       @if (asset.value(); as a) {
         <header class="head">
-          <div class="title">
+          <div class="page-header">
             <a mat-icon-button routerLink="/biens" aria-label="Retour aux biens"
               ><mat-icon>arrow_back</mat-icon></a
             >

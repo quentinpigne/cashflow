@@ -93,16 +93,28 @@ input.amount {
   }
 }
 
+// En-tête de chaque écran : même taille de titre et même hauteur partout, qu'il porte ou non des
+// boutons (3rem, la hauteur d'un bouton icône).
 .page-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 3rem;
   margin-bottom: 1rem;
 
   h1 {
     flex: 1;
     margin: 0;
     font: var(--mat-sys-headline-small);
+  }
+
+  // Une étiquette d'état (« archivé », « terminé ») reste collée au titre.
+  h1:has(+ .tag) {
+    flex: 0 1 auto;
+  }
+
+  h1 + .tag {
+    margin-right: auto;
   }
 }
 

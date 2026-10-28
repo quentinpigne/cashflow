@@ -1,6 +1,7 @@
 <div class="page">
-  @if (dashboard.value(); as d) {
-    <div class="layout-bar">
+  <div class="page-header">
+    <h1>Tableau de bord</h1>
+    @if (dashboard.value()) {
       @if (settings.hiddenWidgets().length > 0) {
         <button mat-button [matMenuTriggerFor]="hiddenMenu">
           <mat-icon>visibility</mat-icon>Encadrés masqués ({{ settings.hiddenWidgets().length }})
@@ -19,7 +20,9 @@
           <mat-icon>restart_alt</mat-icon>Disposition par défaut
         </button>
       }
-    </div>
+    }
+  </div>
+  @if (dashboard.value(); as d) {
     <div class="grid" cdkDropListGroup [style.--columns]="count()">
       @for (column of columns(); track $index; let c = $index) {
         <div class="column" cdkDropList [cdkDropListData]="c" (cdkDropListDropped)="drop($event)">

@@ -22,16 +22,9 @@
 .head {
   margin-bottom: 1rem;
 
-  .title {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-
-    h1 {
-      flex: 1;
-      margin: 0;
-      font: var(--mat-sys-headline-small);
-    }
+  // Le titre est suivi de la ligne d'informations (.meta), qui porte l'espacement.
+  .page-header {
+    margin-bottom: 0;
   }
 
   .meta {

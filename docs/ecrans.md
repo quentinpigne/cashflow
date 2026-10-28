@@ -83,6 +83,9 @@ Authentification mono-utilisateur (ADR-0015). Un seul champ **mot de passe** et 
 
 But : savoir en un coup d'œil où j'en suis, et traiter ce qui demande une action.
 
+Titre « Tableau de bord », comme les autres écrans ; les actions de disposition (encadrés masqués,
+disposition par défaut) s'affichent à sa droite.
+
 Blocs, de haut en bas :
 1. **Patrimoine** : montant à aujourd'hui (R-TDB-1) et variation depuis la fin du mois précédent
    (R-TDB-2). Un toucher affiche le détail : actif brut et dettes.

@@ -203,7 +203,6 @@ export class ProjectDialog {
           <mat-icon>arrow_back</mat-icon>
         </a>
         <h1>Projets</h1>
-        <span class="spacer"></span>
         <button mat-flat-button (click)="create()"><mat-icon>add</mat-icon> Nouveau projet</button>
       </div>
       @if (projects.isLoading() && !projects.hasValue()) {
@@ -247,14 +246,6 @@ export class ProjectDialog {
     </div>
   `,
   styles: `
-    .page-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      .spacer {
-        flex: 1;
-      }
-    }
     h2 {
       font: var(--mat-sys-title-medium);
     }
@@ -321,7 +312,6 @@ export class ProjectsPage {
           @if (!p.active) {
             <span class="tag">terminé</span>
           }
-          <span class="spacer"></span>
           <button mat-button (click)="edit(p)"><mat-icon>edit</mat-icon> Modifier</button>
           @if (p.splits.length === 0) {
             <button mat-button class="danger" (click)="remove(p)">
@@ -397,14 +387,6 @@ export class ProjectsPage {
     </div>
   `,
   styles: `
-    .page-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      .spacer {
-        flex: 1;
-      }
-    }
     .card {
       margin-bottom: 1rem;
     }

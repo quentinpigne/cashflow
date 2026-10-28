@@ -292,7 +292,6 @@ export class RecurrenceDialog {
     <div class="page">
       <div class="page-header">
         <h1>Récurrences</h1>
-        <span class="spacer"></span>
         <button mat-flat-button (click)="edit(null)"><mat-icon>add</mat-icon> Nouvelle</button>
       </div>
       <mat-tab-group>
@@ -371,13 +370,6 @@ export class RecurrenceDialog {
     </div>
   `,
   styles: `
-    .page-header {
-      display: flex;
-      align-items: center;
-      .spacer {
-        flex: 1;
-      }
-    }
     .tab {
       padding: 1rem 0;
     }
