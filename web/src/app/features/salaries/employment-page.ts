@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -299,8 +307,8 @@ interface PayslipYear {
               <mat-icon>add</mat-icon>Ajouter
             </button>
           </header>
-          @for (y of payslipYears(); track y.year; let first = $first) {
-            <details [open]="first">
+          @for (y of payslipYears(); track y.year) {
+            <details [open]="expandedYears().has(y.year)" (toggle)="toggleYear(y.year, $event)">
               <summary>
                 {{ y.year }}
                 <span class="muted small">{{ y.count }} fiche{{ y.count > 1 ? 's' : '' }}</span>
@@ -440,6 +448,11 @@ export class EmploymentPage {
 
   protected readonly size = formatSize;
   protected readonly dragging = signal(false);
+  /** Années de fiches de paie dépliées : toutes repliées par défaut, conservées au rechargement. */
+  protected readonly expandedYears = linkedSignal<string, ReadonlySet<string>>({
+    source: this.id,
+    computation: () => new Set(),
+  });
 
   /** Fiches et mois sans fiche, par année, du plus récent au plus ancien (R-SAL-18). */
   protected readonly payslipYears = computed<PayslipYear[]>(() => {
@@ -462,6 +475,16 @@ export class EmploymentPage {
     }
     return years;
   });
+
+  protected toggleYear(year: string, event: Event): void {
+    const open = (event.target as HTMLDetailsElement).open;
+    this.expandedYears.update((years) => {
+      const next = new Set(years);
+      if (open) next.add(year);
+      else next.delete(year);
+      return next;
+    });
+  }
 
   protected monthName(month: number): string {
     return MONTH_NAMES[month - 1]?.toLowerCase() ?? '';

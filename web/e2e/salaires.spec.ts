@@ -87,6 +87,10 @@ test('E30 : fiches de paie archivées et mois sans fiche (SAL-09, R-SAL-16, R-SA
   await page.getByRole('link', { name: /Acme Industries/ }).click();
   const section = page.locator('section.payslips');
   await expect(section.getByRole('heading', { name: 'Fiches de paie' })).toBeVisible();
+  // Les années sont repliées par défaut.
+  const year = section.locator('details', { hasText: '2026' });
+  await expect(year).not.toHaveAttribute('open');
+  await year.locator('summary').click();
   // Jeu de démonstration : juin, juillet et septembre ; août est sans fiche.
   await expect(section.locator('.row.payslip:not(.missing)')).toHaveCount(3);
   await expect(section.locator('.row.missing')).toHaveText(/Août 2026\s*sans fiche/);
