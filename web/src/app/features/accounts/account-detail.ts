@@ -41,6 +41,7 @@ import { CloseAccountDialog } from './close-dialog';
 import { InterestPanel } from '../savings/interest-panel';
 import { ValuationPanel } from '../savings/valuation-panel';
 import { ReconciliationPanel } from './reconciliation-panel';
+import { AccountStatements } from './statements';
 
 interface Filters {
   from: Date | null;
@@ -87,6 +88,7 @@ const PAGE = 200;
     ReconciliationPanel,
     InterestPanel,
     ValuationPanel,
+    AccountStatements,
     MoneyPipe,
     FrDatePipe,
     TransactionDetailView,

@@ -309,6 +309,7 @@
       } @else if (page.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       }
+      <app-account-statements [accountId]="a.id" />
     }
   </div>
 
