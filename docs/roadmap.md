@@ -99,10 +99,10 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 
 - [x] SAL-09 — archiver et consulter les fiches de paie d'un emploi (ADR-0024, spec 10)
 
-## Compléments V1 — adresse des tiers (2026-10-28)
+## Compléments V1 — adresse des tiers (2026-10-28, livrés)
 
-- [ ] TIE-06 — adresse d'un tiers, recherche d'adresse par la BAN (ADR-0025, spec 11)
-- [ ] TIE-07 — dépenses et revenus par lieu (pays, département, ville) et carte (spec 11)
+- [x] TIE-06 — adresse d'un tiers, recherche d'adresse par la BAN (ADR-0025, spec 11)
+- [x] TIE-07 — dépenses et revenus par lieu (pays, département, ville) et carte (spec 11)
 
 ## Mise en service (prochaine étape)
 

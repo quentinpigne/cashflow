@@ -15,6 +15,7 @@ import {
   PayeeFormValue,
   PayeeMergeDialog,
   PayeeRegroupDialog,
+  addressInput,
 } from './payee-dialogs';
 
 /**
@@ -70,19 +71,30 @@ export class PayeeActions {
       const group = await this.groupOf(value);
       await firstValueFrom(
         this.api.createPayee({
-          body: { name: value.name, group_id: group, archived: false, note: value.note },
+          body: {
+            name: value.name,
+            group_id: group,
+            archived: false,
+            note: value.note,
+            address: value.address,
+          },
         }),
       );
     });
   }
 
-  /** Renomme, change de groupe ou d'annotation (R-TIE-3). */
+  /** Renomme, change de groupe, d'annotation ou d'adresse (R-TIE-3, R-TIE-23). */
   async editPayee(payee: PayeeView): Promise<boolean> {
     const value = await this.form({
       title: `Modifier « ${payee.name} »`,
       action: 'Enregistrer',
       kind: 'payee',
-      value: { name: payee.name, groupId: payee.group_id ?? null, note: payee.note ?? null },
+      value: {
+        name: payee.name,
+        groupId: payee.group_id ?? null,
+        note: payee.note ?? null,
+        address: payee.address ?? null,
+      },
     });
     if (!value) return false;
     return this.run(async () => {
@@ -90,7 +102,13 @@ export class PayeeActions {
       await firstValueFrom(
         this.api.updatePayee({
           id: payee.id,
-          body: { name: value.name, group_id: group, archived: payee.archived, note: value.note },
+          body: {
+            name: value.name,
+            group_id: group,
+            archived: payee.archived,
+            note: value.note,
+            address: value.address,
+          },
         }),
       );
     });
@@ -108,6 +126,7 @@ export class PayeeActions {
               group_id: payee.group_id ?? null,
               archived,
               note: payee.note ?? null,
+              address: addressInput(payee.address),
             },
           }),
         ),

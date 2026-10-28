@@ -128,6 +128,23 @@ import { confirm } from '../../shared/confirm-dialog';
       </section>
 
       <section class="card section">
+        <h2>Services externes</h2>
+        <p class="muted">
+          Désactivés par défaut : rien ne quitte le serveur sans votre accord (ADR-0007).
+        </p>
+        @if (features.value(); as f) {
+          <mat-slide-toggle [checked]="f.geocoding" (change)="toggle({ geocoding: $event.checked })"
+            >Recherche d'adresse (Base Adresse Nationale)</mat-slide-toggle
+          >
+          <p class="muted small">
+            Le texte saisi dans la recherche d'adresse d'un tiers est envoyé à
+            api-adresse.data.gouv.fr, pour proposer l'adresse et la placer sur la carte des analyses
+            (R-TIE-26).
+          </p>
+        }
+      </section>
+
+      <section class="card section">
         <h2>Export</h2>
         <p class="muted">Toutes les données, au format JSON ouvert (ADR-0008).</p>
         <a mat-stroked-button href="/api/v1/export" download>

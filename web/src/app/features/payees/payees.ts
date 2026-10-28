@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { PayeeGroupView } from '../../api/models/payee-group-view';
 import { PayeeView } from '../../api/models/payee-view';
 import { PayeesStore } from '../../shared/stores';
+import { formatCity } from './address';
 import { PayeeActions } from './payee-actions';
 
 interface Section {
@@ -104,7 +105,12 @@ interface Section {
                 (change)="toggle(payee.id, $event.checked)"
                 [attr.aria-label]="'Sélectionner ' + payee.name"
               />
-              <a class="name" [routerLink]="['/tiers', payee.id]">{{ payee.name }}</a>
+              <a class="name" [routerLink]="['/tiers', payee.id]"
+                >{{ payee.name }}
+                @if (payee.address; as a) {
+                  <span class="muted city">{{ city(a) }}</span>
+                }
+              </a>
               <span class="muted count">{{ payee.transaction_count }}</span>
               <button
                 mat-icon-button
@@ -115,7 +121,7 @@ interface Section {
               </button>
               <mat-menu #menu>
                 <button mat-menu-item (click)="actions.editPayee(payee)">
-                  <mat-icon>edit</mat-icon>Modifier (nom, groupe)
+                  <mat-icon>edit</mat-icon>Modifier (nom, groupe, adresse)
                 </button>
                 <button mat-menu-item (click)="actions.setArchived(payee, true)">
                   <mat-icon>archive</mat-icon>Archiver
@@ -202,8 +208,13 @@ interface Section {
       }
     }
 
-    .count {
+    .count,
+    .city {
       font: var(--mat-sys-body-small);
+    }
+
+    .city {
+      margin-left: 0.5rem;
     }
 
     .empty {
@@ -224,8 +235,17 @@ export class PayeesPage {
 
   private readonly matching = computed(() => {
     const query = this.query().trim().toLowerCase();
-    return this.store.list().filter((p) => !query || p.name.toLowerCase().includes(query));
+    return this.store
+      .list()
+      .filter(
+        (p) =>
+          !query ||
+          p.name.toLowerCase().includes(query) ||
+          !!p.address?.city.toLowerCase().includes(query),
+      );
   });
+
+  protected readonly city = formatCity;
 
   /** Groupes par ordre alphabétique, puis « Sans groupe » (ecrans.md E31). */
   protected readonly sections = computed<Section[]>(() => {

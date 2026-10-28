@@ -77,3 +77,38 @@ test('E15 : dépenses par groupe de tiers (TIE-04)', async ({ page }) => {
   await page.getByRole('button', { name: 'Carrefour Meylan' }).click();
   await expect(page.getByRole('heading', { name: 'Carrefour Meylan', level: 1 })).toBeVisible();
 });
+
+test('E31 : saisir l’adresse d’un tiers à la main (TIE-06, R-TIE-23)', async ({ page }) => {
+  await login(page);
+  const name = `Fromagerie ${unique()}`;
+  await page.goto('/reglages/tiers');
+  await page.getByRole('button', { name: 'Nouveau tiers' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Nom').fill(name);
+  // Recherche d'adresse désactivée par défaut : pas de champ de recherche (R-TIE-26).
+  await expect(dialog.getByLabel('Rechercher une adresse')).toHaveCount(0);
+  await dialog.getByLabel('Code postal').fill('74000');
+  await expect(dialog.getByText('Indiquer la ville.')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Créer' })).toBeDisabled();
+  await dialog.getByLabel('Ville').fill('Annecy');
+  await dialog.getByRole('button', { name: 'Créer' }).click();
+  await expect(
+    page.getByRole('link', { name: new RegExp(`${name}\\s+74000 Annecy`) }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: new RegExp(name) }).click();
+  await expect(page.locator('p.address')).toContainText('74000 Annecy · Haute-Savoie (74)');
+});
+
+test('E15 : dépenses par lieu et carte (TIE-07)', async ({ page }) => {
+  await login(page);
+  await page.goto('/analyses');
+  await page.getByRole('tab', { name: 'Par lieu' }).click();
+  const meylan = page.getByRole('row', { name: /Meylan/ }).first();
+  await expect(meylan).toBeVisible();
+  await meylan.getByRole('button', { name: 'Déplier Meylan' }).click();
+  await expect(page.getByRole('button', { name: 'Carrefour Meylan' })).toBeVisible();
+  await expect(page.locator('app-location-analysis [echarts] canvas').first()).toBeVisible();
+  await expect(page.getByText(/tiers hors de la carte/)).toBeVisible();
+  await page.getByRole('radio', { name: 'Départements' }).click();
+  await expect(page.getByRole('row', { name: /Isère \(38\)/ })).toBeVisible();
+});

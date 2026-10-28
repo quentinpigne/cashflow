@@ -16,6 +16,7 @@ import { formatChartValue, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CategoriesStore, PayeesStore } from '../../shared/stores';
+import { formatAddress, mapLink } from './address';
 import { PayeeActions } from './payee-actions';
 
 /** E32 — Fiche d'un tiers ou d'un groupe de tiers (TIE-04). */
@@ -50,7 +51,7 @@ import { PayeeActions } from './payee-actions';
           <mat-menu #menu>
             @if (payee(); as p) {
               <button mat-menu-item (click)="actions.editPayee(p)">
-                <mat-icon>edit</mat-icon>Modifier (nom, groupe)
+                <mat-icon>edit</mat-icon>Modifier (nom, groupe, adresse)
               </button>
               <button mat-menu-item (click)="actions.setArchived(p, !p.archived)">
                 <mat-icon>{{ p.archived ? 'unarchive' : 'archive' }}</mat-icon
@@ -93,6 +94,18 @@ import { PayeeActions } from './payee-actions';
             · {{ s.note }}
           }
         </p>
+        @if (s.address; as a) {
+          <p class="muted subtitle address">
+            <mat-icon inline>{{ mapLink(a) ? 'location_on' : 'location_off' }}</mat-icon>
+            {{ formatAddress(a) }}
+            @if (a.department_name) {
+              · {{ a.department_name }} ({{ a.department_code }})
+            }
+            @if (mapLink(a); as link) {
+              · <a [href]="link" target="_blank" rel="noopener noreferrer">Voir sur une carte</a>
+            }
+          </p>
+        }
 
         <div class="figures">
           @for (t of [s.last_12_months, s.year]; track $index) {
@@ -277,6 +290,8 @@ export class PayeePage {
   private readonly router = inject(Router);
   private readonly categories = inject(CategoriesStore);
   protected readonly store = inject(PayeesStore);
+  protected readonly formatAddress = formatAddress;
+  protected readonly mapLink = mapLink;
   protected readonly actions = inject(PayeeActions);
 
   readonly id = input.required<string>();
