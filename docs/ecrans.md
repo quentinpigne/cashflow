@@ -668,8 +668,8 @@ Ce qui change dans les écrans existants :
 - **Évolution** : barres du net annuel par année, tous emplois, une couleur par emploi, et courbe du brut
   annuel ; variation sur l'année précédente au survol ; années incomplètes ou prévisionnelles signalées
   (R-SAL-7, R-SAL-8). Bascule net / brut sur mobile.
-- **Emplois** : liste (employeur, poste, dates, net mensuel en vigueur) ; les emplois terminés sont regroupés
-  dans une section repliée. Action « Nouvel emploi ».
+- **Emplois** : liste unique, du plus récent au plus ancien (employeur, poste, dates, net mensuel en vigueur
+  pour un emploi en cours) ; un emploi terminé se reconnaît à sa date de fin. Action « Nouvel emploi ».
 
 ## E30 — Fiche d'un emploi (SAL-01 à SAL-03, SAL-09)
 

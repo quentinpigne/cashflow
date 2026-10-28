@@ -3,7 +3,6 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDialog } from '@angular/material/dialog';
-import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
@@ -34,7 +33,6 @@ export function formatChange(ppm: number | null | undefined): string {
     RouterLink,
     MatButtonModule,
     MatButtonToggleModule,
-    MatExpansionModule,
     MatIconModule,
     MatProgressBarModule,
     NgxEchartsDirective,
@@ -111,42 +109,27 @@ export function formatChange(ppm: number | null | undefined): string {
 
           <section class="card group">
             <header><h2>Emplois</h2></header>
-            @for (e of current(); track e.id) {
+            @for (e of employments(); track e.id) {
               <a class="row" [routerLink]="['/salaires', e.id]">
                 <span class="name">
                   <span>{{ e.employer }}</span>
                   <span class="muted small"
-                    >{{ e.job_title ? e.job_title + ' · ' : '' }}depuis le {{ e.start_date | frDate
-                    }}{{ e.end_date ? ' · fin le ' + (e.end_date | frDate) : '' }}</span
+                    >{{ e.job_title ? e.job_title + ' · ' : ''
+                    }}{{ e.end_date ? 'du' : 'depuis le' }} {{ e.start_date | frDate
+                    }}{{ e.end_date ? ' au ' + (e.end_date | frDate) : '' }}</span
                   >
                 </span>
-                <span class="amount">
-                  @if (e.current_net_minor !== null && e.current_net_minor !== undefined) {
-                    {{ e.current_net_minor | money }}
-                    <span class="muted small">/ mois</span>
-                  } @else {
-                    <span class="muted small">non renseigné</span>
-                  }
-                </span>
+                @if (!e.ended) {
+                  <span class="amount">
+                    @if (e.current_net_minor !== null && e.current_net_minor !== undefined) {
+                      {{ e.current_net_minor | money }}
+                      <span class="muted small">/ mois</span>
+                    } @else {
+                      <span class="muted small">non renseigné</span>
+                    }
+                  </span>
+                }
               </a>
-            }
-            @if (ended().length > 0) {
-              <mat-accordion>
-                <mat-expansion-panel>
-                  <mat-expansion-panel-header>
-                    <mat-panel-title>Emplois terminés ({{ ended().length }})</mat-panel-title>
-                  </mat-expansion-panel-header>
-                  @for (e of ended(); track e.id) {
-                    <a class="row" [routerLink]="['/salaires', e.id]">
-                      <span class="name">{{ e.employer }}</span>
-                      <span class="muted small"
-                        >{{ e.start_date | frDate: 'short' }} –
-                        {{ e.end_date! | frDate: 'short' }}</span
-                      >
-                    </a>
-                  }
-                </mat-expansion-panel>
-              </mat-accordion>
             }
           </section>
         }
@@ -195,11 +178,9 @@ export class SalariesPage {
     stream: () => this.api.salariesOverview(),
   });
   protected readonly measure = signal<'net' | 'gross'>('net');
-  protected readonly current = computed(() =>
-    (this.overview.value()?.employments ?? []).filter((e) => !e.ended).reverse(),
-  );
-  protected readonly ended = computed(() =>
-    (this.overview.value()?.employments ?? []).filter((e) => e.ended).reverse(),
+  /** Tous les emplois à la suite, le plus récent d'abord : la date de fin distingue les terminés. */
+  protected readonly employments = computed(() =>
+    [...(this.overview.value()?.employments ?? [])].reverse(),
   );
   protected readonly yearsDesc = computed(() =>
     [...(this.overview.value()?.years ?? [])].reverse(),
