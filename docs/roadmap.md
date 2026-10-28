@@ -104,9 +104,9 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] TIE-06 — adresse d'un tiers, recherche d'adresse par la BAN (ADR-0025, spec 11)
 - [x] TIE-07 — dépenses et revenus par lieu (pays, département, ville) et carte (spec 11)
 
-## Compléments V1 — relevés de compte (2026-10-28)
+## Compléments V1 — relevés de compte (2026-10-28, livrés)
 
-- [ ] CPT-11 — archiver et consulter les relevés d'un compte, archivés aussi à l'import d'un PDF (ADR-0024,
+- [x] CPT-11 — archiver et consulter les relevés d'un compte, archivés aussi à l'import d'un PDF (ADR-0024,
       spec 01, R-IMP-28)
 
 ## Mise en service (prochaine étape)
