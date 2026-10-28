@@ -4,19 +4,28 @@ import localeFr from '@angular/common/locales/fr';
 import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withNavigationErrorHandler,
+} from '@angular/router';
 import { provideEchartsCore } from 'ngx-echarts';
 
 import { routes } from './app.routes';
 import { FrDateAdapter } from './core/fr-date-adapter';
 import { sessionInterceptor } from './core/http-errors';
+import { reloadOnStaleBuild } from './core/stale-build';
 
 registerLocaleData(localeFr);
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withComponentInputBinding()),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withNavigationErrorHandler(reloadOnStaleBuild),
+    ),
     provideHttpClient(withInterceptors([sessionInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     provideNativeDateAdapter(),
