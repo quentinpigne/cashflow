@@ -61,6 +61,25 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
 - **R-CPT-16** — (supprimée : remplacée par R-PRE-3 et R-PRE-4.)
 - **R-CPT-17** — (supprimée : remplacée par R-PRE-6 à R-PRE-8.)
 
+### Relevés de compte
+
+- **R-CPT-18** — Un **relevé de compte** est un document PDF (ADR-0024) rattaché à un compte et à un **mois de
+  relevé**, avec sa période (début et fin) quand elle est connue et une note optionnelle. Le fichier est un PDF
+  d'au plus 10 Mo, reconnu à son contenu et non à son extension. Plusieurs relevés pour un même mois sont
+  permis (relevé rectificatif, relevé de clôture).
+- **R-CPT-19** — Un relevé arrive dans l'archive de deux façons : **à la validation d'un import** dont le
+  fichier source est un PDF (R-IMP-28), ou par un **envoi** depuis la fiche du compte (relevé ancien, compte
+  suivi sans import). Un même fichier (même empreinte SHA-256) ne s'archive qu'une fois par compte : un second
+  envoi est refusé, avec le mois du relevé existant ; à l'import, il est ignoré sans erreur.
+- **R-CPT-20** — Le fichier d'un relevé est **immuable** : on modifie son mois et sa note ; pour corriger le
+  fichier, on supprime le relevé et on en envoie un autre. Supprimer un relevé, ou son compte (R-CPT-7),
+  supprime son document (suppression différée, ADR-0024). Annuler l'import qui l'a archivé (R-IMP-17), ou
+  supprimer le fichier source de cet import (R-IMP-21), ne touche pas au relevé.
+- **R-CPT-21** — Les relevés s'affichent par année, du mois le plus récent au plus ancien ; chacun s'ouvre
+  dans le navigateur ou se télécharge. Un **mois sans relevé** est un mois sans aucun relevé, compté à partir
+  du mois du premier relevé archivé et jusqu'au mois de clôture du compte ou au mois précédant le mois
+  courant, le plus tôt des deux. Il est signalé dans la liste, à titre indicatif, sans alerte.
+
 ## Features
 
 | ID | Priorité | Feature |
@@ -75,6 +94,7 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
 | CPT-08 | V2 | Importer des valorisations (CSV) |
 | CPT-09 | — | (supprimée : devenue PRE-02, spec 09) |
 | CPT-10 | — | (supprimée : devenue PRE-03, spec 09) |
+| CPT-11 | V1 | Archiver et consulter les relevés d'un compte |
 
 ### CPT-01 — Créer un compte
 
@@ -115,3 +135,14 @@ Critères d'acceptation :
 - Dans la liste, un mode « Ordonner » me laisse glisser les comptes d'une même famille pour fixer leur
   ordre ; il est gardé (`display_order`). Les familles restent dans l'ordre de la spec.
 - Un nouveau compte se range à la fin de sa famille.
+
+### CPT-11 — Relevés de compte
+
+- J'importe le relevé PDF LCL de septembre 2026 (période du 1er au 30 septembre) et je valide : le relevé
+  apparaît dans la section « Relevés » du compte, en septembre 2026, avec sa période.
+- J'envoie depuis le compte le relevé PDF de mars 2024, sans l'importer : il est archivé en mars 2024 ; les
+  mois d'avril 2024 à août 2026 sans relevé sont signalés « sans relevé ».
+- Envoyer une seconde fois le relevé de septembre 2026 est refusé : « Ce fichier est déjà archivé
+  (relevé de 09/2026). » Le réimporter puis valider l'import n'archive rien de plus.
+- Annuler l'import de septembre 2026 laisse le relevé dans l'archive.
+- Une image JPEG, ou un fichier de 12 Mo, est refusée.

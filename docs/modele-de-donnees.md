@@ -126,6 +126,20 @@ erDiagram
 | `FIXED_SAVINGS` | `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE`, `CEL`, `PEL`, `TERM_DEPOSIT`, `SAVINGS_OTHER` |
 | `VARIABLE_SAVINGS` | `LIFE_INSURANCE`, `PEA`, `PEA_PME`, `PER`, `SECURITIES`, `EMPLOYEE_SAVINGS`, `CRYPTO`, `VARIABLE_OTHER` |
 
+### BankStatement (relevé de compte, CPT-11)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `account_id` | `Id` → Account | requis, suppression en cascade (le document est supprimé par le service) |
+| `statement_month` | `Date` | requis, premier jour d'un mois |
+| `period_start`, `period_end` | `Date` | optionnels, ensemble ; `period_start ≤ period_end` |
+| `document_id` | `Id` → Document | requis, unique ; un PDF |
+| `note` | texte | optionnel |
+
+Plusieurs relevés par mois sont permis (R-CPT-18). Un même fichier (`Document.sha256`) ne s'archive qu'une
+fois par compte (R-CPT-19). Le fichier est immuable : seuls `statement_month` et `note` se modifient
+(R-CPT-20).
+
 ### FixedSavingsTerms (1–1 avec un compte `FIXED_SAVINGS`)
 
 | Champ | Type | Contraintes |
@@ -419,7 +433,7 @@ tolérance de l'écart entre attendu et reçu (R-SAL-9).
 | `sha256` | texte | requis : empreinte du contenu, 64 caractères hexadécimaux |
 
 Le contenu est le fichier `/data/documents/<id>`, immuable. Un document est toujours rattaché : une fiche de
-paie (`Payslip`), plus tard une transaction (TRX-11). Sa suppression déplace le fichier dans
+paie (`Payslip`), un relevé de compte (`BankStatement`), plus tard une transaction (TRX-11). Sa suppression déplace le fichier dans
 `documents/trash/`, effacé après 400 jours.
 
 ## Import — [spec 03](specs/03-import.md)

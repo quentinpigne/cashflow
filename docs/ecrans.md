@@ -196,6 +196,14 @@ avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriq
 - un toucher ouvre la transaction ([E7](#e7--détail-dune-transaction-trx-01-trx-03-trx-05)) ;
 - le bouton « + » ouvre la saisie rapide avec ce compte présélectionné.
 
+**Relevés** (CPT-11), sous les transactions, comme les fiches de paie d'un emploi (E30) : par année, du plus
+récent au plus ancien, un groupe replié par année sauf la dernière ; chaque ligne montre le mois du relevé, sa
+période, le nom du fichier, sa taille et la note, avec les actions Ouvrir (nouvel onglet), Télécharger et ⋮
+(Modifier, Supprimer). Les mois sans relevé apparaissent en gris, « sans relevé » (R-CPT-21). « Ajouter » ouvre
+le formulaire ; un fichier déposé sur la section l'ouvre prérempli. Formulaire (popup) : fichier (PDF, 10 Mo au
+plus), mois du relevé (sélecteur de mois, le mois précédent par défaut), note. En modification, le fichier
+n'est pas modifiable (R-CPT-20).
+
 ```
 ┌──────────────────────────┐
 │ ← Compte courant      ⋮  │
@@ -392,7 +400,8 @@ Conçu pour l'ordinateur, utilisable sur mobile. Étapes `[mat-stepper]` :
 
 Liste des lots : date, compte, fichier, période, statut, nombre de transactions créées et pointées.
 Actions : reprendre la revue (lot en revue), **annuler un lot validé** (R-IMP-17, avec confirmation),
-télécharger ou supprimer le fichier source (R-IMP-21).
+télécharger ou supprimer le fichier source (R-IMP-21). Un relevé PDF validé est aussi archivé sur le compte
+(R-IMP-28) : le supprimer de l'historique ne le retire pas des relevés du compte.
 
 ## E13 — Rapprochement d'un compte (RAP-01 à RAP-06)
 

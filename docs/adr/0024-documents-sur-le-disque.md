@@ -2,12 +2,14 @@
 
 - **Statut** : Accepté
 - **Date** : 2026-10-25
-- **Concerne** : spec 10 (SAL-09), spec 02 (TRX-11), modèle de données, ADR-0008, ADR-0015
+- **Concerne** : spec 10 (SAL-09), spec 01 (CPT-11), spec 03 (R-IMP-28), spec 02 (TRX-11), modèle de données,
+  ADR-0008, ADR-0015
 
 ## Contexte
 
 On veut archiver ses **fiches de paie** dans l'application, rattachées à un emploi, pour les consulter des
-années plus tard (SAL-09). Les **pièces jointes** des transactions (TRX-11, V2) poseront la même question :
+années plus tard (SAL-09), puis ses **relevés de compte**, rattachés à un compte (CPT-11, 2026-10-28). Les
+**pièces jointes** des transactions (TRX-11, V2) poseront la même question :
 où ranger des fichiers envoyés par l'utilisateur, PDF ou images, de quelques centaines de Ko chacun.
 
 Une archive n'a de valeur que si elle survit : à une suppression par erreur, à une migration ratée, à une
@@ -46,8 +48,13 @@ Option 2, avec une entité **`Document`** commune (décision du propriétaire, 2
   pour qu'un fichier piégé ne puisse rien exécuter dans l'origine de l'application.
 - **Export** (précise ADR-0008) : l'export JSON contient les métadonnées des documents ; leur contenu entre
   dans l'archive ZIP de l'option « inclure les fichiers », avec les fichiers source des imports.
-- Un document n'existe que rattaché : une fiche de paie (SAL-09), plus tard une transaction (TRX-11). Il est
-  supprimé avec ce qui le porte.
+- Un document n'existe que rattaché : une fiche de paie (SAL-09), un relevé de compte (CPT-11), plus tard une
+  transaction (TRX-11). Il est supprimé avec ce qui le porte.
+- **Relevés et import** (2026-10-28) : le fichier source d'un import reste dans `/data/imports` (R-IMP-21),
+  avec sa propre vie (supprimable, effacé avec un lot abandonné). À la validation d'un import PDF, une
+  **copie** devient le document d'un relevé (R-IMP-28) : quelques centaines de Ko en double, contre deux
+  cycles de vie indépendants et sans référence croisée. Les imports PDF validés avant cette décision sont
+  repris une fois, au premier démarrage qui suit la mise à jour, si leur fichier source existe encore.
 
 ## Conséquences
 
