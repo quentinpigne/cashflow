@@ -107,6 +107,14 @@ pub enum DomainError {
     InvalidPayeeMerge,
     #[error("une jambe de virement interne n'a pas de tiers")]
     PayeeOnTransferLeg,
+    #[error("une adresse a au moins une ville et un pays")]
+    AddressIncomplete,
+    #[error("code pays invalide : deux lettres attendues (ISO 3166-1)")]
+    InvalidCountryCode,
+    #[error("code postal invalide : cinq chiffres attendus en France")]
+    InvalidPostalCode,
+    #[error("coordonnées invalides : latitude entre -90 et 90, longitude entre -180 et 180, avec une adresse")]
+    InvalidCoordinates,
 
     // ----- Virements internes
     #[error("un virement relie deux comptes différents")]
@@ -205,6 +213,10 @@ impl DomainError {
             PayeeInUse => "PAYEE_IN_USE",
             InvalidPayeeMerge => "INVALID_PAYEE_MERGE",
             PayeeOnTransferLeg => "PAYEE_ON_TRANSFER_LEG",
+            AddressIncomplete => "ADDRESS_INCOMPLETE",
+            InvalidCountryCode => "INVALID_COUNTRY_CODE",
+            InvalidPostalCode => "INVALID_POSTAL_CODE",
+            InvalidCoordinates => "INVALID_COORDINATES",
             TransferSameAccount => "TRANSFER_SAME_ACCOUNT",
             TransferCurrencyMismatch => "TRANSFER_CURRENCY_MISMATCH",
             TransferAmountsNotOpposite => "TRANSFER_AMOUNTS_NOT_OPPOSITE",
@@ -262,6 +274,8 @@ impl DomainError {
             PayeeInUse => "R-TIE-5",
             InvalidPayeeMerge => "R-TIE-7",
             PayeeOnTransferLeg => "R-TIE-11",
+            AddressIncomplete | InvalidCountryCode | InvalidPostalCode => "R-TIE-23",
+            InvalidCoordinates => "R-TIE-25",
             TransferSameAccount | TransferCurrencyMismatch | TransferAmountsNotOpposite | AlreadyTransferLeg => {
                 "R-TRX-30"
             }

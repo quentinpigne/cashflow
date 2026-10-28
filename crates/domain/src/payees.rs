@@ -10,6 +10,8 @@ use crate::reporting::{self, Period, SplitFact};
 use crate::shared::ids::CategoryId;
 use crate::shared::{Date, DomainError, Money};
 
+pub mod location;
+
 /// Une jambe de virement interne n'a pas de tiers : de l'autre côté, c'est un de mes comptes (R-TIE-11).
 pub fn check_transfer_leg(has_payee: bool, is_transfer_leg: bool) -> Result<(), DomainError> {
     if has_payee && is_transfer_leg { Err(DomainError::PayeeOnTransferLeg) } else { Ok(()) }
