@@ -11,30 +11,24 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
+import { RouterLink } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { firstValueFrom, of } from 'rxjs';
+import { of } from 'rxjs';
 
-import { ScenarioView } from '../../api/models/scenario-view';
 import { DashboardService } from '../../api/services/dashboard.service';
 import { ProjectionsService } from '../../api/services/projections.service';
 import { DataVersion } from '../../core/data-version';
-import { errorMessage } from '../../core/http-errors';
-import { KIND_LABELS } from '../../core/labels';
 import { formatChartValue, formatRate, formatRatePpm, toChartValue } from '../../core/money';
-import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountsStore, FeaturesStore } from '../../shared/stores';
 import { formatChange } from '../salaries/salaries';
-import { ScenarioDialog } from './scenario-dialog';
 
 const axisMoney = (v: number) => formatChartValue(v, 'EUR', { bare: true }).replace(/,00$/, '');
 
@@ -53,6 +47,7 @@ const NEGATIVE = '#c62828';
     MatProgressBarModule,
     MatSelectModule,
     MatTabsModule,
+    RouterLink,
     NgxEchartsDirective,
     MoneyPipe,
     FrDatePipe,
@@ -65,8 +60,6 @@ export class ProjectionsPage {
   private readonly api = inject(ProjectionsService);
   private readonly dashboard = inject(DashboardService);
   private readonly version = inject(DataVersion);
-  private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
   protected readonly accounts = inject(AccountsStore);
   protected readonly features = inject(FeaturesStore);
 
@@ -371,57 +364,13 @@ export class ProjectionsPage {
 
   // ------------------------------------------------------------ Scénarios (PRJ-03)
 
+  /** Choisis ici, modifiés dans les réglages (E33). */
   protected readonly scenarios = rxResource({
     params: () => this.version.value(),
     stream: () => this.api.listScenarios(),
   });
 
-  protected kindYields(s: ScenarioView): { label: string; rate: string }[] {
-    return Object.entries(s.assumptions.by_kind ?? {}).map(([kind, y]) => ({
-      label: KIND_LABELS[kind as keyof typeof KIND_LABELS] ?? kind,
-      rate:
-        formatRate(y.annual_return_ppm) +
-        (y.annual_fees_ppm ? ` (frais ${formatRate(y.annual_fees_ppm)})` : ''),
-    }));
-  }
-
-  /** Hypothèses de capacité d'épargne d'un scénario, en une ligne (R-PRJ-3). */
-  protected capacityLine(s: ScenarioView): string {
-    const c = s.assumptions.capacity;
-    if (c?.enabled === false) return "Capacité d'épargne désactivée";
-    const surplus = c?.surplus_account_id
-      ? ` · reste vers ${this.accounts.byId().get(c.surplus_account_id)?.name ?? '—'}`
-      : '';
-    return (
-      `Salaires +${formatRate(c?.salary_growth_ppm ?? 20_000)}/an · ` +
-      `dépenses +${formatRate(c?.expense_growth_ppm ?? 20_000)}/an${surplus}`
-    );
-  }
-
   protected rate(ppm: number | null | undefined): string {
     return ppm === null || ppm === undefined ? '—' : formatRate(ppm);
-  }
-
-  protected async editScenario(scenario: ScenarioView | null): Promise<void> {
-    const ref = this.dialog.open(ScenarioDialog, { data: scenario, maxWidth: '44rem' });
-    if (await firstValueFrom(ref.afterClosed())) {
-      this.version.bump();
-    }
-  }
-
-  protected async removeScenario(scenario: ScenarioView): Promise<void> {
-    const ok = await confirm(this.dialog, {
-      title: `Supprimer « ${scenario.name} » ?`,
-      message: 'Ses hypothèses seront perdues.',
-      action: 'Supprimer',
-      destructive: true,
-    });
-    if (!ok) return;
-    try {
-      await firstValueFrom(this.api.deleteScenario({ id: scenario.id }));
-      this.version.bump();
-    } catch (e) {
-      this.snack.open(errorMessage(e), undefined, { duration: 5000 });
-    }
   }
 }

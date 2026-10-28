@@ -139,6 +139,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/savings/schedules').then((m) => m.SchedulesPage),
       },
       {
+        path: 'reglages/scenarios',
+        title: 'Scénarios — Cashflow',
+        loadComponent: () =>
+          import('./features/projections/scenarios').then((m) => m.ScenariosPage),
+      },
+      {
         path: 'reglages/profils',
         title: 'Profils d’import — Cashflow',
         loadComponent: () => import('./features/settings/profiles').then((m) => m.ProfilesPage),

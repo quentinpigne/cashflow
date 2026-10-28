@@ -1,5 +1,8 @@
 <div class="page">
-  <div class="page-header"><h1>Projections</h1></div>
+  <div class="page-header">
+    <h1>Projections</h1>
+    <a mat-button routerLink="/reglages/scenarios"><mat-icon>tune</mat-icon>Scénarios</a>
+  </div>
   <mat-tab-group>
     <mat-tab label="Patrimoine">
       <div class="tab">
@@ -331,53 +334,5 @@
         </div>
       </mat-tab>
     }
-
-    <mat-tab label="Scénarios">
-      <div class="tab">
-        <p class="muted">{{ disclaimer }}</p>
-        @for (s of scenarios.value() ?? []; track s.id) {
-          <section class="card scenario">
-            <header>
-              <h2>
-                {{ s.name }}
-                @if (s.is_default) {
-                  <span class="tag">par défaut</span>
-                }
-              </h2>
-              <button mat-button (click)="editScenario(s)">
-                <mat-icon>edit</mat-icon>Modifier
-              </button>
-              @if (!s.is_default) {
-                <button
-                  mat-icon-button
-                  [attr.aria-label]="'Supprimer ' + s.name"
-                  (click)="removeScenario(s)"
-                >
-                  <mat-icon>delete</mat-icon>
-                </button>
-              }
-            </header>
-            <p class="muted small">
-              Horizon {{ s.horizon_months / 12 }} ans
-              @if (s.inflation_rate_ppm) {
-                · inflation {{ rate(s.inflation_rate_ppm) }}
-              }
-              <br />{{ capacityLine(s) }}
-            </p>
-            <ul class="yields">
-              @for (y of kindYields(s); track y.label) {
-                <li>
-                  <span>{{ y.label }}</span
-                  ><span class="amount">{{ y.rate }}</span>
-                </li>
-              }
-            </ul>
-          </section>
-        }
-        <button mat-stroked-button (click)="editScenario(null)">
-          <mat-icon>add</mat-icon>Nouveau scénario
-        </button>
-      </div>
-    </mat-tab>
   </mat-tab-group>
 </div>

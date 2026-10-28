@@ -42,12 +42,13 @@ test('E24 : patrimoine projeté par scénario (PRJ-05, TDB-04)', async ({ page }
   await expect(page.getByText('Médian dans 20 ans')).toBeVisible();
 });
 
-test('E24 : projection d’épargne et scénarios (PRJ-02, PRJ-03, PRJ-04)', async ({ page }) => {
+test('E24, E33 : projection d’épargne et scénarios (PRJ-02, PRJ-03, PRJ-04)', async ({ page }) => {
   await login(page);
   await page.goto('/projections');
   await page.getByRole('tab', { name: 'Épargne' }).click();
   await expect(page.getByText(/Hypothèses :/)).toBeVisible();
-  await page.getByRole('tab', { name: 'Scénarios' }).click();
+  await page.getByRole('link', { name: 'Scénarios' }).click();
+  await expect(page).toHaveURL(/\/reglages\/scenarios$/);
   await expect(page.getByRole('heading', { name: /Médian/ })).toBeVisible();
   await expect(page.locator('.tag', { hasText: 'par défaut' })).toBeVisible();
 });

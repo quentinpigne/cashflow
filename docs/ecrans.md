@@ -557,7 +557,7 @@ Ce qui change dans les écrans existants :
   **Récurrences** (E23) sont dans le menu ⋮ du haut.
 - **E1 Accueil** : bloc **Échéances non vues** (R-TRX-42) quand une échéance passée n'a été honorée par
   aucune transaction.
-- **E9 Réglages** : entrée **Récurrences**.
+- **E9 Réglages** : entrées **Récurrences** et **Scénarios de projection** (E33).
 
 ## E23 — Récurrences (TRX-07)
 
@@ -574,8 +574,9 @@ toléré, rythme (« tous les N semaine / mois / trimestre / an »), première �
 
 ## E24 — Projections (PRJ-01 à PRJ-05, TDB-04)
 
-Quatre onglets, chacun avec ses hypothèses affichées et le rappel qu'il s'agit d'hypothèses, non de
-prévisions (R-PRJ-3, R-PRJ-31) :
+Trois onglets, chacun avec ses hypothèses affichées et le rappel qu'il s'agit d'hypothèses, non de
+prévisions (R-PRJ-3, R-PRJ-31). Dans l'en-tête, un lien **Scénarios** ouvre leur page dans les réglages
+(E33) :
 - **Patrimoine** : courbe réelle des 24 derniers mois (TDB-04), prolongée en pointillés par chaque
   scénario ; horizon 5, 10, 20 ou 30 ans ; valeur finale par scénario (et en euros constants si le
   scénario a une inflation) ; comptes partis d'une valorisation ancienne signalés.
@@ -584,9 +585,14 @@ prévisions (R-PRJ-3, R-PRJ-31) :
   en escalier, liste des mouvements connus (échéances prévues et transactions en attente).
 - **Épargne** : compte d'épargne, scénario, horizon ; valeur du jour et à l'horizon, courbe, hypothèses
   (taux et plafond pour un livret, rendement et frais pour l'épargne variable, versement mensuel).
-- **Scénarios** : un bloc par scénario (horizon, inflation, rendements par nature) ; « Modifier » ouvre
-  les hypothèses : rendement et frais par nature, réglages par compte (dont le versement mensuel), taux
-  futurs des barèmes (R-PRJ-21) ; scénario par défaut ; suppression sauf pour le scénario par défaut.
+
+## E33 — Scénarios de projection (PRJ-03)
+
+Dans les réglages, comme les barèmes de taux (E22) : les scénarios sont des hypothèses qu'on règle de
+temps en temps, pas un résultat qu'on consulte. Un bloc par scénario (horizon, inflation, rendements par
+nature) ; « Modifier » ouvre les hypothèses : rendement et frais par nature, réglages par compte (dont le
+versement mensuel), taux futurs des barèmes (R-PRJ-21) ; scénario par défaut ; suppression sauf pour le
+scénario par défaut. Action « Nouveau » dans l'en-tête.
 
 # Écrans — biens et prêts (spec 09)
 
@@ -663,8 +669,8 @@ Ce qui change dans les écrans existants :
   - nouvel onglet **Salaire** : net annuel réel (R-SAL-8) prolongé en pointillés par chaque scénario
     (R-SAL-13), horizon 5, 10, 20 ou 30 ans, hypothèses (taux, rémunérations et primes prévues, fins
     d'emploi) ;
-  - formulaire d'un scénario : bloc **Capacité d'épargne** avec l'interrupteur (R-PRJ-47), le taux de hausse
-    des salaires, le taux de hausse des dépenses et le compte d'affectation du reste (aucun par défaut).
+  - formulaire d'un scénario (E33) : bloc **Capacité d'épargne** avec l'interrupteur (R-PRJ-47), le taux de
+    hausse des salaires, le taux de hausse des dépenses et le compte d'affectation du reste (aucun par défaut).
 
 ## E29 — Salaires (SAL-01, SAL-02)
 
