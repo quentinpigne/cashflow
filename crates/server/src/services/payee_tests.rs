@@ -351,6 +351,53 @@ async fn r_tie_16_r_tie_17_r_tie_18_import_suggests_payees() {
     assert_eq!(transactions::list_all(&db, &filter).await.unwrap().total, 2);
 }
 
+/// Les dates et numéros des libellés bancaires n'empêchent pas l'apprentissage (R-IMP-13, R-TIE-17).
+#[tokio::test]
+async fn r_imp_13_r_tie_17_learning_ignores_variable_parts_of_labels() {
+    let (db, dir) = setup().await;
+    let data = DataDir::new(dir.path().join("data"));
+    data.ensure().unwrap();
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let bakery = category(&db, "Boulangerie", CategoryKind::Expense, None).await;
+    let dupont = payee(&db, "Boulangerie Dupont", None).await;
+    let earlier =
+        import(&db, &data, checking, "Date;Libellé;Montant\n02/03/2026;CB BOULANGERIE DUPONT 02/03;-4,20\n").await;
+    let line = &earlier.lines[0];
+    imports::review_line(
+        &db,
+        earlier.summary.id,
+        line.id,
+        &imports::LineReviewInput {
+            decision: line.decision.unwrap(),
+            match_transaction_id: None,
+            label: None,
+            splits: vec![imports::DraftSplit { category_id: Some(bakery), amount_minor: -420, note: None }],
+            note: None,
+            transfer_to: None,
+            transfer_transaction_id: None,
+            payee_id: Some(dupont),
+        },
+    )
+    .await
+    .unwrap();
+    imports::commit(&db, &data, earlier.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
+
+    let batch = import(
+        &db,
+        &data,
+        checking,
+        "Date;Libellé;Montant\n10/03/2026;CB BOULANGERIE DUPONT 10/03;-3,80\n11/03/2026;CB 11/03 4521;-9,00\n",
+    )
+    .await;
+    let learned = &batch.lines[0];
+    assert_eq!((learned.payee_id, learned.payee_learned), (Some(dupont), true));
+    assert!(learned.learned);
+    assert_eq!(learned.splits[0].category_id, Some(bakery));
+    // Un libellé réduit à des mots d'opération ne désigne personne : rien n'est appris.
+    let anonymous = &batch.lines[1];
+    assert_eq!((anonymous.payee_id, anonymous.learned), (None, false));
+}
+
 #[tokio::test]
 async fn r_tie_19_rules_on_demand_fill_missing_payees_only() {
     let (db, _dir) = setup().await;

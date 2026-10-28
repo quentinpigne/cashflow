@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use cashflow_domain::import::fingerprint::{self, LineKey, normalize_label};
+use cashflow_domain::import::learning::learning_key;
 use cashflow_domain::import::matcher::{self, AUTO_MATCH_SCORE, Candidate, LineToMatch};
 use cashflow_domain::import::rules::{Subject, evaluate};
 use cashflow_domain::import::{self as domain_import, BatchStatus, ImportDecision, MatchKind};
@@ -219,7 +220,7 @@ pub struct ImportLineView {
     pub learned: bool,
     /// Tiers de la transaction créée (TIE-03).
     pub payee_id: Option<PayeeId>,
-    /// Tiers appris d'un libellé identique (R-TIE-17).
+    /// Tiers appris d'un libellé de même clé d'apprentissage (R-TIE-17).
     pub payee_learned: bool,
     pub transaction_id: Option<TransactionId>,
 }
@@ -533,9 +534,10 @@ fn find_stored_file(data: &DataDir, batch: ImportBatchId) -> Option<PathBuf> {
 /// Suggestions de catégorisation : règles, puis apprentissage, puis catégorie du tiers, puis catégorie de la banque.
 struct Suggester {
     rules: Vec<cashflow_domain::import::rules::Rule<CategorizationRuleId>>,
+    /// Catégorie de la dernière transaction du compte pour chaque clé d'apprentissage (R-IMP-13).
     learned: HashMap<String, CategoryId>,
     categories_by_name: HashMap<String, CategoryId>,
-    /// Tiers de la dernière transaction de chaque libellé normalisé, tous comptes (R-TIE-17).
+    /// Tiers de la dernière transaction pour chaque clé d'apprentissage, tous comptes (R-TIE-17).
     learned_payees: HashMap<String, PayeeId>,
     /// Catégorie suggérée par chaque tiers (R-TIE-14, R-TIE-18).
     payee_categories: HashMap<PayeeId, CategoryId>,
@@ -546,8 +548,10 @@ impl Suggester {
         let rules = rules::active(db).await?;
         let mut learned = HashMap::new();
         for (label, category) in db::imports::labelled_categories(&db.read, account).await? {
-            if let Ok(category) = category.parse() {
-                learned.entry(normalize_label(&label)).or_insert(category);
+            if let Ok(category) = category.parse()
+                && let Some(key) = learning_key(&label)
+            {
+                learned.entry(key).or_insert(category);
             }
         }
         let categories_by_name = db::categories::list(&db.read)
@@ -558,12 +562,15 @@ impl Suggester {
             .collect();
         let mut learned_payees = HashMap::new();
         for (label, payee) in db::payees::labelled_payees(&db.read).await? {
-            learned_payees.entry(normalize_label(&label)).or_insert(payee);
+            if let Some(key) = learning_key(&label) {
+                learned_payees.entry(key).or_insert(payee);
+            }
         }
         Ok(Self { rules, learned, categories_by_name, learned_payees, payee_categories: payee_categories(db).await? })
     }
 
     fn suggest(&self, account: AccountId, line: &ReadLine, amount: Money) -> Review {
+        let key = learning_key(&line.bank_label);
         let subject = Subject { account, bank_label: &line.bank_label, label: &line.bank_label, amount };
         let suggestion = evaluate(&self.rules, &subject);
         let mut review = Review {
@@ -579,7 +586,7 @@ impl Suggester {
         }
         review.payee = suggestion.payee;
         if review.payee.is_none() {
-            review.payee = self.learned_payees.get(&normalize_label(&line.bank_label)).copied();
+            review.payee = key.as_ref().and_then(|k| self.learned_payees.get(k)).copied();
             review.payee_learned = review.payee.is_some();
         }
         let payee_category = review.payee.and_then(|p| self.payee_categories.get(&p)).copied();
@@ -595,7 +602,7 @@ impl Suggester {
                         .collect(),
                 );
             }
-        } else if let Some(category) = self.learned.get(&normalize_label(&line.bank_label)) {
+        } else if let Some(category) = key.as_ref().and_then(|k| self.learned.get(k)) {
             review.splits =
                 Some(vec![DraftSplit { category_id: Some(*category), amount_minor: amount.minor(), note: None }]);
             review.learned = true;

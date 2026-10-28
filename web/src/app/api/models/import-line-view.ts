@@ -34,7 +34,7 @@ export interface ImportLineView {
   payee_id?: (PayeeId | null);
 
   /**
-   * Tiers appris d'un libellé identique (R-TIE-17).
+   * Tiers appris d'un libellé de même clé d'apprentissage (R-TIE-17).
    */
   payee_learned: boolean;
   proposal?: (TransferProposal | null);

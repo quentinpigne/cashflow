@@ -74,8 +74,8 @@ opération à l'autre. Les règles de catégorisation font le lien entre les lib
   une règle qui s'applique après une autre n'écrase pas le tiers déjà proposé. Une règle ne crée jamais de
   tiers : elle désigne un tiers existant.
 - **R-TIE-17** — **Suggestion apprise** : pour une ligne `CREATE` à laquelle aucune règle n'affecte de
-  tiers, le tiers suggéré est celui de la dernière transaction, **tous comptes confondus**, au libellé
-  bancaire normalisé identique (même normalisation que R-IMP-13), s'il existe et n'est pas archivé.
+  tiers, le tiers suggéré est celui de la dernière transaction, **tous comptes confondus**, de même clé
+  d'apprentissage que le libellé bancaire (R-IMP-13), s'il existe et n'est pas archivé.
 - **R-TIE-18** — Si aucune règle ni R-IMP-13 ne suggère de catégorie, mais qu'un tiers est suggéré, la
   catégorie suggérée est celle de R-TIE-14 pour ce tiers.
 - **R-TIE-19** — L'application **à la demande** d'une règle (R-IMP-19) qui porte `set_payee` vise aussi les
@@ -167,6 +167,10 @@ paiement. Décision : ADR-0025.
 - Étant donné une transaction du livret au libellé normalisé « PRLV EDF » rattachée au tiers « EDF », quand
   j'importe une ligne « PRLV EDF » sur le compte courant et qu'aucune règle ne s'applique, alors le tiers
   suggéré est « EDF » (R-TIE-17).
+- Étant donné une transaction « CB BOULANGERIE DUPONT 02/03 » rattachée au tiers « Boulangerie Dupont »,
+  quand j'importe une ligne « CB BOULANGERIE DUPONT 10/03 », alors le tiers suggéré est « Boulangerie
+  Dupont » : la date du libellé ne compte pas (R-TIE-17, R-IMP-13). Une ligne « CB 11/03 4521 » ne
+  reçoit aucune suggestion.
 
 ### TIE-04 — Critères d'acceptation
 

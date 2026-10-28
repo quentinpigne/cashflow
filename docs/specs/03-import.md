@@ -146,8 +146,15 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   ligne `CREATE`. La première règle qui correspond s'applique ; si son `stop_processing` vaut `false`,
   les suivantes sont aussi évaluées, et les actions déjà appliquées ne sont pas écrasées.
 - **R-IMP-13** — Sans règle applicable, la catégorie suggérée est celle de la dernière transaction du
-  même compte au libellé normalisé identique, si elle existe (« apprentissage » minimal). Le tiers suit
+  même compte de même **clé d'apprentissage**, si elle existe (« apprentissage » minimal). Le tiers suit
   une règle voisine, tous comptes confondus (R-TIE-17, R-TIE-18).
+  - La clé d'apprentissage est le libellé bancaire normalisé (R-IMP-5), découpé en mots (tout caractère
+    non alphanumérique sépare), sans les mots qui contiennent un chiffre (dates, numéros de carte,
+    montants, références) : « CB CARREFOUR MEYLAN 14/03 » et « CB Carrefour Meylan 02/04 » ont la même
+    clé, « CB CARREFOUR MEYLAN ».
+  - S'il ne reste que des mots d'opération (CB, CARTE, PRLV, PRELEVEMENT, SEPA, VIR, VIREMENT, RECU,
+    EMIS, INST, PAIEMENT, RETRAIT, DAB, ECH, FACT, FACTURE, EUR), la ligne n'a pas de clé et rien n'est
+    appris.
 - **R-IMP-14** — Les candidats de virement interne (R-TRX-35), y compris parmi les lignes d'**autres
   lots en revue**, sont suggérés. Accepter la suggestion crée le virement à la validation. Sans
   candidat, marquer la ligne comme virement vers un compte crée la jambe opposée à la validation

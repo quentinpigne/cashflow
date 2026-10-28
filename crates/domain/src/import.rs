@@ -6,6 +6,7 @@
 pub mod amount;
 pub mod date;
 pub mod fingerprint;
+pub mod learning;
 pub mod matcher;
 pub mod rules;
 

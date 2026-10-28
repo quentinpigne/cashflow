@@ -107,6 +107,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Lot d'import | `ImportBatch` | Un fichier importé dans un compte, avec son statut et ses lignes. Annulable. |
 | Ligne d'import | `ImportLine` | Ligne lue et normalisée d'un fichier, en attente de décision. |
 | Empreinte | `fingerprint` | Hash stable d'une ligne qui sert à détecter les doublons. |
+| Clé d'apprentissage | `learning_key` | Libellé bancaire normalisé, sans ses parties variables (dates, numéros, références) : deux opérations chez la même contrepartie ont la même clé. Sert aux suggestions apprises. |
 | Correspondance | `match` | Association proposée entre une ligne d'import et une transaction existante. |
 | Décision d'import | `ImportDecision` | Choix pour une ligne : `CREATE`, `MATCH` (pointer une existante), `SKIP`. |
 | Règle de catégorisation | `CategorizationRule` | Condition sur une transaction (libellé, montant, compte) et actions associées (catégorie, libellé, tiers, virement). |
