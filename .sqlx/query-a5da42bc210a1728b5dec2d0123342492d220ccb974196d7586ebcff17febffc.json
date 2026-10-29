@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE OR IGNORE document_link SET payee_id = ? WHERE payee_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a5da42bc210a1728b5dec2d0123342492d220ccb974196d7586ebcff17febffc"
+}

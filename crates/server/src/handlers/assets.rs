@@ -1,8 +1,9 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use cashflow_domain::shared::ids::{AssetId, AssetValuationId};
 
+use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::assets::{self, AssetInput, AssetSummary, AssetValuationInput, AssetView};
 use crate::services::features::{self, Features, FeaturesInput};
@@ -47,11 +48,15 @@ pub async fn update(
 }
 
 #[utoipa::path(
-    delete, operation_id = "deleteAsset", path = "/assets/{id}", tag = "assets", params(("id" = AssetId, Path)),
+    delete, operation_id = "deleteAsset", path = "/assets/{id}", tag = "assets", params(("id" = AssetId, Path), DeleteQuery),
     responses((status = 204), (status = 404, body = Problem))
 )]
-pub async fn delete(State(state): State<AppState>, Path(id): Path<AssetId>) -> AppResult<StatusCode> {
-    assets::delete(&state.db, id).await?;
+pub async fn delete(
+    State(state): State<AppState>,
+    Path(id): Path<AssetId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    assets::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

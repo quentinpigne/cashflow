@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use super::{clean, required};
+use crate::config::DataDir;
 use crate::db::payees::{PayeeFields, PayeeRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
@@ -501,11 +502,17 @@ pub async fn search_address(db: &Db, geocoder: &Geocoder, query: &str) -> AppRes
     })
 }
 
-/// Supprime un tiers jamais utilisé (R-TIE-5).
-pub async fn delete(db: &Db, id: PayeeId) -> AppResult<()> {
+/// Supprime un tiers jamais utilisé (R-TIE-5). Ses documents restent, sauf ceux rattachés seulement à lui si
+/// `delete_documents` (R-DOC-12).
+pub async fn delete(db: &Db, data: &DataDir, id: PayeeId, delete_documents: bool, today: Date) -> AppResult<()> {
     let payee = db::payees::find(&db.read, id).await?.ok_or(AppError::NotFound("tiers"))?;
     payees::check_deletable(u64::try_from(payee.usage).unwrap_or(u64::MAX))?;
-    db::payees::delete(&db.write, id).await.map_err(|_| AppError::Domain(DomainError::PayeeInUse))?;
+    let mut tx = db.write.begin().await?;
+    let documents =
+        if delete_documents { super::documents::delete_exclusive(&mut tx, *id.as_uuid()).await? } else { Vec::new() };
+    db::payees::delete(&mut *tx, id).await.map_err(|_| AppError::Domain(DomainError::PayeeInUse))?;
+    tx.commit().await?;
+    super::documents::trash(data, &documents, today);
     Ok(())
 }
 
@@ -515,6 +522,8 @@ pub async fn merge(db: &Db, source: PayeeId, input: &MergePayeeInput) -> AppResu
     let mut tx = db.write.begin().await?;
     db::payees::find(&mut *tx, source).await?.ok_or(AppError::NotFound("tiers"))?;
     db::payees::find(&mut *tx, input.target_id).await?.ok_or(AppError::NotFound("tiers cible"))?;
+    // Les documents du tiers fusionné passent au tiers conservé (R-DOC-13).
+    db::documents::move_payee_links(&mut *tx, &source.to_string(), &input.target_id.to_string()).await?;
     let moved_transactions = db::payees::merge(&mut tx, source, input.target_id).await?;
     tx.commit().await?;
     Ok(MergePayeeResult { moved_transactions })

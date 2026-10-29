@@ -70,6 +70,9 @@ pub struct Problem {
     /// Pour `TOO_MANY_ATTEMPTS` : délai d'attente en secondes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retry_after: Option<u64>,
+    /// Pour `DOCUMENT_ALREADY_ARCHIVED` : le document qui a déjà ce fichier (R-DOC-3).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_id: Option<String>,
 }
 
 impl IntoResponse for AppError {
@@ -95,7 +98,20 @@ impl IntoResponse for AppError {
             AppError::Internal(_) => "erreur interne du serveur".to_owned(),
             other => other.to_string(),
         };
-        let problem = Problem { kind: "about:blank", title, status: status.as_u16(), code, rule, field, retry_after };
+        let document_id = match &self {
+            AppError::Domain(DomainError::DocumentAlreadyArchived { id, .. }) => Some(id.to_string()),
+            _ => None,
+        };
+        let problem = Problem {
+            kind: "about:blank",
+            title,
+            status: status.as_u16(),
+            code,
+            rule,
+            field,
+            retry_after,
+            document_id,
+        };
         let mut response = (status, Json(problem)).into_response();
         response.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("application/problem+json"));
         response

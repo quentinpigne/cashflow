@@ -32,7 +32,6 @@ import { KIND_LABELS, STATUS_LABELS, hasComputedBalance } from '../../core/label
 import { Layout } from '../../core/layout';
 import { formatMoney, parseMoney } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
-import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CategoriesStore } from '../../shared/stores';
@@ -43,6 +42,8 @@ import { InterestPanel } from '../savings/interest-panel';
 import { ValuationPanel } from '../savings/valuation-panel';
 import { ReconciliationPanel } from './reconciliation-panel';
 import { AccountStatements } from './statements';
+import { DocumentsService } from '../../api/services/documents.service';
+import { confirmDeletion } from '../documents/delete-confirmation';
 
 interface Filters {
   from: Date | null;
@@ -104,6 +105,7 @@ export class AccountDetailPage {
   private readonly reconciliation = inject(ReconciliationService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
+  private readonly documents = inject(DocumentsService);
   private readonly form = inject(AccountForm);
   private readonly router = inject(Router);
   protected readonly layout = inject(Layout);
@@ -267,18 +269,24 @@ export class AccountDetailPage {
 
   protected async remove(): Promise<void> {
     const name = this.account.hasValue() ? this.account.value().name : 'ce compte';
-    const ok = await confirm(this.dialog, {
+    const deletion = await confirmDeletion(this.dialog, this.documents, this.id(), {
       title: `Supprimer « ${name} »`,
       message:
         'Le compte est vide : il sera supprimé définitivement, avec ses conditions et valorisations.',
       action: 'Supprimer',
       destructive: true,
+      objectName: 'ce compte',
     });
-    if (!ok) {
+    if (!deletion) {
       return;
     }
     try {
-      await firstValueFrom(this.accountsApi.deleteAccount({ id: this.id() }));
+      await firstValueFrom(
+        this.accountsApi.deleteAccount({
+          id: this.id(),
+          delete_documents: deletion.deleteDocuments,
+        }),
+      );
       this.version.bump();
       await this.router.navigate(['/comptes']);
     } catch (error) {

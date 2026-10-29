@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT label AS \"label!\" FROM ledger_transaction WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "label!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "label"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "9ef4c4008a953594e92caa25e1b8d92a0a73ade07a1a5de32dd8518ff77cd859"
+}

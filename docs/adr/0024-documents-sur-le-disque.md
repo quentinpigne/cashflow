@@ -77,8 +77,8 @@ Options **2**, **4**, **6** et **8** (décisions du propriétaire, 2026-10-25 et
   `payslip` et `bank_statement` disparaissent : une migration reprend leurs lignes en documents de type
   `PAYSLIP` et `BANK_STATEMENT`, avec leur mois, leur période, leur note, le rattachement à leur emploi ou
   à leur compte, et un titre construit comme à l'envoi (R-DOC-15). Un fichier archivé deux fois (même
-  empreinte, sous deux emplois ou deux comptes) ne garde que le plus ancien, ce que la migration signale dans
-  son journal.
+  empreinte, sous deux emplois ou deux comptes) ne garde que le plus ancien ; les fichiers des autres restent
+  sur le disque, sans ligne. Le texte des documents repris est indexé au démarrage suivant.
 - **Rattachements** : table `document_link`, une ligne par rattachement, une colonne de clé étrangère par
   cible (compte, établissement, emploi, transaction, bien, prêt, tiers, projet), exactement une renseignée.
   Supprimer l'objet supprime le rattachement (`ON DELETE CASCADE`), **jamais le document** : un document

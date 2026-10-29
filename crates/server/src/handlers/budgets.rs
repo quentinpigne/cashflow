@@ -3,6 +3,7 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use cashflow_domain::shared::ids::{BudgetLineId, ProjectId};
 
+use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::budgets::{
     self, AmountChange, AttachInput, AttachResult, BudgetLineInput, BudgetLineVersion, CategoriesChange, LineSettings,
@@ -176,11 +177,15 @@ pub async fn update_project(
 }
 
 #[utoipa::path(
-    delete, operation_id = "deleteProject", path = "/projects/{id}", tag = "budgets", params(("id" = ProjectId, Path)),
+    delete, operation_id = "deleteProject", path = "/projects/{id}", tag = "budgets", params(("id" = ProjectId, Path), DeleteQuery),
     responses((status = 204), (status = 422, body = Problem))
 )]
-pub async fn delete_project(State(state): State<AppState>, Path(id): Path<ProjectId>) -> AppResult<StatusCode> {
-    budgets::delete_project(&state.db, id).await?;
+pub async fn delete_project(
+    State(state): State<AppState>,
+    Path(id): Path<ProjectId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    budgets::delete_project(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

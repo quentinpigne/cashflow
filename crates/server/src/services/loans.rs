@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use super::clean;
+use crate::config::DataDir;
 use crate::db::loans::{BalanceRow, LoanRow, ScheduleRow};
 use crate::db::transactions::NewSplit;
 use crate::db::{self, Db};
@@ -416,8 +417,8 @@ pub async fn update(db: &Db, id: LoanId, input: &LoanInput, today: Date) -> AppR
 }
 
 /// Supprime un prêt : ses mensualités ventilées et ses remboursements redeviennent des sorties non catégorisées
-/// (R-PRE-11).
-pub async fn delete(db: &Db, id: LoanId) -> AppResult<()> {
+/// (R-PRE-11). Ses documents restent, sauf ceux rattachés seulement à lui si `delete_documents` (R-DOC-12).
+pub async fn delete(db: &Db, data: &DataDir, id: LoanId, delete_documents: bool, today: Date) -> AppResult<()> {
     db::loans::find(&db.read, id).await?.ok_or(AppError::NotFound("prêt"))?;
     let payments: Vec<TransactionId> = db::loans::payments(&db.read)
         .await?
@@ -426,12 +427,15 @@ pub async fn delete(db: &Db, id: LoanId) -> AppResult<()> {
         .map(|p| p.transaction_id)
         .collect();
     let mut tx = db.write.begin().await?;
+    let documents =
+        if delete_documents { super::documents::delete_exclusive(&mut tx, *id.as_uuid()).await? } else { Vec::new() };
     for transaction in &payments {
         uncategorize(&mut tx, *transaction).await?;
     }
     db::transactions::detach_loan(&mut *tx, id).await?;
     db::loans::delete(&mut *tx, id).await?;
     tx.commit().await?;
+    super::documents::trash(data, &documents, today);
     Ok(())
 }
 

@@ -1,16 +1,11 @@
 use axum::Json;
-use axum::extract::{Multipart, Path, Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use cashflow_domain::Date;
-use cashflow_domain::shared::ids::{EmploymentId, PayslipId, SalaryBonusId, SalaryId};
-use utoipa::ToSchema;
+use cashflow_domain::shared::ids::{EmploymentId, SalaryBonusId, SalaryId};
 
-use super::{FileQuery, document_response};
-use crate::error::{AppError, AppResult, Problem};
-use crate::services::salaries::{
-    self, BonusInput, EmploymentInput, EmploymentView, PayslipInput, PayslipUpload, SalariesOverview, SalaryInput,
-};
+use super::DeleteQuery;
+use crate::error::{AppResult, Problem};
+use crate::services::salaries::{self, BonusInput, EmploymentInput, EmploymentView, SalariesOverview, SalaryInput};
 use crate::state::AppState;
 
 /// Emplois et évolution annuelle du salaire (E29, SAL-01, SAL-02).
@@ -52,13 +47,18 @@ pub async fn update(
     Ok(Json(salaries::update(&state.db, id, &input, state.clock.today()).await?))
 }
 
-/// Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).
+/// Supprime un emploi, ses rémunérations et ses primes ; ses documents restent, sauf demande contraire (R-SAL-6,
+/// R-DOC-12).
 #[utoipa::path(
     delete, operation_id = "deleteEmployment", path = "/employments/{id}", tag = "salaries",
-    params(("id" = EmploymentId, Path)), responses((status = 204), (status = 404, body = Problem))
+    params(("id" = EmploymentId, Path), DeleteQuery), responses((status = 204), (status = 404, body = Problem))
 )]
-pub async fn delete(State(state): State<AppState>, Path(id): Path<EmploymentId>) -> AppResult<StatusCode> {
-    salaries::delete(&state.db, &state.data, id, state.clock.today()).await?;
+pub async fn delete(
+    State(state): State<AppState>,
+    Path(id): Path<EmploymentId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    salaries::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -140,99 +140,4 @@ pub async fn delete_bonus(
 ) -> AppResult<StatusCode> {
     salaries::delete_bonus(&state.db, id, bonus).await?;
     Ok(StatusCode::NO_CONTENT)
-}
-
-/// Formulaire d'envoi d'une fiche de paie (`multipart/form-data`).
-#[derive(ToSchema)]
-#[allow(dead_code)]
-pub struct PayslipForm {
-    /// PDF, JPEG ou PNG, 10 Mo au plus (R-SAL-15).
-    #[schema(value_type = String, format = Binary)]
-    file: Vec<u8>,
-    /// Premier jour du mois de paie.
-    pay_month: Date,
-    note: Option<String>,
-}
-
-async fn payslip_upload(mut multipart: Multipart) -> AppResult<PayslipUpload> {
-    let bad = |message: &str| AppError::invalid("INVALID_UPLOAD", message.to_owned());
-    let (mut file_name, mut content, mut pay_month, mut note) = (None, None, None, None);
-    while let Some(field) = multipart.next_field().await.map_err(|e| bad(&e.to_string()))? {
-        match field.name().unwrap_or_default() {
-            "file" => {
-                file_name = field.file_name().map(str::to_owned);
-                content = Some(field.bytes().await.map_err(|e| bad(&e.to_string()))?.to_vec());
-            }
-            "pay_month" => {
-                let text = field.text().await.map_err(|e| bad(&e.to_string()))?;
-                pay_month = Some(text.parse::<Date>().map_err(|_| bad("mois de paie invalide"))?);
-            }
-            "note" => note = Some(field.text().await.map_err(|e| bad(&e.to_string()))?),
-            _ => {}
-        }
-    }
-    Ok(PayslipUpload {
-        file_name: file_name.unwrap_or_default(),
-        content: content.ok_or_else(|| bad("fichier manquant"))?,
-        pay_month: pay_month.ok_or_else(|| bad("mois de paie manquant"))?,
-        note,
-    })
-}
-
-/// Archive une fiche de paie (R-SAL-15, R-SAL-16).
-#[utoipa::path(
-    post, operation_id = "createPayslip", path = "/employments/{id}/payslips", tag = "salaries",
-    params(("id" = EmploymentId, Path)), request_body(content = PayslipForm, content_type = "multipart/form-data"),
-    responses((status = 200, body = EmploymentView), (status = 404, body = Problem), (status = 422, body = Problem))
-)]
-pub async fn create_payslip(
-    State(state): State<AppState>,
-    Path(id): Path<EmploymentId>,
-    multipart: Multipart,
-) -> AppResult<Json<EmploymentView>> {
-    let upload = payslip_upload(multipart).await?;
-    Ok(Json(salaries::add_payslip(&state.db, &state.data, id, upload, state.clock.today()).await?))
-}
-
-/// Modifie le mois de paie et la note d'une fiche (R-SAL-17).
-#[utoipa::path(
-    put, operation_id = "updatePayslip", path = "/employments/{id}/payslips/{payslip_id}", tag = "salaries",
-    params(("id" = EmploymentId, Path), ("payslip_id" = PayslipId, Path)), request_body = PayslipInput,
-    responses((status = 200, body = EmploymentView), (status = 404, body = Problem), (status = 422, body = Problem))
-)]
-pub async fn update_payslip(
-    State(state): State<AppState>,
-    Path((id, payslip)): Path<(EmploymentId, PayslipId)>,
-    Json(input): Json<PayslipInput>,
-) -> AppResult<Json<EmploymentView>> {
-    Ok(Json(salaries::update_payslip(&state.db, id, payslip, &input, state.clock.today()).await?))
-}
-
-/// Supprime une fiche et son document (R-SAL-17).
-#[utoipa::path(
-    delete, operation_id = "deletePayslip", path = "/employments/{id}/payslips/{payslip_id}", tag = "salaries",
-    params(("id" = EmploymentId, Path), ("payslip_id" = PayslipId, Path)),
-    responses((status = 204), (status = 404, body = Problem))
-)]
-pub async fn delete_payslip(
-    State(state): State<AppState>,
-    Path((id, payslip)): Path<(EmploymentId, PayslipId)>,
-) -> AppResult<StatusCode> {
-    salaries::delete_payslip(&state.db, &state.data, id, payslip, state.clock.today()).await?;
-    Ok(StatusCode::NO_CONTENT)
-}
-
-/// Fichier d'une fiche de paie, affiché ou téléchargé (R-SAL-18, ADR-0024).
-#[utoipa::path(
-    get, operation_id = "downloadPayslip", path = "/employments/{id}/payslips/{payslip_id}/file", tag = "salaries",
-    params(("id" = EmploymentId, Path), ("payslip_id" = PayslipId, Path), FileQuery),
-    responses((status = 200, description = "Fichier de la fiche (PDF, JPEG ou PNG)", content_type = "application/octet-stream"), (status = 404, body = Problem))
-)]
-pub async fn download_payslip(
-    State(state): State<AppState>,
-    Path((id, payslip)): Path<(EmploymentId, PayslipId)>,
-    Query(query): Query<FileQuery>,
-) -> AppResult<impl IntoResponse> {
-    let (row, content) = salaries::payslip_file(&state.db, &state.data, id, payslip).await?;
-    Ok(document_response(&row.file_name, row.media_type, content, query.download))
 }

@@ -5,6 +5,7 @@ use cashflow_domain::shared::ids::{AccountId, SplitId, TransactionId, TransferId
 use serde::Serialize;
 use utoipa::ToSchema;
 
+use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
 use crate::services::transactions::{
@@ -77,11 +78,15 @@ pub async fn update(
 }
 
 #[utoipa::path(
-    delete, operation_id = "deleteTransaction", path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path)),
+    delete, operation_id = "deleteTransaction", path = "/transactions/{id}", tag = "transactions", params(("id" = TransactionId, Path), DeleteQuery),
     responses((status = 204), (status = 422, body = Problem))
 )]
-pub async fn delete(State(state): State<AppState>, Path(id): Path<TransactionId>) -> AppResult<StatusCode> {
-    transactions::delete(&state.db, id).await?;
+pub async fn delete(
+    State(state): State<AppState>,
+    Path(id): Path<TransactionId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    transactions::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

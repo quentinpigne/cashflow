@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO document_link (document_id, account_id, institution_id, employment_id, transaction_id,\n                                              asset_id, loan_id, payee_id, project_id)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "6917738b3d85c1298276ca4822967e2d6bf2f1342bc1345bdad746269e32b1e2"
+}

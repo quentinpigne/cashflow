@@ -22,6 +22,7 @@ import { EmploymentView } from '../../api/models/employment-view';
 import { MonthCheck } from '../../api/models/month-check';
 import { PayslipView } from '../../api/models/payslip-view';
 import { SalaryView } from '../../api/models/salary-view';
+import { DocumentsService } from '../../api/services/documents.service';
 import { SalariesService } from '../../api/services/salaries.service';
 import { DataVersion } from '../../core/data-version';
 import { toIsoDate } from '../../core/dates';
@@ -30,15 +31,11 @@ import { BONUS_KIND_LABELS, SALARY_REASON_LABELS } from '../../core/labels';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { documentUrl, formatSize } from '../documents/document-labels';
+import { uploadDocument } from '../documents/upload-dialog';
 import { formatChange } from './salaries';
-import {
-  BonusDialog,
-  EmploymentDialog,
-  MONTH_NAMES,
-  PayslipDialog,
-  SalaryDialog,
-  formatSize,
-} from './salary-dialogs';
+import { BonusDialog, EmploymentDialog, MONTH_NAMES, SalaryDialog } from './salary-dialogs';
+import { confirmDeletion } from '../documents/delete-confirmation';
 
 /** Une ligne de la liste des fiches : une fiche, ou un mois sans fiche (R-SAL-18). */
 interface PayslipEntry {
@@ -303,7 +300,7 @@ interface PayslipYear {
         >
           <header>
             <h2>Fiches de paie</h2>
-            <button mat-stroked-button (click)="addPayslip(j, null)">
+            <button mat-stroked-button (click)="addPayslip(j)">
               <mat-icon>add</mat-icon>Ajouter
             </button>
           </header>
@@ -352,9 +349,9 @@ interface PayslipYear {
                       <a mat-menu-item [href]="fileUrl(j, p, true)" download>
                         <mat-icon>download</mat-icon>Télécharger
                       </a>
-                      <button mat-menu-item (click)="addPayslip(j, p)">
+                      <a mat-menu-item [routerLink]="['/documents', p.id]">
                         <mat-icon>edit</mat-icon>Modifier
-                      </button>
+                      </a>
                       <button mat-menu-item (click)="removePayslip(j, p)">
                         <mat-icon>delete</mat-icon>Supprimer
                       </button>
@@ -431,6 +428,7 @@ interface PayslipYear {
 })
 export class EmploymentPage {
   private readonly api = inject(SalariesService);
+  private readonly documents = inject(DocumentsService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
@@ -496,16 +494,19 @@ export class EmploymentPage {
   }
 
   protected async remove(j: EmploymentView): Promise<void> {
-    const ok = await confirm(this.dialog, {
+    const deletion = await confirmDeletion(this.dialog, this.documents, j.summary.id, {
       title: "Supprimer l'emploi ?",
       message:
-        'Ses rémunérations, ses primes et ses fiches de paie sont supprimées ; les transactions ne changent pas.',
+        'Ses rémunérations et ses primes sont supprimées ; les transactions ne changent pas.',
       action: 'Supprimer',
       destructive: true,
+      objectName: 'cet emploi',
     });
-    if (!ok) return;
+    if (!deletion) return;
     try {
-      await firstValueFrom(this.api.deleteEmployment({ id: j.summary.id }));
+      await firstValueFrom(
+        this.api.deleteEmployment({ id: j.summary.id, delete_documents: deletion.deleteDocuments }),
+      );
       this.version.bump();
       await this.router.navigate(['/salaires']);
     } catch (e) {
@@ -553,21 +554,19 @@ export class EmploymentPage {
   }
 
   protected fileUrl(j: EmploymentView, payslip: PayslipView, download: boolean): string {
-    const url = `/api/v1/employments/${j.summary.id}/payslips/${payslip.id}/file`;
-    return download ? `${url}?download=true` : url;
+    return documentUrl(payslip.id, download);
   }
 
-  /** Nouvelle fiche (`payslip` absent), éventuellement avec un fichier déposé, ou modification (R-SAL-17). */
-  protected async addPayslip(
-    j: EmploymentView,
-    payslip: PayslipView | null,
-    file: File | null = null,
-  ): Promise<void> {
-    const ref = this.dialog.open(PayslipDialog, {
-      data: { employmentId: j.summary.id, payslip, file },
-      maxWidth: '100vw',
+  /** Nouvelle fiche, éventuellement avec un fichier déposé (R-SAL-15, R-DOC-15). La modification se fait sur la
+   * fiche du document (E35). */
+  protected async addPayslip(j: EmploymentView, file: File | null = null): Promise<void> {
+    const created = await uploadDocument(this.dialog, {
+      file,
+      kind: 'PAYSLIP',
+      fixedKind: true,
+      target: { kind: 'EMPLOYMENT', id: j.summary.id },
     });
-    if (await firstValueFrom(ref.afterClosed())) this.version.bump();
+    if (created) this.version.bump();
   }
 
   protected dragOver(event: DragEvent): void {
@@ -580,7 +579,7 @@ export class EmploymentPage {
     event.preventDefault();
     this.dragging.set(false);
     const file = event.dataTransfer?.files[0];
-    if (file) await this.addPayslip(j, null, file);
+    if (file) await this.addPayslip(j, file);
   }
 
   protected async removePayslip(j: EmploymentView, payslip: PayslipView): Promise<void> {
@@ -592,7 +591,7 @@ export class EmploymentPage {
     });
     if (!ok) return;
     try {
-      await firstValueFrom(this.api.deletePayslip({ id: j.summary.id, payslip_id: payslip.id }));
+      await firstValueFrom(this.documents.deleteDocument({ id: payslip.id }));
       this.version.bump();
     } catch (e) {
       this.snack.open(errorMessage(e), undefined, { duration: 4000 });

@@ -2,18 +2,19 @@
 
 use std::collections::HashMap;
 
-use cashflow_domain::documents::MediaType;
+use cashflow_domain::documents::{DocumentKind, MediaType};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::salaries::{self, Bonus, BonusKind, Expected, Job, Pay, Projector, SalaryChangeReason};
-use cashflow_domain::shared::ids::{CategoryId, EmploymentId, PayslipId, SalaryBonusId, SalaryId};
-use cashflow_domain::{Date, DomainError, Money, Rate};
+use cashflow_domain::shared::ids::{CategoryId, DocumentId, EmploymentId, SalaryBonusId, SalaryId};
+use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Months};
 use serde::{Deserialize, Serialize};
+use sqlx::SqliteConnection;
 use utoipa::ToSchema;
 
 use super::{clean, documents};
 use crate::config::DataDir;
-use crate::db::salaries::{BonusRow, EmploymentRow, PayslipRow, SalaryRow};
+use crate::db::salaries::{BonusRow, EmploymentRow, SalaryRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -162,22 +163,6 @@ pub struct BonusInput {
     pub note: Option<String>,
 }
 
-/// Mois de paie et note d'une fiche ; le fichier ne se modifie pas (R-SAL-17).
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct PayslipInput {
-    /// Premier jour du mois de paie.
-    pub pay_month: Date,
-    pub note: Option<String>,
-}
-
-/// Fiche de paie envoyée (R-SAL-15).
-pub struct PayslipUpload {
-    pub file_name: String,
-    pub content: Vec<u8>,
-    pub pay_month: Date,
-    pub note: Option<String>,
-}
-
 /// Un emploi dans la liste (E29).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct EmploymentSummary {
@@ -220,10 +205,11 @@ pub struct BonusView {
     pub planned: bool,
 }
 
-/// Fiche de paie archivée (R-SAL-15).
+/// Fiche de paie archivée (R-SAL-15) : un document de la bibliothèque (spec 12).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PayslipView {
-    pub id: PayslipId,
+    pub id: DocumentId,
+    pub title: String,
     pub pay_month: Date,
     pub file_name: String,
     pub media_type: MediaType,
@@ -558,7 +544,22 @@ pub async fn get(db: &Db, id: EmploymentId, today: Date) -> AppResult<Employment
         .collect();
     let mut years = annual_views(&p, today);
     years.reverse();
-    let payslips = db::salaries::payslips(&db.read, id).await?;
+    let payslips: Vec<PayslipView> = documents::owned(db, DocumentKind::Payslip, *id.as_uuid())
+        .await?
+        .into_iter()
+        .rev()
+        .filter_map(|s| {
+            Some(PayslipView {
+                pay_month: s.month?,
+                id: s.id,
+                title: s.title,
+                file_name: s.file_name,
+                media_type: s.media_type,
+                size_bytes: s.size_bytes,
+                note: s.note,
+            })
+        })
+        .collect();
     let months: Vec<Date> = payslips.iter().map(|s| s.pay_month).collect();
     Ok(EmploymentView {
         summary: summary(e, &book, today),
@@ -571,18 +572,7 @@ pub async fn get(db: &Db, id: EmploymentId, today: Date) -> AppResult<Employment
         years,
         checks: checks(db, &book, e.income_category_id, CHECKED_MONTHS, today).await?,
         missing_payslip_months: salaries::missing_payslip_months(&p.job, &months, today),
-        payslips: payslips
-            .into_iter()
-            .rev()
-            .map(|s| PayslipView {
-                id: s.id,
-                pay_month: s.pay_month,
-                file_name: s.file_name,
-                media_type: s.media_type,
-                size_bytes: s.size_bytes,
-                note: s.note,
-            })
-            .collect(),
+        payslips,
     })
 }
 
@@ -639,18 +629,17 @@ pub async fn update(db: &Db, id: EmploymentId, input: &EmploymentInput, today: D
     get(db, id, today).await
 }
 
-/// Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).
-pub async fn delete(db: &Db, data: &DataDir, id: EmploymentId, today: Date) -> AppResult<()> {
-    let documents: Vec<_> = db::salaries::payslips(&db.read, id).await?.into_iter().map(|s| s.document_id).collect();
+/// Supprime un emploi, ses rémunérations et ses primes (R-SAL-6). Ses documents, fiches de paie comprises,
+/// restent, sauf ceux rattachés seulement à lui si `delete_documents` (R-DOC-12).
+pub async fn delete(db: &Db, data: &DataDir, id: EmploymentId, delete_documents: bool, today: Date) -> AppResult<()> {
     let mut tx = db.write.begin().await?;
+    let deleted =
+        if delete_documents { documents::delete_exclusive(&mut tx, *id.as_uuid()).await? } else { Vec::new() };
     if db::salaries::delete(&mut *tx, id).await? == 0 {
         return Err(AppError::NotFound("emploi"));
     }
-    for document in &documents {
-        db::documents::delete(&mut *tx, *document).await?;
-    }
     tx.commit().await?;
-    documents::trash(data, &documents, today);
+    documents::trash(data, &deleted, today);
     Ok(())
 }
 
@@ -740,80 +729,8 @@ pub async fn delete_bonus(db: &Db, id: EmploymentId, bonus: SalaryBonusId) -> Ap
 
 // ---------------------------------------------------------------- Fiches de paie (SAL-09)
 
-async fn payslip(db: &Db, id: EmploymentId, payslip: PayslipId) -> AppResult<PayslipRow> {
-    db::salaries::payslips(&db.read, id)
-        .await?
-        .into_iter()
-        .find(|s| s.id == payslip)
-        .ok_or(AppError::NotFound("fiche de paie"))
-}
-
-/// Archive une fiche de paie (R-SAL-15, R-SAL-16).
-pub async fn add_payslip(
-    db: &Db,
-    data: &DataDir,
-    id: EmploymentId,
-    upload: PayslipUpload,
-    today: Date,
-) -> AppResult<EmploymentView> {
-    job(&employment(db, id).await?).check_payslip(upload.pay_month)?;
-    let staged = documents::stage(data, &upload.file_name, &upload.content)?;
-    if let Some(existing) =
-        db::salaries::payslips(&db.read, id).await?.into_iter().find(|s| s.sha256 == staged.row.sha256)
-    {
-        return Err(DomainError::PayslipAlreadyArchived { pay_month: existing.pay_month }.into());
-    }
-    let note = clean(upload.note.as_deref());
-    let mut tx = db.write.begin().await?;
-    db::documents::insert(&mut *tx, &staged.row).await?;
-    db::salaries::insert_payslip(&mut *tx, PayslipId::new(), id, upload.pay_month, staged.row.id, note.as_deref())
-        .await?;
-    tx.commit().await?;
-    staged.publish()?;
-    get(db, id, today).await
-}
-
-/// Modifie le mois de paie et la note d'une fiche (R-SAL-17).
-pub async fn update_payslip(
-    db: &Db,
-    id: EmploymentId,
-    payslip: PayslipId,
-    input: &PayslipInput,
-    today: Date,
-) -> AppResult<EmploymentView> {
-    job(&employment(db, id).await?).check_payslip(input.pay_month)?;
-    let note = clean(input.note.as_deref());
-    if db::salaries::update_payslip(&db.write, id, payslip, input.pay_month, note.as_deref()).await? == 0 {
-        return Err(AppError::NotFound("fiche de paie"));
-    }
-    get(db, id, today).await
-}
-
-/// Supprime une fiche et son document (R-SAL-17).
-pub async fn delete_payslip(
-    db: &Db,
-    data: &DataDir,
-    id: EmploymentId,
-    payslip_id: PayslipId,
-    today: Date,
-) -> AppResult<()> {
-    let row = payslip(db, id, payslip_id).await?;
-    let mut tx = db.write.begin().await?;
-    db::salaries::delete_payslip(&mut *tx, id, payslip_id).await?;
-    db::documents::delete(&mut *tx, row.document_id).await?;
-    tx.commit().await?;
-    documents::trash(data, &[row.document_id], today);
-    Ok(())
-}
-
-/// Fichier d'une fiche, avec son nom et son type (R-SAL-18).
-pub async fn payslip_file(
-    db: &Db,
-    data: &DataDir,
-    id: EmploymentId,
-    payslip_id: PayslipId,
-) -> AppResult<(PayslipRow, Vec<u8>)> {
-    let row = payslip(db, id, payslip_id).await?;
-    let content = documents::read(data, row.document_id)?;
-    Ok((row, content))
+/// Le mois d'une fiche de paie tombe pendant son emploi (R-SAL-15).
+pub async fn check_payslip_month(conn: &mut SqliteConnection, id: EmploymentId, month: Date) -> AppResult<()> {
+    let employment = db::salaries::find(&mut *conn, id).await?.ok_or(AppError::NotFound("emploi"))?;
+    Ok(job(&employment).check_payslip(month)?)
 }

@@ -81,6 +81,8 @@ pub struct TransactionListItem {
     pub payee_id: Option<PayeeId>,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
+    /// A au moins un justificatif (DOC-04).
+    pub has_documents: bool,
     /// Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
     pub balance_after_minor: Option<i64>,
 }
@@ -234,6 +236,8 @@ pub struct TransactionFilter {
     pub payee_group_id: Option<PayeeGroupId>,
     /// Seulement les transactions sans tiers, hors virements.
     pub without_payee: Option<bool>,
+    /// Avec (`true`) ou sans (`false`) justificatif (DOC-04).
+    pub with_documents: Option<bool>,
     pub cursor: Option<String>,
     /// 200 par défaut.
     pub limit: Option<usize>,
@@ -275,24 +279,14 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
         transactions.iter().map(|t| DatedAmount { balance_date: t.balance_date, amount: t.amount }).collect();
     let running = balance::running_balances(row.opening_balance, &movements);
 
-    let category_ids = category_family(db, filter.category_id).await?;
-    let payee_ids = payee_selection(db, filter).await?;
-    let text = clean(filter.text.as_deref()).map(|t| t.to_lowercase());
+    let selection = selection(db, filter).await?;
 
     let mut items: Vec<TransactionListItem> = transactions
         .into_iter()
         .zip(running)
         .filter_map(|(t, balance_after)| {
             let tx_splits = splits.remove(&t.id).unwrap_or_default();
-            let keep = matches_filter(
-                &t,
-                &tx_splits,
-                transfers.contains_key(&t.id),
-                filter,
-                category_ids.as_ref(),
-                payee_ids.as_ref(),
-                text.as_deref(),
-            );
+            let keep = matches_filter(&t, &tx_splits, transfers.contains_key(&t.id), filter, &selection);
             keep.then(|| TransactionListItem {
                 id: t.id,
                 account_name: row.name.clone(),
@@ -307,6 +301,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
                 origin: t.origin,
                 payee_id: t.payee_id,
                 splits: tx_splits,
+                has_documents: selection.documented.contains(&t.id),
                 transfer: transfers.get(&t.id).map(|side| transfer_summary(side, &names)),
                 balance_after_minor: Some(balance_after.minor()),
             })
@@ -634,15 +629,26 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
 }
 
 /// Supprime une transaction. Une jambe de virement supprimée délie l'autre, qui reste (R-TRX-34) ; une mensualité
-/// supprimée libère son échéance (R-PRE-8).
-pub async fn delete(db: &Db, id: TransactionId) -> AppResult<()> {
+/// supprimée libère son échéance (R-PRE-8). Ses justificatifs restent, sauf ceux rattachés seulement à elle si
+/// `delete_documents` (R-DOC-12).
+pub async fn delete(
+    db: &Db,
+    data: &crate::config::DataDir,
+    id: TransactionId,
+    delete_documents: bool,
+    today: Date,
+) -> AppResult<()> {
     let current = db::transactions::find(&db.read, id).await?.ok_or(AppError::NotFound("transaction"))?;
     if current.clearing_status == ClearingStatus::Reconciled {
         return Err(DomainError::TransactionLocked.into());
     }
-    let mut conn = db.write.acquire().await?;
-    reconciliation::lock(&mut conn, current.account_id).await?.check(current.balance_date)?;
-    db::transactions::delete(&mut *conn, id).await?;
+    let mut tx = db.write.begin().await?;
+    reconciliation::lock(&mut tx, current.account_id).await?.check(current.balance_date)?;
+    let documents =
+        if delete_documents { super::documents::delete_exclusive(&mut tx, *id.as_uuid()).await? } else { Vec::new() };
+    db::transactions::delete(&mut *tx, id).await?;
+    tx.commit().await?;
+    super::documents::trash(data, &documents, today);
     Ok(())
 }
 
@@ -682,16 +688,36 @@ pub(crate) async fn insert_validated(
     Ok(())
 }
 
+/// Ce que les filtres d'une liste demandent de charger : catégories et tiers visés, texte cherché, transactions
+/// qui ont un justificatif (DOC-04).
+struct Selection {
+    category_ids: Option<HashSet<CategoryId>>,
+    payee_ids: Option<HashSet<PayeeId>>,
+    text: Option<String>,
+    documented: HashSet<TransactionId>,
+}
+
+async fn selection(db: &Db, filter: &TransactionFilter) -> AppResult<Selection> {
+    let documented = db::documents::transactions_with_documents(&db.read).await?;
+    Ok(Selection {
+        category_ids: category_family(db, filter.category_id).await?,
+        payee_ids: payee_selection(db, filter).await?,
+        text: clean(filter.text.as_deref()).map(|t| t.to_lowercase()),
+        documented: documented.iter().filter_map(|id| id.parse().ok()).collect(),
+    })
+}
+
 /// Filtre commun aux listes de transactions.
 fn matches_filter(
     t: &crate::db::transactions::TransactionRow,
     splits: &[Split],
     is_transfer: bool,
     filter: &TransactionFilter,
-    category_ids: Option<&HashSet<CategoryId>>,
-    payee_ids: Option<&HashSet<PayeeId>>,
-    text: Option<&str>,
+    selection: &Selection,
 ) -> bool {
+    let (category_ids, payee_ids, text) =
+        (selection.category_ids.as_ref(), selection.payee_ids.as_ref(), selection.text.as_deref());
+    let has_documents = selection.documented.contains(&t.id);
     filter.from.is_none_or(|from| t.date >= from)
         && filter.to.is_none_or(|to| t.date <= to)
         && filter.status.is_none_or(|status| t.clearing_status == status)
@@ -701,6 +727,7 @@ fn matches_filter(
         && (!filter.uncategorized.unwrap_or(false) || (!is_transfer && splits.iter().any(|s| s.category_id.is_none())))
         && payee_ids.is_none_or(|ids| t.payee_id.is_some_and(|p| ids.contains(&p)))
         && (!filter.without_payee.unwrap_or(false) || (!is_transfer && t.payee_id.is_none()))
+        && filter.with_documents.is_none_or(|wanted| has_documents == wanted)
         && text.is_none_or(|text| {
             [Some(&t.label), t.bank_label.as_ref(), t.note.as_ref()]
                 .into_iter()
@@ -767,24 +794,14 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
             }
         }
     }
-    let category_ids = category_family(db, filter.category_id).await?;
-    let payee_ids = payee_selection(db, filter).await?;
-    let text = clean(filter.text.as_deref()).map(|t| t.to_lowercase());
+    let selection = selection(db, filter).await?;
     let mut items: Vec<TransactionListItem> = transactions
         .into_iter()
         .filter(|t| wanted.as_ref().is_none_or(|w| w.contains(&t.account_id)))
         .filter_map(|t| {
             let tx_splits = splits.remove(&t.id).unwrap_or_default();
             let side = sides.get(&t.id);
-            let keep = matches_filter(
-                &t,
-                &tx_splits,
-                side.is_some(),
-                filter,
-                category_ids.as_ref(),
-                payee_ids.as_ref(),
-                text.as_deref(),
-            );
+            let keep = matches_filter(&t, &tx_splits, side.is_some(), filter, &selection);
             keep.then(|| TransactionListItem {
                 id: t.id,
                 account_name: accounts.get(&t.account_id).cloned().unwrap_or_default(),
@@ -799,6 +816,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
                 origin: t.origin,
                 payee_id: t.payee_id,
                 splits: tx_splits,
+                has_documents: selection.documented.contains(&t.id),
                 transfer: side.map(|s| transfer_summary(s, &accounts)),
                 balance_after_minor: None,
             })

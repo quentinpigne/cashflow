@@ -11,12 +11,18 @@ import { TransactionId } from '../../models/transaction-id';
 
 export interface DeleteTransaction$Params {
   id: TransactionId;
+
+/**
+ * Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.
+ */
+  delete_documents?: boolean;
 }
 
 export function deleteTransaction(http: HttpClient, rootUrl: string, params: DeleteTransaction$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, deleteTransaction.PATH, 'delete');
   if (params) {
     rb.path('id', params.id, {});
+    rb.query('delete_documents', params.delete_documents, {});
   }
 
   return http.request(

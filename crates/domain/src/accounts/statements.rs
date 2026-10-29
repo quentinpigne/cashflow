@@ -1,26 +1,9 @@
-//! Relevés de compte archivés (CPT-11, ADR-0024).
+//! Relevés de compte (CPT-11) : documents de type relevé rattachés à un compte (spec 12).
 
-use chrono::{Datelike, Months};
+use chrono::Months;
 
-use crate::documents::{self, MediaType};
 use crate::salaries::month_of;
-use crate::shared::{Date, DomainError};
-
-/// Vérifie le mois et la période d'un relevé : un premier du mois, une période dans l'ordre (R-CPT-18).
-pub fn check(statement_month: Date, period: Option<(Date, Date)>) -> Result<(), DomainError> {
-    if statement_month.day() != 1 || period.is_some_and(|(start, end)| start > end) {
-        return Err(DomainError::InvalidStatement);
-    }
-    Ok(())
-}
-
-/// Vérifie le fichier d'un relevé : un document valide (ADR-0024), et un PDF (R-CPT-18).
-pub fn check_file(content: &[u8]) -> Result<(), DomainError> {
-    match documents::check(content)? {
-        MediaType::Pdf => Ok(()),
-        MediaType::Jpeg | MediaType::Png => Err(DomainError::StatementNotPdf),
-    }
-}
+use crate::shared::Date;
 
 /// Mois d'un relevé importé (R-IMP-28) : celui qui couvre le plus de jours de la période (le plus ancien à
 /// égalité) ; sans période, celui de la date de fin du lot, à défaut celui de la validation.
@@ -70,25 +53,6 @@ mod tests {
 
     fn d(s: &str) -> Date {
         s.parse().unwrap()
-    }
-
-    #[test]
-    fn r_cpt_18_statement_month_is_a_first_and_period_is_ordered() {
-        assert_eq!(check(d("2026-09-01"), Some((d("2026-09-01"), d("2026-09-30")))), Ok(()));
-        assert_eq!(check(d("2026-09-01"), None), Ok(()));
-        assert_eq!(check(d("2026-09-15"), None), Err(DomainError::InvalidStatement));
-        assert_eq!(
-            check(d("2026-09-01"), Some((d("2026-09-30"), d("2026-09-01")))),
-            Err(DomainError::InvalidStatement)
-        );
-    }
-
-    #[test]
-    fn r_cpt_18_statement_file_is_a_pdf() {
-        assert_eq!(check_file(b"%PDF-1.7 releve"), Ok(()));
-        assert_eq!(check_file(&[0xFF, 0xD8, 0xFF, 0xE0]), Err(DomainError::StatementNotPdf));
-        assert_eq!(check_file(b"PK\x03\x04"), Err(DomainError::UnsupportedDocumentType));
-        assert_eq!(check_file(b""), Err(DomainError::EmptyDocument));
     }
 
     #[test]

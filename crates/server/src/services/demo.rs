@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use anyhow::{Context, bail};
 use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::assets::AssetKind;
+use cashflow_domain::documents::{DocumentKind, LinkKind, LinkTarget};
 use cashflow_domain::loans::{Insurance, LoanKind, LoanTerms};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId, PayeeId, TransactionId};
 use cashflow_domain::{Date, Money, Rate};
@@ -32,7 +33,7 @@ const LOAN_INSTALLMENT: i64 = 115_920;
 const THIRTEENTH_MONTH: i64 = 320_000;
 
 /// PDF d'une page, fictif, pour les fiches de paie (SAL-09) et les relevés (CPT-11) de démonstration.
-fn fictitious_pdf(lines: &[String]) -> Vec<u8> {
+pub(super) fn fictitious_pdf(lines: &[String]) -> Vec<u8> {
     let text: String = lines
         .iter()
         .enumerate()
@@ -67,17 +68,19 @@ async fn statements(db: &Db, data: &DataDir, checking: AccountId, today: Date) -
     let current = cashflow_domain::salaries::month_of(today);
     for back in [5, 4, 3, 1] {
         let month = current.checked_sub_months(Months::new(back)).context("mois du relevé")?;
-        let upload = super::statements::StatementUpload {
+        let upload = super::documents::Upload {
             file_name: format!("releve-{}.pdf", month.format("%Y-%m")),
             content: fictitious_pdf(&[
                 "RELEVE DE COMPTE FICTIF - DONNEES DE DEMONSTRATION".to_owned(),
                 "Compte courant".to_owned(),
                 format!("Mois : {}", month.format("%m/%Y")),
             ]),
-            statement_month: month,
-            note: None,
+            kind: Some(DocumentKind::BankStatement),
+            month: Some(month),
+            target: Some(LinkTarget { kind: LinkKind::Account, id: *checking.as_uuid() }),
+            ..Default::default()
         };
-        super::statements::add(db, data, checking, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+        super::documents::create(db, data, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }
@@ -139,7 +142,7 @@ async fn employment(
     let current = cashflow_domain::salaries::month_of(today);
     for back in [1, 3, 4] {
         let month = current.checked_sub_months(Months::new(back)).context("mois de paie")?;
-        let upload = super::salaries::PayslipUpload {
+        let upload = super::documents::Upload {
             file_name: format!("fiche-de-paie-{}.pdf", month.format("%Y-%m")),
             content: fictitious_pdf(&[
                 "FICHE DE PAIE FICTIVE - DONNEES DE DEMONSTRATION".to_owned(),
@@ -147,10 +150,12 @@ async fn employment(
                 format!("Periode : {}", month.format("%m/%Y")),
                 format!("Net a payer : {},{:02} EUR", SALARY / 100, SALARY % 100),
             ]),
-            pay_month: month,
-            note: None,
+            kind: Some(DocumentKind::Payslip),
+            month: Some(month),
+            target: Some(LinkTarget { kind: LinkKind::Employment, id: *id.as_uuid() }),
+            ..Default::default()
         };
-        super::salaries::add_payslip(db, data, id, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+        super::documents::create(db, data, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }
@@ -678,13 +683,58 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
     recurrences(db, &c, start, today, checking, livret_a, life).await?;
 
     // Quelques dépenses récentes à catégoriser, pour l'accueil (R-TDB-5).
+    let mut receipt_for = None;
     for (offset, amount, label) in
         [(1, -2_390, "CB AMAZON MARKETPLACE"), (2, -1_450, "CB BOULANGERIE"), (4, -6_800, "CB DECATHLON")]
     {
         let date = today.checked_sub_days(Days::new(offset)).filter(|d| *d >= start);
         if let Some(date) = date {
-            spend(db, checking, date, amount, label, None).await?;
+            receipt_for = Some(spend(db, checking, date, amount, label, None).await?);
         }
+    }
+    library(db, data, loan, receipt_for, today).await
+}
+
+/// Bibliothèque de documents (spec 12) : un justificatif, l'offre du prêt, un contrat sans rattachement et un
+/// document à classer, en plus des relevés et des fiches de paie.
+async fn library(
+    db: &Db,
+    data: &DataDir,
+    loan: LoanId,
+    receipt_for: Option<TransactionId>,
+    today: Date,
+) -> anyhow::Result<()> {
+    let link = |kind, id: uuid::Uuid| Some(LinkTarget { kind, id });
+    let documents = [
+        (
+            "ticket-decathlon.pdf",
+            vec!["TICKET DE CAISSE FICTIF", "Decathlon", "Chaussures de course 68,00 EUR"],
+            Some(DocumentKind::Receipt),
+            receipt_for.and_then(|t| link(LinkKind::Transaction, *t.as_uuid())),
+        ),
+        (
+            "offre-de-pret-immobilier.pdf",
+            vec!["OFFRE DE PRET FICTIVE", "Pret immobilier - appartement", "Taux nominal 1,50 %"],
+            Some(DocumentKind::Contract),
+            link(LinkKind::Loan, *loan.as_uuid()),
+        ),
+        (
+            "Assurance habitation.pdf",
+            vec!["CONTRAT D'ASSURANCE HABITATION FICTIF", "Multirisque habitation", "Echeance annuelle au 1er janvier"],
+            Some(DocumentKind::Contract),
+            None,
+        ),
+        ("scan-courrier.pdf", vec!["COURRIER FICTIF", "Avis de modification des conditions tarifaires"], None, None),
+    ];
+    for (file_name, lines, kind, target) in documents {
+        let upload = super::documents::Upload {
+            file_name: file_name.to_owned(),
+            content: fictitious_pdf(&lines.iter().map(|l| (*l).to_owned()).collect::<Vec<_>>()),
+            kind,
+            target,
+            ..Default::default()
+        };
+        super::documents::create(db, data, upload, today).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
 }

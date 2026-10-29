@@ -19,7 +19,6 @@ pub mod rules;
 pub mod salaries;
 pub mod savings;
 pub mod settings;
-pub mod statements;
 pub mod transactions;
 
 use std::path::Path;

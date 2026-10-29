@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM document_link\n         WHERE document_id = ? AND coalesce(account_id, institution_id, employment_id, transaction_id, asset_id,\n                                            loan_id, payee_id, project_id) = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "01b3f799b7781809ffb96923aad149c7d4d61f9996ec2d6bb344672a61885355"
+}

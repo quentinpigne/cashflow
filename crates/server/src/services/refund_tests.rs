@@ -70,7 +70,7 @@ async fn trx_12_partial_refund_with_expected_amount() {
     assert_eq!(domain_error(too_much), DomainError::InvalidExpectedRefund);
 
     // Supprimer la dépense retire le lien ; la ventilation garde sa catégorie (R-TRX-55).
-    transactions::delete(&db, visit).await.unwrap();
+    transactions::delete(&db, &crate::config::DataDir::new("inutilisé"), visit, false, d("2026-03-15")).await.unwrap();
     let kept = &transactions::get(&db, cpam).await.unwrap().splits[0];
     assert_eq!((kept.refunds_transaction_id, kept.category_id), (None, Some(doctor)));
 }

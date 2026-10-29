@@ -231,7 +231,7 @@ async fn r_pre_8_a_paid_installment_is_locked_until_its_split_is_undone() {
 
     // Supprimer une mensualité ventilée libère l'échéance.
     loans::pay(&db, id, &pay).await.unwrap();
-    transactions::delete(&db, payment).await.unwrap();
+    transactions::delete(&db, &crate::config::DataDir::new("inutilisé"), payment, false, d(TODAY)).await.unwrap();
     let view = loans::get(&db, id, d("2026-01-31")).await.unwrap();
     assert!(view.schedule.unwrap().installments[0].paid_transaction_id.is_none());
 }
@@ -257,8 +257,8 @@ async fn r_pre_11_deleting_a_loan_releases_its_payments_and_payer() {
     )
     .await
     .unwrap();
-    assert_eq!(code(accounts::delete(&db, &data, f.checking, d(TODAY)).await.unwrap_err()), "ACCOUNT_NOT_EMPTY");
-    loans::delete(&db, id).await.unwrap();
+    assert_eq!(code(accounts::delete(&db, &data, f.checking, false, d(TODAY)).await.unwrap_err()), "ACCOUNT_NOT_EMPTY");
+    loans::delete(&db, &crate::config::DataDir::new("inutilisé"), id, false, d(TODAY)).await.unwrap();
     let detail = transactions::get(&db, payment).await.unwrap();
     assert_eq!((detail.splits.len(), detail.splits[0].category_id), (1, None));
     let detail = transactions::get(&db, manual).await.unwrap();
@@ -389,7 +389,7 @@ async fn bie_03_r_bie_8_acquisition_is_not_an_expense() {
     let view = assets::get(&db, id, today).await.unwrap();
     assert_eq!(view.acquisitions_total_minor, 50_000);
     // Supprimer le bien détache ses acquisitions (R-BIE-6).
-    assets::delete(&db, id).await.unwrap();
+    assets::delete(&db, &crate::config::DataDir::new("inutilisé"), id, false, d(TODAY)).await.unwrap();
     assert_eq!(super::dashboard::get(&db, today).await.unwrap().uncategorized.total, 1);
 }
 
@@ -406,7 +406,7 @@ async fn bie_02_pre_04_sections_turn_off_only_when_empty() {
     let id = create(&db, &f).await;
     let off = FeaturesInput { assets: None, loans: Some(false), ..Default::default() };
     assert_eq!(code(features::update(&db, &off).await.unwrap_err()), "FEATURE_IN_USE");
-    loans::delete(&db, id).await.unwrap();
+    loans::delete(&db, &crate::config::DataDir::new("inutilisé"), id, false, d(TODAY)).await.unwrap();
     assert!(!features::update(&db, &off).await.unwrap().loans);
     // Rubrique désactivée : aucune proposition de mensualité.
     let payment = spend(&db, f.checking, "2026-01-05", -115_920).await;

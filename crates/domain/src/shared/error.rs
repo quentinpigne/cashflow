@@ -1,5 +1,6 @@
 //! Erreurs métier typées. Chacune porte un code stable (ADR-0016) et, si elle existe, la règle violée.
 
+use super::ids::DocumentId;
 use super::{Date, Money};
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -47,12 +48,6 @@ pub enum DomainError {
     InstallmentPaymentLocked,
     #[error("ce champ n'est pas modifiable après la création du compte")]
     AccountFieldLocked,
-    #[error("relevé invalide : un premier du mois, une période dont le début précède la fin")]
-    InvalidStatement,
-    #[error("un relevé de compte est un fichier PDF")]
-    StatementNotPdf,
-    #[error("ce fichier est déjà archivé (relevé de {})", .statement_month.format("%m/%Y"))]
-    StatementAlreadyArchived { statement_month: Date },
 
     // ----- Salaires (spec 10)
     #[error("emploi invalide : fin postérieure au début, mois des augmentations de 1 à 12")]
@@ -63,16 +58,28 @@ pub enum DomainError {
     InvalidBonus,
     #[error("le mois de paie d'une fiche tombe pendant l'emploi")]
     InvalidPayslipMonth,
-    #[error("ce fichier est déjà archivé (fiche de {})", .pay_month.format("%m/%Y"))]
-    PayslipAlreadyArchived { pay_month: Date },
 
-    // ----- Documents (ADR-0024)
+    // ----- Documents (spec 12, ADR-0024)
     #[error("le fichier est vide")]
     EmptyDocument,
     #[error("le fichier dépasse 10 Mo")]
     DocumentTooLarge,
-    #[error("seuls les fichiers PDF, JPEG et PNG sont acceptés")]
+    #[error("type de fichier non accepté (PDF, JPEG ou PNG)")]
     UnsupportedDocumentType,
+    #[error("un relevé de compte est un fichier PDF")]
+    StatementNotPdf,
+    #[error("ce fichier est déjà archivé ({title})")]
+    DocumentAlreadyArchived { id: DocumentId, title: String },
+    #[error("le titre d'un document fait de 1 à 120 caractères")]
+    InvalidDocumentTitle,
+    #[error("le début de la période précède sa fin")]
+    InvalidDocumentPeriod,
+    #[error("un relevé ou une fiche de paie a un mois (un premier du mois), les autres documents n'en ont pas")]
+    InvalidDocumentMonth,
+    #[error("un relevé est rattaché à un compte, une fiche de paie à un emploi")]
+    DocumentOwnerRequired,
+    #[error("un relevé est rattaché à un seul compte, une fiche de paie à un seul emploi")]
+    DocumentOwnerNotUnique,
 
     // ----- Transactions (spec 02)
     #[error("le montant ne peut pas être nul")]
@@ -204,17 +211,20 @@ impl DomainError {
             InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
             InstallmentPaymentLocked => "INSTALLMENT_PAYMENT_LOCKED",
             AccountFieldLocked => "ACCOUNT_FIELD_LOCKED",
-            InvalidStatement => "INVALID_STATEMENT",
-            StatementNotPdf => "STATEMENT_NOT_PDF",
-            StatementAlreadyArchived { .. } => "STATEMENT_ALREADY_ARCHIVED",
             InvalidEmployment => "INVALID_EMPLOYMENT",
             InvalidSalary => "INVALID_SALARY",
             InvalidBonus => "INVALID_BONUS",
             InvalidPayslipMonth => "INVALID_PAYSLIP_MONTH",
-            PayslipAlreadyArchived { .. } => "PAYSLIP_ALREADY_ARCHIVED",
             EmptyDocument => "EMPTY_DOCUMENT",
             DocumentTooLarge => "DOCUMENT_TOO_LARGE",
             UnsupportedDocumentType => "UNSUPPORTED_DOCUMENT_TYPE",
+            StatementNotPdf => "STATEMENT_NOT_PDF",
+            DocumentAlreadyArchived { .. } => "DOCUMENT_ALREADY_ARCHIVED",
+            InvalidDocumentTitle => "INVALID_DOCUMENT_TITLE",
+            InvalidDocumentPeriod => "INVALID_DOCUMENT_PERIOD",
+            InvalidDocumentMonth => "INVALID_DOCUMENT_MONTH",
+            DocumentOwnerRequired => "DOCUMENT_OWNER_REQUIRED",
+            DocumentOwnerNotUnique => "DOCUMENT_OWNER_NOT_UNIQUE",
             AmountZero => "AMOUNT_ZERO",
             NoSplit => "NO_SPLIT",
             SplitAmountZero => "SPLIT_AMOUNT_ZERO",
@@ -271,8 +281,6 @@ impl DomainError {
             DateOutsideAccountPeriod { .. } | AccountClosed => "R-CPT-3",
             ClosingBeforeOpening | ClosingBalanceNotZero { .. } => "R-CPT-5",
             AccountNotEmpty => "R-CPT-7",
-            InvalidStatement | StatementNotPdf => "R-CPT-18",
-            StatementAlreadyArchived { .. } => "R-CPT-19",
             InvalidLoanTerms => "R-PRE-2",
             InvalidLoan => "R-PRE-1",
             InvalidAsset => "R-BIE-1",
@@ -283,8 +291,13 @@ impl DomainError {
             InvalidEmployment => "R-SAL-1",
             InvalidSalary => "R-SAL-2",
             InvalidBonus => "R-SAL-5",
-            InvalidPayslipMonth | EmptyDocument | DocumentTooLarge | UnsupportedDocumentType => "R-SAL-15",
-            PayslipAlreadyArchived { .. } => "R-SAL-16",
+            InvalidPayslipMonth => "R-SAL-15",
+            EmptyDocument | DocumentTooLarge | UnsupportedDocumentType | StatementNotPdf => "R-DOC-1",
+            DocumentAlreadyArchived { .. } => "R-DOC-3",
+            InvalidDocumentTitle => "R-DOC-4",
+            InvalidDocumentPeriod => "R-DOC-6",
+            InvalidDocumentMonth => "R-DOC-7",
+            DocumentOwnerRequired | DocumentOwnerNotUnique => "R-DOC-10",
             AmountZero => "R-TRX-1",
             BankLabelImmutable => "R-TRX-2",
             TransactionLocked => "R-TRX-3",

@@ -11,12 +11,18 @@ import { LoanId } from '../../models/loan-id';
 
 export interface DeleteLoan$Params {
   id: LoanId;
+
+/**
+ * Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.
+ */
+  delete_documents?: boolean;
 }
 
 export function deleteLoan(http: HttpClient, rootUrl: string, params: DeleteLoan$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, deleteLoan.PATH, 'delete');
   if (params) {
     rb.path('id', params.id, {});
+    rb.query('delete_documents', params.delete_documents, {});
   }
 
   return http.request(

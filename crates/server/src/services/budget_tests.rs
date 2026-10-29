@@ -209,7 +209,11 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
         payee_id: None,
     };
     transactions::update(&db, dinner, &update).await.unwrap();
-    assert!(budgets::delete_project(&db, project.id).await.is_err());
+    assert!(
+        budgets::delete_project(&db, &crate::config::DataDir::new("inutilisé"), project.id, false, d("2026-03-15"))
+            .await
+            .is_err()
+    );
 
     // L'analyse par catégorie compte la dépense du projet, sauf si on l'exclut (R-BUD-21, TDB-07).
     let report = |exclude| reports::CategoryReportQuery {
@@ -243,7 +247,7 @@ async fn bud_08_grouped_notification_is_emitted_once() {
     assert!(notifications.items[0].body.contains("80 %") && notifications.items[0].body.contains("100 %"));
 
     // Repasser sous le seuil puis le refranchir ne réémet rien.
-    transactions::delete(&db, big).await.unwrap();
+    transactions::delete(&db, &crate::config::DataDir::new("inutilisé"), big, false, d("2026-03-15")).await.unwrap();
     assert_eq!(budgets::evaluate_alerts(&db, d(TODAY)).await.unwrap(), 0);
     transactions::create(&db, &tx(checking, "2026-03-21", -5_500, Some(restaurants))).await.unwrap();
     assert_eq!(budgets::evaluate_alerts(&db, d(TODAY)).await.unwrap(), 0);

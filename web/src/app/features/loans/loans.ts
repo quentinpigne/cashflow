@@ -52,6 +52,8 @@ import {
   FeaturesStore,
   InstitutionsStore,
 } from '../../shared/stores';
+import { DocumentsService } from '../../api/services/documents.service';
+import { confirmDeletion } from '../documents/delete-confirmation';
 
 type InsuranceMode = Insurance['mode'];
 
@@ -770,6 +772,7 @@ export class LoanPage {
   private readonly api = inject(LoansService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
+  private readonly documents = inject(DocumentsService);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
   protected readonly kindLabels = LOAN_KIND_LABELS;
@@ -811,15 +814,18 @@ export class LoanPage {
   }
 
   protected async remove(l: LoanView): Promise<void> {
-    const ok = await confirm(this.dialog, {
+    const deletion = await confirmDeletion(this.dialog, this.documents, l.summary.id, {
       title: 'Supprimer le prêt ?',
       message:
         'Ses mensualités ventilées et ses remboursements redeviennent des dépenses non catégorisées.',
       action: 'Supprimer',
+      objectName: 'ce prêt',
     });
-    if (!ok) return;
+    if (!deletion) return;
     try {
-      await firstValueFrom(this.api.deleteLoan({ id: l.summary.id }));
+      await firstValueFrom(
+        this.api.deleteLoan({ id: l.summary.id, delete_documents: deletion.deleteDocuments }),
+      );
       this.version.bump();
       await this.router.navigate(['/prets']);
     } catch (e) {

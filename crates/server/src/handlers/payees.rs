@@ -5,6 +5,7 @@ use cashflow_domain::shared::ids::{PayeeGroupId, PayeeId};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
+use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::geocoding::AddressSuggestion;
 use crate::services::payees::{
@@ -57,11 +58,15 @@ pub async fn update(
 
 /// Supprime un tiers jamais utilisé (R-TIE-5).
 #[utoipa::path(
-    delete, operation_id = "deletePayee", path = "/payees/{id}", tag = "payees", params(("id" = PayeeId, Path)),
+    delete, operation_id = "deletePayee", path = "/payees/{id}", tag = "payees", params(("id" = PayeeId, Path), DeleteQuery),
     responses((status = 204), (status = 422, body = Problem))
 )]
-pub async fn delete(State(state): State<AppState>, Path(id): Path<PayeeId>) -> AppResult<StatusCode> {
-    payees::delete(&state.db, id).await?;
+pub async fn delete(
+    State(state): State<AppState>,
+    Path(id): Path<PayeeId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    payees::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

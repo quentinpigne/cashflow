@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT DISTINCT transaction_id AS \"transaction_id!: String\" FROM document_link\n           WHERE transaction_id IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "transaction_id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "transaction_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "aa2359d335cf4c9efec6cc05ab2b61a4d7d33a27e6dfd993aa8c93454dd5e864"
+}

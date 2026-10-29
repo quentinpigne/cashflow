@@ -82,8 +82,13 @@ async fn r_tie_4_r_tie_5_r_tie_7_delete_group_keep_used_payees_and_merge() {
     .await
     .unwrap();
 
-    assert_eq!(domain_error(payees::delete(&db, meylan).await), DomainError::PayeeInUse);
-    payees::delete(&db, unused).await.unwrap();
+    assert_eq!(
+        domain_error(
+            payees::delete(&db, &crate::config::DataDir::new("inutilisé"), meylan, false, d("2026-03-15")).await
+        ),
+        DomainError::PayeeInUse
+    );
+    payees::delete(&db, &crate::config::DataDir::new("inutilisé"), unused, false, d("2026-03-15")).await.unwrap();
     assert_eq!(
         domain_error(payees::merge(&db, meylan, &MergePayeeInput { target_id: meylan }).await),
         DomainError::InvalidPayeeMerge
@@ -195,7 +200,12 @@ async fn r_tie_13_recurring_rules_carry_their_payee() {
     assert_eq!(transactions::get(&db, created.transaction_id).await.unwrap().payee_id, Some(landlord));
     let transfer = RecurringRuleInput { target_account_id: Some(livret), ..rent };
     assert_eq!(domain_error(recurring::save(&db, None, &transfer, d(TODAY)).await), DomainError::PayeeOnTransferLeg);
-    assert_eq!(domain_error(payees::delete(&db, landlord).await), DomainError::PayeeInUse);
+    assert_eq!(
+        domain_error(
+            payees::delete(&db, &crate::config::DataDir::new("inutilisé"), landlord, false, d("2026-03-15")).await
+        ),
+        DomainError::PayeeInUse
+    );
 }
 
 #[tokio::test]

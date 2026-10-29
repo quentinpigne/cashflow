@@ -3,7 +3,7 @@
 
 
 /**
- * Type d'un document, reconnu à la signature de son contenu (ADR-0024).
+ * Type de contenu d'un document, reconnu à la signature de son contenu (R-DOC-1).
  */
 export type MediaType = 'application/pdf' | 'image/jpeg' | 'image/png';
 

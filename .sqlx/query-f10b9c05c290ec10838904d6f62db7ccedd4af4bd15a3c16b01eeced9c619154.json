@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT employer FROM employment WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "employer",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "employer"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f10b9c05c290ec10838904d6f62db7ccedd4af4bd15a3c16b01eeced9c619154"
+}

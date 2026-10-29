@@ -1,34 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import {
-  MAT_DIALOG_DATA,
-  MatDialog,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { StatementView } from '../../api/models/statement-view';
 import { AccountsService } from '../../api/services/accounts.service';
+import { DocumentsService } from '../../api/services/documents.service';
 import { DataVersion } from '../../core/data-version';
 import { keptValue } from '../../core/resources';
-import { currentMonth, shiftMonth } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
-import { MONTH_NAMES, formatSize } from '../salaries/salary-dialogs';
-
-/** Un relevé de compte est un PDF de 10 Mo au plus (R-CPT-18). */
-const STATEMENT_ACCEPT = '.pdf,application/pdf';
-const STATEMENT_MAX_BYTES = 10 * 1024 * 1024;
+import { documentUrl, formatSize } from '../documents/document-labels';
+import { uploadDocument } from '../documents/upload-dialog';
 
 /** Une ligne de la liste des relevés : un relevé, ou un mois sans relevé (R-CPT-21). */
 interface StatementEntry {
@@ -45,7 +34,7 @@ interface StatementYear {
 /** E3 — Relevés d'un compte (CPT-11). */
 @Component({
   selector: 'app-account-statements',
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, FrDatePipe],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, RouterLink, FrDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -57,7 +46,7 @@ interface StatementYear {
     >
       <header>
         <h2>Relevés</h2>
-        <button mat-stroked-button (click)="add(null)"><mat-icon>add</mat-icon>Ajouter</button>
+        <button mat-stroked-button (click)="add()"><mat-icon>add</mat-icon>Ajouter</button>
       </header>
       @for (y of years(); track y.year) {
         <details [open]="expanded().has(y.year)" (toggle)="toggle(y.year, $event)">
@@ -107,7 +96,9 @@ interface StatementYear {
                   <a mat-menu-item [href]="fileUrl(s, true)" download>
                     <mat-icon>download</mat-icon>Télécharger
                   </a>
-                  <button mat-menu-item (click)="add(s)"><mat-icon>edit</mat-icon>Modifier</button>
+                  <a mat-menu-item [routerLink]="['/documents', s.id]">
+                    <mat-icon>edit</mat-icon>Modifier
+                  </a>
                   <button mat-menu-item (click)="remove(s)">
                     <mat-icon>delete</mat-icon>Supprimer
                   </button>
@@ -182,6 +173,7 @@ interface StatementYear {
 })
 export class AccountStatements {
   private readonly api = inject(AccountsService);
+  private readonly documents = inject(DocumentsService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
@@ -232,17 +224,19 @@ export class AccountStatements {
   }
 
   protected fileUrl(statement: StatementView, download: boolean): string {
-    const url = `/api/v1/accounts/${this.accountId()}/statements/${statement.id}/file`;
-    return download ? `${url}?download=true` : url;
+    return documentUrl(statement.id, download);
   }
 
-  /** Nouveau relevé (`statement` absent), éventuellement avec un fichier déposé, ou modification (R-CPT-20). */
-  protected async add(statement: StatementView | null, file: File | null = null): Promise<void> {
-    const ref = this.dialog.open(StatementDialog, {
-      data: { accountId: this.accountId(), statement, file },
-      maxWidth: '100vw',
+  /** Nouveau relevé, éventuellement avec un fichier déposé (R-CPT-19, R-DOC-15). La modification se fait sur la
+   * fiche du document (E35). */
+  protected async add(file: File | null = null): Promise<void> {
+    const created = await uploadDocument(this.dialog, {
+      file,
+      kind: 'BANK_STATEMENT',
+      fixedKind: true,
+      target: { kind: 'ACCOUNT', id: this.accountId() },
     });
-    if (await firstValueFrom(ref.afterClosed())) this.version.bump();
+    if (created) this.version.bump();
   }
 
   protected dragOver(event: DragEvent): void {
@@ -255,7 +249,7 @@ export class AccountStatements {
     event.preventDefault();
     this.dragging.set(false);
     const file = event.dataTransfer?.files[0];
-    if (file) await this.add(null, file);
+    if (file) await this.add(file);
   }
 
   protected async remove(statement: StatementView): Promise<void> {
@@ -267,205 +261,10 @@ export class AccountStatements {
     });
     if (!ok) return;
     try {
-      await firstValueFrom(
-        this.api.deleteStatement({ id: this.accountId(), statement_id: statement.id }),
-      );
+      await firstValueFrom(this.documents.deleteDocument({ id: statement.id }));
       this.version.bump();
     } catch (e) {
       this.snack.open(errorMessage(e), undefined, { duration: 4000 });
-    }
-  }
-}
-
-export interface StatementDialogData {
-  accountId: string;
-  /** Relevé modifié : seuls le mois et la note changent (R-CPT-20). */
-  statement: StatementView | null;
-  /** Fichier déjà choisi, par exemple déposé sur la section. */
-  file: File | null;
-}
-
-/** Envoi ou modification d'un relevé de compte (CPT-11). */
-@Component({
-  selector: 'app-statement-dialog',
-  imports: [
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatSelectModule,
-  ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <h2 mat-dialog-title>{{ data.statement ? 'Modifier le relevé' : 'Nouveau relevé' }}</h2>
-    <mat-dialog-content class="form">
-      @if (data.statement; as s) {
-        <p class="file"><mat-icon>description</mat-icon>{{ s.file_name }}</p>
-      } @else {
-        <label class="drop">
-          <input
-            type="file"
-            [accept]="accept"
-            aria-label="Fichier du relevé"
-            (change)="choose($event)"
-          />
-          <mat-icon>upload_file</mat-icon>
-          <span>{{ file()?.name ?? 'Choisir un PDF (10 Mo au plus)' }}</span>
-        </label>
-      }
-      <div class="pair">
-        <mat-form-field>
-          <mat-label>Mois du relevé</mat-label>
-          <mat-select [ngModel]="month()" (ngModelChange)="month.set($event)">
-            @for (m of months; track $index) {
-              <mat-option [value]="$index + 1">{{ m }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Année</mat-label>
-          <input
-            matInput
-            type="number"
-            min="1950"
-            max="2100"
-            [ngModel]="year()"
-            (ngModelChange)="year.set($event)"
-          />
-        </mat-form-field>
-      </div>
-      <mat-form-field>
-        <mat-label>Note</mat-label>
-        <input matInput [ngModel]="note()" (ngModelChange)="note.set($event)" />
-        <mat-hint>Relevé rectificatif, relevé de clôture…</mat-hint>
-      </mat-form-field>
-      @if (error()) {
-        <p class="error" role="alert">{{ error() }}</p>
-      }
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Annuler</button>
-      <button mat-flat-button [disabled]="!statementMonth() || busy()" (click)="save()">
-        Enregistrer
-      </button>
-    </mat-dialog-actions>
-  `,
-  styles: `
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: var(--field-gap);
-      min-width: min(30rem, 80vw);
-    }
-    .pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--field-gap);
-      @media (max-width: 599.98px) {
-        grid-template-columns: 1fr;
-      }
-    }
-    .error {
-      color: var(--mat-sys-error);
-      margin: 0;
-    }
-    .drop {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 1.25rem;
-      border: 2px dashed var(--mat-sys-outline-variant);
-      border-radius: var(--mat-sys-corner-medium);
-      cursor: pointer;
-      input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-      }
-    }
-    .file {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin: 0;
-    }
-  `,
-})
-export class StatementDialog {
-  protected readonly data = inject<StatementDialogData>(MAT_DIALOG_DATA);
-  private readonly api = inject(AccountsService);
-  private readonly ref = inject(MatDialogRef<StatementDialog>);
-
-  protected readonly accept = STATEMENT_ACCEPT;
-  protected readonly months = MONTH_NAMES;
-  /** Le mois précédent par défaut : le relevé arrive après le mois qu'il couvre. */
-  private readonly initial =
-    this.data.statement?.statement_month ?? `${shiftMonth(currentMonth(), -1)}-01`;
-  protected readonly month = signal(Number(this.initial.slice(5, 7)));
-  protected readonly year = signal(Number(this.initial.slice(0, 4)));
-  protected readonly note = signal(this.data.statement?.note ?? '');
-  protected readonly file = signal<File | null>(null);
-  protected readonly error = signal<string | null>(null);
-  protected readonly busy = signal(false);
-
-  constructor() {
-    if (this.data.file) this.setFile(this.data.file);
-  }
-
-  protected readonly statementMonth = computed(() => {
-    const year = Number(this.year());
-    if (!Number.isInteger(year) || year < 1950 || year > 2100) return null;
-    if (!this.data.statement && !this.file()) return null;
-    return `${year}-${String(this.month()).padStart(2, '0')}-01`;
-  });
-
-  protected choose(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) this.setFile(file);
-  }
-
-  private setFile(file: File): void {
-    if (file.size > STATEMENT_MAX_BYTES) {
-      this.file.set(null);
-      this.error.set('Le fichier dépasse 10 Mo.');
-      return;
-    }
-    this.file.set(file);
-    this.error.set(null);
-  }
-
-  protected async save(): Promise<void> {
-    const statementMonth = this.statementMonth();
-    if (!statementMonth) return;
-    const id = this.data.accountId;
-    const note = this.note().trim() || null;
-    this.busy.set(true);
-    try {
-      const file = this.file();
-      if (this.data.statement) {
-        await firstValueFrom(
-          this.api.updateStatement({
-            id,
-            statement_id: this.data.statement.id,
-            body: { statement_month: statementMonth, note },
-          }),
-        );
-      } else if (file) {
-        await firstValueFrom(
-          this.api.createStatement({
-            id,
-            body: { file, statement_month: statementMonth, note },
-          }),
-        );
-      }
-      this.ref.close(true);
-    } catch (e) {
-      this.error.set(errorMessage(e));
-    } finally {
-      this.busy.set(false);
     }
   }
 }

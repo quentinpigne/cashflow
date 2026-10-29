@@ -39,11 +39,11 @@ impl Serve {
         let db = super::open(&data).await?;
         services::seed::run(&db).await?;
         let clock = self.today.map_or(Clock::System, Clock::Fixed);
-        // Reprise unique des relevés PDF importés avant l'archive des relevés (CPT-11, ADR-0024).
-        match services::statements::take_over_imports(&db, &data, clock.today()).await {
+        // Index de recherche des documents repris d'une migration ou d'une restauration (R-DOC-19).
+        match services::documents::reindex(&db, &data, false).await {
             Ok(0) => {}
-            Ok(archived) => tracing::info!(archived, "relevés repris des imports PDF"),
-            Err(error) => tracing::error!(%error, "reprise des relevés importés impossible"),
+            Ok(indexed) => tracing::info!(indexed, "documents indexés pour la recherche"),
+            Err(error) => tracing::error!(%error, "indexation des documents impossible"),
         }
         let geocoder = Geocoder::new(self.geocoding_url)?;
         let state =

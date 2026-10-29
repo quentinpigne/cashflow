@@ -10,6 +10,7 @@ use crate::db::Db;
 use crate::{routes, services};
 
 mod data;
+mod documents;
 mod password;
 mod serve;
 mod token;
@@ -47,6 +48,11 @@ enum Command {
         #[command(subcommand)]
         action: token::TokenAction,
     },
+    /// Gère la bibliothèque de documents (spec 12).
+    Documents {
+        #[command(subcommand)]
+        action: documents::DocumentsAction,
+    },
     /// Écrit le contrat OpenAPI sur la sortie standard (ADR-0016).
     Openapi,
 }
@@ -68,6 +74,7 @@ impl Cli {
             Command::Backup(args) => args.run(&open(&data).await?, &data).await,
             Command::SetPassword(args) => args.run(&open(&data).await?).await,
             Command::Token { action } => action.run(&open(&data).await?).await,
+            Command::Documents { action } => action.run(&open(&data).await?, &data).await,
         }
     }
 }

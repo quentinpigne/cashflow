@@ -64,6 +64,11 @@ export interface ListTransactions$Params {
  * Seulement les transactions sans tiers, hors virements.
  */
   without_payee?: boolean;
+
+/**
+ * Avec (`true`) ou sans (`false`) justificatif (DOC-04).
+ */
+  with_documents?: boolean;
   cursor?: string;
 
 /**
@@ -88,6 +93,7 @@ export function listTransactions(http: HttpClient, rootUrl: string, params: List
     rb.query('payee_id', params.payee_id, {});
     rb.query('payee_group_id', params.payee_group_id, {});
     rb.query('without_payee', params.without_payee, {});
+    rb.query('with_documents', params.with_documents, {});
     rb.query('cursor', params.cursor, {});
     rb.query('limit', params.limit, {});
   }

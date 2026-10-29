@@ -1,0 +1,182 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT d.id, d.kind, d.title, d.document_date AS \"document_date: Date\",\n                  d.period_start AS \"period_start: Date\", d.period_end AS \"period_end: Date\", d.month AS \"month: Date\",\n                  d.note, d.file_name, d.media_type, d.size_bytes, d.sha256,\n                  d.content_indexed AS \"content_indexed: bool\", d.created_at\n           FROM document d\n           WHERE d.kind = ?1 AND EXISTS (SELECT 1 FROM document_link l WHERE l.document_id = d.id\n                                         AND (l.account_id = ?2 OR l.employment_id = ?2))\n           ORDER BY d.month, d.created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "document_date: Date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "document_date"
+          }
+        }
+      },
+      {
+        "name": "period_start: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "name": "period_end: Date",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "period_end"
+          }
+        }
+      },
+      {
+        "name": "month: Date",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "name": "file_name",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "name": "media_type",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "media_type"
+          }
+        }
+      },
+      {
+        "name": "size_bytes",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "size_bytes"
+          }
+        }
+      },
+      {
+        "name": "sha256",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "sha256"
+          }
+        }
+      },
+      {
+        "name": "content_indexed: bool",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "content_indexed"
+          }
+        }
+      },
+      {
+        "name": "created_at",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "dbabc1314c9c2754dcaee379338f4b831dd11977148f7257722bcf5c30eaff55"
+}

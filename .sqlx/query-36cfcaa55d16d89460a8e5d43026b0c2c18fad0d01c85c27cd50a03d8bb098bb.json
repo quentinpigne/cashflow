@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT document_id, account_id, institution_id, employment_id, transaction_id, asset_id, loan_id, payee_id,\n                project_id\n         FROM document_link ORDER BY rowid",
+  "describe": {
+    "columns": [
+      {
+        "name": "document_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "document_id"
+          }
+        }
+      },
+      {
+        "name": "account_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "institution_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "institution_id"
+          }
+        }
+      },
+      {
+        "name": "employment_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "employment_id"
+          }
+        }
+      },
+      {
+        "name": "transaction_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "asset_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "asset_id"
+          }
+        }
+      },
+      {
+        "name": "loan_id",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "loan_id"
+          }
+        }
+      },
+      {
+        "name": "payee_id",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "payee_id"
+          }
+        }
+      },
+      {
+        "name": "project_id",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_link",
+            "name": "project_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "36cfcaa55d16d89460a8e5d43026b0c2c18fad0d01c85c27cd50a03d8bb098bb"
+}

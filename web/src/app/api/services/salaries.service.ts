@@ -14,20 +14,14 @@ import { createBonus } from '../fn/salaries/create-bonus';
 import { CreateBonus$Params } from '../fn/salaries/create-bonus';
 import { createEmployment } from '../fn/salaries/create-employment';
 import { CreateEmployment$Params } from '../fn/salaries/create-employment';
-import { createPayslip } from '../fn/salaries/create-payslip';
-import { CreatePayslip$Params } from '../fn/salaries/create-payslip';
 import { createSalary } from '../fn/salaries/create-salary';
 import { CreateSalary$Params } from '../fn/salaries/create-salary';
 import { deleteBonus } from '../fn/salaries/delete-bonus';
 import { DeleteBonus$Params } from '../fn/salaries/delete-bonus';
 import { deleteEmployment } from '../fn/salaries/delete-employment';
 import { DeleteEmployment$Params } from '../fn/salaries/delete-employment';
-import { deletePayslip } from '../fn/salaries/delete-payslip';
-import { DeletePayslip$Params } from '../fn/salaries/delete-payslip';
 import { deleteSalary } from '../fn/salaries/delete-salary';
 import { DeleteSalary$Params } from '../fn/salaries/delete-salary';
-import { downloadPayslip } from '../fn/salaries/download-payslip';
-import { DownloadPayslip$Params } from '../fn/salaries/download-payslip';
 import { EmploymentView } from '../models/employment-view';
 import { getEmployment } from '../fn/salaries/get-employment';
 import { GetEmployment$Params } from '../fn/salaries/get-employment';
@@ -38,8 +32,6 @@ import { updateBonus } from '../fn/salaries/update-bonus';
 import { UpdateBonus$Params } from '../fn/salaries/update-bonus';
 import { updateEmployment } from '../fn/salaries/update-employment';
 import { UpdateEmployment$Params } from '../fn/salaries/update-employment';
-import { updatePayslip } from '../fn/salaries/update-payslip';
-import { UpdatePayslip$Params } from '../fn/salaries/update-payslip';
 import { updateSalary } from '../fn/salaries/update-salary';
 import { UpdateSalary$Params } from '../fn/salaries/update-salary';
 
@@ -146,7 +138,8 @@ export class SalariesService extends BaseService {
   static readonly DeleteEmploymentPath = '/api/v1/employments/{id}';
 
   /**
-   * Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).
+   * Supprime un emploi, ses rémunérations et ses primes ; ses documents restent, sauf demande contraire (R-SAL-6,
+   * R-DOC-12).
    *
    *
    *
@@ -161,7 +154,8 @@ export class SalariesService extends BaseService {
   }
 
   /**
-   * Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).
+   * Supprime un emploi, ses rémunérations et ses primes ; ses documents restent, sauf demande contraire (R-SAL-6,
+   * R-DOC-12).
    *
    *
    *
@@ -263,146 +257,6 @@ export class SalariesService extends BaseService {
     const resp = this.deleteBonus$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
-    );
-  }
-
-  /** Path part for operation `createPayslip()` */
-  static readonly CreatePayslipPath = '/api/v1/employments/{id}/payslips';
-
-  /**
-   * Archive une fiche de paie (R-SAL-15, R-SAL-16).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `createPayslip()` instead.
-   *
-   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
-   */
-  createPayslip$Response(params: CreatePayslip$Params, context?: HttpContext): Observable<StrictHttpResponse<EmploymentView>> {
-    const obs = createPayslip(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Archive une fiche de paie (R-SAL-15, R-SAL-16).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `createPayslip$Response()` instead.
-   *
-   * This method sends `multipart/form-data` and handles request body of type `multipart/form-data`.
-   */
-  createPayslip(params: CreatePayslip$Params, context?: HttpContext): Observable<EmploymentView> {
-    const resp = this.createPayslip$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<EmploymentView>): EmploymentView => r.body)
-    );
-  }
-
-  /** Path part for operation `updatePayslip()` */
-  static readonly UpdatePayslipPath = '/api/v1/employments/{id}/payslips/{payslip_id}';
-
-  /**
-   * Modifie le mois de paie et la note d'une fiche (R-SAL-17).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `updatePayslip()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  updatePayslip$Response(params: UpdatePayslip$Params, context?: HttpContext): Observable<StrictHttpResponse<EmploymentView>> {
-    const obs = updatePayslip(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Modifie le mois de paie et la note d'une fiche (R-SAL-17).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `updatePayslip$Response()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  updatePayslip(params: UpdatePayslip$Params, context?: HttpContext): Observable<EmploymentView> {
-    const resp = this.updatePayslip$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<EmploymentView>): EmploymentView => r.body)
-    );
-  }
-
-  /** Path part for operation `deletePayslip()` */
-  static readonly DeletePayslipPath = '/api/v1/employments/{id}/payslips/{payslip_id}';
-
-  /**
-   * Supprime une fiche et son document (R-SAL-17).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `deletePayslip()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  deletePayslip$Response(params: DeletePayslip$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
-    const obs = deletePayslip(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Supprime une fiche et son document (R-SAL-17).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `deletePayslip$Response()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  deletePayslip(params: DeletePayslip$Params, context?: HttpContext): Observable<void> {
-    const resp = this.deletePayslip$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<void>): void => r.body)
-    );
-  }
-
-  /** Path part for operation `downloadPayslip()` */
-  static readonly DownloadPayslipPath = '/api/v1/employments/{id}/payslips/{payslip_id}/file';
-
-  /**
-   * Fichier d'une fiche de paie, affiché ou téléchargé (R-SAL-18, ADR-0024).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `downloadPayslip()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  downloadPayslip$Response(params: DownloadPayslip$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
-    const obs = downloadPayslip(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Fichier d'une fiche de paie, affiché ou téléchargé (R-SAL-18, ADR-0024).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `downloadPayslip$Response()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  downloadPayslip(params: DownloadPayslip$Params, context?: HttpContext): Observable<any> {
-    const resp = this.downloadPayslip$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<any>): any => r.body)
     );
   }
 

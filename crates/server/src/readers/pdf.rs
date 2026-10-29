@@ -110,3 +110,25 @@ pub fn text_items(content: &[u8]) -> Result<Vec<TextItem>, ReadError> {
     }
     Ok(items)
 }
+
+/// Texte d'un PDF pour la recherche (R-DOC-19), une ligne par ligne de base, au plus `MAX_TEXT` caractères.
+/// `None` pour un PDF illisible, chiffré ou sans texte (scanné).
+pub fn plain_text(content: &[u8]) -> Option<String> {
+    const MAX_TEXT: usize = 500_000;
+    let items = text_items(content).ok()?;
+    let mut text = String::new();
+    let mut line = None;
+    for item in &items {
+        let position = (item.page, item.y.to_bits());
+        if line.is_some() {
+            text.push(if line == Some(position) { ' ' } else { '\n' });
+        }
+        line = Some(position);
+        text.push_str(&item.text);
+        if text.len() > MAX_TEXT {
+            break;
+        }
+    }
+    let text: String = text.chars().take(MAX_TEXT).collect();
+    (!text.trim().is_empty()).then_some(text)
+}

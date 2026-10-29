@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use super::clean;
 use super::loans::LoanBook;
+use crate::config::DataDir;
 use crate::db::assets::{AssetRow, ValuationRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
@@ -217,13 +218,16 @@ pub async fn update(db: &Db, id: AssetId, input: &AssetInput, today: Date) -> Ap
 }
 
 /// Supprime un bien et ses estimations ; ses prêts perdent le lien, ses acquisitions redeviennent non catégorisées
-/// (R-BIE-6).
-pub async fn delete(db: &Db, id: AssetId) -> AppResult<()> {
+/// (R-BIE-6). Ses documents restent, sauf ceux rattachés seulement à lui si `delete_documents` (R-DOC-12).
+pub async fn delete(db: &Db, data: &DataDir, id: AssetId, delete_documents: bool, today: Date) -> AppResult<()> {
     db::assets::find(&db.read, id).await?.ok_or(AppError::NotFound("bien"))?;
     let mut tx = db.write.begin().await?;
+    let documents =
+        if delete_documents { super::documents::delete_exclusive(&mut tx, *id.as_uuid()).await? } else { Vec::new() };
     db::transactions::detach_asset(&mut *tx, id).await?;
     db::assets::delete(&mut *tx, id).await?;
     tx.commit().await?;
+    super::documents::trash(data, &documents, today);
     Ok(())
 }
 

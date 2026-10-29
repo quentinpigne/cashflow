@@ -6,6 +6,7 @@ use cashflow_domain::shared::ids::AccountId;
 use serde::Deserialize;
 use utoipa::IntoParams;
 
+use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::accounts::{self, Account, AccountInput, AccountReorderInput, CloseInput, IbanView};
 use crate::state::AppState;
@@ -61,11 +62,15 @@ pub async fn update(
 
 /// Supprime un compte sans transaction (R-CPT-7).
 #[utoipa::path(
-    delete, operation_id = "deleteAccount", path = "/accounts/{id}", tag = "accounts", params(("id" = AccountId, Path)),
-    responses((status = 204), (status = 422, body = Problem))
+    delete, operation_id = "deleteAccount", path = "/accounts/{id}", tag = "accounts",
+    params(("id" = AccountId, Path), DeleteQuery), responses((status = 204), (status = 422, body = Problem))
 )]
-pub async fn delete(State(state): State<AppState>, Path(id): Path<AccountId>) -> AppResult<StatusCode> {
-    accounts::delete(&state.db, &state.data, id, state.clock.today()).await?;
+pub async fn delete(
+    State(state): State<AppState>,
+    Path(id): Path<AccountId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    accounts::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

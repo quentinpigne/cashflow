@@ -30,8 +30,6 @@ pub const TABLES: &[&str] = &[
     "salary",
     "salary_bonus",
     "document",
-    "payslip",
-    "bank_statement",
     "payee_group",
     "payee",
     "recurring_rule",
@@ -50,6 +48,7 @@ pub const TABLES: &[&str] = &[
     "budget_line_category",
     "budget_override",
     "notification",
+    "document_link",
 ];
 
 async fn columns(conn: &mut SqliteConnection, table: &str) -> anyhow::Result<Vec<String>> {

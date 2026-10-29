@@ -1363,14 +1363,16 @@ pub async fn commit(
     // Relevé PDF archivé sur le compte (R-IMP-28) : son document n'est visible qu'une fois le lot validé.
     let statement = match stored_source(data, id) {
         Some(content) => {
-            let import = super::statements::FromImport {
+            let period = batch.period_start.zip(batch.period_end).filter(|(start, end)| start <= end);
+            let import = super::documents::FromImport {
                 account: account.id,
+                account_name: account.name.clone(),
                 file_name: batch.file_name.clone(),
                 content,
-                period: batch.period_start.zip(batch.period_end),
-                period_end: batch.period_end,
+                month: cashflow_domain::accounts::statements::month_of_import(period, batch.period_end, today),
+                period,
             };
-            super::statements::archive_import(&mut tx, data, &import, today).await?
+            super::documents::archive_import(&mut tx, data, import).await?
         }
         None => None,
     };

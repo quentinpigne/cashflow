@@ -1,6 +1,6 @@
 # Spec 12 — Documents
 
-Statut : **Revue** (2026-10-29)
+Statut : **Validée** (2026-10-29)
 Modèle : [Document, DocumentLink](../modele-de-donnees.md#documents--spec-12)
 Décision : [ADR-0024](../adr/0024-documents-sur-le-disque.md) (bibliothèque de documents sur le disque)
 

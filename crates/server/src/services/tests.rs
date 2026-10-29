@@ -128,11 +128,14 @@ async fn r_cpt_5_closing_with_balance_needs_confirmation_and_r_cpt_7_no_delete()
     ));
     let closed = accounts::close(&db, checking, &close(true), d(TODAY)).await.unwrap();
     assert_eq!(closed.closed_on, Some(d("2026-03-01")));
-    assert_eq!(domain_error(accounts::delete(&db, &data, checking, d(TODAY)).await), DomainError::AccountNotEmpty);
+    assert_eq!(
+        domain_error(accounts::delete(&db, &data, checking, false, d(TODAY)).await),
+        DomainError::AccountNotEmpty
+    );
 
     // Un compte vide se supprime, conditions d'épargne comprises.
     let livret = account(&db, "Livret A", AccountKind::LivretA, 0).await;
-    accounts::delete(&db, &data, livret, d(TODAY)).await.unwrap();
+    accounts::delete(&db, &data, livret, false, d(TODAY)).await.unwrap();
 }
 
 #[tokio::test]
@@ -279,7 +282,15 @@ async fn trx_05_transfer_moves_money_without_changing_net_worth() {
     );
 
     // Supprimer une jambe délie l'autre, qui reste (R-TRX-34).
-    transactions::delete(&db, created.outflow_transaction_id).await.unwrap();
+    transactions::delete(
+        &db,
+        &crate::config::DataDir::new("inutilisé"),
+        created.outflow_transaction_id,
+        false,
+        d(TODAY),
+    )
+    .await
+    .unwrap();
     let inflow = transactions::get(&db, created.inflow_transaction_id).await.unwrap();
     assert!(inflow.transfer.is_none());
 }

@@ -23,11 +23,12 @@ import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, toIsoDate, todayIso } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { parseMoney, toEditable } from '../../core/money';
-import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { openAndRefresh } from './budget-dialogs';
 import { BudgetGauge } from './gauge';
+import { DocumentsService } from '../../api/services/documents.service';
+import { confirmDeletion } from '../documents/delete-confirmation';
 
 /** Création ou modification d'un projet (BUD-06, R-BUD-20, R-BUD-21). */
 @Component({
@@ -440,6 +441,7 @@ export class ProjectPage {
   private readonly api = inject(BudgetsService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
+  private readonly documents = inject(DocumentsService);
   private readonly router = inject(Router);
 
   readonly id = input.required<string>();
@@ -454,14 +456,17 @@ export class ProjectPage {
   }
 
   protected async remove(project: ProjectView): Promise<void> {
-    const ok = await confirm(this.dialog, {
+    const deletion = await confirmDeletion(this.dialog, this.documents, project.id, {
       title: `Supprimer « ${project.name} » ?`,
       message: 'Le projet n’a aucune transaction rattachée.',
       action: 'Supprimer',
       destructive: true,
+      objectName: 'ce projet',
     });
-    if (ok) {
-      await firstValueFrom(this.api.deleteProject({ id: project.id }));
+    if (deletion) {
+      await firstValueFrom(
+        this.api.deleteProject({ id: project.id, delete_documents: deletion.deleteDocuments }),
+      );
       this.version.bump();
       await this.router.navigate(['/budget/projets']);
     }

@@ -21,6 +21,11 @@ export interface TransactionListItem {
   bank_date?: (string | null);
   clearing_status: ClearingStatus;
   date: string;
+
+  /**
+   * A au moins un justificatif (DOC-04).
+   */
+  has_documents: boolean;
   id: TransactionId;
   label: string;
   note?: (string | null);

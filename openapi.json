@@ -220,6 +220,15 @@
             "schema": {
               "$ref": "#/components/schemas/AccountId"
             }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -723,7 +732,7 @@
         "tags": [
           "accounts"
         ],
-        "summary": "Relevés archivés d'un compte et mois sans relevé (CPT-11, R-CPT-21).",
+        "summary": "Relevés archivés d'un compte et mois sans relevé (CPT-11, R-CPT-21). Envoi, modification et suppression :\n`/documents` (spec 12).",
         "operationId": "listStatements",
         "parameters": [
           {
@@ -743,218 +752,6 @@
                   "$ref": "#/components/schemas/AccountStatements"
                 }
               }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "accounts"
-        ],
-        "summary": "Archive un relevé envoyé depuis le compte (R-CPT-18, R-CPT-19).",
-        "operationId": "createStatement",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/StatementForm"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccountStatements"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/accounts/{id}/statements/{statement_id}": {
-      "put": {
-        "tags": [
-          "accounts"
-        ],
-        "summary": "Modifie le mois et la note d'un relevé (R-CPT-20).",
-        "operationId": "updateStatement",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          },
-          {
-            "name": "statement_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/BankStatementId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StatementInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccountStatements"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "accounts"
-        ],
-        "summary": "Supprime un relevé et son document (R-CPT-20).",
-        "operationId": "deleteStatement",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          },
-          {
-            "name": "statement_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/BankStatementId"
-            }
-          }
-        ],
-        "responses": {
-          "204": {},
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/accounts/{id}/statements/{statement_id}/file": {
-      "get": {
-        "tags": [
-          "accounts"
-        ],
-        "summary": "Fichier d'un relevé, affiché ou téléchargé (R-CPT-21, ADR-0024).",
-        "operationId": "downloadStatement",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AccountId"
-            }
-          },
-          {
-            "name": "statement_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/BankStatementId"
-            }
-          },
-          {
-            "name": "download",
-            "in": "query",
-            "description": "Télécharger plutôt qu'afficher dans le navigateur.",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Fichier PDF du relevé",
-            "content": {
-              "application/pdf": {}
             }
           },
           "404": {
@@ -1174,6 +971,15 @@
             "name": "without_payee",
             "in": "query",
             "description": "Seulement les transactions sans tiers, hors virements.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "with_documents",
+            "in": "query",
+            "description": "Avec (`true`) ou sans (`false`) justificatif (DOC-04).",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -1504,6 +1310,15 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/AssetId"
+            }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -2545,6 +2360,454 @@
         }
       }
     },
+    "/api/v1/documents": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Documents de la bibliothèque, cherchés et filtrés (DOC-03, R-DOC-18 à R-DOC-20).",
+        "operationId": "listDocuments",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Texte cherché dans la description, les rattachements et le contenu.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentKind"
+            }
+          },
+          {
+            "name": "unsorted",
+            "in": "query",
+            "description": "Seulement les documents à classer (sans type).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "description": "Année de la date de référence.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "link_kind",
+            "in": "query",
+            "description": "Seulement les documents rattachés à un objet de cette nature.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LinkKind"
+            }
+          },
+          {
+            "name": "link_id",
+            "in": "query",
+            "description": "Seulement les documents rattachés à cet objet.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "unlinked",
+            "in": "query",
+            "description": "Seulement les documents sans rattachement.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Archive un document envoyé, rattaché d'office à l'objet depuis lequel il l'est (DOC-01, R-DOC-14, R-DOC-15).",
+        "operationId": "createDocument",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/attached/{target_id}": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Documents rattachés à un objet, pour la confirmation de sa suppression (R-DOC-12).",
+        "operationId": "attachedDocuments",
+        "parameters": [
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachedDocuments"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "operationId": "getDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Modifie la description d'un document ; le fichier ne change pas (R-DOC-2).",
+        "operationId": "updateDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Supprime un document et ses rattachements (R-DOC-22).",
+        "operationId": "deleteDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/content": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Fichier d'un document, affiché ou téléchargé (R-DOC-21, ADR-0024).",
+        "operationId": "downloadDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "description": "Télécharger plutôt qu'afficher dans le navigateur.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fichier PDF, JPEG ou PNG",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/links": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Rattache un document à un objet (DOC-02, R-DOC-9 à R-DOC-11).",
+        "operationId": "linkDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/links/{kind}/{target_id}": {
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Détache un document d'un objet (DOC-02, R-DOC-9).",
+        "operationId": "unlinkDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LinkKind"
+            }
+          },
+          {
+            "name": "target_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/employments": {
       "post": {
         "tags": [
@@ -2671,7 +2934,7 @@
         "tags": [
           "salaries"
         ],
-        "summary": "Supprime un emploi, ses rémunérations, ses primes et ses fiches de paie (R-SAL-6, R-SAL-17).",
+        "summary": "Supprime un emploi, ses rémunérations et ses primes ; ses documents restent, sauf demande contraire (R-SAL-6,\nR-DOC-12).",
         "operationId": "deleteEmployment",
         "parameters": [
           {
@@ -2680,6 +2943,15 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/EmploymentId"
+            }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -2835,220 +3107,6 @@
         ],
         "responses": {
           "204": {},
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/employments/{id}/payslips": {
-      "post": {
-        "tags": [
-          "salaries"
-        ],
-        "summary": "Archive une fiche de paie (R-SAL-15, R-SAL-16).",
-        "operationId": "createPayslip",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/EmploymentId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/PayslipForm"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmploymentView"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/employments/{id}/payslips/{payslip_id}": {
-      "put": {
-        "tags": [
-          "salaries"
-        ],
-        "summary": "Modifie le mois de paie et la note d'une fiche (R-SAL-17).",
-        "operationId": "updatePayslip",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/EmploymentId"
-            }
-          },
-          {
-            "name": "payslip_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PayslipId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PayslipInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmploymentView"
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "salaries"
-        ],
-        "summary": "Supprime une fiche et son document (R-SAL-17).",
-        "operationId": "deletePayslip",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/EmploymentId"
-            }
-          },
-          {
-            "name": "payslip_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PayslipId"
-            }
-          }
-        ],
-        "responses": {
-          "204": {},
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/employments/{id}/payslips/{payslip_id}/file": {
-      "get": {
-        "tags": [
-          "salaries"
-        ],
-        "summary": "Fichier d'une fiche de paie, affiché ou téléchargé (R-SAL-18, ADR-0024).",
-        "operationId": "downloadPayslip",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/EmploymentId"
-            }
-          },
-          {
-            "name": "payslip_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PayslipId"
-            }
-          },
-          {
-            "name": "download",
-            "in": "query",
-            "description": "Télécharger plutôt qu'afficher dans le navigateur.",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Fichier de la fiche (PDF, JPEG ou PNG)",
-            "content": {
-              "application/octet-stream": {}
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -4123,6 +4181,15 @@
             "schema": {
               "$ref": "#/components/schemas/LoanId"
             }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -4698,6 +4765,15 @@
             "schema": {
               "$ref": "#/components/schemas/PayeeId"
             }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5021,6 +5097,15 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -6344,6 +6429,15 @@
             }
           },
           {
+            "name": "with_documents",
+            "in": "query",
+            "description": "Avec (`true`) ou sans (`false`) justificatif (DOC-04).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -6625,6 +6719,15 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/TransactionId"
+            }
+          },
+          {
+            "name": "delete_documents",
+            "in": "query",
+            "description": "Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -8211,6 +8314,25 @@
           }
         }
       },
+      "AttachedDocuments": {
+        "type": "object",
+        "description": "Documents rattachés à un objet, pour la confirmation de sa suppression (R-DOC-12).",
+        "required": [
+          "total",
+          "exclusive"
+        ],
+        "properties": {
+          "exclusive": {
+            "type": "integer",
+            "description": "Rattachés seulement à cet objet : ceux que la suppression peut emporter.",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "AuthStatus": {
         "type": "object",
         "required": [
@@ -8273,10 +8395,6 @@
             "format": "int64"
           }
         }
-      },
-      "BankStatementId": {
-        "type": "string",
-        "format": "uuid"
       },
       "BatchCreated": {
         "type": "object",
@@ -10017,6 +10135,257 @@
           }
         }
       },
+      "DocumentForm": {
+        "type": "object",
+        "description": "Formulaire d'envoi d'un document (`multipart/form-data`) : seul le fichier est requis (R-DOC-14).",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "document_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "PDF, JPEG ou PNG, 10 Mo au plus (R-DOC-1)."
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DocumentKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "link_kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinkKind",
+                "description": "Objet depuis lequel le document est envoyé, auquel il est rattaché d'office (R-DOC-15)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Premier jour du mois, pour un relevé ou une fiche de paie (R-DOC-7)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Par défaut, le nom du fichier sans son extension, ou « Relevé <compte> <mois> » (R-DOC-4, R-DOC-15)."
+          }
+        }
+      },
+      "DocumentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "DocumentInput": {
+        "type": "object",
+        "description": "Description d'un document ; le fichier ne se modifie pas (R-DOC-2).",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "document_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DocumentKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Premier jour du mois, pour un relevé ou une fiche de paie."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "period_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "DocumentKind": {
+        "type": "string",
+        "description": "Type d'un document (R-DOC-5). Un document sans type est « à classer ».",
+        "enum": [
+          "BANK_STATEMENT",
+          "PAYSLIP",
+          "CONTRACT",
+          "RECEIPT",
+          "INVOICE",
+          "TAX",
+          "CERTIFICATE",
+          "LETTER",
+          "OTHER"
+        ]
+      },
+      "DocumentView": {
+        "type": "object",
+        "description": "Un document de la bibliothèque (R-DOC-4 à R-DOC-8).",
+        "required": [
+          "id",
+          "title",
+          "file_name",
+          "media_type",
+          "size_bytes",
+          "content_indexed",
+          "sent_on",
+          "reference_date",
+          "links"
+        ],
+        "properties": {
+          "content_indexed": {
+            "type": "boolean",
+            "description": "Du texte a été extrait du fichier et indexé (R-DOC-19)."
+          },
+          "document_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/DocumentId"
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DocumentKind",
+                "description": "Absent : le document est à classer (R-DOC-5)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkView"
+            }
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Premier jour du mois d'un relevé ou d'une fiche de paie (R-DOC-7)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "period_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "reference_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date qui classe le document (R-DOC-8)."
+          },
+          "sent_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "snippet": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Dans une recherche : extrait du contenu où le texte est trouvé, mots trouvés entre U+0002 et U+0003."
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "DraftSplit": {
         "type": "object",
         "required": [
@@ -11403,6 +11772,75 @@
           }
         }
       },
+      "LinkKind": {
+        "type": "string",
+        "description": "Nature de l'objet auquel un document est rattaché (R-DOC-9).",
+        "enum": [
+          "ACCOUNT",
+          "INSTITUTION",
+          "EMPLOYMENT",
+          "TRANSACTION",
+          "ASSET",
+          "LOAN",
+          "PAYEE",
+          "PROJECT"
+        ]
+      },
+      "LinkTarget": {
+        "type": "object",
+        "description": "Objet auquel un document est rattaché : sa nature et son identifiant (R-DOC-9).",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          }
+        }
+      },
+      "LinkView": {
+        "type": "object",
+        "description": "Objet auquel un document est rattaché (R-DOC-9).",
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Montant d'une transaction, en unités mineures."
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Date d'une transaction."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom du compte, de l'employeur, du tiers… ; libellé d'une transaction."
+          }
+        }
+      },
       "LoanId": {
         "type": "string",
         "format": "uuid"
@@ -12166,7 +12604,7 @@
       },
       "MediaType": {
         "type": "string",
-        "description": "Type d'un document, reconnu à la signature de son contenu (ADR-0024).",
+        "description": "Type de contenu d'un document, reconnu à la signature de son contenu (R-DOC-1).",
         "enum": [
           "application/pdf",
           "image/jpeg",
@@ -13251,61 +13689,12 @@
           }
         }
       },
-      "PayslipForm": {
-        "type": "object",
-        "description": "Formulaire d'envoi d'une fiche de paie (`multipart/form-data`).",
-        "required": [
-          "file",
-          "pay_month"
-        ],
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "description": "PDF, JPEG ou PNG, 10 Mo au plus (R-SAL-15)."
-          },
-          "note": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "pay_month": {
-            "type": "string",
-            "format": "date",
-            "description": "Premier jour du mois de paie."
-          }
-        }
-      },
-      "PayslipId": {
-        "type": "string",
-        "format": "uuid"
-      },
-      "PayslipInput": {
-        "type": "object",
-        "description": "Mois de paie et note d'une fiche ; le fichier ne se modifie pas (R-SAL-17).",
-        "required": [
-          "pay_month"
-        ],
-        "properties": {
-          "note": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "pay_month": {
-            "type": "string",
-            "format": "date",
-            "description": "Premier jour du mois de paie."
-          }
-        }
-      },
       "PayslipView": {
         "type": "object",
-        "description": "Fiche de paie archivée (R-SAL-15).",
+        "description": "Fiche de paie archivée (R-SAL-15) : un document de la bibliothèque (spec 12).",
         "required": [
           "id",
+          "title",
           "pay_month",
           "file_name",
           "media_type",
@@ -13316,7 +13705,7 @@
             "type": "string"
           },
           "id": {
-            "$ref": "#/components/schemas/PayslipId"
+            "$ref": "#/components/schemas/DocumentId"
           },
           "media_type": {
             "$ref": "#/components/schemas/MediaType"
@@ -13334,6 +13723,9 @@
           "size_bytes": {
             "type": "integer",
             "format": "int64"
+          },
+          "title": {
+            "type": "string"
           }
         }
       },
@@ -13566,6 +13958,13 @@
           "code": {
             "type": "string",
             "description": "Code stable de l'erreur (ex. `SPLIT_SUM_MISMATCH`)."
+          },
+          "document_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pour `DOCUMENT_ALREADY_ARCHIVED` : le document qui a déjà ce fichier (R-DOC-3)."
           },
           "field": {
             "type": [
@@ -15431,32 +15830,6 @@
           }
         }
       },
-      "StatementForm": {
-        "type": "object",
-        "description": "Formulaire d'envoi d'un relevé (`multipart/form-data`).",
-        "required": [
-          "file",
-          "statement_month"
-        ],
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "description": "PDF, 10 Mo au plus (R-CPT-18)."
-          },
-          "note": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "statement_month": {
-            "type": "string",
-            "format": "date",
-            "description": "Premier jour du mois du relevé."
-          }
-        }
-      },
       "StatementInfo": {
         "type": "object",
         "properties": {
@@ -15498,31 +15871,12 @@
           }
         }
       },
-      "StatementInput": {
-        "type": "object",
-        "description": "Mois et note d'un relevé ; le fichier ne se modifie pas (R-CPT-20).",
-        "required": [
-          "statement_month"
-        ],
-        "properties": {
-          "note": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "statement_month": {
-            "type": "string",
-            "format": "date",
-            "description": "Premier jour du mois du relevé."
-          }
-        }
-      },
       "StatementView": {
         "type": "object",
-        "description": "Relevé archivé (R-CPT-18).",
+        "description": "Relevé archivé (R-CPT-18) : un document de la bibliothèque.",
         "required": [
           "id",
+          "title",
           "statement_month",
           "file_name",
           "media_type",
@@ -15533,7 +15887,7 @@
             "type": "string"
           },
           "id": {
-            "$ref": "#/components/schemas/BankStatementId"
+            "$ref": "#/components/schemas/DocumentId"
           },
           "media_type": {
             "$ref": "#/components/schemas/MediaType"
@@ -15564,7 +15918,11 @@
           },
           "statement_month": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Premier jour du mois du relevé."
+          },
+          "title": {
+            "type": "string"
           }
         }
       },
@@ -16027,7 +16385,8 @@
           "amount_minor",
           "clearing_status",
           "origin",
-          "splits"
+          "splits",
+          "has_documents"
         ],
         "properties": {
           "account_id": {
@@ -16065,6 +16424,10 @@
           "date": {
             "type": "string",
             "format": "date"
+          },
+          "has_documents": {
+            "type": "boolean",
+            "description": "A au moins un justificatif (DOC-04)."
           },
           "id": {
             "$ref": "#/components/schemas/TransactionId"
@@ -16747,6 +17110,10 @@
     {
       "name": "salaries",
       "description": "Salaires : emplois, rémunérations, primes (spec 10)"
+    },
+    {
+      "name": "documents",
+      "description": "Bibliothèque de documents : envoi, rattachements, recherche (spec 12)"
     },
     {
       "name": "savings",

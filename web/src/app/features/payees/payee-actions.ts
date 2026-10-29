@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { PayeeGroupView } from '../../api/models/payee-group-view';
 import { PayeeView } from '../../api/models/payee-view';
 import { PayeesService } from '../../api/services/payees.service';
+import { DocumentsService } from '../../api/services/documents.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
@@ -17,6 +18,7 @@ import {
   PayeeRegroupDialog,
   addressInput,
 } from './payee-dialogs';
+import { confirmDeletion } from '../documents/delete-confirmation';
 
 /**
  * Actions sur les tiers et les groupes, communes à la liste (E31) et à la fiche (E32). Chacune retourne `true`
@@ -27,6 +29,7 @@ export class PayeeActions {
   private readonly api = inject(PayeesService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
+  private readonly documents = inject(DocumentsService);
   private readonly snack = inject(MatSnackBar);
 
   private async run(action: () => Promise<unknown>, success?: string): Promise<boolean> {
@@ -159,13 +162,20 @@ export class PayeeActions {
 
   /** Seul un tiers jamais utilisé se supprime (R-TIE-5). */
   async remove(payee: PayeeView): Promise<boolean> {
-    const ok = await confirm(this.dialog, {
+    const deletion = await confirmDeletion(this.dialog, this.documents, payee.id, {
       title: `Supprimer « ${payee.name} »`,
       message: 'Ce tiers n’a jamais été utilisé.',
       action: 'Supprimer',
       destructive: true,
+      objectName: 'ce tiers',
     });
-    return ok ? this.run(() => firstValueFrom(this.api.deletePayee({ id: payee.id }))) : false;
+    return deletion
+      ? this.run(() =>
+          firstValueFrom(
+            this.api.deletePayee({ id: payee.id, delete_documents: deletion.deleteDocuments }),
+          ),
+        )
+      : false;
   }
 
   async regroup(ids: string[]): Promise<boolean> {

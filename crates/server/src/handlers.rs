@@ -7,6 +7,7 @@ pub mod auth;
 pub mod budgets;
 pub mod categories;
 pub mod dashboard;
+pub mod documents;
 pub mod imports;
 pub mod institutions;
 pub mod loans;
@@ -26,6 +27,14 @@ use axum::response::IntoResponse;
 use cashflow_domain::documents::MediaType;
 use serde::Deserialize;
 use utoipa::IntoParams;
+
+/// Suppression d'un objet qui a des documents rattachés (R-DOC-12).
+#[derive(Deserialize, IntoParams)]
+pub struct DeleteQuery {
+    /// Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.
+    #[serde(default)]
+    delete_documents: bool,
+}
 
 #[derive(Deserialize, IntoParams)]
 pub struct FileQuery {

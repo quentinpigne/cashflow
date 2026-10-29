@@ -29,9 +29,10 @@ import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { ASSET_KIND_LABELS } from '../../core/labels';
 import { parseMoney, sum, toEditable } from '../../core/money';
-import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { DocumentsService } from '../../api/services/documents.service';
+import { confirmDeletion } from '../documents/delete-confirmation';
 
 const FORM_STYLES = `
   .form {
@@ -514,6 +515,7 @@ export class AssetPage {
   private readonly api = inject(AssetsService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
+  private readonly documents = inject(DocumentsService);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
   protected readonly kindLabels = ASSET_KIND_LABELS;
@@ -531,15 +533,18 @@ export class AssetPage {
   }
 
   protected async remove(a: AssetView): Promise<void> {
-    const ok = await confirm(this.dialog, {
+    const deletion = await confirmDeletion(this.dialog, this.documents, a.summary.id, {
       title: 'Supprimer le bien ?',
       message:
         'Ses estimations sont supprimées ; ses prêts perdent le lien, ses acquisitions redeviennent non catégorisées.',
       action: 'Supprimer',
+      objectName: 'ce bien',
     });
-    if (!ok) return;
+    if (!deletion) return;
     try {
-      await firstValueFrom(this.api.deleteAsset({ id: a.summary.id }));
+      await firstValueFrom(
+        this.api.deleteAsset({ id: a.summary.id, delete_documents: deletion.deleteDocuments }),
+      );
       this.version.bump();
       await this.router.navigate(['/biens']);
     } catch (e) {

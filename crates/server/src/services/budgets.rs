@@ -1037,12 +1037,24 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
     project(db, row.id).await
 }
 
-/// Un projet qui a des ventilations se clôture, il ne se supprime pas.
-pub async fn delete_project(db: &Db, id: ProjectId) -> AppResult<()> {
+/// Un projet qui a des ventilations se clôture, il ne se supprime pas. Ses documents restent, sauf ceux rattachés
+/// seulement à lui si `delete_documents` (R-DOC-12).
+pub async fn delete_project(
+    db: &Db,
+    data: &crate::config::DataDir,
+    id: ProjectId,
+    delete_documents: bool,
+    today: Date,
+) -> AppResult<()> {
     if db::budgets::project_usage(&db.read, id).await? > 0 {
         return Err(AppError::invalid("PROJECT_IN_USE", "ce projet a des ventilations : le clôturer plutôt"));
     }
-    db::budgets::delete_project(&db.write, id).await?;
+    let mut tx = db.write.begin().await?;
+    let documents =
+        if delete_documents { super::documents::delete_exclusive(&mut tx, *id.as_uuid()).await? } else { Vec::new() };
+    db::budgets::delete_project(&mut *tx, id).await?;
+    tx.commit().await?;
+    super::documents::trash(data, &documents, today);
     Ok(())
 }
 

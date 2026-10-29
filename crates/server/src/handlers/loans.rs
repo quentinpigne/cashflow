@@ -1,9 +1,10 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use cashflow_domain::Date;
 use cashflow_domain::shared::ids::{LoanId, TransactionId};
 
+use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::loans::{
     self, BalanceInput, LoanInput, LoanPaymentInput, LoanPaymentProposal, LoanPaymentResult, LoanPreview,
@@ -51,11 +52,15 @@ pub async fn update(
 
 /// Supprime un prêt ; ses mensualités ventilées redeviennent non catégorisées (R-PRE-11).
 #[utoipa::path(
-    delete, operation_id = "deleteLoan", path = "/loans/{id}", tag = "loans", params(("id" = LoanId, Path)),
+    delete, operation_id = "deleteLoan", path = "/loans/{id}", tag = "loans", params(("id" = LoanId, Path), DeleteQuery),
     responses((status = 204), (status = 404, body = Problem))
 )]
-pub async fn delete(State(state): State<AppState>, Path(id): Path<LoanId>) -> AppResult<StatusCode> {
-    loans::delete(&state.db, id).await?;
+pub async fn delete(
+    State(state): State<AppState>,
+    Path(id): Path<LoanId>,
+    Query(query): Query<DeleteQuery>,
+) -> AppResult<StatusCode> {
+    loans::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -11,12 +11,18 @@ import { PayeeId } from '../../models/payee-id';
 
 export interface DeletePayee$Params {
   id: PayeeId;
+
+/**
+ * Supprimer aussi les documents rattachés seulement à cet objet ; sinon ils restent dans la bibliothèque.
+ */
+  delete_documents?: boolean;
 }
 
 export function deletePayee(http: HttpClient, rootUrl: string, params: DeletePayee$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, deletePayee.PATH, 'delete');
   if (params) {
     rb.path('id', params.id, {});
+    rb.query('delete_documents', params.delete_documents, {});
   }
 
   return http.request(

@@ -13,6 +13,11 @@ export interface Problem {
   code: string;
 
   /**
+   * Pour `DOCUMENT_ALREADY_ARCHIVED` : le document qui a déjà ce fichier (R-DOC-3).
+   */
+  document_id?: (string | null);
+
+  /**
    * Champ de la requête concerné, si l'erreur en vise un.
    */
   field?: (string | null);
