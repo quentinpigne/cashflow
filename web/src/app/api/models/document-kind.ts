@@ -5,5 +5,5 @@
 /**
  * Type d'un document (R-DOC-5). Un document sans type est « à classer ».
  */
-export type DocumentKind = 'BANK_STATEMENT' | 'PAYSLIP' | 'CONTRACT' | 'RECEIPT' | 'INVOICE' | 'TAX' | 'CERTIFICATE' | 'LETTER' | 'OTHER';
+export type DocumentKind = 'BANK_STATEMENT' | 'PAYSLIP' | 'CONTRACT' | 'RECEIPT' | 'INVOICE' | 'TAX' | 'CERTIFICATE' | 'LETTER' | 'DEED' | 'SALE_AGREEMENT' | 'VEHICLE_REGISTRATION' | 'DIAGNOSTIC' | 'QUOTE' | 'WARRANTY' | 'LOAN_OFFER' | 'AMORTIZATION_SCHEDULE' | 'INSURANCE' | 'IDENTITY' | 'PROOF_OF_ADDRESS' | 'OTHER';
 

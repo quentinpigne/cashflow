@@ -74,11 +74,22 @@ pub enum DocumentKind {
     Tax,
     Certificate,
     Letter,
+    Deed,
+    SaleAgreement,
+    VehicleRegistration,
+    Diagnostic,
+    Quote,
+    Warranty,
+    LoanOffer,
+    AmortizationSchedule,
+    Insurance,
+    Identity,
+    ProofOfAddress,
     Other,
 }
 
 impl DocumentKind {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 20] = [
         Self::BankStatement,
         Self::Payslip,
         Self::Contract,
@@ -87,6 +98,17 @@ impl DocumentKind {
         Self::Tax,
         Self::Certificate,
         Self::Letter,
+        Self::Deed,
+        Self::SaleAgreement,
+        Self::VehicleRegistration,
+        Self::Diagnostic,
+        Self::Quote,
+        Self::Warranty,
+        Self::LoanOffer,
+        Self::AmortizationSchedule,
+        Self::Insurance,
+        Self::Identity,
+        Self::ProofOfAddress,
         Self::Other,
     ];
 
@@ -100,6 +122,17 @@ impl DocumentKind {
             Self::Tax => "TAX",
             Self::Certificate => "CERTIFICATE",
             Self::Letter => "LETTER",
+            Self::Deed => "DEED",
+            Self::SaleAgreement => "SALE_AGREEMENT",
+            Self::VehicleRegistration => "VEHICLE_REGISTRATION",
+            Self::Diagnostic => "DIAGNOSTIC",
+            Self::Quote => "QUOTE",
+            Self::Warranty => "WARRANTY",
+            Self::LoanOffer => "LOAN_OFFER",
+            Self::AmortizationSchedule => "AMORTIZATION_SCHEDULE",
+            Self::Insurance => "INSURANCE",
+            Self::Identity => "IDENTITY",
+            Self::ProofOfAddress => "PROOF_OF_ADDRESS",
             Self::Other => "OTHER",
         }
     }

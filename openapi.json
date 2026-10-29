@@ -10278,6 +10278,17 @@
           "TAX",
           "CERTIFICATE",
           "LETTER",
+          "DEED",
+          "SALE_AGREEMENT",
+          "VEHICLE_REGISTRATION",
+          "DIAGNOSTIC",
+          "QUOTE",
+          "WARRANTY",
+          "LOAN_OFFER",
+          "AMORTIZATION_SCHEDULE",
+          "INSURANCE",
+          "IDENTITY",
+          "PROOF_OF_ADDRESS",
           "OTHER"
         ]
       },
