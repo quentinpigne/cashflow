@@ -302,6 +302,7 @@ async fn cre_06_r_cre_20_to_r_cre_22_lender_requests_and_offers() {
         sent_on: d("2026-10-20"),
         answered_on: None,
         simulation_id: None,
+        follow_up_on: None,
         note: None,
     };
     let view = credit::save_lender_request(&db, view.id, None, &request("LCL"), today).await.unwrap();
@@ -405,8 +406,74 @@ async fn r_cre_36_application_from_capacity_on_the_demo_data() {
     h.other_charges_minor = 10_000_000;
     let capacity = credit::save_purchase_hypotheses(&db, &h, today).await.unwrap();
     assert_eq!(capacity.today.capital_minor, 0);
-    let view = credit::application_from_capacity(&db, "Achat", today).await.unwrap();
-    assert_eq!(view.to_borrow_minor, 0);
-    assert_eq!(view.down_payment_minor, view.project_cost_minor);
+    let error = credit::application_from_capacity(&db, "Achat", today).await.unwrap_err();
+    assert_eq!(code(error), "NO_BORROWING_CAPACITY");
+
+    // Depuis une simulation, la demande se prépare quand même, sans plus d'apport que nécessaire (R-CRE-36).
+    let small = SimulationInput { principal_minor: 100_000, ..simulation("Petit crédit", None) };
+    let sim = credit::save_simulation(&db, None, &small, today).await.unwrap();
+    let view = credit::application_from_simulation(&db, sim.id, "Achat", today).await.unwrap();
     assert!(view.down_payment_minor <= capacity.today.down_payment_minor);
+    assert_eq!(view.selected_simulation_id, Some(sim.id));
+    assert!(view.to_borrow_minor <= 100_000);
+    assert_eq!(credit::simulation(&db, sim.id, today).await.unwrap().application_id, Some(view.id));
+}
+
+#[tokio::test]
+async fn cre_09_r_cre_24_to_r_cre_26_journal_and_follow_ups() {
+    let (db, _dir) = setup().await;
+    let sent = d("2026-10-20");
+    let view = credit::save_application(&db, None, &application("Appartement"), sent).await.unwrap();
+    let input = LenderRequestInput {
+        institution_id: None,
+        lender_name: Some("LCL".into()),
+        status: LenderRequestStatus::Sent,
+        sent_on: sent,
+        answered_on: None,
+        simulation_id: None,
+        follow_up_on: None,
+        note: None,
+    };
+    let view = credit::save_lender_request(&db, view.id, None, &input, sent).await.unwrap();
+    let request = &view.lender_requests[0];
+    assert_eq!(request.follow_up_on, Some(d("2026-11-03")), "R-CRE-25 : envoi + 14 jours");
+    assert_eq!(request.events.len(), 1, "R-CRE-24 : l'envoi au journal");
+    assert!(!request.follow_up_due);
+    let id = request.id;
+
+    // Le 3 novembre, la démarche est à relancer ; la notification n'est émise qu'une fois (R-CRE-26).
+    let due = d("2026-11-03");
+    assert!(credit::application(&db, view.id, due).await.unwrap().lender_requests[0].follow_up_due);
+    assert_eq!(credit::applications(&db, due).await.unwrap()[0].follow_ups_due, 1);
+    assert_eq!(credit::notify_follow_ups(&db, due).await.unwrap(), 1);
+    assert_eq!(credit::notify_follow_ups(&db, due).await.unwrap(), 0);
+
+    // Relancer le 4 novembre : la relance au journal, la prochaine 7 jours plus tard (R-CRE-25).
+    let next = d("2026-11-04");
+    let followed = credit::FollowUpInput { note: Some("Mail au conseiller".into()), next_follow_up_on: None };
+    let view = credit::follow_up(&db, view.id, id, &followed, next).await.unwrap();
+    let request = &view.lender_requests[0];
+    assert_eq!(request.follow_up_on, Some(d("2026-11-11")));
+    assert!(!request.follow_up_due);
+    assert_eq!(request.events[0].kind, cashflow_domain::credit::LenderEventKind::FollowUp);
+    assert_eq!(request.events[0].note.as_deref(), Some("Mail au conseiller"));
+
+    // Un appel ajouté à la main, puis supprimé.
+    let call = credit::LenderEventInput {
+        date: next,
+        kind: cashflow_domain::credit::LenderEventKind::Call,
+        note: Some("Rendez-vous fixé".into()),
+    };
+    let view = credit::save_event(&db, view.id, id, None, &call, next).await.unwrap();
+    assert_eq!(view.lender_requests[0].events.len(), 3);
+    let call_id =
+        view.lender_requests[0].events.iter().find(|e| e.note.as_deref() == Some("Rendez-vous fixé")).unwrap().id;
+    let view = credit::delete_event(&db, view.id, id, call_id, next).await.unwrap();
+    assert_eq!(view.lender_requests[0].events.len(), 2);
+
+    // Une offre reçue : réponse au journal, relance effacée.
+    let view = credit::record_offer(&db, view.id, id, &simulation("Offre LCL", None), next).await.unwrap();
+    let request = &view.lender_requests[0];
+    assert_eq!(request.follow_up_on, None);
+    assert_eq!(request.events[0].kind, cashflow_domain::credit::LenderEventKind::Answer);
 }

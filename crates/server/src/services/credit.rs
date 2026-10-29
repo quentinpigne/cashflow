@@ -8,12 +8,14 @@ use anyhow::Context;
 use cashflow_domain::accounts::{AccountFamily, AccountKind};
 use cashflow_domain::credit::pieces::{self, LibraryDocument, Piece, PieceContext, PieceStatus};
 use cashflow_domain::credit::{
-    self, ApplicationStatus, CapacityInput, FinancingPlan, LenderRequestStatus, ProjectKind, SimulationTerms,
+    self, ApplicationStatus, CapacityInput, FinancingPlan, LenderEventKind, LenderRequestStatus, ProjectKind,
+    SimulationTerms,
 };
 use cashflow_domain::documents as docs;
 use cashflow_domain::loans::{self, Insurance, LoanKind};
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, DocumentId, InstitutionId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
+    AccountId, AssetId, DocumentId, InstitutionId, LenderEventId, LenderRequestId, LoanApplicationId, LoanId,
+    LoanSimulationId,
 };
 use cashflow_domain::{Date, DomainError, Money, Rate};
 use serde::{Deserialize, Serialize};
@@ -23,7 +25,7 @@ use super::loans::{InstallmentView, LoanInput};
 use super::salaries::SalaryBook;
 use super::{clean, required};
 use crate::config::DataDir;
-use crate::db::credit::{ApplicationRow, LenderRequestRow, SimulationRow};
+use crate::db::credit::{ApplicationRow, EventRow, LenderRequestRow, SimulationRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -369,6 +371,8 @@ pub struct ApplicationSummary {
     pub status: ApplicationStatus,
     pub to_borrow_minor: i64,
     pub missing_pieces: usize,
+    /// Démarches à relancer (R-CRE-26).
+    pub follow_ups_due: usize,
 }
 
 /// Revenu d'un emploi en cours (R-CRE-13).
@@ -444,6 +448,20 @@ pub struct LenderRequestView {
     pub answered_on: Option<Date>,
     /// L'offre reçue.
     pub simulation_id: Option<LoanSimulationId>,
+    pub follow_up_on: Option<Date>,
+    /// À relancer (R-CRE-26).
+    pub follow_up_due: bool,
+    pub note: Option<String>,
+    /// Journal, du plus récent au plus ancien (R-CRE-24).
+    pub events: Vec<LenderEventView>,
+}
+
+/// Un échange au journal d'une démarche (R-CRE-24).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct LenderEventView {
+    pub id: LenderEventId,
+    pub date: Date,
+    pub kind: LenderEventKind,
     pub note: Option<String>,
 }
 
@@ -662,7 +680,7 @@ async fn piece_views(db: &Db, row: &ApplicationRow, ctx: &Sources, today: Date) 
         .collect())
 }
 
-fn lender_request_view(row: LenderRequestRow, names: &Names) -> LenderRequestView {
+fn lender_request_view(row: LenderRequestRow, names: &Names, events: &[EventRow], today: Date) -> LenderRequestView {
     let name = row
         .institution_id
         .and_then(|i| names.institutions.get(&i).cloned())
@@ -677,7 +695,14 @@ fn lender_request_view(row: LenderRequestRow, names: &Names) -> LenderRequestVie
         sent_on: row.sent_on,
         answered_on: row.answered_on,
         simulation_id: row.simulation_id,
+        follow_up_due: credit::follow_up_due(row.status, row.follow_up_on, today),
+        follow_up_on: row.follow_up_on,
         note: row.note,
+        events: events
+            .iter()
+            .filter(|e| e.lender_request_id == row.id)
+            .map(|e| LenderEventView { id: e.id, date: e.date, kind: e.kind, note: e.note.clone() })
+            .collect(),
     }
 }
 
@@ -695,8 +720,12 @@ pub async fn application(db: &Db, id: LoanApplicationId, today: Date) -> AppResu
     let computed = selected.map(|s| credit::simulate(&s.terms, today)).transpose()?;
     let capacity = capacity_view(&row, &ctx, computed.as_ref(), selected.map(|s| &s.terms));
     let pieces = piece_views(db, &row, &ctx, today).await?;
-    let lender_requests =
-        db::credit::lender_requests(&db.read, id).await?.into_iter().map(|r| lender_request_view(r, &names)).collect();
+    let events = db::credit::events(&db.read, id).await?;
+    let lender_requests = db::credit::lender_requests(&db.read, id)
+        .await?
+        .into_iter()
+        .map(|r| lender_request_view(r, &names, &events, today))
+        .collect();
     let asset_name = match row.asset_id {
         Some(asset) => db::assets::find(&db.read, asset).await?.map(|a| a.name),
         None => None,
@@ -744,6 +773,11 @@ pub async fn applications(db: &Db, today: Date) -> AppResult<Vec<ApplicationSumm
             .iter()
             .filter(|p| matches!(p.status, PieceStatus::Missing | PieceStatus::Incomplete))
             .count();
+        let follow_ups_due = db::credit::lender_requests(&db.read, row.id)
+            .await?
+            .iter()
+            .filter(|r| credit::follow_up_due(r.status, r.follow_up_on, today))
+            .count();
         list.push(ApplicationSummary {
             id: row.id,
             to_borrow_minor: plan(&row).to_borrow().minor(),
@@ -751,6 +785,7 @@ pub async fn applications(db: &Db, today: Date) -> AppResult<Vec<ApplicationSumm
             project_kind: row.project_kind,
             status: row.status,
             missing_pieces: missing,
+            follow_ups_due,
         });
     }
     Ok(list)
@@ -880,11 +915,14 @@ pub struct LenderRequestInput {
     pub sent_on: Date,
     pub answered_on: Option<Date>,
     pub simulation_id: Option<LoanSimulationId>,
+    /// Prochaine relance ; à la création, absente : l'envoi + 14 jours (R-CRE-25).
+    pub follow_up_on: Option<Date>,
     pub note: Option<String>,
 }
 
 /// Enregistre une démarche, nouvelle (`request` absent) ou modifiée. La première démarche envoyée fait passer la
-/// demande à « envoyée » (R-CRE-20).
+/// demande à « envoyée » (R-CRE-20) ; une nouvelle démarche inscrit son envoi au journal, un refus une réponse
+/// (R-CRE-24).
 pub async fn save_lender_request(
     db: &Db,
     id: LoanApplicationId,
@@ -893,11 +931,16 @@ pub async fn save_lender_request(
     today: Date,
 ) -> AppResult<ApplicationView> {
     let application = application_row(db, id).await?;
-    if let Some(request) = request
-        && !db::credit::lender_requests(&db.read, id).await?.iter().any(|r| r.id == request)
-    {
-        return Err(AppError::NotFound("démarche"));
-    }
+    let current = match request {
+        Some(request) => Some(
+            db::credit::lender_requests(&db.read, id)
+                .await?
+                .into_iter()
+                .find(|r| r.id == request)
+                .ok_or(AppError::NotFound("démarche"))?,
+        ),
+        None => None,
+    };
     let lender_name = clean(input.lender_name.as_deref());
     if input.institution_id.is_none() && lender_name.is_none() {
         return Err(AppError::invalid_field("REQUIRED", "lender_name", "un établissement ou un nom est requis"));
@@ -921,10 +964,23 @@ pub async fn save_lender_request(
         sent_on: input.sent_on,
         answered_on: input.answered_on,
         simulation_id: input.simulation_id,
+        follow_up_on: match (&current, input.follow_up_on) {
+            (None, None) => Some(credit::follow_up_after(input.sent_on, credit::FIRST_FOLLOW_UP_DAYS)),
+            (_, date) => date,
+        },
         note: clean(input.note.as_deref()),
     };
+    let refused = row.status == LenderRequestStatus::Refused
+        && current.as_ref().is_some_and(|c| c.status != LenderRequestStatus::Refused);
+    let row = LenderRequestRow { follow_up_on: if refused { None } else { row.follow_up_on }, ..row };
     let mut tx = db.write.begin().await?;
     db::credit::upsert_lender_request(&mut *tx, &row).await?;
+    if current.is_none() {
+        add_event(&mut tx, row.id, row.sent_on, LenderEventKind::Sent, None).await?;
+    }
+    if refused {
+        add_event(&mut tx, row.id, row.answered_on.unwrap_or(today), LenderEventKind::Answer, Some("Refus")).await?;
+    }
     let status = credit::status_after_sending(application.status);
     if status != application.status {
         db::credit::set_application_status(&mut *tx, id, status).await?;
@@ -958,9 +1014,11 @@ pub async fn record_offer(
     row.simulation_id = Some(simulation.id);
     row.status = LenderRequestStatus::Offer;
     row.answered_on = Some(row.answered_on.unwrap_or(today).max(row.sent_on));
+    row.follow_up_on = None;
     let mut tx = db.write.begin().await?;
     db::credit::upsert_simulation(&mut *tx, &simulation).await?;
     db::credit::upsert_lender_request(&mut *tx, &row).await?;
+    add_event(&mut tx, row.id, today, LenderEventKind::Answer, Some(&format!("Offre : {}", simulation.name))).await?;
     tx.commit().await?;
     application(db, id, today).await
 }
@@ -983,6 +1041,7 @@ pub async fn accept_offer(
         if row.status != status {
             row.status = status;
             row.answered_on = row.answered_on.or(Some(today.max(row.sent_on)));
+            row.follow_up_on = None;
             db::credit::upsert_lender_request(&mut *tx, row).await?;
         }
     }
@@ -998,6 +1057,144 @@ pub async fn delete_lender_request(db: &Db, id: LoanApplicationId, request: Lend
         return Err(AppError::NotFound("démarche"));
     }
     Ok(())
+}
+
+// ======================================================================= Journal et relances (CRE-09)
+
+async fn add_event(
+    conn: &mut sqlx::SqliteConnection,
+    request: LenderRequestId,
+    date: Date,
+    kind: LenderEventKind,
+    note: Option<&str>,
+) -> AppResult<()> {
+    let row =
+        EventRow { id: LenderEventId::new(), lender_request_id: request, date, kind, note: note.map(str::to_owned) };
+    db::credit::upsert_event(&mut *conn, &row).await?;
+    Ok(())
+}
+
+async fn lender_request_row(db: &Db, id: LoanApplicationId, request: LenderRequestId) -> AppResult<LenderRequestRow> {
+    application_row(db, id).await?;
+    db::credit::lender_requests(&db.read, id)
+        .await?
+        .into_iter()
+        .find(|r| r.id == request)
+        .ok_or(AppError::NotFound("démarche"))
+}
+
+/// Échange saisi au journal (R-CRE-24).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct LenderEventInput {
+    pub date: Date,
+    pub kind: LenderEventKind,
+    pub note: Option<String>,
+}
+
+/// Ajoute (`event` absent) ou modifie un échange du journal d'une démarche (R-CRE-24).
+pub async fn save_event(
+    db: &Db,
+    id: LoanApplicationId,
+    request: LenderRequestId,
+    event: Option<LenderEventId>,
+    input: &LenderEventInput,
+    today: Date,
+) -> AppResult<ApplicationView> {
+    lender_request_row(db, id, request).await?;
+    if let Some(event) = event
+        && !db::credit::events(&db.read, id).await?.iter().any(|e| e.id == event && e.lender_request_id == request)
+    {
+        return Err(AppError::NotFound("échange"));
+    }
+    let row = EventRow {
+        id: event.unwrap_or_else(LenderEventId::new),
+        lender_request_id: request,
+        date: input.date,
+        kind: input.kind,
+        note: clean(input.note.as_deref()),
+    };
+    db::credit::upsert_event(&db.write, &row).await?;
+    application(db, id, today).await
+}
+
+pub async fn delete_event(
+    db: &Db,
+    id: LoanApplicationId,
+    request: LenderRequestId,
+    event: LenderEventId,
+    today: Date,
+) -> AppResult<ApplicationView> {
+    lender_request_row(db, id, request).await?;
+    if db::credit::delete_event(&db.write, request, event).await? == 0 {
+        return Err(AppError::NotFound("échange"));
+    }
+    application(db, id, today).await
+}
+
+/// Relance saisie : un texte, et la prochaine relance (par défaut, dans 7 jours) (R-CRE-25).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct FollowUpInput {
+    pub note: Option<String>,
+    /// Absente : dans 7 jours.
+    pub next_follow_up_on: Option<Date>,
+}
+
+/// Relance une démarche (R-CRE-25) : la relance est inscrite au journal, datée du jour, et la prochaine relance
+/// reportée.
+pub async fn follow_up(
+    db: &Db,
+    id: LoanApplicationId,
+    request: LenderRequestId,
+    input: &FollowUpInput,
+    today: Date,
+) -> AppResult<ApplicationView> {
+    let mut row = lender_request_row(db, id, request).await?;
+    row.follow_up_on =
+        Some(input.next_follow_up_on.unwrap_or_else(|| credit::follow_up_after(today, credit::NEXT_FOLLOW_UP_DAYS)));
+    let note = clean(input.note.as_deref());
+    let mut tx = db.write.begin().await?;
+    db::credit::upsert_lender_request(&mut *tx, &row).await?;
+    add_event(&mut tx, request, today, LenderEventKind::FollowUp, note.as_deref()).await?;
+    tx.commit().await?;
+    application(db, id, today).await
+}
+
+/// Annonce les démarches à relancer, une fois par démarche et par date de relance (R-CRE-26).
+pub async fn notify_follow_ups(db: &Db, today: Date) -> AppResult<usize> {
+    let due: Vec<_> = db::credit::follow_ups(&db.read)
+        .await?
+        .into_iter()
+        .filter(|(_, _, _, status, date)| credit::follow_up_due(*status, Some(*date), today))
+        .collect();
+    if due.is_empty() {
+        return Ok(0);
+    }
+    let known: HashSet<String> = db::budgets::known_keys(&db.read)
+        .await?
+        .iter()
+        .flat_map(|k| k.split(' ').map(str::to_owned).collect::<Vec<_>>())
+        .collect();
+    let applications: HashMap<LoanApplicationId, String> =
+        db::credit::applications(&db.read).await?.into_iter().map(|a| (a.id, a.name)).collect();
+    let mut sent = 0;
+    for (request, application, name, _, date) in due {
+        let key = format!("follow-up:{request}:{date}");
+        if known.contains(&key) {
+            continue;
+        }
+        let project = applications.get(&application).cloned().unwrap_or_default();
+        db::budgets::notify(
+            &db.write,
+            "LENDER_FOLLOW_UP",
+            &format!("Relancer {name}"),
+            &format!("Demande « {project} » : relance prévue le {}", date.format("%d/%m/%Y")),
+            Some(&format!("/prets/demandes/{application}")),
+            Some(&key),
+        )
+        .await?;
+        sent += 1;
+    }
+    Ok(sent)
 }
 
 // ======================================================================= Capacité d'achat (CRE-07)
@@ -1336,23 +1533,32 @@ pub async fn purchase_capacity(db: &Db, today: Date) -> AppResult<PurchaseCapaci
     })
 }
 
-/// Crée une demande à partir de la capacité d'achat (R-CRE-36) : au prix maximal, avec l'apport nécessaire (au
-/// plus l'apport possible) et une simulation retenue au montant à emprunter.
-pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppResult<ApplicationView> {
+/// Prépare une demande depuis une simulation enregistrée (R-CRE-36) : le plus grand prix qui tient dans son
+/// capital, l'apport possible et ses frais, avec l'apport nécessaire, et la simulation retenue.
+pub async fn application_from_simulation(
+    db: &Db,
+    simulation: LoanSimulationId,
+    name: &str,
+    today: Date,
+) -> AppResult<ApplicationView> {
+    let mut sim = simulation_row(db, simulation).await?;
     let capacity = purchase_capacity(db, today).await?;
     let h = &capacity.hypotheses;
+    let costs = sim.terms.fees + sim.terms.guarantee_fees;
+    let funds = sim.terms.principal + Money::from_minor(capacity.today.down_payment_minor);
+    let budget = if funds > costs { funds - costs } else { Money::ZERO };
+    let (price, notary) = credit::max_price(h.project_kind, budget);
     // L'apport nécessaire, au plus l'apport possible : le prix arrondi laisse parfois un reliquat d'épargne.
-    let costs = h.fees_minor + h.guarantee_fees_minor;
-    let cost = capacity.today.max_price_minor + capacity.today.notary_fees_minor + costs;
-    let down_payment = (cost - capacity.today.capital_minor).clamp(0, capacity.today.down_payment_minor);
+    let cost = (price + notary + costs).minor();
+    let down_payment = (cost - sim.terms.principal.minor()).clamp(0, capacity.today.down_payment_minor);
     let mut input = ApplicationInput {
         name: name.to_owned(),
         project_kind: h.project_kind,
         asset_id: None,
-        price_minor: capacity.today.max_price_minor,
-        notary_fees_minor: Some(capacity.today.notary_fees_minor),
+        price_minor: price.minor(),
+        notary_fees_minor: Some(notary.minor()),
         works_minor: 0,
-        other_costs_minor: costs,
+        other_costs_minor: costs.minor(),
         down_payment_minor: down_payment,
         other_income_minor: h.other_income_minor,
         other_charges_minor: h.other_charges_minor,
@@ -1363,28 +1569,38 @@ pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppR
         excluded_loan_ids: h.excluded_loan_ids.clone(),
         selected_simulation_id: None,
         status: None,
-        note: Some("Créée depuis la capacité d'achat".to_owned()),
+        note: None,
     };
     let application = save_application(db, None, &input, today).await?;
-    if application.to_borrow_minor <= 0 {
-        return Ok(application);
+    sim.application_id = Some(application.id);
+    db::credit::upsert_simulation(&db.write, &sim).await?;
+    input.selected_simulation_id = Some(sim.id);
+    save_application(db, Some(application.id), &input, today).await
+}
+
+/// Crée une demande depuis la capacité d'achat (R-CRE-36) : une simulation au capital empruntable, aux conditions
+/// des hypothèses, puis la demande préparée depuis cette simulation.
+pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppResult<ApplicationView> {
+    let capacity = purchase_capacity(db, today).await?;
+    let h = &capacity.hypotheses;
+    if capacity.today.capital_minor <= 0 {
+        return Err(AppError::invalid("NO_BORROWING_CAPACITY", "aucun capital empruntable avec ces hypothèses"));
     }
     let simulation = SimulationInput {
         name: "Capacité d'achat".to_owned(),
         kind: LoanKind::Mortgage,
-        principal_minor: application.to_borrow_minor,
+        principal_minor: capacity.today.capital_minor,
         annual_rate_ppm: h.annual_rate_ppm,
         duration_months: h.duration_months,
         insurance: h.insurance,
         fees_minor: h.fees_minor,
         guarantee_fees_minor: h.guarantee_fees_minor,
         institution_id: None,
-        application_id: Some(application.id),
+        application_id: None,
         note: None,
     };
     let simulation = save_simulation(db, None, &simulation, today).await?;
-    input.selected_simulation_id = Some(simulation.id);
-    save_application(db, Some(application.id), &input, today).await
+    application_from_simulation(db, simulation.id, name, today).await
 }
 
 // ======================================================================= Export (R-CRE-19)

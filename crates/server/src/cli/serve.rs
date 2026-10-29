@@ -45,11 +45,14 @@ impl Serve {
             Ok(indexed) => tracing::info!(indexed, "documents indexés pour la recherche"),
             Err(error) => tracing::error!(%error, "indexation des documents impossible"),
         }
+        if let Err(error) = services::credit::notify_follow_ups(&db, clock.today()).await {
+            tracing::error!(%error, "annonce des relances de crédit impossible");
+        }
         let geocoder = Geocoder::new(self.geocoding_url)?;
         let state =
             AppState { db, clock, data, limiter: Arc::default(), secure_cookies: self.secure_cookies, geocoder };
 
-        tokio::spawn(services::backup::run_daily(state.db.clone(), state.data.clone()));
+        tokio::spawn(services::backup::run_daily(state.db.clone(), state.data.clone(), state.clock));
         let app = routes::router(state, self.web_dir).layer(CompressionLayer::new()).layer(TraceLayer::new_for_http());
         let addr = self.addr;
         let listener = TcpListener::bind(addr).await.with_context(|| format!("écoute sur {addr}"))?;

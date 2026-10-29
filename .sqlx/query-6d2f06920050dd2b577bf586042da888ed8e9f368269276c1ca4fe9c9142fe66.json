@@ -1,0 +1,69 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT r.id, r.application_id, coalesce(i.name, r.lender_name, '') AS \"name!: String\", r.status,\n                  r.follow_up_on AS \"follow_up_on!: Date\"\n           FROM lender_request r LEFT JOIN institution i ON i.id = r.institution_id\n           WHERE r.follow_up_on IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "application_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request",
+            "name": "application_id"
+          }
+        }
+      },
+      {
+        "name": "name!: String",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "name": "status",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "name": "follow_up_on!: Date",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request",
+            "name": "follow_up_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "6d2f06920050dd2b577bf586042da888ed8e9f368269276c1ca4fe9c9142fe66"
+}

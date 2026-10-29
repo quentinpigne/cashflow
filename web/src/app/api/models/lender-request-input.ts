@@ -10,6 +10,11 @@ import { LoanSimulationId } from '../models/loan-simulation-id';
  */
 export interface LenderRequestInput {
   answered_on?: (string | null);
+
+  /**
+   * Prochaine relance ; à la création, absente : l'envoi + 14 jours (R-CRE-25).
+   */
+  follow_up_on?: (string | null);
   institution_id?: (InstitutionId | null);
   lender_name?: (string | null);
   note?: (string | null);

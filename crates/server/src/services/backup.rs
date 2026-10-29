@@ -96,8 +96,9 @@ pub fn prune(dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Boucle de fond de `serve` : une sauvegarde quotidienne, vérifiée toutes les heures (ADR-0015).
-pub async fn run_daily(db: Db, data: DataDir) {
+/// Boucle de fond de `serve` : une sauvegarde quotidienne, vérifiée toutes les heures (ADR-0015), et les relances
+/// dues des démarches de crédit (R-CRE-26).
+pub async fn run_daily(db: Db, data: DataDir, clock: crate::clock::Clock) {
     let mut interval = tokio::time::interval(Duration::from_secs(3600));
     loop {
         interval.tick().await;
@@ -105,6 +106,9 @@ pub async fn run_daily(db: Db, data: DataDir) {
             Some(at) => Utc::now() - at > chrono::Duration::hours(23),
             None => true,
         };
+        if let Err(error) = super::credit::notify_follow_ups(&db, clock.today()).await {
+            tracing::warn!(%error, "annonce des relances de crédit impossible");
+        }
         if due && let Err(error) = backup(&db, &data, "daily").await {
             tracing::error!(error = format!("{error:#}"), "échec de la sauvegarde quotidienne");
         }

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, application_id, institution_id, lender_name, status, sent_on AS \"sent_on: Date\",\n                  answered_on AS \"answered_on: Date\", simulation_id, note\n           FROM lender_request WHERE application_id = ? ORDER BY sent_on, created_at",
+  "query": "SELECT id, application_id, institution_id, lender_name, status, sent_on AS \"sent_on: Date\",\n                  answered_on AS \"answered_on: Date\", simulation_id, follow_up_on AS \"follow_up_on: Date\", note\n           FROM lender_request WHERE application_id = ? ORDER BY sent_on, created_at",
   "describe": {
     "columns": [
       {
@@ -92,8 +92,19 @@
         }
       },
       {
-        "name": "note",
+        "name": "follow_up_on: Date",
         "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request",
+            "name": "follow_up_on"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 9,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -115,8 +126,9 @@
       false,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "69215df80676a3e40a998af4858994db28e2d28e589535c1fb51da6e0a4fff78"
+  "hash": "44756d23bd31b4ad9b2d801eab5a470355f9a59597c14213b4f673152eb991ae"
 }

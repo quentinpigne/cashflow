@@ -4425,6 +4425,236 @@
         }
       }
     },
+    "/api/v1/loan-applications/{id}/lender-requests/{request_id}/events": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Ajoute un échange au journal d'une démarche (R-CRE-24).",
+        "operationId": "createLenderEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LenderEventInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/lender-requests/{request_id}/events/{event_id}": {
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "updateLenderEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderEventId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LenderEventInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "deleteLenderEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderEventId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/lender-requests/{request_id}/follow-up": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Relance une démarche (R-CRE-25).",
+        "operationId": "followUpLenderRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/loan-applications/{id}/lender-requests/{request_id}/offer": {
       "post": {
         "tags": [
@@ -4913,6 +5143,64 @@
         "responses": {
           "204": {},
           "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-simulations/{id}/application": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Prépare une demande depuis une simulation (R-CRE-36).",
+        "operationId": "applicationFromSimulation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanSimulationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FromCapacityInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
             "content": {
               "application/json": {
                 "schema": {
@@ -9224,9 +9512,15 @@
           "project_kind",
           "status",
           "to_borrow_minor",
-          "missing_pieces"
+          "missing_pieces",
+          "follow_ups_due"
         ],
         "properties": {
+          "follow_ups_due": {
+            "type": "integer",
+            "description": "Démarches à relancer (R-CRE-26).",
+            "minimum": 0
+          },
           "id": {
             "$ref": "#/components/schemas/LoanApplicationId"
           },
@@ -12553,6 +12847,26 @@
           }
         }
       },
+      "FollowUpInput": {
+        "type": "object",
+        "description": "Relance saisie : un texte, et la prochaine relance (par défaut, dans 7 jours) (R-CRE-25).",
+        "properties": {
+          "next_follow_up_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Absente : dans 7 jours."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "FortnightView": {
         "type": "object",
         "required": [
@@ -13381,6 +13695,72 @@
           }
         }
       },
+      "LenderEventId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "LenderEventInput": {
+        "type": "object",
+        "description": "Échange saisi au journal (R-CRE-24).",
+        "required": [
+          "date",
+          "kind"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LenderEventKind"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "LenderEventKind": {
+        "type": "string",
+        "description": "Type d'un échange au journal d'une démarche (R-CRE-24).",
+        "enum": [
+          "SENT",
+          "FOLLOW_UP",
+          "CALL",
+          "MEETING",
+          "ANSWER",
+          "NOTE"
+        ]
+      },
+      "LenderEventView": {
+        "type": "object",
+        "description": "Un échange au journal d'une démarche (R-CRE-24).",
+        "required": [
+          "id",
+          "date",
+          "kind"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/LenderEventId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LenderEventKind"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "LenderRequestId": {
         "type": "string",
         "format": "uuid"
@@ -13399,6 +13779,14 @@
               "null"
             ],
             "format": "date"
+          },
+          "follow_up_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Prochaine relance ; à la création, absente : l'envoi + 14 jours (R-CRE-25)."
           },
           "institution_id": {
             "oneOf": [
@@ -13459,10 +13847,30 @@
           "id",
           "name",
           "status",
-          "sent_on"
+          "sent_on",
+          "follow_up_due",
+          "events"
         ],
         "properties": {
           "answered_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LenderEventView"
+            },
+            "description": "Journal, du plus récent au plus ancien (R-CRE-24)."
+          },
+          "follow_up_due": {
+            "type": "boolean",
+            "description": "À relancer (R-CRE-26)."
+          },
+          "follow_up_on": {
             "type": [
               "string",
               "null"

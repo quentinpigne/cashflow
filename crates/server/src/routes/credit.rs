@@ -25,4 +25,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(credit::summary))
         .routes(routes!(credit::purchase_capacity, credit::save_purchase_hypotheses))
         .routes(routes!(credit::application_from_capacity))
+        .routes(routes!(credit::application_from_simulation))
+        .routes(routes!(credit::follow_up))
+        .routes(routes!(credit::create_event))
+        .routes(routes!(credit::update_event, credit::delete_event))
 }

@@ -54,5 +54,13 @@ pub async fn evaluate_alerts(State(state): State<AppState>, request: Request, ne
     {
         tracing::warn!(%error, "évaluation des alertes de budget impossible");
     }
+    // Les relances de crédit dues (R-CRE-26).
+    if writes
+        && !notifications
+        && response.status().is_success()
+        && let Err(error) = services::credit::notify_follow_ups(&state.db, state.clock.today()).await
+    {
+        tracing::warn!(%error, "annonce des relances de crédit impossible");
+    }
     response
 }

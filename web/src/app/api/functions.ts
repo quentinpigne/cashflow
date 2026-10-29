@@ -339,6 +339,14 @@ export type { DeleteLenderRequest$Params as DeleteLenderRequest$Params } from '.
 export { deleteLenderRequest as deleteLenderRequest } from './fn/credit/delete-lender-request';
 export type { AcceptOffer$Params as AcceptOffer$Params } from './fn/credit/accept-offer';
 export { acceptOffer as acceptOffer } from './fn/credit/accept-offer';
+export type { CreateLenderEvent$Params as CreateLenderEvent$Params } from './fn/credit/create-lender-event';
+export { createLenderEvent as createLenderEvent } from './fn/credit/create-lender-event';
+export type { UpdateLenderEvent$Params as UpdateLenderEvent$Params } from './fn/credit/update-lender-event';
+export { updateLenderEvent as updateLenderEvent } from './fn/credit/update-lender-event';
+export type { DeleteLenderEvent$Params as DeleteLenderEvent$Params } from './fn/credit/delete-lender-event';
+export { deleteLenderEvent as deleteLenderEvent } from './fn/credit/delete-lender-event';
+export type { FollowUpLenderRequest$Params as FollowUpLenderRequest$Params } from './fn/credit/follow-up-lender-request';
+export { followUpLenderRequest as followUpLenderRequest } from './fn/credit/follow-up-lender-request';
 export type { RecordOffer$Params as RecordOffer$Params } from './fn/credit/record-offer';
 export { recordOffer as recordOffer } from './fn/credit/record-offer';
 export type { AssignPiece$Params as AssignPiece$Params } from './fn/credit/assign-piece';
@@ -361,6 +369,8 @@ export type { UpdateLoanSimulation$Params as UpdateLoanSimulation$Params } from 
 export { updateLoanSimulation as updateLoanSimulation } from './fn/credit/update-loan-simulation';
 export type { DeleteLoanSimulation$Params as DeleteLoanSimulation$Params } from './fn/credit/delete-loan-simulation';
 export { deleteLoanSimulation as deleteLoanSimulation } from './fn/credit/delete-loan-simulation';
+export type { ApplicationFromSimulation$Params as ApplicationFromSimulation$Params } from './fn/credit/application-from-simulation';
+export { applicationFromSimulation as applicationFromSimulation } from './fn/credit/application-from-simulation';
 export type { ConvertLoanSimulation$Params as ConvertLoanSimulation$Params } from './fn/credit/convert-loan-simulation';
 export { convertLoanSimulation as convertLoanSimulation } from './fn/credit/convert-loan-simulation';
 export type { LoanSimulationSchedule$Params as LoanSimulationSchedule$Params } from './fn/credit/loan-simulation-schedule';

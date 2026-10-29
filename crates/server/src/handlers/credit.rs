@@ -3,14 +3,16 @@ use axum::extract::{Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::IntoResponse;
 use cashflow_domain::credit::pieces::Piece;
-use cashflow_domain::shared::ids::{DocumentId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId};
+use cashflow_domain::shared::ids::{
+    DocumentId, LenderEventId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::error::{AppResult, Problem};
 use crate::services::credit::{
-    self, ApplicationInput, ApplicationSummary, ApplicationView, ComputeInput, ComputeResult, LenderRequestInput,
-    PurchaseCapacity, PurchaseHypotheses, SimulationInput, SimulationView,
+    self, ApplicationInput, ApplicationSummary, ApplicationView, ComputeInput, ComputeResult, FollowUpInput,
+    LenderEventInput, LenderRequestInput, PurchaseCapacity, PurchaseHypotheses, SimulationInput, SimulationView,
 };
 use crate::services::loans::{InstallmentView, LoanInput};
 use crate::state::AppState;
@@ -385,4 +387,78 @@ pub async fn application_from_capacity(
     Json(input): Json<FromCapacityInput>,
 ) -> AppResult<Json<ApplicationView>> {
     Ok(Json(credit::application_from_capacity(&state.db, &input.name, state.clock.today()).await?))
+}
+
+/// Prépare une demande depuis une simulation (R-CRE-36).
+#[utoipa::path(
+    post, operation_id = "applicationFromSimulation", path = "/loan-simulations/{id}/application", tag = "credit",
+    params(("id" = LoanSimulationId, Path)), request_body = FromCapacityInput,
+    responses((status = 200, body = ApplicationView), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn application_from_simulation(
+    State(state): State<AppState>,
+    Path(id): Path<LoanSimulationId>,
+    Json(input): Json<FromCapacityInput>,
+) -> AppResult<Json<ApplicationView>> {
+    Ok(Json(credit::application_from_simulation(&state.db, id, &input.name, state.clock.today()).await?))
+}
+
+// ---------------------------------------------------------------- Journal et relances
+
+/// Relance une démarche (R-CRE-25).
+#[utoipa::path(
+    post, operation_id = "followUpLenderRequest",
+    path = "/loan-applications/{id}/lender-requests/{request_id}/follow-up", tag = "credit",
+    params(("id" = LoanApplicationId, Path), ("request_id" = LenderRequestId, Path)), request_body = FollowUpInput,
+    responses((status = 200, body = ApplicationView), (status = 404, body = Problem))
+)]
+pub async fn follow_up(
+    State(state): State<AppState>,
+    Path((id, request)): Path<(LoanApplicationId, LenderRequestId)>,
+    Json(input): Json<FollowUpInput>,
+) -> AppResult<Json<ApplicationView>> {
+    Ok(Json(credit::follow_up(&state.db, id, request, &input, state.clock.today()).await?))
+}
+
+/// Ajoute un échange au journal d'une démarche (R-CRE-24).
+#[utoipa::path(
+    post, operation_id = "createLenderEvent", path = "/loan-applications/{id}/lender-requests/{request_id}/events",
+    tag = "credit", params(("id" = LoanApplicationId, Path), ("request_id" = LenderRequestId, Path)),
+    request_body = LenderEventInput,
+    responses((status = 200, body = ApplicationView), (status = 404, body = Problem))
+)]
+pub async fn create_event(
+    State(state): State<AppState>,
+    Path((id, request)): Path<(LoanApplicationId, LenderRequestId)>,
+    Json(input): Json<LenderEventInput>,
+) -> AppResult<Json<ApplicationView>> {
+    Ok(Json(credit::save_event(&state.db, id, request, None, &input, state.clock.today()).await?))
+}
+
+#[utoipa::path(
+    put, operation_id = "updateLenderEvent",
+    path = "/loan-applications/{id}/lender-requests/{request_id}/events/{event_id}", tag = "credit",
+    params(("id" = LoanApplicationId, Path), ("request_id" = LenderRequestId, Path), ("event_id" = LenderEventId, Path)),
+    request_body = LenderEventInput,
+    responses((status = 200, body = ApplicationView), (status = 404, body = Problem))
+)]
+pub async fn update_event(
+    State(state): State<AppState>,
+    Path((id, request, event)): Path<(LoanApplicationId, LenderRequestId, LenderEventId)>,
+    Json(input): Json<LenderEventInput>,
+) -> AppResult<Json<ApplicationView>> {
+    Ok(Json(credit::save_event(&state.db, id, request, Some(event), &input, state.clock.today()).await?))
+}
+
+#[utoipa::path(
+    delete, operation_id = "deleteLenderEvent",
+    path = "/loan-applications/{id}/lender-requests/{request_id}/events/{event_id}", tag = "credit",
+    params(("id" = LoanApplicationId, Path), ("request_id" = LenderRequestId, Path), ("event_id" = LenderEventId, Path)),
+    responses((status = 200, body = ApplicationView), (status = 404, body = Problem))
+)]
+pub async fn delete_event(
+    State(state): State<AppState>,
+    Path((id, request, event)): Path<(LoanApplicationId, LenderRequestId, LenderEventId)>,
+) -> AppResult<Json<ApplicationView>> {
+    Ok(Json(credit::delete_event(&state.db, id, request, event, state.clock.today()).await?))
 }

@@ -9,6 +9,11 @@ import { ProjectKind } from '../models/project-kind';
  * Une demande dans la liste (E38).
  */
 export interface ApplicationSummary {
+
+  /**
+   * Démarches à relancer (R-CRE-26).
+   */
+  follow_ups_due: number;
   id: LoanApplicationId;
   missing_pieces: number;
   name: string;

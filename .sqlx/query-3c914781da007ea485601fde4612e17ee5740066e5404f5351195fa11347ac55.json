@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT e.id, e.lender_request_id, e.date AS \"date: Date\", e.kind, e.note\n           FROM lender_request_event e JOIN lender_request r ON r.id = e.lender_request_id\n           WHERE r.application_id = ? ORDER BY e.date DESC, e.created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request_event",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "lender_request_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request_event",
+            "name": "lender_request_id"
+          }
+        }
+      },
+      {
+        "name": "date: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request_event",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request_event",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "lender_request_event",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "3c914781da007ea485601fde4612e17ee5740066e5404f5351195fa11347ac55"
+}

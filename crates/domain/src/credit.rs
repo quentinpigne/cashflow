@@ -479,6 +479,33 @@ impl LenderRequestStatus {
     }
 }
 
+/// Type d'un échange au journal d'une démarche (R-CRE-24).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LenderEventKind {
+    Sent,
+    FollowUp,
+    Call,
+    Meeting,
+    Answer,
+    Note,
+}
+
+/// Délai de la première relance après l'envoi, puis entre deux relances (R-CRE-25).
+pub const FIRST_FOLLOW_UP_DAYS: u64 = 14;
+pub const NEXT_FOLLOW_UP_DAYS: u64 = 7;
+
+/// Prochaine relance proposée à partir d'une date (envoi : +14 jours ; relance : +7 jours) (R-CRE-25).
+pub fn follow_up_after(date: Date, days: u64) -> Date {
+    date.checked_add_days(chrono::Days::new(days)).unwrap_or(date)
+}
+
+/// Une démarche est à relancer quand elle attend une réponse et que sa relance est passée ou du jour (R-CRE-26).
+pub fn follow_up_due(status: LenderRequestStatus, follow_up_on: Option<Date>, today: Date) -> bool {
+    status.is_open() && follow_up_on.is_some_and(|date| date <= today)
+}
+
 /// Statut de la demande après l'envoi d'une démarche (R-CRE-20) : une demande en préparation passe à envoyée.
 pub fn status_after_sending(status: ApplicationStatus) -> ApplicationStatus {
     if status == ApplicationStatus::Preparing { ApplicationStatus::Submitted } else { status }
@@ -732,5 +759,16 @@ mod tests {
         assert_eq!(with[0], (d("2026-10-31"), euros(80_000)), "aucune échéance encore");
         let first_two: Money = simulation.schedule[..2].iter().map(|i| i.interest + i.insurance).sum();
         assert_eq!(with[1].1, euros(90_000) - first_two);
+    }
+    #[test]
+    fn r_cre_25_r_cre_26_follow_ups() {
+        use LenderRequestStatus::*;
+        assert_eq!(follow_up_after(d("2026-10-20"), FIRST_FOLLOW_UP_DAYS), d("2026-11-03"));
+        assert_eq!(follow_up_after(d("2026-11-04"), NEXT_FOLLOW_UP_DAYS), d("2026-11-11"));
+        assert!(follow_up_due(Sent, Some(d("2026-11-03")), d("2026-11-03")));
+        assert!(follow_up_due(Offer, Some(d("2026-11-01")), d("2026-11-03")));
+        assert!(!follow_up_due(Sent, Some(d("2026-11-04")), d("2026-11-03")));
+        assert!(!follow_up_due(Refused, Some(d("2026-11-01")), d("2026-11-03")));
+        assert!(!follow_up_due(Sent, None, d("2026-11-03")));
     }
 }

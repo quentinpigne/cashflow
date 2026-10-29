@@ -1,10 +1,10 @@
 //! Simulations et demandes de crédit (spec 13, ADR-0027) : simulations, demandes, pièces attribuées, démarches.
 
 use cashflow_domain::credit::pieces::Piece;
-use cashflow_domain::credit::{ApplicationStatus, LenderRequestStatus, ProjectKind, SimulationTerms};
+use cashflow_domain::credit::{ApplicationStatus, LenderEventKind, LenderRequestStatus, ProjectKind, SimulationTerms};
 use cashflow_domain::loans::{Insurance, LoanKind};
 use cashflow_domain::shared::ids::{
-    AssetId, DocumentId, InstitutionId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
+    AssetId, DocumentId, InstitutionId, LenderEventId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
 };
 use cashflow_domain::{Date, Money, Rate};
 use sqlx::SqliteExecutor;
@@ -396,6 +396,7 @@ pub struct LenderRequestRow {
     pub sent_on: Date,
     pub answered_on: Option<Date>,
     pub simulation_id: Option<LoanSimulationId>,
+    pub follow_up_on: Option<Date>,
     pub note: Option<String>,
 }
 
@@ -407,7 +408,7 @@ pub async fn lender_requests(
     let application = application.to_string();
     let rows = sqlx::query!(
         r#"SELECT id, application_id, institution_id, lender_name, status, sent_on AS "sent_on: Date",
-                  answered_on AS "answered_on: Date", simulation_id, note
+                  answered_on AS "answered_on: Date", simulation_id, follow_up_on AS "follow_up_on: Date", note
            FROM lender_request WHERE application_id = ? ORDER BY sent_on, created_at"#,
         application
     )
@@ -424,8 +425,28 @@ pub async fn lender_requests(
                 sent_on: r.sent_on,
                 answered_on: r.answered_on,
                 simulation_id: opt_id_from_db(r.simulation_id.as_deref())?,
+                follow_up_on: r.follow_up_on,
                 note: r.note,
             })
+        })
+        .collect()
+}
+
+/// Démarches à relancer de toutes les demandes : celles qui attendent une réponse et ont une relance (R-CRE-26).
+pub async fn follow_ups(
+    db: impl SqliteExecutor<'_>,
+) -> anyhow::Result<Vec<(LenderRequestId, LoanApplicationId, String, LenderRequestStatus, Date)>> {
+    let rows = sqlx::query!(
+        r#"SELECT r.id, r.application_id, coalesce(i.name, r.lender_name, '') AS "name!: String", r.status,
+                  r.follow_up_on AS "follow_up_on!: Date"
+           FROM lender_request r LEFT JOIN institution i ON i.id = r.institution_id
+           WHERE r.follow_up_on IS NOT NULL"#
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok((id_from_db(&r.id)?, id_from_db(&r.application_id)?, r.name, enum_from_db(&r.status)?, r.follow_up_on))
         })
         .collect()
 }
@@ -438,12 +459,12 @@ pub async fn upsert_lender_request(db: impl SqliteExecutor<'_>, row: &LenderRequ
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO lender_request (id, application_id, institution_id, lender_name, status, sent_on, answered_on,
-                                     simulation_id, note, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     simulation_id, follow_up_on, note, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO UPDATE SET
              institution_id = excluded.institution_id, lender_name = excluded.lender_name, status = excluded.status,
              sent_on = excluded.sent_on, answered_on = excluded.answered_on, simulation_id = excluded.simulation_id,
-             note = excluded.note, updated_at = excluded.updated_at",
+             follow_up_on = excluded.follow_up_on, note = excluded.note, updated_at = excluded.updated_at",
         id,
         application,
         institution,
@@ -452,6 +473,7 @@ pub async fn upsert_lender_request(db: impl SqliteExecutor<'_>, row: &LenderRequ
         row.sent_on,
         row.answered_on,
         simulation,
+        row.follow_up_on,
         row.note,
         now,
         now
@@ -468,6 +490,74 @@ pub async fn delete_lender_request(
 ) -> anyhow::Result<u64> {
     let (id, application) = (id.to_string(), application.to_string());
     Ok(sqlx::query!("DELETE FROM lender_request WHERE id = ? AND application_id = ?", id, application)
+        .execute(db)
+        .await?
+        .rows_affected())
+}
+
+// ---------------------------------------------------------------- Journal des démarches (R-CRE-24)
+
+#[derive(Debug, Clone)]
+pub struct EventRow {
+    pub id: LenderEventId,
+    pub lender_request_id: LenderRequestId,
+    pub date: Date,
+    pub kind: LenderEventKind,
+    pub note: Option<String>,
+}
+
+/// Journal des démarches d'une demande, du plus récent au plus ancien.
+pub async fn events(db: impl SqliteExecutor<'_>, application: LoanApplicationId) -> anyhow::Result<Vec<EventRow>> {
+    let application = application.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT e.id, e.lender_request_id, e.date AS "date: Date", e.kind, e.note
+           FROM lender_request_event e JOIN lender_request r ON r.id = e.lender_request_id
+           WHERE r.application_id = ? ORDER BY e.date DESC, e.created_at DESC"#,
+        application
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(EventRow {
+                id: id_from_db(&r.id)?,
+                lender_request_id: id_from_db(&r.lender_request_id)?,
+                date: r.date,
+                kind: enum_from_db(&r.kind)?,
+                note: r.note,
+            })
+        })
+        .collect()
+}
+
+pub async fn upsert_event(db: impl SqliteExecutor<'_>, row: &EventRow) -> anyhow::Result<()> {
+    let (id, request, kind) = (row.id.to_string(), row.lender_request_id.to_string(), enum_to_db(&row.kind));
+    let now = timestamp();
+    sqlx::query!(
+        "INSERT INTO lender_request_event (id, lender_request_id, date, kind, note, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO UPDATE SET date = excluded.date, kind = excluded.kind, note = excluded.note,
+                                        updated_at = excluded.updated_at",
+        id,
+        request,
+        row.date,
+        kind,
+        row.note,
+        now,
+        now
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn delete_event(
+    db: impl SqliteExecutor<'_>,
+    request: LenderRequestId,
+    id: LenderEventId,
+) -> anyhow::Result<u64> {
+    let (id, request) = (id.to_string(), request.to_string());
+    Ok(sqlx::query!("DELETE FROM lender_request_event WHERE id = ? AND lender_request_id = ?", id, request)
         .execute(db)
         .await?
         .rows_affected())

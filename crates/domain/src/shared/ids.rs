@@ -61,6 +61,7 @@ define_id!(
     LoanSimulationId,
     LoanApplicationId,
     LenderRequestId,
+    LenderEventId,
     EmploymentId,
     SalaryId,
     SalaryBonusId,

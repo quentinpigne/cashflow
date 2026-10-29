@@ -744,9 +744,11 @@ async fn credit(db: &Db, today: Date) -> anyhow::Result<()> {
         institution_id: None,
         lender_name: Some("Courtier Alpes Crédit".into()),
         status: LenderRequestStatus::Sent,
-        sent_on: today.checked_sub_days(Days::new(5)).unwrap_or(today),
+        // Envoyée il y a trois semaines : la relance est due (R-CRE-26).
+        sent_on: today.checked_sub_days(Days::new(21)).unwrap_or(today),
         answered_on: None,
         simulation_id: None,
+        follow_up_on: None,
         note: None,
     };
     super::credit::save_lender_request(db, application.id, None, &request, today).await.map_err(err)?;

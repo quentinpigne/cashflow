@@ -14,6 +14,8 @@ import { acceptOffer } from '../fn/credit/accept-offer';
 import { AcceptOffer$Params } from '../fn/credit/accept-offer';
 import { applicationFromCapacity } from '../fn/credit/application-from-capacity';
 import { ApplicationFromCapacity$Params } from '../fn/credit/application-from-capacity';
+import { applicationFromSimulation } from '../fn/credit/application-from-simulation';
+import { ApplicationFromSimulation$Params } from '../fn/credit/application-from-simulation';
 import { ApplicationSummary } from '../models/application-summary';
 import { ApplicationView } from '../models/application-view';
 import { assignPiece } from '../fn/credit/assign-piece';
@@ -23,12 +25,16 @@ import { ComputeLoanSimulation$Params } from '../fn/credit/compute-loan-simulati
 import { ComputeResult } from '../models/compute-result';
 import { convertLoanSimulation } from '../fn/credit/convert-loan-simulation';
 import { ConvertLoanSimulation$Params } from '../fn/credit/convert-loan-simulation';
+import { createLenderEvent } from '../fn/credit/create-lender-event';
+import { CreateLenderEvent$Params } from '../fn/credit/create-lender-event';
 import { createLenderRequest } from '../fn/credit/create-lender-request';
 import { CreateLenderRequest$Params } from '../fn/credit/create-lender-request';
 import { createLoanApplication } from '../fn/credit/create-loan-application';
 import { CreateLoanApplication$Params } from '../fn/credit/create-loan-application';
 import { createLoanSimulation } from '../fn/credit/create-loan-simulation';
 import { CreateLoanSimulation$Params } from '../fn/credit/create-loan-simulation';
+import { deleteLenderEvent } from '../fn/credit/delete-lender-event';
+import { DeleteLenderEvent$Params } from '../fn/credit/delete-lender-event';
 import { deleteLenderRequest } from '../fn/credit/delete-lender-request';
 import { DeleteLenderRequest$Params } from '../fn/credit/delete-lender-request';
 import { deleteLoanApplication } from '../fn/credit/delete-loan-application';
@@ -37,6 +43,8 @@ import { deleteLoanSimulation } from '../fn/credit/delete-loan-simulation';
 import { DeleteLoanSimulation$Params } from '../fn/credit/delete-loan-simulation';
 import { exportLoanApplication } from '../fn/credit/export-loan-application';
 import { ExportLoanApplication$Params } from '../fn/credit/export-loan-application';
+import { followUpLenderRequest } from '../fn/credit/follow-up-lender-request';
+import { FollowUpLenderRequest$Params } from '../fn/credit/follow-up-lender-request';
 import { getLoanApplication } from '../fn/credit/get-loan-application';
 import { GetLoanApplication$Params } from '../fn/credit/get-loan-application';
 import { getLoanSimulation } from '../fn/credit/get-loan-simulation';
@@ -63,6 +71,8 @@ import { SetPieceRequired$Params } from '../fn/credit/set-piece-required';
 import { SimulationView } from '../models/simulation-view';
 import { unassignPiece } from '../fn/credit/unassign-piece';
 import { UnassignPiece$Params } from '../fn/credit/unassign-piece';
+import { updateLenderEvent } from '../fn/credit/update-lender-event';
+import { UpdateLenderEvent$Params } from '../fn/credit/update-lender-event';
 import { updateLenderRequest } from '../fn/credit/update-lender-request';
 import { UpdateLenderRequest$Params } from '../fn/credit/update-lender-request';
 import { updateLoanApplication } from '../fn/credit/update-loan-application';
@@ -377,6 +387,130 @@ export class CreditService extends BaseService {
    */
   acceptOffer(params: AcceptOffer$Params, context?: HttpContext): Observable<ApplicationView> {
     const resp = this.acceptOffer$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
+    );
+  }
+
+  /** Path part for operation `createLenderEvent()` */
+  static readonly CreateLenderEventPath = '/api/v1/loan-applications/{id}/lender-requests/{request_id}/events';
+
+  /**
+   * Ajoute un échange au journal d'une démarche (R-CRE-24).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `createLenderEvent()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  createLenderEvent$Response(params: CreateLenderEvent$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = createLenderEvent(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Ajoute un échange au journal d'une démarche (R-CRE-24).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `createLenderEvent$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  createLenderEvent(params: CreateLenderEvent$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.createLenderEvent$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
+    );
+  }
+
+  /** Path part for operation `updateLenderEvent()` */
+  static readonly UpdateLenderEventPath = '/api/v1/loan-applications/{id}/lender-requests/{request_id}/events/{event_id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `updateLenderEvent()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  updateLenderEvent$Response(params: UpdateLenderEvent$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = updateLenderEvent(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `updateLenderEvent$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  updateLenderEvent(params: UpdateLenderEvent$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.updateLenderEvent$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
+    );
+  }
+
+  /** Path part for operation `deleteLenderEvent()` */
+  static readonly DeleteLenderEventPath = '/api/v1/loan-applications/{id}/lender-requests/{request_id}/events/{event_id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `deleteLenderEvent()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteLenderEvent$Response(params: DeleteLenderEvent$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = deleteLenderEvent(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `deleteLenderEvent$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteLenderEvent(params: DeleteLenderEvent$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.deleteLenderEvent$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
+    );
+  }
+
+  /** Path part for operation `followUpLenderRequest()` */
+  static readonly FollowUpLenderRequestPath = '/api/v1/loan-applications/{id}/lender-requests/{request_id}/follow-up';
+
+  /**
+   * Relance une démarche (R-CRE-25).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `followUpLenderRequest()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  followUpLenderRequest$Response(params: FollowUpLenderRequest$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = followUpLenderRequest(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Relance une démarche (R-CRE-25).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `followUpLenderRequest$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  followUpLenderRequest(params: FollowUpLenderRequest$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.followUpLenderRequest$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
     );
@@ -732,6 +866,41 @@ export class CreditService extends BaseService {
     const resp = this.deleteLoanSimulation$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `applicationFromSimulation()` */
+  static readonly ApplicationFromSimulationPath = '/api/v1/loan-simulations/{id}/application';
+
+  /**
+   * Prépare une demande depuis une simulation (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `applicationFromSimulation()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromSimulation$Response(params: ApplicationFromSimulation$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = applicationFromSimulation(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Prépare une demande depuis une simulation (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `applicationFromSimulation$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromSimulation(params: ApplicationFromSimulation$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.applicationFromSimulation$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
     );
   }
 
