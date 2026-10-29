@@ -6,6 +6,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::error::{AppResult, Problem};
+use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
 use crate::services::transactions::{
     self, BulkCategorizeInput, BulkCategorizeResult, BulkPayeeInput, BulkPayeeResult, CategorizeInput,
     TransactionDetail, TransactionFilter, TransactionInput, TransactionPage, TransactionUpdateInput,
@@ -178,4 +179,41 @@ pub async fn set_payee_many(
     Json(input): Json<BulkPayeeInput>,
 ) -> AppResult<Json<BulkPayeeResult>> {
     Ok(Json(transactions::set_payee_many(&state.db, &input).await?))
+}
+
+/// Fixe ou retire le remboursement attendu d'une dépense (R-TRX-53).
+#[utoipa::path(
+    put, operation_id = "setExpectedRefund", path = "/transactions/{id}/expected-refund", tag = "transactions",
+    params(("id" = TransactionId, Path)), request_body = ExpectedRefundInput,
+    responses((status = 200, body = TransactionDetail), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn set_expected_refund(
+    State(state): State<AppState>,
+    Path(id): Path<TransactionId>,
+    Json(input): Json<ExpectedRefundInput>,
+) -> AppResult<Json<TransactionDetail>> {
+    refunds::set_expected(&state.db, id, &input).await?;
+    Ok(Json(transactions::get(&state.db, id).await?))
+}
+
+/// Dépenses proposées pour une entrée d'argent qui les rembourse (R-TRX-54).
+#[utoipa::path(
+    get, operation_id = "refundCandidates", path = "/transactions/{id}/refund-candidates", tag = "transactions",
+    params(("id" = TransactionId, Path)),
+    responses((status = 200, body = Vec<RefundCandidate>), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn refund_candidates(
+    State(state): State<AppState>,
+    Path(id): Path<TransactionId>,
+) -> AppResult<Json<Vec<RefundCandidate>>> {
+    Ok(Json(refunds::candidates(&state.db, id).await?))
+}
+
+/// Dépenses dont le remboursement attendu n'est pas entièrement reçu (R-TRX-53, E1).
+#[utoipa::path(
+    get, operation_id = "pendingRefunds", path = "/refunds/pending", tag = "transactions",
+    responses((status = 200, body = Vec<PendingRefund>))
+)]
+pub async fn pending_refunds(State(state): State<AppState>) -> AppResult<Json<Vec<PendingRefund>>> {
+    Ok(Json(refunds::pending(&state.db).await?))
 }

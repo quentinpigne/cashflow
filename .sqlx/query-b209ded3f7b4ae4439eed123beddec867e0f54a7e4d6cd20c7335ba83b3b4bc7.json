@@ -1,0 +1,112 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id AS \"id!\", t.account_id AS \"account_id!\", t.date AS \"date!: Date\", t.label AS \"label!\",\n                  t.amount AS \"amount!\", t.payee_id, t.expected_refund,\n                  coalesce((SELECT sum(r.amount) FROM split r WHERE r.refunds_transaction_id = t.id), 0)\n                      AS \"refunded!: i64\",\n                  NULL AS \"category_id?: String\"\n           FROM ledger_transaction t\n           WHERE t.expected_refund IS NOT NULL\n             AND t.expected_refund > coalesce((SELECT sum(r.amount) FROM split r WHERE r.refunds_transaction_id = t.id), 0)\n           ORDER BY t.date, t.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "date!: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "label!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "name": "amount!",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "payee_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "payee_id"
+          }
+        }
+      },
+      {
+        "name": "expected_refund",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "expected_refund"
+          }
+        }
+      },
+      {
+        "name": "refunded!: i64",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "category_id?: String",
+        "ordinal": 8,
+        "type_info": "Null",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "b209ded3f7b4ae4439eed123beddec867e0f54a7e4d6cd20c7335ba83b3b4bc7"
+}

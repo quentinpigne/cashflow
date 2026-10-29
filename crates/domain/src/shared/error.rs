@@ -134,6 +134,16 @@ pub enum DomainError {
     #[error("cette transaction fait déjà partie d'un virement")]
     AlreadyTransferLeg,
 
+    // ----- Remboursements de frais
+    #[error(
+        "un remboursement est une part positive d'une entrée, sur une catégorie de dépense, qui vise une autre transaction de dépense"
+    )]
+    InvalidRefund,
+    #[error("le remboursé d'une dépense ne dépasse pas son montant")]
+    RefundExceedsExpense,
+    #[error("le remboursement attendu d'une dépense est positif et ne dépasse pas son montant")]
+    InvalidExpectedRefund,
+
     // ----- Rapprochement (spec 04)
     #[error("point de contrôle introuvable")]
     CheckpointNotFound,
@@ -231,6 +241,9 @@ impl DomainError {
             TransferAmountsNotOpposite => "TRANSFER_AMOUNTS_NOT_OPPOSITE",
             TransferLegCategorized => "TRANSFER_LEG_CATEGORIZED",
             AlreadyTransferLeg => "ALREADY_TRANSFER_LEG",
+            InvalidRefund => "INVALID_REFUND",
+            RefundExceedsExpense => "REFUND_EXCEEDS_EXPENSE",
+            InvalidExpectedRefund => "INVALID_EXPECTED_REFUND",
             CheckpointNotFound => "CHECKPOINT_NOT_FOUND",
             CheckpointAlreadyReconciled => "CHECKPOINT_ALREADY_RECONCILED",
             CheckpointGapNotZero { .. } => "CHECKPOINT_GAP_NOT_ZERO",
@@ -291,6 +304,9 @@ impl DomainError {
                 "R-TRX-30"
             }
             TransferLegCategorized => "R-TRX-32",
+            InvalidRefund => "R-TRX-50",
+            RefundExceedsExpense => "R-TRX-52",
+            InvalidExpectedRefund => "R-TRX-53",
             CheckpointNotFound => return None,
             CheckpointAlreadyReconciled | CheckpointGapNotZero { .. } => "R-RAP-4",
             PeriodReconciled { .. } => "R-RAP-7",

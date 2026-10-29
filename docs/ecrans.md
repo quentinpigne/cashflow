@@ -98,6 +98,9 @@ Blocs, de haut en bas :
 4. **Comptes** : liste groupée par famille avec le solde de chaque compte, comme
    [E2](#e2--comptes-cpt-01-cpt-03-cpt-07) mais sans les comptes clôturés. Un toucher ouvre le compte.
 5. **Alertes** : transactions `PENDING` de plus de 10 jours et écarts de rapprochement (R-TDB-10).
+6. **Remboursements attendus** (TRX-12) : les dépenses dont le reste à recevoir n'est pas nul (R-TRX-53),
+   les plus anciennes d'abord : libellé, date, reste à recevoir sur l'attendu. Un toucher ouvre la dépense.
+   Masqué quand rien n'est attendu.
    **Bloc absent en phase 1** : toutes les transactions y sont saisies à la main et restent `PENDING`,
    l'alerte se déclencherait partout. Il apparaît en phase 2, avec le pointage par import.
 
@@ -321,6 +324,13 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
   l'échéance n° N du prêt X : capital, intérêts, assurance » et « Ventiler selon l'échéance ». Une mensualité
   ventilée affiche « Échéance n° N du prêt X » (lien vers le prêt), sa répartition (« Remboursement »,
   intérêts, assurance) et « Annuler la ventilation » ; son montant est verrouillé (R-PRE-8).
+- **Remboursement de frais** (TRX-12) :
+  - une **entrée d'argent** affiche « Rembourse une dépense… » : dialogue des dépenses proposées (R-TRX-54),
+    chacune avec son montant, son reste à recevoir et un montant à rembourser modifiable ; valider ventile
+    l'entrée, une ventilation par dépense cochée. Les ventilations qui remboursent affichent la dépense
+    visée, avec un lien, et « Retirer le lien » ;
+  - une **dépense** affiche le champ « Remboursement attendu » (avec « Ne viendra pas » pour le retirer),
+    « X remboursés sur Y » et la liste des entrées qui la remboursent, avec un lien vers chacune.
 - Menu `⋮` : Supprimer (avec « Annuler » dans la snack-bar), Dupliquer.
 
 ## E8 — Catégories (TRX-04)

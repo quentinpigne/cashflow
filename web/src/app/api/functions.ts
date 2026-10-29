@@ -101,6 +101,8 @@ export type { DeleteScenario$Params as DeleteScenario$Params } from './fn/projec
 export { deleteScenario as deleteScenario } from './fn/projections/delete-scenario';
 export type { ListTransactions$Params as ListTransactions$Params } from './fn/transactions/list-transactions';
 export { listTransactions as listTransactions } from './fn/transactions/list-transactions';
+export type { PendingRefunds$Params as PendingRefunds$Params } from './fn/transactions/pending-refunds';
+export { pendingRefunds as pendingRefunds } from './fn/transactions/pending-refunds';
 export type { CategorizeSplit$Params as CategorizeSplit$Params } from './fn/transactions/categorize-split';
 export { categorizeSplit as categorizeSplit } from './fn/transactions/categorize-split';
 export type { ListAllTransactions$Params as ListAllTransactions$Params } from './fn/transactions/list-all-transactions';
@@ -117,6 +119,10 @@ export type { UpdateTransaction$Params as UpdateTransaction$Params } from './fn/
 export { updateTransaction as updateTransaction } from './fn/transactions/update-transaction';
 export type { DeleteTransaction$Params as DeleteTransaction$Params } from './fn/transactions/delete-transaction';
 export { deleteTransaction as deleteTransaction } from './fn/transactions/delete-transaction';
+export type { SetExpectedRefund$Params as SetExpectedRefund$Params } from './fn/transactions/set-expected-refund';
+export { setExpectedRefund as setExpectedRefund } from './fn/transactions/set-expected-refund';
+export type { RefundCandidates$Params as RefundCandidates$Params } from './fn/transactions/refund-candidates';
+export { refundCandidates as refundCandidates } from './fn/transactions/refund-candidates';
 export type { MarkAsTransfer$Params as MarkAsTransfer$Params } from './fn/transactions/mark-as-transfer';
 export { markAsTransfer as markAsTransfer } from './fn/transactions/mark-as-transfer';
 export type { TransferCandidates$Params as TransferCandidates$Params } from './fn/transactions/transfer-candidates';

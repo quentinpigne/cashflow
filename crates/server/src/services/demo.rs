@@ -10,14 +10,14 @@ use anyhow::{Context, bail};
 use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::assets::AssetKind;
 use cashflow_domain::loans::{Insurance, LoanKind, LoanTerms};
-use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId, PayeeId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId, PayeeId, TransactionId};
 use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Days, Months};
 
 use super::transactions::{SplitInput, TransactionInput};
 use super::{
-    accounts, auth, budgets, categories, imports, institutions, payees, reconciliation, recurring, rules, savings,
-    seed, transactions, transfers,
+    accounts, auth, budgets, categories, imports, institutions, payees, reconciliation, recurring, refunds, rules,
+    savings, seed, transactions, transfers,
 };
 use crate::config::DataDir;
 use crate::db::Db;
@@ -306,7 +306,7 @@ async fn spend(
     amount: i64,
     label: &str,
     category: Option<CategoryId>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<TransactionId> {
     let input = TransactionInput {
         account_id: account,
         date,
@@ -317,8 +317,37 @@ async fn spend(
         splits: None,
         payee_id: None,
     };
-    transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{label} le {date} : {e}"))?;
-    Ok(())
+    transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{label} le {date} : {e}"))
+}
+
+/// Une entrée d'argent qui rembourse des dépenses, une ventilation par dépense (TRX-12).
+async fn refund(
+    db: &Db,
+    account: AccountId,
+    date: Date,
+    label: &str,
+    parts: &[(TransactionId, i64, Option<CategoryId>)],
+) -> anyhow::Result<TransactionId> {
+    let splits: Vec<SplitInput> = parts
+        .iter()
+        .map(|(expense, amount, category)| SplitInput {
+            amount_minor: *amount,
+            category_id: *category,
+            refunds_transaction_id: Some(*expense),
+            ..Default::default()
+        })
+        .collect();
+    let input = TransactionInput {
+        account_id: account,
+        date,
+        amount_minor: parts.iter().map(|p| p.1).sum(),
+        label: label.into(),
+        note: None,
+        category_id: None,
+        splits: Some(splits),
+        payee_id: None,
+    };
+    transactions::create(db, &input).await.map_err(|e| anyhow::anyhow!("{label} le {date} : {e}"))
 }
 
 /// Remplit une base vide avec le jeu de démonstration.
@@ -370,8 +399,10 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
             )
             .await?;
         }
+        let mut phone_plan = None;
         if let Some(d) = day(15) {
-            spend(db, checking, d, -1_299, "FORFAIT MOBILE", c.get("Abonnements", "Téléphone")).await?;
+            phone_plan =
+                Some(spend(db, checking, d, -1_299, "FORFAIT MOBILE", c.get("Abonnements", "Téléphone")).await?);
         }
         if let Some(d) = day(27) {
             spend(db, checking, d, SALARY, "VIREMENT SALAIRE", c.get("Salaires", "")).await?;
@@ -409,16 +440,27 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
                 .await?;
             }
         }
+        let mut fuel = None;
         if let Some(d) = day(u32::try_from(rng.between(12, 22)).unwrap_or(12)) {
-            spend(
-                db,
-                checking,
-                d,
-                -rng.between(5_500, 8_000),
-                "CARTE STATION SERVICE",
-                c.get("Auto & transports", "Carburant"),
-            )
-            .await?;
+            fuel = Some(
+                spend(
+                    db,
+                    checking,
+                    d,
+                    -rng.between(5_500, 8_000),
+                    "CARTE STATION SERVICE",
+                    c.get("Auto & transports", "Carburant"),
+                )
+                .await?,
+            );
+        }
+        // La note de frais du mois rembourse une part du forfait et une part du carburant (TRX-12).
+        if let (Some(d), Some(plan), Some(fuel)) = (day(28), phone_plan, fuel) {
+            let parts = [
+                (plan, 650, c.get("Abonnements", "Téléphone")),
+                (fuel, 2_000, c.get("Auto & transports", "Carburant")),
+            ];
+            refund(db, checking, d, "NOTE DE FRAIS", &parts).await?;
         }
         if let Some(d) = day(20) {
             spend(db, wallet, d, -rng.between(500, 3_000), "Marché", c.get("Alimentation & restauration", "Autres"))
@@ -466,13 +508,27 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
         {
             spend(db, checking, d, -68_000, "ASSURANCE AUTO ECHEANCE", c.get("Assurances", "Auto")).await?;
         }
-        // Remboursement de santé : vient en déduction des dépenses (R-TRX-13).
+        // Ce mois-ci, un dentiste dont le remboursement est encore attendu (E1, R-TRX-53).
+        if month.year() == today.year()
+            && month.month() == today.month()
+            && let Some(d) = day(8)
+        {
+            let dentist = spend(db, checking, d, -9_000, "CABINET DENTAIRE", c.get("Santé", "Dentiste")).await?;
+            refunds::set_expected(db, dentist, &refunds::ExpectedRefundInput { expected_minor: Some(6_300) })
+                .await
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+        // Remboursement de santé attendu, reçu trois jours plus tard s'il est passé (R-TRX-13, R-TRX-53).
         if month.month() % 3 == 0
             && let Some(d) = day(22)
         {
-            spend(db, checking, d, -5_000, "MEDECIN GENERALISTE", c.get("Santé", "Médecin")).await?;
-            if let Some(refund) = day(25) {
-                spend(db, checking, refund, 3_500, "REMBOURSEMENT CPAM", c.get("Santé", "Médecin")).await?;
+            let visit = spend(db, checking, d, -5_000, "MEDECIN GENERALISTE", c.get("Santé", "Médecin")).await?;
+            refunds::set_expected(db, visit, &refunds::ExpectedRefundInput { expected_minor: Some(3_500) })
+                .await
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            if let Some(received) = day(25) {
+                refund(db, checking, received, "REMBOURSEMENT CPAM", &[(visit, 3_500, c.get("Santé", "Médecin"))])
+                    .await?;
             }
         }
         // Virements internes : un vers le livret, un vers l'assurance vie (jambe CLEARED, R-TRX-36).

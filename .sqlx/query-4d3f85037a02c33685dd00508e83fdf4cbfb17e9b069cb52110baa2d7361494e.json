@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id FROM split WHERE id = ?",
+  "query": "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id\n         FROM split ORDER BY transaction_id, position",
   "describe": {
     "columns": [
       {
@@ -90,10 +90,21 @@
             "name": "asset_id"
           }
         }
+      },
+      {
+        "name": "refunds_transaction_id",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "refunds_transaction_id"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -103,8 +114,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "7df8f8f93332cc68be0e0db153006ea4e054cbccfdbfb7672ec8f129db216dc1"
+  "hash": "4d3f85037a02c33685dd00508e83fdf4cbfb17e9b069cb52110baa2d7361494e"
 }

@@ -5,6 +5,7 @@ import { AssetId } from '../models/asset-id';
 import { CategoryId } from '../models/category-id';
 import { LoanId } from '../models/loan-id';
 import { ProjectId } from '../models/project-id';
+import { TransactionId } from '../models/transaction-id';
 export interface SplitInput {
   amount_minor: number;
   asset_id?: (AssetId | null);
@@ -12,4 +13,5 @@ export interface SplitInput {
   loan_id?: (LoanId | null);
   note?: (string | null);
   project_id?: (ProjectId | null);
+  refunds_transaction_id?: (TransactionId | null);
 }

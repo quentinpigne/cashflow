@@ -5405,6 +5405,29 @@
         }
       }
     },
+    "/api/v1/refunds/pending": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Dépenses dont le remboursement attendu n'est pas entièrement reçu (R-TRX-53, E1).",
+        "operationId": "pendingRefunds",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingRefund"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports/categories": {
       "get": {
         "tags": [
@@ -6660,6 +6683,64 @@
         }
       }
     },
+    "/api/v1/transactions/{id}/expected-refund": {
+      "put": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Fixe ou retire le remboursement attendu d'une dépense (R-TRX-53).",
+        "operationId": "setExpectedRefund",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpectedRefundInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/{id}/loan-proposal": {
       "get": {
         "tags": [
@@ -6690,6 +6771,57 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{id}/refund-candidates": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Dépenses proposées pour une entrée d'argent qui les rembourse (R-TRX-54).",
+        "operationId": "refundCandidates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RefundCandidate"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -10133,6 +10265,19 @@
           }
         }
       },
+      "ExpectedRefundInput": {
+        "type": "object",
+        "properties": {
+          "expected_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Absent : plus rien n'est attendu (« ne viendra pas »)."
+          }
+        }
+      },
       "FamilyGroup": {
         "type": "object",
         "required": [
@@ -13192,6 +13337,51 @@
           }
         }
       },
+      "PendingRefund": {
+        "type": "object",
+        "description": "Une dépense dont le remboursement attendu n'est pas entièrement reçu (E1).",
+        "required": [
+          "transaction_id",
+          "account_name",
+          "date",
+          "label",
+          "amount_minor",
+          "expected_minor",
+          "refunded_minor",
+          "pending_minor"
+        ],
+        "properties": {
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "expected_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "pending_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
       "PerformanceView": {
         "type": "object",
         "required": [
@@ -14159,6 +14349,167 @@
           }
         }
       },
+      "RefundCandidate": {
+        "type": "object",
+        "description": "Une dépense proposée pour une entrée d'argent (R-TRX-54).",
+        "required": [
+          "transaction_id",
+          "account_name",
+          "date",
+          "label",
+          "amount_minor",
+          "refunded_minor",
+          "pending_minor",
+          "refundable_minor",
+          "proposed_minor"
+        ],
+        "properties": {
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Catégorie proposée à la ventilation qui rembourse : celle de la dépense."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "expected_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "payee_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PayeeId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "proposed_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant proposé."
+          },
+          "refundable_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Ce qui reste à rembourser de la dépense."
+          },
+          "refunded_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Remboursé par d'autres entrées."
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "RefundInfo": {
+        "type": "object",
+        "description": "Remboursements d'une transaction (TRX-12).",
+        "required": [
+          "refunded_minor",
+          "pending_minor",
+          "received",
+          "refunds"
+        ],
+        "properties": {
+          "expected_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Remboursement attendu d'une dépense (R-TRX-53)."
+          },
+          "pending_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reste à recevoir (R-TRX-53)."
+          },
+          "received": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundLink"
+            },
+            "description": "Entrées qui remboursent cette dépense."
+          },
+          "refunded_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Remboursé de la dépense (R-TRX-52)."
+          },
+          "refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundLink"
+            },
+            "description": "Dépenses que cette entrée rembourse, une par ventilation liée."
+          }
+        }
+      },
+      "RefundLink": {
+        "type": "object",
+        "description": "Une transaction de l'autre côté d'un lien de remboursement.",
+        "required": [
+          "split_id",
+          "transaction_id",
+          "account_name",
+          "date",
+          "label",
+          "amount_minor"
+        ],
+        "properties": {
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant de la dépense, vue depuis l'entrée ; montant remboursé, vue depuis la dépense."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "split_id": {
+            "$ref": "#/components/schemas/SplitId",
+            "description": "Ventilation qui rembourse (côté entrée d'argent)."
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
       "RegroupInput": {
         "type": "object",
         "description": "Change le groupe de plusieurs tiers d'un coup (E31) ; absent, ils passent « Sans groupe ».",
@@ -14941,6 +15292,17 @@
                 "type": "null"
               }
             ]
+          },
+          "refunds_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId",
+                "description": "Dépense que la ventilation rembourse (R-TRX-50)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -15000,6 +15362,17 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/ProjectId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "refunds_transaction_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TransactionId",
+                "description": "Dépense que la ventilation rembourse (R-TRX-50) : à renvoyer à chaque modification, comme la catégorie."
               },
               {
                 "type": "null"
@@ -15465,7 +15838,8 @@
           "clearing_status",
           "origin",
           "splits",
-          "locked"
+          "locked",
+          "refund"
         ],
         "properties": {
           "account_id": {
@@ -15545,6 +15919,10 @@
                 "type": "null"
               }
             ]
+          },
+          "refund": {
+            "$ref": "#/components/schemas/RefundInfo",
+            "description": "Remboursements de frais, vus depuis la dépense ou depuis l'entrée (TRX-12)."
           },
           "splits": {
             "type": "array",

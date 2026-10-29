@@ -27,6 +27,8 @@ pub struct TransactionRow {
     pub origin: TransactionOrigin,
     /// Tiers de la transaction (spec 11).
     pub payee_id: Option<PayeeId>,
+    /// Remboursement attendu d'une dépense (R-TRX-53).
+    pub expected_refund: Option<Money>,
 }
 
 #[derive(Debug, Clone)]
@@ -41,6 +43,8 @@ pub struct SplitRow {
     pub loan_id: Option<LoanId>,
     /// Ventilation d'acquisition d'un bien (R-BIE-8).
     pub asset_id: Option<AssetId>,
+    /// Dépense que la ventilation rembourse (R-TRX-50).
+    pub refunds_transaction_id: Option<TransactionId>,
 }
 
 /// Le virement auquel appartient une transaction, vu depuis celle-ci (ADR-0021 : il relie deux ventilations).
@@ -81,6 +85,7 @@ pub struct NewSplit<'a> {
     pub project_id: Option<ProjectId>,
     pub loan_id: Option<LoanId>,
     pub asset_id: Option<AssetId>,
+    pub refunds_transaction_id: Option<TransactionId>,
 }
 
 macro_rules! transaction_row {
@@ -100,6 +105,7 @@ macro_rules! transaction_row {
             clearing_status: enum_from_db(&r.clearing_status)?,
             origin: enum_from_db(&r.origin)?,
             payee_id: opt_id_from_db(r.payee_id.as_deref())?,
+            expected_refund: r.expected_refund.map(Money::from_minor),
         })
     }};
 }
@@ -116,6 +122,7 @@ macro_rules! split_row {
             project_id: opt_id_from_db(r.project_id.as_deref())?,
             loan_id: opt_id_from_db(r.loan_id.as_deref())?,
             asset_id: opt_id_from_db(r.asset_id.as_deref())?,
+            refunds_transaction_id: opt_id_from_db(r.refunds_transaction_id.as_deref())?,
         })
     }};
 }
@@ -127,7 +134,7 @@ pub async fn list_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
            FROM ledger_transaction WHERE account_id = ? ORDER BY balance_date, id"#,
         account
     )
@@ -142,7 +149,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::Res
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
            FROM ledger_transaction WHERE id = ?"#,
         id
     )
@@ -154,7 +161,8 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::Res
 pub async fn splits_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -> anyhow::Result<Vec<SplitRow>> {
     let account = account.to_string();
     let rows = sqlx::query!(
-        r#"SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.loan_id, s.asset_id
+        r#"SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.loan_id, s.asset_id,
+                  s.refunds_transaction_id
            FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id
            WHERE t.account_id = ? ORDER BY s.transaction_id, s.position"#,
         account
@@ -167,7 +175,7 @@ pub async fn splits_for_account(db: impl SqliteExecutor<'_>, account: AccountId)
 pub async fn splits_of(db: impl SqliteExecutor<'_>, transaction: TransactionId) -> anyhow::Result<Vec<SplitRow>> {
     let transaction = transaction.to_string();
     let rows = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id
+        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id
          FROM split WHERE transaction_id = ? ORDER BY position",
         transaction
     )
@@ -179,7 +187,7 @@ pub async fn splits_of(db: impl SqliteExecutor<'_>, transaction: TransactionId) 
 pub async fn find_split(db: impl SqliteExecutor<'_>, id: SplitId) -> anyhow::Result<Option<SplitRow>> {
     let id = id.to_string();
     let row = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id FROM split WHERE id = ?",
+        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id FROM split WHERE id = ?",
         id
     )
     .fetch_optional(db)
@@ -368,11 +376,12 @@ pub async fn replace_splits(
         let project = split.project_id.map(|p| p.to_string());
         let loan = split.loan_id.map(|l| l.to_string());
         let asset = split.asset_id.map(|a| a.to_string());
+        let refunds = split.refunds_transaction_id.map(|t| t.to_string());
         let position = i64::try_from(position)?;
         sqlx::query!(
             "INSERT INTO split (id, transaction_id, amount, category_id, note, position, project_id, loan_id, asset_id,
-                                created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                refunds_transaction_id, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             id,
             transaction,
             amount,
@@ -382,6 +391,7 @@ pub async fn replace_splits(
             project,
             loan,
             asset,
+            refunds,
             now,
             now
         )
@@ -501,7 +511,7 @@ pub async fn transfer_candidates(
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
            FROM ledger_transaction t
            WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?
              AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
@@ -661,7 +671,7 @@ pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Transac
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
            FROM ledger_transaction ORDER BY date, id"#
     )
     .fetch_all(db)
@@ -671,7 +681,7 @@ pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Transac
 
 pub async fn all_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<SplitRow>> {
     let rows = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id
+        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id
          FROM split ORDER BY transaction_id, position"
     )
     .fetch_all(db)
@@ -864,4 +874,155 @@ pub async fn detach_asset(db: impl SqliteExecutor<'_>, asset: AssetId) -> anyhow
     let now = timestamp();
     sqlx::query!("UPDATE split SET asset_id = NULL, updated_at = ? WHERE asset_id = ?", now, asset).execute(db).await?;
     Ok(())
+}
+
+// ---------------------------------------------------------------- Remboursements de frais (TRX-12)
+
+pub async fn set_expected_refund(
+    db: impl SqliteExecutor<'_>,
+    id: TransactionId,
+    expected: Option<Money>,
+) -> anyhow::Result<()> {
+    let id = id.to_string();
+    let expected = expected.map(Money::minor);
+    let now = timestamp();
+    sqlx::query!("UPDATE ledger_transaction SET expected_refund = ?, updated_at = ? WHERE id = ?", expected, now, id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
+/// Une ventilation qui rembourse une dépense, avec son entrée d'argent.
+#[derive(Debug, Clone)]
+pub struct RefundRow {
+    pub split_id: SplitId,
+    pub transaction_id: TransactionId,
+    pub account_id: AccountId,
+    pub date: Date,
+    pub label: String,
+    pub amount: Money,
+}
+
+/// Les ventilations qui remboursent la dépense `expense` (R-TRX-52).
+pub async fn refunds_towards(db: impl SqliteExecutor<'_>, expense: TransactionId) -> anyhow::Result<Vec<RefundRow>> {
+    let expense = expense.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT s.id AS "id!", t.id AS "transaction_id!", t.account_id AS "account_id!", t.date AS "date!: Date",
+                  t.label AS "label!", s.amount AS "amount!"
+           FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id
+           WHERE s.refunds_transaction_id = ? ORDER BY t.date, t.id, s.position"#,
+        expense
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(RefundRow {
+                split_id: id_from_db(&r.id)?,
+                transaction_id: id_from_db(&r.transaction_id)?,
+                account_id: id_from_db(&r.account_id)?,
+                date: r.date,
+                label: r.label,
+                amount: Money::from_minor(r.amount),
+            })
+        })
+        .collect()
+}
+
+/// Remboursé d'une dépense par d'autres entrées que `except` (R-TRX-52).
+pub async fn refunded_except(
+    db: impl SqliteExecutor<'_>,
+    expense: TransactionId,
+    except: TransactionId,
+) -> anyhow::Result<Money> {
+    let expense = expense.to_string();
+    let except = except.to_string();
+    let total = sqlx::query_scalar!(
+        r#"SELECT coalesce(sum(amount), 0) AS "total!: i64" FROM split
+           WHERE refunds_transaction_id = ? AND transaction_id <> ?"#,
+        expense,
+        except
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(Money::from_minor(total))
+}
+
+/// Une dépense, vue par les remboursements : propositions (R-TRX-54) et remboursements attendus (R-TRX-53).
+#[derive(Debug, Clone)]
+pub struct RefundableRow {
+    pub id: TransactionId,
+    pub account_id: AccountId,
+    pub date: Date,
+    pub label: String,
+    pub amount: Money,
+    pub payee_id: Option<PayeeId>,
+    pub expected_refund: Option<Money>,
+    /// Remboursé par d'autres entrées que celle qu'on lie.
+    pub refunded: Money,
+    /// Catégorie de dépense de sa plus grosse ventilation : proposée à la ventilation qui rembourse.
+    pub category_id: Option<CategoryId>,
+}
+
+macro_rules! refundable_row {
+    ($r:expr) => {{
+        let r = $r;
+        anyhow::Ok(RefundableRow {
+            id: id_from_db(&r.id)?,
+            account_id: id_from_db(&r.account_id)?,
+            date: r.date,
+            label: r.label,
+            amount: Money::from_minor(r.amount),
+            payee_id: opt_id_from_db(r.payee_id.as_deref())?,
+            expected_refund: r.expected_refund.map(Money::from_minor),
+            refunded: Money::from_minor(r.refunded),
+            category_id: opt_id_from_db(r.category_id.as_deref())?,
+        })
+    }};
+}
+
+/// Dépenses datées de `from` à `to`, hors jambes de virement, avec leur remboursé hors entrée `except`.
+pub async fn refundable(
+    db: impl SqliteExecutor<'_>,
+    from: Date,
+    to: Date,
+    except: TransactionId,
+) -> anyhow::Result<Vec<RefundableRow>> {
+    let except = except.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT t.id AS "id!", t.account_id AS "account_id!", t.date AS "date!: Date", t.label AS "label!",
+                  t.amount AS "amount!", t.payee_id, t.expected_refund,
+                  coalesce((SELECT sum(r.amount) FROM split r
+                            WHERE r.refunds_transaction_id = t.id AND r.transaction_id <> ?1), 0) AS "refunded!: i64",
+                  (SELECT s.category_id FROM split s JOIN category c ON c.id = s.category_id
+                   WHERE s.transaction_id = t.id AND c.kind = 'EXPENSE' ORDER BY s.amount LIMIT 1) AS category_id
+           FROM ledger_transaction t
+           WHERE t.amount < 0 AND t.date BETWEEN ?2 AND ?3 AND t.id <> ?1
+             AND NOT EXISTS (SELECT 1 FROM transfer_leg tl WHERE t.id IN (tl.outflow_transaction_id, tl.inflow_transaction_id))
+           ORDER BY t.date DESC, t.id"#,
+        except,
+        from,
+        to
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| refundable_row!(r)).collect()
+}
+
+/// Dépenses dont le remboursement attendu n'est pas entièrement reçu, les plus anciennes d'abord (R-TRX-53).
+pub async fn pending_refunds(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<RefundableRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT t.id AS "id!", t.account_id AS "account_id!", t.date AS "date!: Date", t.label AS "label!",
+                  t.amount AS "amount!", t.payee_id, t.expected_refund,
+                  coalesce((SELECT sum(r.amount) FROM split r WHERE r.refunds_transaction_id = t.id), 0)
+                      AS "refunded!: i64",
+                  NULL AS "category_id?: String"
+           FROM ledger_transaction t
+           WHERE t.expected_refund IS NOT NULL
+             AND t.expected_refund > coalesce((SELECT sum(r.amount) FROM split r WHERE r.refunds_transaction_id = t.id), 0)
+           ORDER BY t.date, t.id"#
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| refundable_row!(r)).collect()
 }

@@ -20,6 +20,7 @@ pub mod payees;
 pub mod projections;
 pub mod reconciliation;
 pub mod recurring;
+pub mod refunds;
 pub mod reports;
 pub mod rules;
 pub mod salaries;
@@ -73,6 +74,8 @@ mod loan_tests;
 mod payee_tests;
 #[cfg(test)]
 mod projection_tests;
+#[cfg(test)]
+mod refund_tests;
 #[cfg(test)]
 mod salary_tests;
 #[cfg(test)]

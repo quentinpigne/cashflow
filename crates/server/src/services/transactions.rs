@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountPeriod;
 use cashflow_domain::ledger::balance::{self, DatedAmount};
+use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::{self, BalanceAffectingChange, ClearingStatus, TransactionOrigin};
 use cashflow_domain::payees;
@@ -34,6 +35,8 @@ pub struct Split {
     pub loan_id: Option<LoanId>,
     /// Ventilation d'acquisition d'un bien (R-BIE-8).
     pub asset_id: Option<AssetId>,
+    /// Dépense que la ventilation rembourse (R-TRX-50).
+    pub refunds_transaction_id: Option<TransactionId>,
 }
 
 impl From<SplitRow> for Split {
@@ -46,6 +49,7 @@ impl From<SplitRow> for Split {
             project_id: r.project_id,
             loan_id: r.loan_id,
             asset_id: r.asset_id,
+            refunds_transaction_id: r.refunds_transaction_id,
         }
     }
 }
@@ -115,6 +119,8 @@ pub struct TransactionDetail {
     pub loan_payment: Option<LoanPaymentRef>,
     /// Rapprochée : montant, compte et date de solde sont verrouillés (R-TRX-3).
     pub locked: bool,
+    /// Remboursements de frais, vus depuis la dépense ou depuis l'entrée (TRX-12).
+    pub refund: super::refunds::RefundInfo,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -136,6 +142,9 @@ pub struct SplitInput {
     /// Acquisition d'un bien, à la place d'une catégorie (R-BIE-8).
     #[serde(default)]
     pub asset_id: Option<AssetId>,
+    /// Dépense que la ventilation rembourse (R-TRX-50) : à renvoyer à chaque modification, comme la catégorie.
+    #[serde(default)]
+    pub refunds_transaction_id: Option<TransactionId>,
 }
 
 /// Saisie d'une transaction (TRX-01). Sans `splits`, une ventilation unique sur `category_id`.
@@ -331,6 +340,7 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
         }),
         None => None,
     };
+    let refund = super::refunds::info(&mut *db.write.acquire().await?, &t).await?;
     Ok(TransactionDetail {
         id: t.id,
         account_id: t.account_id,
@@ -351,6 +361,7 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
         splits,
         transfer,
         loan_payment,
+        refund,
     })
 }
 
@@ -409,6 +420,7 @@ fn new_splits(splits: &[SplitInput]) -> Vec<NewSplit<'_>> {
             project_id: s.project_id,
             loan_id: s.loan_id,
             asset_id: s.asset_id,
+            refunds_transaction_id: s.refunds_transaction_id,
         })
         .collect()
 }
@@ -440,6 +452,7 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
     check_references(&mut tx, &splits, &[]).await?;
     check_payee(&mut tx, input.payee_id).await?;
     let id = TransactionId::new();
+    super::refunds::check_splits(&mut tx, id, &splits).await?;
     let note = clean(input.note.as_deref());
     let new = NewTransaction {
         id,
@@ -531,6 +544,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
             project_id: existing[0].project_id,
             loan_id: existing[0].loan_id,
             asset_id: existing[0].asset_id,
+            refunds_transaction_id: existing[0].refunds_transaction_id,
         }],
         None => existing
             .iter()
@@ -541,12 +555,17 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 project_id: s.project_id,
                 loan_id: s.loan_id,
                 asset_id: s.asset_id,
+                refunds_transaction_id: s.refunds_transaction_id,
             })
             .collect(),
     };
     split::check_splits(amount, &amounts(&splits))?;
     let kept: Vec<ProjectId> = existing.iter().filter_map(|s| s.project_id).collect();
     check_references(&mut tx, &splits, &kept).await?;
+    super::refunds::check_splits(&mut tx, id, &splits).await?;
+    if amount != current.amount {
+        super::refunds::check_expense(&mut tx, &current, amount).await?;
+    }
 
     let mut touched = vec![id];
     if let Some(side) = &transfer {
@@ -637,10 +656,15 @@ pub async fn categorize_split(db: &Db, split_id: SplitId, input: &CategorizeInpu
     {
         return Err(DomainError::TransferLegCategorized.into());
     }
-    if let Some(category) = input.category_id
-        && db::categories::find(&db.read, category).await?.is_none()
-    {
-        return Err(AppError::NotFound("catégorie"));
+    let kind = match input.category_id {
+        Some(category) => {
+            Some(db::categories::find(&db.read, category).await?.ok_or(AppError::NotFound("catégorie"))?.kind)
+        }
+        None => None,
+    };
+    // Une ventilation qui rembourse reste sur une catégorie de dépense (R-TRX-50).
+    if split.refunds_transaction_id.is_some() && kind != Some(CategoryKind::Expense) {
+        return Err(DomainError::InvalidRefund.into());
     }
     db::transactions::set_split_category(&db.write, split_id, input.category_id).await?;
     Ok(())
@@ -794,18 +818,18 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
 }
 
 /// Catégorise plusieurs transactions d'un coup (TRX-06) : seules les transactions à ventilation unique,
-/// hors virements, sont modifiées.
+/// hors virements, sont modifiées ; une ventilation qui rembourse ne passe pas sur une catégorie de revenu
+/// (R-TRX-50).
 pub async fn categorize_many(db: &Db, input: &BulkCategorizeInput) -> AppResult<BulkCategorizeResult> {
-    if db::categories::find(&db.read, input.category_id).await?.is_none() {
-        return Err(AppError::NotFound("catégorie"));
-    }
+    let category = db::categories::find(&db.read, input.category_id).await?.ok_or(AppError::NotFound("catégorie"))?;
+    let expense = category.kind == CategoryKind::Expense;
     let mut result = BulkCategorizeResult { categorized: 0, skipped: 0 };
     let mut tx = db.write.begin().await?;
     for id in &input.transaction_ids {
         let splits = db::transactions::splits_of(&mut *tx, *id).await?;
         let is_transfer = db::transactions::transfer_of(&mut *tx, *id).await?.is_some();
         match splits.as_slice() {
-            [single] if !is_transfer => {
+            [single] if !is_transfer && (expense || single.refunds_transaction_id.is_none()) => {
                 db::transactions::set_split_category(&mut *tx, single.id, Some(input.category_id)).await?;
                 result.categorized += 1;
             }

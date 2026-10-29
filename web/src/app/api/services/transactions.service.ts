@@ -31,6 +31,14 @@ import { listTransactions } from '../fn/transactions/list-transactions';
 import { ListTransactions$Params } from '../fn/transactions/list-transactions';
 import { markAsTransfer } from '../fn/transactions/mark-as-transfer';
 import { MarkAsTransfer$Params } from '../fn/transactions/mark-as-transfer';
+import { PendingRefund } from '../models/pending-refund';
+import { pendingRefunds } from '../fn/transactions/pending-refunds';
+import { PendingRefunds$Params } from '../fn/transactions/pending-refunds';
+import { RefundCandidate } from '../models/refund-candidate';
+import { refundCandidates } from '../fn/transactions/refund-candidates';
+import { RefundCandidates$Params } from '../fn/transactions/refund-candidates';
+import { setExpectedRefund } from '../fn/transactions/set-expected-refund';
+import { SetExpectedRefund$Params } from '../fn/transactions/set-expected-refund';
 import { setTransactionsPayee } from '../fn/transactions/set-transactions-payee';
 import { SetTransactionsPayee$Params } from '../fn/transactions/set-transactions-payee';
 import { TransactionCreated } from '../models/transaction-created';
@@ -87,6 +95,41 @@ export class TransactionsService extends BaseService {
     const resp = this.listTransactions$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<TransactionPage>): TransactionPage => r.body)
+    );
+  }
+
+  /** Path part for operation `pendingRefunds()` */
+  static readonly PendingRefundsPath = '/api/v1/refunds/pending';
+
+  /**
+   * Dépenses dont le remboursement attendu n'est pas entièrement reçu (R-TRX-53, E1).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `pendingRefunds()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  pendingRefunds$Response(params?: PendingRefunds$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<PendingRefund>>> {
+    const obs = pendingRefunds(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Dépenses dont le remboursement attendu n'est pas entièrement reçu (R-TRX-53, E1).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `pendingRefunds$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  pendingRefunds(params?: PendingRefunds$Params, context?: HttpContext): Observable<Array<PendingRefund>> {
+    const resp = this.pendingRefunds$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<PendingRefund>>): Array<PendingRefund> => r.body)
     );
   }
 
@@ -351,6 +394,76 @@ export class TransactionsService extends BaseService {
     const resp = this.deleteTransaction$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `setExpectedRefund()` */
+  static readonly SetExpectedRefundPath = '/api/v1/transactions/{id}/expected-refund';
+
+  /**
+   * Fixe ou retire le remboursement attendu d'une dépense (R-TRX-53).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `setExpectedRefund()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setExpectedRefund$Response(params: SetExpectedRefund$Params, context?: HttpContext): Observable<StrictHttpResponse<TransactionDetail>> {
+    const obs = setExpectedRefund(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Fixe ou retire le remboursement attendu d'une dépense (R-TRX-53).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `setExpectedRefund$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setExpectedRefund(params: SetExpectedRefund$Params, context?: HttpContext): Observable<TransactionDetail> {
+    const resp = this.setExpectedRefund$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<TransactionDetail>): TransactionDetail => r.body)
+    );
+  }
+
+  /** Path part for operation `refundCandidates()` */
+  static readonly RefundCandidatesPath = '/api/v1/transactions/{id}/refund-candidates';
+
+  /**
+   * Dépenses proposées pour une entrée d'argent qui les rembourse (R-TRX-54).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `refundCandidates()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  refundCandidates$Response(params: RefundCandidates$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<RefundCandidate>>> {
+    const obs = refundCandidates(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Dépenses proposées pour une entrée d'argent qui les rembourse (R-TRX-54).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `refundCandidates$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  refundCandidates(params: RefundCandidates$Params, context?: HttpContext): Observable<Array<RefundCandidate>> {
+    const resp = this.refundCandidates$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<RefundCandidate>>): Array<RefundCandidate> => r.body)
     );
   }
 

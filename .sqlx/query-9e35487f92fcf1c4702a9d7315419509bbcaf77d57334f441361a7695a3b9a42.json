@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\", payee_id AS \"payee_id?\"\n           FROM ledger_transaction t\n           WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?\n             AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n           ORDER BY balance_date",
+  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\", payee_id AS \"payee_id?\", expected_refund AS \"expected_refund?\"\n           FROM ledger_transaction ORDER BY date, id",
   "describe": {
     "columns": [
       {
@@ -145,10 +145,21 @@
             "name": "payee_id"
           }
         }
+      },
+      {
+        "name": "expected_refund?",
+        "ordinal": 13,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "expected_refund"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 4
+      "Right": 0
     },
     "nullable": [
       false,
@@ -163,8 +174,9 @@
       false,
       false,
       true,
+      true,
       true
     ]
   },
-  "hash": "bc4fa22a837126dc0b28b0a2159b6e627e88da50851a56ade56498f22280043b"
+  "hash": "9e35487f92fcf1c4702a9d7315419509bbcaf77d57334f441361a7695a3b9a42"
 }

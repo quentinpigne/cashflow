@@ -211,6 +211,7 @@ Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu)
 | `recurring_rule_id` | `Id` → RecurringRule | optionnel |
 | `fingerprint` | texte | optionnel, unique avec `account_id` quand renseigné |
 | `payee_id` | `Id` → Payee | optionnel ; **doit être `null`** sur une jambe de virement (R-TIE-11) |
+| `expected_refund` | `Money` | optionnel : **remboursement attendu** d'une dépense, > 0 et ≤ −`amount` (R-TRX-53) ; `null` si `amount` > 0 |
 
 Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `clearing_status`), `fingerprint`,
 (`payee_id`, `date`).
@@ -227,8 +228,10 @@ Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `
 | `project_id` | `Id` → Project | optionnel ; projet `ACTIVE` à l'affectation (R-BUD-24) ; `null` sur une ventilation de virement, de remboursement ou d'acquisition |
 | `loan_id` | `Id` → Loan | optionnel : **ventilation de remboursement** (R-PRE-7) ; alors sans catégorie ni bien |
 | `asset_id` | `Id` → Asset | optionnel : **ventilation d'acquisition** (R-BIE-8) ; alors sans catégorie ni prêt |
+| `refunds_transaction_id` | `Id` → Transaction | optionnel : **remboursement de frais** (R-TRX-50) ; ventilation positive, sur une catégorie de dépense, visant une autre transaction de montant négatif. Lien retiré si la dépense est supprimée (R-TRX-55) |
 
-Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (ADR-0003).
+Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (ADR-0003). Pour toute dépense,
+Σ des ventilations qui la remboursent ≤ −`amount` (R-TRX-52).
 
 ### Transfer
 

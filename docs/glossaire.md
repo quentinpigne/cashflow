@@ -36,6 +36,8 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Échéance de prêt | `LoanInstallment` | Ligne du tableau d'amortissement. À distinguer de l'échéance prévue d'une récurrence. |
 | Capital restant dû | `outstanding principal` | Ce qu'il reste à rembourser d'un prêt : selon le tableau, ou saisi en suivi simple (`LoanBalance`). |
 | Échéance payée | `LoanPayment` | Lien entre une échéance de prêt et la mensualité qui l'a payée. |
+| Remboursement de frais | `refund` | Ventilation d'une entrée d'argent qui rembourse, en tout ou partie, une dépense précise (`refunds_transaction_id`) : vient en déduction de la catégorie de dépense, le mois de l'entrée (R-TRX-50, ADR-0026). À ne pas confondre avec la ventilation de remboursement d'un prêt. |
+| Remboursement attendu | `expected refund` | Montant qu'on attend pour une dépense (assurance maladie, note de frais) ; le **reste à recevoir** en est déduit des remboursements reçus (R-TRX-53). |
 | Ventilation de remboursement | `repayment split` | Part d'une transaction rattachée à un prêt : capital remboursé. Ni revenu ni dépense (R-PRE-7). |
 | Ventilation d'acquisition | `acquisition split` | Part d'une transaction rattachée à un bien : apport ou paiement du prix. Ni revenu ni dépense (R-BIE-8). |
 | Rubrique activable | `feature setting` | Rubrique Biens, Prêts ou Salaires, masquée tant qu'elle n'est pas activée dans les réglages. |

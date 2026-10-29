@@ -28,6 +28,16 @@ Deux autres sortes de ventilations sans catégorie sont, comme un virement, ni r
 Un versement vers un compte **non suivi** (le livret d'un enfant dans une autre banque, par
 exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catégorisée.
 
+Un **remboursement de frais** est une ventilation d'une entrée d'argent qui rembourse, en tout ou partie,
+une dépense précise (ADR-0026) : l'assurance maladie rembourse 17,50 € d'une consultation de 25 €, et
+chaque mois la note de frais rembourse une part du forfait téléphone et une part de l'essence.
+
+```
+Transaction +62,00 €  « NOTE DE FRAIS SEPT »
+ ├─ Split +20,00 €  Abonnements > Téléphone  ─ rembourse ─►  −39,99 €  « FORFAIT MOBILE » (20 / 39,99)
+ └─ Split +42,00 €  Auto > Carburant         ─ rembourse ─►  −68,40 €  « TOTAL ÉNERGIES » (42 / 68,40)
+```
+
 ## Règles
 
 ### Transactions
@@ -122,6 +132,30 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
   - la création est refusée si la date est hors de la période d'ouverture de C (R-CPT-3), ou si elle
     tombe dans une période rapprochée de C (R-RAP-7).
 
+### Remboursements de frais
+
+- **R-TRX-50** — Une ventilation **positive** peut rembourser une dépense : elle porte la transaction visée
+  (`refunds_transaction_id`), de montant négatif, autre que la sienne et qui n'est pas une jambe de virement.
+  Elle a une catégorie de dépense (proposée d'après la dépense) et, comme tout remboursement, vient en
+  déduction de cette catégorie (R-TRX-13). Elle n'a ni prêt, ni bien, ni virement (R-TRX-37).
+- **R-TRX-51** — La déduction compte dans le mois de **l'entrée d'argent** (R-BUD-3), pas dans celui de la
+  dépense : un mois clos ne change pas quand le remboursement arrive.
+- **R-TRX-52** — Une entrée peut rembourser plusieurs dépenses (une ventilation par dépense), et une dépense
+  être remboursée par plusieurs entrées. Le **remboursé** d'une dépense est la somme des ventilations qui la
+  visent ; il ne dépasse jamais son montant.
+- **R-TRX-53** — **Remboursement attendu** : une dépense peut porter le montant qu'on en attend
+  (`expected_refund`), positif et au plus égal à son montant. **Reste à recevoir** = attendu − remboursé
+  (zéro au minimum), calculé. L'attente est soldée quand le reste vaut zéro ; on peut aussi retirer l'attendu
+  (« ne viendra pas »).
+- **R-TRX-54** — **Propositions** : pour une entrée d'argent, les dépenses datées des 365 jours qui précèdent
+  l'entrée (jusqu'à sa date) et qui ne sont pas entièrement remboursées, dans l'ordre : reste à recevoir non
+  nul, puis même tiers, puis date la plus proche. Le montant proposé est le reste à recevoir (sinon ce qui reste
+  à rembourser de la dépense), dans la limite de ce que l'entrée n'a pas encore affecté.
+- **R-TRX-55** — Supprimer la dépense retire le lien : la ventilation de l'entrée reste, avec sa catégorie.
+  Supprimer l'entrée réduit d'autant le remboursé de la dépense.
+- **R-TRX-56** — Un lien de remboursement et un remboursement attendu ne changent aucun solde : ils restent
+  modifiables sur une transaction rapprochée (R-RAP-7).
+
 ### Récurrences
 
 - **R-TRX-40** — Une récurrence génère des **échéances prévues** (`ScheduledOccurrence`), calculées
@@ -152,6 +186,7 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
 | TRX-09 | — | *(supprimée : remplacée par la spec 11, TIE-01 à TIE-05)* |
 | TRX-10 | V2 | Étiquettes libres (tags) transverses aux catégories (« Vacances 2026 ») |
 | TRX-11 | V2 | Pièces jointes (justificatifs) |
+| TRX-12 | V1 | Remboursements de frais : lier une entrée à une ou plusieurs dépenses, en tout ou partie ; remboursement attendu et reste à recevoir |
 
 ### TRX-01 — Saisir une transaction
 
@@ -181,3 +216,25 @@ exemple) n'est pas un virement interne ; c'est une transaction ordinaire, catég
 - Étant donné une transaction importée de −300 € sur le compte courant, quand je la marque comme
   virement vers l'assurance vie et qu'aucune transaction candidate n'existe, alors une transaction de
   +300 €, `CLEARED`, est créée sur l'assurance vie, et les deux sont liées (R-TRX-36).
+
+### TRX-12 — Remboursements de frais
+
+- Sur la fiche d'une entrée d'argent (E7) : « Rembourse une dépense… » liste les dépenses proposées (R-TRX-54),
+  avec leur reste à recevoir. On en coche une ou plusieurs et on ajuste le montant de chacune ; l'entrée est
+  ventilée en conséquence, ce qui n'est affecté à aucune dépense garde sa ventilation d'avant.
+- Sur la fiche d'une dépense : le champ « Remboursement attendu », le remboursé (« 17,50 € remboursés sur
+  25,00 € ») et les entrées qui la remboursent, avec un lien vers chacune.
+- Sur l'accueil (E1) : l'encadré **Remboursements attendus**, les dépenses dont le reste à recevoir n'est pas
+  nul, les plus anciennes d'abord.
+
+**Critères d'acceptation**
+- Étant donné une consultation de −25 € avec 17,50 € attendus, quand une entrée de +17,50 € de l'assurance
+  maladie la rembourse en entier, alors la consultation affiche « 17,50 € remboursés sur 25,00 € » et ne figure
+  plus dans les remboursements attendus (R-TRX-53).
+- Étant donné une note de frais de +62 €, un forfait de −39,99 € et un plein de −68,40 €, quand elle rembourse
+  20 € du forfait et 42 € du plein, alors elle a deux ventilations, Téléphone +20 € et Carburant +42 €, et les
+  dépenses du mois en Téléphone et en Carburant baissent d'autant (R-TRX-13, R-TRX-52).
+- Étant donné une dépense de −25 € déjà remboursée de 17,50 €, quand une autre entrée tente de la rembourser de
+  10 €, alors c'est refusé (R-TRX-52).
+- Étant donné une consultation de mars remboursée en avril, alors les dépenses de mars ne changent pas et celles
+  d'avril baissent du remboursement (R-TRX-51).

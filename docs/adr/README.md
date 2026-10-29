@@ -44,3 +44,4 @@ retenu et ses conséquences. Il sert à comprendre plus tard *pourquoi* le proje
 | [0023](0023-jetons-d-acces-en-lecture-seule.md) | Jetons d'accès en lecture seule pour une application tierce | Accepté |
 | [0024](0024-documents-sur-le-disque.md) | Documents archivés sur le disque | Accepté |
 | [0025](0025-adresse-des-tiers-et-geocodage.md) | Adresse des tiers et géocodage par la Base Adresse Nationale | Accepté |
+| [0026](0026-remboursement-de-frais.md) | Remboursement de frais porté par la ventilation de l'entrée d'argent | Accepté |
