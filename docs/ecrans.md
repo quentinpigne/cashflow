@@ -901,8 +901,9 @@ Simulations et demandes de crédit, dans la rubrique **Prêts** (CRE-01 à CRE-0
 
 Ce qui change dans les écrans existants :
 
-- **E27 Prêts** : trois onglets `[mat-tab-nav-bar]`, **Prêts** (la liste actuelle), **Simulations** (E36) et
-  **Demandes** (E38), chacun avec son adresse (`/prets`, `/prets/simulations`, `/prets/demandes`).
+- **E27 Prêts** : quatre onglets `[mat-tab-nav-bar]`, **Prêts** (la liste actuelle), **Capacité** (E40),
+  **Simulations** (E36) et **Demandes** (E38), chacun avec son adresse (`/prets`, `/prets/capacite`,
+  `/prets/simulations`, `/prets/demandes`).
 - **E28 Fiche d'un prêt** : la section Documents propose l'offre de prêt comme type par défaut.
 
 ## E36 — Simulations (CRE-01, CRE-02)
@@ -964,3 +965,21 @@ Sections :
 nouvel onglet et imprimable (PDF par l'impression du navigateur) : projet, plan de financement, revenus et
 charges, capacité, simulation retenue, pièces et leur état ; c'est aussi le `Synthèse.html` de l'archive.
 **Exporter le dossier** : avertit des pièces manquantes, puis télécharge l'archive ZIP (R-CRE-19).
+
+## E40 — Capacité d'achat (CRE-07)
+
+- **Hypothèses** (`[mat-card]`, repliable sur mobile) : type de projet, taux, durée, assurance, frais de
+  dossier et de garantie, taux d'endettement visé, réserve en mois de dépenses ; **comptes mobilisables** (une
+  case et le solde de chaque compte ouvert) ; autres revenus et charges ; co-emprunteur (revenus, charges) ;
+  prêts en cours avec une case « remboursé par ce crédit ». Chaque changement recalcule et est gardé.
+- **Aujourd'hui** : le **prix d'achat maximal** en grand, puis le détail en cascade : revenus, charges,
+  mensualité maximale → capital empruntable ; épargne mobilisable − réserve → apport possible ; budget − frais
+  de notaire estimés → prix. **Effet de l'achat** : épargne restante (et en mois de dépenses), reste à vivre,
+  capacité d'épargne avant → après (en rouge si elle devient négative).
+- **Dans les années à venir** : tableau, une ligne par année (aujourd'hui, puis +1 à +5 ans) : revenus,
+  mensualité maximale, apport possible, prix maximal ; mention « hypothèses du scénario par défaut ». Sur
+  mobile, une carte par année.
+- **Sensibilité** : tableau prix maximal par durée (lignes) et taux (colonnes), la case des hypothèses en gras.
+- **Patrimoine projeté** sur 10 ans `[echarts]` : deux courbes, « sans achat » et « avec l'achat au prix
+  maximal », et la mention de l'approximation (R-CRE-35).
+- Bouton **« Créer une demande »** (R-CRE-36) : crée la demande et l'ouvre (E39).

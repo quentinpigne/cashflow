@@ -127,6 +127,8 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] CRE-04 — demande de crédit : plan de financement, capacité d'emprunt, co-emprunteur
 - [x] CRE-05 — pièces à fournir reliées à la bibliothèque, export ZIP et synthèse imprimable
 - [x] CRE-06 — démarches auprès des banques et courtiers, offres comparées, acceptation
+- [ ] CRE-07 — capacité d'achat : prix maximal aujourd'hui et dans les années à venir, effet sur l'épargne et le
+      patrimoine projeté, création d'une demande
 
 ## Mise en service (prochaine étape)
 

@@ -26,6 +26,11 @@ Demande « Achat appartement Grenoble »
  └─ Démarches             LCL : offre reçue (simulation « Offre LCL ») ; Crédit Agricole : envoyée
 ```
 
+- la **capacité d'achat** répond à la question inverse de la demande : non pas « ce projet passe-t-il ? », mais
+  « **que puis-je acheter ?** ». À partir de mes salaires, de mes prêts, de mon épargne et de mes dépenses, elle
+  calcule le prix d'achat maximal, aujourd'hui et dans les années à venir, et l'effet de l'achat sur mon
+  épargne et mon patrimoine projeté.
+
 Rien de tout cela n'entre dans le patrimoine, les budgets ou les projections : seul le prêt créé à partir
 d'une simulation compte, comme tout prêt (spec 09).
 
@@ -141,6 +146,49 @@ d'une simulation compte, comme tout prêt (spec 09).
 - **R-CRE-23** — Supprimer une demande supprime ses démarches et ses attributions de pièces ; ses simulations
   restent, sans demande. Supprimer une simulation retire le lien des démarches qui la portaient.
 
+## Capacité d'achat
+
+- **R-CRE-30** — **Hypothèses** de la capacité d'achat, préremplies et modifiables, gardées d'une visite à
+  l'autre : type de projet (R-CRE-10), taux nominal, durée, assurance, frais de dossier et de garantie, **taux
+  d'endettement visé** (35 % par défaut), **réserve de sécurité** en mois de dépenses (6 par défaut), **comptes
+  mobilisables** pour l'apport (par défaut ceux de l'épargne de précaution, R-CPT-13 ; tout compte ouvert peut
+  être coché), autres revenus et charges mensuels, co-emprunteur (revenus et charges), prêts exclus des charges
+  (R-CRE-14).
+- **R-CRE-31** — **Aujourd'hui** :
+  - revenus et charges mensuels comme une demande (R-CRE-13, R-CRE-14) ;
+  - **mensualité maximale** = taux d'endettement visé × revenus − charges, jamais négative ;
+  - **capital empruntable** avec cette mensualité, aux taux, durée et assurance des hypothèses (R-CRE-5) ;
+  - **épargne mobilisable** = soldes des comptes cochés (valeur pour l'épargne variable, R-CPT-6) ;
+  - **réserve** = nombre de mois × dépenses mensuelles moyennes (R-TDB-8) ;
+  - **apport possible** = épargne mobilisable − réserve, jamais négatif ;
+  - **budget** = capital empruntable + apport possible − frais de dossier − frais de garantie ;
+  - **prix d'achat maximal** : le plus grand prix, à la centaine d'euros, dont le prix et les frais de notaire
+    estimés (R-CRE-12) tiennent dans le budget.
+- **R-CRE-32** — **Effet de l'achat**, au prix maximal : épargne restante (mobilisable − apport) et ce qu'elle
+  représente en mois de dépenses ; reste à vivre (revenus − charges − échéance du crédit) ; **capacité
+  d'épargne** mensuelle (R-PRJ-42, scénario par défaut, mois prochain) **avant** et **après** l'achat (après =
+  avant − échéance du crédit + échéances des prêts exclus).
+- **R-CRE-33** — **Dans les années à venir** : pour chacune des 5 prochaines années, à la même date, les mêmes
+  calculs avec les données projetées du scénario par défaut (spec 07) :
+  - revenus = moyenne des salaires projetés (R-PRJ-43, hausse du scénario) sur les 12 mois qui suivent, plus
+    les autres revenus et ceux du co-emprunteur ;
+  - charges = échéances des prêts en cours à cette date (prêts exclus retirés), plus les autres charges ;
+  - épargne mobilisable = celle d'aujourd'hui + capacité d'épargne cumulée jusqu'à cette date ;
+  - réserve = nombre de mois × dépenses projetées (R-PRJ-44) à cette date.
+  Ce sont des hypothèses, pas des prévisions. Si le scénario par défaut n'a pas de capacité d'épargne
+  (R-PRJ-47), seule l'année en cours est calculée.
+- **R-CRE-34** — **Sensibilité** : le prix d'achat maximal d'aujourd'hui pour des durées de 15, 20 et 25 ans
+  (27 dans le neuf) et des taux de 0,5 point en dessous, égal et 0,5 point au-dessus du taux des hypothèses.
+- **R-CRE-35** — **Patrimoine projeté avec l'achat**, sur 10 ans, à côté de celui du scénario par défaut :
+  le patrimoine projeté, diminué au mois de l'achat des frais (notaire, dossier, garantie) et, chaque mois, du
+  cumul des intérêts et de l'assurance du crédit. Le bien garde son prix (R-BIE-5) : l'apport et le capital
+  remboursé changent de forme sans appauvrir. Approximation affichée comme telle : l'apport ne rapporte plus
+  d'intérêts, ce que la courbe n'en retire pas.
+- **R-CRE-36** — **Créer une demande** à partir de la capacité d'achat : une demande (R-CRE-10) de ce type de
+  projet, au prix maximal (modifiable ensuite), avec les frais de notaire estimés, l'apport possible, les autres
+  revenus et charges, le co-emprunteur et les prêts exclus des hypothèses, et une simulation retenue au capital
+  empruntable, aux conditions des hypothèses.
+
 ## Features
 
 | ID | Priorité | Feature |
@@ -151,6 +199,7 @@ d'une simulation compte, comme tout prêt (spec 09).
 | CRE-04 | V1 | Demande de crédit : plan de financement et capacité d'emprunt (co-emprunteur saisi) |
 | CRE-05 | V1 | Pièces à fournir reliées à la bibliothèque ; export ZIP et synthèse imprimable |
 | CRE-06 | V1 | Démarches auprès des banques et courtiers, offres reçues et comparées, acceptation |
+| CRE-07 | V1 | Capacité d'achat : prix maximal aujourd'hui et dans les années à venir, effet sur l'épargne et le patrimoine |
 
 Exemple commun : aujourd'hui 2026-10-29. Emploi en cours à 2 700 € net, 13e mois récurrent de 2 600 € ; un
 prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000 €.
@@ -188,3 +237,15 @@ prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000
 - J'envoie la demande à LCL et au Crédit Agricole : la demande passe à « envoyée ». LCL répond par une offre
   à 3,35 % sur 25 ans ; je l'enregistre ; elle se compare aux simulations. Je l'accepte : la démarche Crédit
   Agricole passe à « retirée », la demande à « acceptée », et je transforme l'offre en prêt.
+
+### CRE-07 — Capacité d'achat
+
+- Revenus 2 916,67 €, prêt auto 230 €, taux visé 35 % : mensualité maximale 1 020,83 − 230 = 790,83 €. À 3 %
+  sur 20 ans sans assurance ni frais, le capital empruntable est d'environ 142 600 €.
+- Épargne de précaution 60 000 €, dépenses moyennes 2 000 € : réserve de 6 mois 12 000 €, apport possible
+  48 000 €. Budget environ 190 600 € ; dans l'ancien, prix maximal environ 177 300 € (177 300 + 13 298 de
+  notaire ≤ 190 600).
+- Avec une hausse des salaires de 2 % par an et une capacité d'épargne de 600 € par mois, le prix maximal de
+  l'an prochain est plus élevé : revenus et épargne mobilisable ont augmenté.
+- L'épargne restante est la réserve, 12 000 € soit 6 mois de dépenses ; la capacité d'épargne passe de 600 € à
+  600 − 790,83 = −190,83 € par mois, signalée.

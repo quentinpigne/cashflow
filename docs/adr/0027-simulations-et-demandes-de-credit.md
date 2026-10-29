@@ -61,6 +61,13 @@ Options **2**, **4** et **6** (décision du propriétaire, 2026-10-29).
   la simulation rattachée à la démarche.
 - **Export** : `GET /loan-applications/{id}/export` produit l'archive ZIP (crate `zip`, pur Rust) ; la
   synthèse HTML est rendue par le serveur à partir d'un gabarit simple, sans moteur de gabarits.
+- **Capacité d'achat** (2026-10-29) : calculée à chaque lecture (ADR-0002) par une fonction pure du domaine,
+  à partir des revenus et charges de la demande (R-CRE-13, R-CRE-14) et, pour les années à venir et le
+  patrimoine projeté, de la projection du **scénario par défaut** (spec 07 : salaires projetés, dépenses
+  projetées, capacité d'épargne, patrimoine), réutilisée telle quelle plutôt que recalculée. Le patrimoine avec
+  l'achat se déduit de celui du scénario : seuls les frais, les intérêts et l'assurance du crédit l'abaissent,
+  puisque le bien garde son prix (R-BIE-5). Les hypothèses sont gardées dans un réglage JSON
+  (`credit.purchase_capacity`), pas dans une table : il n'y en a qu'un jeu.
 - **Types de documents** (précise la spec 12) : acte de propriété, compromis de vente, certificat
   d'immatriculation, diagnostic, devis, garantie, offre de prêt, tableau d'amortissement, contrat
   d'assurance, pièce d'identité, justificatif de domicile. La migration recrée la table `document`

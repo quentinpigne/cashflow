@@ -431,6 +431,13 @@ ligne `not_required` par pièce. Pas de `id` propre ni d'horodatage.
 | `simulation_id` | `Id` → LoanSimulation | optionnel, `SET NULL` : l'offre reçue (R-CRE-21) |
 | `note` | texte | optionnel |
 
+### Réglage de la capacité d'achat
+
+`credit.purchase_capacity` (`AppSetting`, `Json`) garde les hypothèses de la capacité d'achat (R-CRE-30) :
+type de projet, taux, durée, assurance, frais, taux d'endettement visé, réserve en mois de dépenses, comptes
+mobilisables, autres revenus et charges, revenus et charges du co-emprunteur, prêts exclus. Absent, les valeurs
+par défaut s'appliquent. Les résultats se calculent (R-CRE-31 à R-CRE-35).
+
 ### Réglages
 
 Les rubriques Biens et Prêts s'activent par deux réglages (`AppSetting`) : `features.assets`,

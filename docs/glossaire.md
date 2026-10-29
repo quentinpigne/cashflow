@@ -133,6 +133,11 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Reste à vivre | `remaining income` | Revenus − charges − mensualité envisagée (R-CRE-15). |
 | Co-emprunteur | `co_borrower` | Second emprunteur d'une demande, dont les revenus et charges sont saisis (R-CRE-16). |
 | Pièce (à fournir) | `LoanApplicationPiece` | Justificatif demandé par les banques (R-CRE-17), fourni par des documents trouvés ou attribués. |
+| Capacité d'achat | `purchase capacity` | Prix d'achat maximal compte tenu des revenus, charges, épargne et dépenses, aujourd'hui et dans les années à venir (R-CRE-31, R-CRE-33). |
+| Épargne mobilisable | `available savings` | Soldes des comptes choisis pour financer l'apport (R-CRE-31). |
+| Réserve de sécurité | `reserve` | Épargne gardée hors de l'apport, en mois de dépenses moyennes (R-CRE-30). |
+| Apport possible | `possible down payment` | Épargne mobilisable − réserve de sécurité (R-CRE-31). |
+| Prix d'achat maximal | `max price` | Plus grand prix dont le prix et les frais de notaire tiennent dans le budget : capital empruntable + apport possible − frais (R-CRE-31). |
 | Démarche | `LenderRequest` | Envoi d'une demande à un établissement ou un courtier, et sa réponse (R-CRE-21). |
 
 ## Import et rapprochement
