@@ -42,6 +42,7 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AttachmentsStore, CategoriesStore, ProjectsStore } from '../../shared/stores';
 import { MarkTransferDialog } from './mark-transfer';
+import { RefundPanel } from './refund-panel';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
 type Direction = 'out' | 'in';
@@ -63,6 +64,7 @@ type Direction = 'out' | 'in';
     MatProgressBarModule,
     CategoryPicker,
     PayeePicker,
+    RefundPanel,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -207,6 +209,7 @@ export class TransactionDetailView {
       amount_minor: s.amount_minor,
       category_id: encodeAttachment(s),
       note: s.note ?? null,
+      refunds_transaction_id: s.refunds_transaction_id ?? null,
     }));
     // Une ventilation unique suit le montant saisi (R-TRX-4).
     const splits =
@@ -243,7 +246,12 @@ export class TransactionDetailView {
     let splits: SplitDraft[] | null = this.pendingSplits();
     if (!splits && !this.isSplit() && !t.transfer) {
       splits = [
-        { amount_minor: amount, category_id: this.category(), note: t.splits[0]?.note ?? null },
+        {
+          amount_minor: amount,
+          category_id: this.category(),
+          note: t.splits[0]?.note ?? null,
+          refunds_transaction_id: t.splits[0]?.refunds_transaction_id ?? null,
+        },
       ];
     }
     // Une ventilation multiple inchangée garde ses ventilations, mais le projet peut avoir changé.
@@ -256,6 +264,7 @@ export class TransactionDetailView {
         amount_minor: s.amount_minor,
         category_id: encodeAttachment(s),
         note: s.note ?? null,
+        refunds_transaction_id: s.refunds_transaction_id ?? null,
       }));
     }
     this.busy.set(true);
@@ -393,6 +402,7 @@ export class TransactionDetailView {
               asset_id: s.asset_id ?? null,
               note: s.note ?? null,
               project_id: this.keptProject(s.project_id),
+              refunds_transaction_id: s.refunds_transaction_id ?? null,
             })),
           },
         }),

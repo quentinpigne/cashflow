@@ -6,6 +6,8 @@ import {
   parseMoney,
   parsePercent,
   parseRatePpm,
+  subtract,
+  takeFrom,
   toEditable,
 } from './money';
 
@@ -57,6 +59,14 @@ describe('money', () => {
     expect(allocate(-10000, [1, 1, 1])).toEqual([-3333, -3333, -3334]);
     expect(allocate(-100, [])).toBeNull();
     expect(allocate(-100, [0, 0])).toBeNull();
+  });
+
+  it('prend un montant sur les dernières parts (TRX-12)', () => {
+    expect(takeFrom([3_000, 2_000], 2_500)).toEqual([2_500, 0]);
+    expect(takeFrom([3_000, 2_000], 1_500)).toEqual([3_000, 500]);
+    expect(takeFrom([3_000], 0)).toEqual([3_000]);
+    expect(takeFrom([3_000], 3_001)).toBeNull();
+    expect(subtract(6_200, 2_000)).toBe(4_200);
   });
 
   it('formate un taux', () => {

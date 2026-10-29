@@ -207,6 +207,9 @@ fn candidate(row: &RefundableRow) -> Candidate<TransactionId, PayeeId> {
     }
 }
 
+/// Nombre maximal de dépenses proposées : les premières dans l'ordre de R-TRX-54.
+const MAX_CANDIDATES: usize = 50;
+
 /// Dépenses proposées pour l'entrée d'argent `id` (R-TRX-54).
 pub async fn candidates(db: &Db, id: TransactionId) -> AppResult<Vec<RefundCandidate>> {
     let mut conn = db.read.acquire().await?;
@@ -229,6 +232,7 @@ pub async fn candidates(db: &Db, id: TransactionId) -> AppResult<Vec<RefundCandi
         refund::proposals(rows.iter().map(candidate).collect(), t.date, t.payee_id.as_ref(), t.amount - linked);
     Ok(proposals
         .into_iter()
+        .take(MAX_CANDIDATES)
         .filter_map(|p| {
             let row = by_id.get(&p.candidate.id)?;
             Some(RefundCandidate {

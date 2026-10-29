@@ -147,6 +147,30 @@ export function sum(amounts: number[]): number {
   return amounts.reduce((total, amount) => total + amount, 0);
 }
 
+/**
+ * Retire `taken` (positif) de montants de même signe, en commençant par les derniers ; renvoie les montants
+ * restants (zéro pour une part entièrement prise), ou `null` si leur total ne suffit pas. Sert à ventiler une
+ * entrée qui rembourse des dépenses : ce qui n'est affecté à aucune dépense garde sa ventilation (TRX-12).
+ */
+export function takeFrom(amounts: number[], taken: number): number[] | null {
+  if (taken < 0 || taken > Math.abs(sum(amounts))) {
+    return null;
+  }
+  let left = taken;
+  const result = [...amounts];
+  for (let i = result.length - 1; i >= 0 && left > 0; i--) {
+    const part = Math.min(Math.abs(result[i]), left);
+    result[i] = Math.sign(result[i]) * (Math.abs(result[i]) - part);
+    left -= part;
+  }
+  return result.map((a) => (a === 0 ? 0 : a));
+}
+
+/** Différence exacte de deux montants. */
+export function subtract(minor: number, other: number): number {
+  return minor - other;
+}
+
 /** Opposé d'un montant. */
 export function negate(minor: number): number {
   return minor === 0 ? 0 : -minor;

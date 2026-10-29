@@ -16,6 +16,8 @@ export interface SplitDraft {
   amount_minor: number;
   category_id: string | null;
   note: string | null;
+  /** Dépense que la ventilation rembourse (R-TRX-50) : gardée telle quelle. */
+  refunds_transaction_id?: string | null;
 }
 
 export interface SplitEditorData {
@@ -28,6 +30,7 @@ export interface SplitEditorData {
 interface Line {
   category: string | null;
   note: string;
+  refunds: string | null;
   /** Montant saisi en valeur absolue, ou pourcentage, selon le mode. */
   input: string;
 }
@@ -64,12 +67,14 @@ export class SplitEditor {
       ? this.data.splits.map((s) => ({
           category: s.category_id,
           note: s.note ?? '',
+          refunds: s.refunds_transaction_id ?? null,
           input: toEditable(s.amount_minor * this.sign, this.data.currency),
         }))
       : [
           {
             category: null,
             note: '',
+            refunds: null,
             input: toEditable(Math.abs(this.data.totalMinor), this.data.currency),
           },
         ],
@@ -128,7 +133,7 @@ export class SplitEditor {
       this.mode() === 'amount' && remaining
         ? toEditable(Math.abs(remaining), this.data.currency)
         : '';
-    this.lines.update((lines) => [...lines, { category: null, note: '', input }]);
+    this.lines.update((lines) => [...lines, { category: null, note: '', refunds: null, input }]);
   }
 
   protected remove(index: number): void {
@@ -176,6 +181,7 @@ export class SplitEditor {
         amount_minor: amounts[i],
         category_id: line.category,
         note: line.note.trim() || null,
+        refunds_transaction_id: line.refunds,
       })),
     );
   }

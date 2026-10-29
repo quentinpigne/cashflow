@@ -180,6 +180,10 @@
         </div>
       }
 
+      @if (!t.transfer && !t.loan_payment) {
+        <app-refund-panel [transaction]="t" />
+      }
+
       @if (!t.transfer && projectOptions().length > 0) {
         <mat-form-field>
           <mat-label>Projet</mat-label>

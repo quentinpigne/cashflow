@@ -149,7 +149,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   (« ne viendra pas »).
 - **R-TRX-54** — **Propositions** : pour une entrée d'argent, les dépenses datées des 365 jours qui précèdent
   l'entrée (jusqu'à sa date) et qui ne sont pas entièrement remboursées, dans l'ordre : reste à recevoir non
-  nul, puis même tiers, puis date la plus proche. Le montant proposé est le reste à recevoir (sinon ce qui reste
+  nul, puis même tiers, puis date la plus proche, 50 au plus. Le montant proposé est le reste à recevoir (sinon ce qui reste
   à rembourser de la dépense), dans la limite de ce que l'entrée n'a pas encore affecté.
 - **R-TRX-55** — Supprimer la dépense retire le lien : la ventilation de l'entrée reste, avec sa catégorie.
   Supprimer l'entrée réduit d'autant le remboursé de la dépense.

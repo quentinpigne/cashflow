@@ -188,6 +188,9 @@
                   @case ('missed') {
                     <app-home-missed />
                   }
+                  @case ('refunds') {
+                    <app-home-refunds />
+                  }
                   @case ('uncategorized') {
                     @if (d.uncategorized.total > 0) {
                       <section class="card uncategorized">

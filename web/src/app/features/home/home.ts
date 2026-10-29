@@ -41,6 +41,7 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { HomeBudget } from '../budget/home-budget';
 import { HomeMissed } from '../projections/home-missed';
+import { HomeRefunds } from '../transactions/home-refunds';
 import { HomeSavings } from '../savings/home-savings';
 import { HomeLayout, WIDGET_LABELS, Widget, columnCount } from './home-layout';
 import { HomeSettings } from './home-settings';
@@ -73,6 +74,7 @@ const DEFINITIONS = {
     HomeRecent,
     HomeSavings,
     HomeMissed,
+    HomeRefunds,
     WidgetMenu,
     RouterLink,
     MatButtonModule,
