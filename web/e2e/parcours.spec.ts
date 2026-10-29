@@ -106,7 +106,9 @@ test('E1 : catégoriser sur place depuis l’accueil (R-TDB-5)', async ({ page }
   }
 });
 
-test('E1, E8 : ranger une opération hors analyses (R-TRX-24, R-TRX-25)', async ({ page }) => {
+test('E1, E8 : ranger une opération « Sans catégorie », hors analyses (R-TRX-24, R-TRX-25)', async ({
+  page,
+}) => {
   await login(page);
   const card = page.locator('section.uncategorized');
   const title = card.getByRole('heading');
@@ -114,8 +116,8 @@ test('E1, E8 : ranger une opération hors analyses (R-TRX-24, R-TRX-25)', async 
   await pickCategory(
     page,
     card.locator('.todo').first(),
-    'Hors analyses',
-    'Hors analyses (général)',
+    'Sans catégorie',
+    'Sans catégorie (général)',
     false,
   );
   if (before > 1) {
@@ -125,7 +127,7 @@ test('E1, E8 : ranger une opération hors analyses (R-TRX-24, R-TRX-25)', async 
   }
   // La catégorie est fournie de base, marquée dans les réglages.
   await page.goto('/reglages/categories');
-  const row = page.locator('.row.root', { hasText: 'Hors analyses' });
+  const row = page.locator('.row.root', { hasText: 'Sans catégorie' });
   await expect(row.locator('.tag')).toHaveText('hors analyses');
 });
 

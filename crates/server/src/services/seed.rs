@@ -4,7 +4,7 @@
 //! - Barèmes réglementés : complétés à chaque démarrage (nouvelles périodes de taux).
 //! - Établissements et catégories : proposés **au premier lancement** seulement (R-TRX-23), pour ne
 //!   jamais recréer ce que l'utilisateur a supprimé ou renommé.
-//! - Catégories « Hors analyses » : proposées une fois, y compris sur une base déjà en service (R-TRX-25).
+//! - Catégorie « Sans catégorie », hors analyses : proposée une fois, y compris sur une base déjà en service (R-TRX-25).
 
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{CategoryId, InstitutionId, RateScheduleId};
@@ -19,7 +19,7 @@ use crate::db::{self, Db};
 pub const INTEREST_CATEGORY: &str = "Intérêts";
 
 /// Catégorie hors analyses proposée, en dépense : rien n'y est compté, sa nature est sans effet (R-TRX-25).
-pub const EXCLUDED_CATEGORY: &str = "Hors analyses";
+pub const EXCLUDED_CATEGORY: &str = "Sans catégorie";
 
 const CATEGORIES: &str = include_str!("../../seed/categories.json");
 const INSTITUTIONS: &str = include_str!("../../seed/institutions.json");

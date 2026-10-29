@@ -98,9 +98,11 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   total non catégorisé, comme un virement. Elles restent dans les soldes. C'est la place d'une opération
   qu'on ne peut ou ne veut pas catégoriser (opération ancienne oubliée, inclassable) : elle quitte « À
   catégoriser » sans fausser les dépenses d'une vraie catégorie.
-- **R-TRX-25** — Une catégorie de dépense « Hors analyses » est proposée une fois, y compris sur une base
-  déjà en service ; supprimée ou renommée, elle n'est pas recréée. Une seule suffit : rien n'y est compté,
-  sa nature est donc sans effet, et une entrée d'argent peut y être rangée (R-TRX-13).
+- **R-TRX-25** — Une catégorie de dépense « Sans catégorie », hors analyses, est proposée une fois, y compris
+  sur une base déjà en service ; supprimée ou renommée, elle n'est pas recréée. Son nom dit l'intention :
+  l'opération n'a volontairement pas de catégorie, alors qu'une opération « non catégorisée » reste à
+  traiter. Une seule suffit : rien n'y est compté, sa nature est donc sans effet, et une entrée d'argent peut
+  y être rangée (R-TRX-13).
 
 ### Virements internes
 
