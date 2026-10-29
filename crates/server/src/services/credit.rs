@@ -1336,11 +1336,15 @@ pub async fn purchase_capacity(db: &Db, today: Date) -> AppResult<PurchaseCapaci
     })
 }
 
-/// Crée une demande à partir de la capacité d'achat (R-CRE-36) : au prix maximal, avec l'apport possible et une
-/// simulation retenue au capital empruntable.
+/// Crée une demande à partir de la capacité d'achat (R-CRE-36) : au prix maximal, avec l'apport nécessaire (au
+/// plus l'apport possible) et une simulation retenue au montant à emprunter.
 pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppResult<ApplicationView> {
     let capacity = purchase_capacity(db, today).await?;
     let h = &capacity.hypotheses;
+    // L'apport nécessaire, au plus l'apport possible : le prix arrondi laisse parfois un reliquat d'épargne.
+    let costs = h.fees_minor + h.guarantee_fees_minor;
+    let cost = capacity.today.max_price_minor + capacity.today.notary_fees_minor + costs;
+    let down_payment = (cost - capacity.today.capital_minor).clamp(0, capacity.today.down_payment_minor);
     let mut input = ApplicationInput {
         name: name.to_owned(),
         project_kind: h.project_kind,
@@ -1348,8 +1352,8 @@ pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppR
         price_minor: capacity.today.max_price_minor,
         notary_fees_minor: Some(capacity.today.notary_fees_minor),
         works_minor: 0,
-        other_costs_minor: h.fees_minor + h.guarantee_fees_minor,
-        down_payment_minor: capacity.today.down_payment_minor,
+        other_costs_minor: costs,
+        down_payment_minor: down_payment,
         other_income_minor: h.other_income_minor,
         other_charges_minor: h.other_charges_minor,
         co_borrower_name: (h.co_borrower_income_minor > 0 || h.co_borrower_charges_minor > 0)
@@ -1362,13 +1366,13 @@ pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppR
         note: Some("Créée depuis la capacité d'achat".to_owned()),
     };
     let application = save_application(db, None, &input, today).await?;
-    if capacity.today.capital_minor <= 0 {
+    if application.to_borrow_minor <= 0 {
         return Ok(application);
     }
     let simulation = SimulationInput {
         name: "Capacité d'achat".to_owned(),
         kind: LoanKind::Mortgage,
-        principal_minor: capacity.today.capital_minor,
+        principal_minor: application.to_borrow_minor,
         annual_rate_ppm: h.annual_rate_ppm,
         duration_months: h.duration_months,
         insurance: h.insurance,

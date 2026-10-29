@@ -185,9 +185,11 @@ d'une simulation compte, comme tout prêt (spec 09).
   remboursé changent de forme sans appauvrir. Approximation affichée comme telle : l'apport ne rapporte plus
   d'intérêts, ce que la courbe n'en retire pas.
 - **R-CRE-36** — **Créer une demande** à partir de la capacité d'achat : une demande (R-CRE-10) de ce type de
-  projet, au prix maximal (modifiable ensuite), avec les frais de notaire estimés, l'apport possible, les autres
-  revenus et charges, le co-emprunteur et les prêts exclus des hypothèses, et une simulation retenue au capital
-  empruntable, aux conditions des hypothèses.
+  projet, au prix maximal (modifiable ensuite), avec les frais de notaire estimés, les frais de dossier et de
+  garantie en autres frais, l'**apport nécessaire** (coût du projet − capital empruntable, au plus l'apport
+  possible : le prix arrondi à la centaine laisse parfois un reliquat d'épargne), les autres revenus et charges,
+  le co-emprunteur et les prêts exclus des hypothèses, et une simulation retenue au montant à emprunter, aux
+  conditions des hypothèses.
 
 ## Features
 

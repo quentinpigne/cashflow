@@ -79,3 +79,34 @@ test('E39 : demande, capacité, pièces, démarche et offre acceptée (CRE-04 à
     page.getByRole('heading', { name: 'Offre Courtier Alpes Crédit', level: 1 }),
   ).toBeVisible();
 });
+
+test("E40 : capacité d'achat, années à venir et demande créée (CRE-07)", async ({ page }) => {
+  await login(page);
+  await page.goto('/prets/capacite');
+  await expect(page.getByRole('tab', { name: 'Capacité' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  const today = page.locator('section.today');
+  await expect(today).toContainText("Prix d'achat maximal aujourd'hui");
+  await expect(page.getByRole('heading', { name: 'Dans les années à venir' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sensibilité' })).toBeVisible();
+  const before = await today.locator('.price').textContent();
+
+  // Une réserve plus grande diminue l'apport, donc le prix maximal ; le choix est gardé.
+  await page.getByLabel('Réserve de sécurité').fill('12');
+  await expect(today.locator('.price')).not.toHaveText(before ?? '');
+  await page.screenshot({
+    path: `test-results/credit-capacite-${isMobile(page) ? 'mobile' : 'ordinateur'}.png`,
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(page.getByLabel('Réserve de sécurité')).toHaveValue('12');
+  await page.getByLabel('Réserve de sécurité').fill('6');
+  await expect(today.locator('.price')).toHaveText(before ?? '');
+  if (isMobile(page)) return;
+
+  await today.getByRole('button', { name: 'Créer une demande' }).click();
+  await expect(page.getByRole('heading', { name: /^Achat jusqu'à/, level: 1 })).toBeVisible();
+  await expect(page.locator('section.capacity')).toContainText('Capacité d');
+});

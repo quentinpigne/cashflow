@@ -159,6 +159,10 @@ pub fn borrowing_capacity(
     if duration_months == 0 || duration_months > MAX_DURATION_MONTHS || annual_rate.ppm() < 0 {
         return Err(DomainError::InvalidSimulation);
     }
+    // Une mensualité nulle ne permet aucun crédit, même si l'échéance d'un euro s'arrondit à zéro.
+    if !target.is_positive() {
+        return Err(DomainError::TargetPaymentTooLow);
+    }
     let euro = 100;
     let fits =
         |euros: i64| total_payment(Money::from_minor(euros * euro), annual_rate, duration_months, insurance) <= target;
@@ -569,6 +573,10 @@ mod tests {
         assert!(total_payment(capacity, Rate::from_ppm(30_000), 240, insurance) <= euros(1_200));
         assert!(total_payment(capacity + euros(1), Rate::from_ppm(30_000), 240, insurance) > euros(1_200));
         assert_eq!(capacity.minor() % 100, 0, "à l'euro");
+        assert_eq!(
+            borrowing_capacity(Money::ZERO, Rate::from_ppm(30_000), 240, Insurance::None),
+            Err(DomainError::TargetPaymentTooLow)
+        );
         // Une mensualité qui ne couvre pas l'assurance est refusée.
         let fixed = Insurance::Fixed { amount_minor: 5_000 };
         assert_eq!(

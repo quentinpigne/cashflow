@@ -386,9 +386,27 @@ async fn cre_07_r_cre_30_to_r_cre_36_purchase_capacity() {
     // Une demande créée depuis la capacité (R-CRE-36).
     let view = credit::application_from_capacity(&db, "Projet", today).await.unwrap();
     assert_eq!(view.price_minor, capacity.today.max_price_minor);
-    assert_eq!(view.down_payment_minor, 6_000_000);
-    assert_eq!(view.to_borrow_minor, capacity.today.max_price_minor + capacity.today.notary_fees_minor - 6_000_000);
-    assert!(view.to_borrow_minor <= capacity.today.capital_minor);
+    assert!(view.down_payment_minor <= 6_000_000, "au plus l'apport possible");
+    assert_eq!(view.to_borrow_minor, capacity.today.capital_minor, "l'apport complète le capital empruntable");
     let selected = view.simulations.iter().find(|s| Some(s.id) == view.selected_simulation_id).unwrap();
-    assert_eq!(selected.principal_minor, capacity.today.capital_minor);
+    assert_eq!(selected.principal_minor, view.to_borrow_minor);
+}
+
+#[tokio::test]
+async fn r_cre_36_application_from_capacity_on_the_demo_data() {
+    let (db, dir) = setup().await;
+    let data = DataDir::new(dir.path().join("data"));
+    data.ensure().unwrap();
+    let today = d("2026-10-20");
+    super::demo::load(&db, &data, today).await.unwrap();
+    // Charges au-delà de 35 % : aucun capital empruntable, un prix maximal minuscule qui laisse un reliquat
+    // d'épargne ; la demande se crée quand même, sans plus d'apport que nécessaire.
+    let mut h = credit::purchase_capacity(&db, today).await.unwrap().hypotheses;
+    h.other_charges_minor = 10_000_000;
+    let capacity = credit::save_purchase_hypotheses(&db, &h, today).await.unwrap();
+    assert_eq!(capacity.today.capital_minor, 0);
+    let view = credit::application_from_capacity(&db, "Achat", today).await.unwrap();
+    assert_eq!(view.to_borrow_minor, 0);
+    assert_eq!(view.down_payment_minor, view.project_cost_minor);
+    assert!(view.down_payment_minor <= capacity.today.down_payment_minor);
 }
