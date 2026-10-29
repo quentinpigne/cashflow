@@ -6162,6 +6162,102 @@
         }
       }
     },
+    "/api/v1/purchase-capacity": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).",
+        "operationId": "purchaseCapacity",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCapacity"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Garde les hypothèses de la capacité d'achat (R-CRE-30).",
+        "operationId": "savePurchaseHypotheses",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseHypotheses"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCapacity"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/purchase-capacity/application": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Crée une demande à partir de la capacité d'achat (R-CRE-36).",
+        "operationId": "applicationFromCapacity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FromCapacityInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/rate-schedules": {
       "get": {
         "tags": [
@@ -12498,6 +12594,17 @@
           "YEARLY"
         ]
       },
+      "FromCapacityInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "GapHintsView": {
         "type": "object",
         "description": "Pistes pour expliquer un écart (R-RAP-9).",
@@ -14619,6 +14726,29 @@
           }
         }
       },
+      "NetWorthComparison": {
+        "type": "object",
+        "description": "Patrimoine projeté sans et avec l'achat (R-CRE-35).",
+        "required": [
+          "date",
+          "without_minor",
+          "with_minor"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "with_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "without_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "NetWorthPoint": {
         "type": "object",
         "required": [
@@ -16255,6 +16385,253 @@
           }
         }
       },
+      "PurchaseCapacity": {
+        "type": "object",
+        "description": "Capacité d'achat (E40).",
+        "required": [
+          "hypotheses",
+          "accounts",
+          "loans",
+          "expenses_minor",
+          "today",
+          "savings_after_minor",
+          "remaining_income_minor",
+          "years",
+          "sensitivity",
+          "net_worth"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavingsAccount"
+            }
+          },
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Dépenses mensuelles moyennes (R-TDB-8)."
+          },
+          "hypotheses": {
+            "$ref": "#/components/schemas/PurchaseHypotheses"
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeLine"
+            }
+          },
+          "net_worth": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetWorthComparison"
+            }
+          },
+          "remaining_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_after_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Épargne restante après l'apport, en mois de dépenses (dixièmes)."
+          },
+          "savings_after_tenths_of_months": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "savings_capacity_after_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "savings_capacity_before_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Capacité d'épargne mensuelle avant et après l'achat (R-CRE-32) ; absente sans capacité dans le scénario."
+          },
+          "sensitivity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SensitivityCell"
+            }
+          },
+          "today": {
+            "$ref": "#/components/schemas/PurchaseView"
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseView"
+            },
+            "description": "Les 5 prochaines années (R-CRE-33)."
+          }
+        }
+      },
+      "PurchaseHypotheses": {
+        "type": "object",
+        "description": "Hypothèses de la capacité d'achat (R-CRE-30).",
+        "required": [
+          "project_kind",
+          "annual_rate_ppm",
+          "duration_months",
+          "insurance",
+          "fees_minor",
+          "guarantee_fees_minor",
+          "max_debt_ratio_ppm",
+          "reserve_months",
+          "other_income_minor",
+          "other_charges_minor",
+          "co_borrower_income_minor",
+          "co_borrower_charges_minor",
+          "excluded_loan_ids"
+        ],
+        "properties": {
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AccountId"
+            },
+            "description": "Comptes mobilisables ; absent : ceux de l'épargne de précaution."
+          },
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "excluded_loan_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          },
+          "fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guarantee_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "max_debt_ratio_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux d'endettement visé."
+          },
+          "other_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          },
+          "reserve_months": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Réserve de sécurité, en mois de dépenses moyennes.",
+            "minimum": 0
+          }
+        }
+      },
+      "PurchaseView": {
+        "type": "object",
+        "description": "Capacité d'achat à une date (R-CRE-31, R-CRE-33).",
+        "required": [
+          "date",
+          "income_minor",
+          "charges_minor",
+          "max_payment_minor",
+          "capital_minor",
+          "savings_minor",
+          "reserve_minor",
+          "down_payment_minor",
+          "budget_minor",
+          "max_price_minor",
+          "notary_fees_minor",
+          "payment_minor"
+        ],
+        "properties": {
+          "budget_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "capital_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "down_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_price_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "notary_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payment_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Échéance totale du crédit au capital empruntable."
+          },
+          "reserve_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "RatePeriodInput": {
         "type": "object",
         "required": [
@@ -17224,6 +17601,31 @@
           }
         }
       },
+      "SavingsAccount": {
+        "type": "object",
+        "description": "Un compte proposé pour l'apport (R-CRE-30).",
+        "required": [
+          "id",
+          "name",
+          "balance_minor",
+          "selected"
+        ],
+        "properties": {
+          "balance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AccountId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selected": {
+            "type": "boolean"
+          }
+        }
+      },
       "SavingsOverview": {
         "type": "object",
         "required": [
@@ -17481,6 +17883,30 @@
           "shared": {
             "type": "boolean",
             "description": "Barème réglementé partagé entre comptes (R-EPA-11)."
+          }
+        }
+      },
+      "SensitivityCell": {
+        "type": "object",
+        "description": "Prix maximal pour une durée et un taux (R-CRE-34).",
+        "required": [
+          "duration_months",
+          "annual_rate_ppm",
+          "max_price_minor"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "max_price_minor": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

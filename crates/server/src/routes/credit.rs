@@ -23,4 +23,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(credit::accept_offer))
         .routes(routes!(credit::export))
         .routes(routes!(credit::summary))
+        .routes(routes!(credit::purchase_capacity, credit::save_purchase_hypotheses))
+        .routes(routes!(credit::application_from_capacity))
 }

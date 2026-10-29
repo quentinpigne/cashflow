@@ -344,6 +344,105 @@ pub fn capacity(input: &CapacityInput) -> Capacity {
     }
 }
 
+// ======================================================================= Capacité d'achat (CRE-07)
+
+/// Ce qui entre dans la capacité d'achat à une date (R-CRE-31, R-CRE-33).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PurchaseInput {
+    pub income: Money,
+    pub charges: Money,
+    /// Taux d'endettement visé.
+    pub max_debt_ratio: Rate,
+    pub annual_rate: Rate,
+    pub duration_months: u32,
+    pub insurance: Insurance,
+    pub fees: Money,
+    pub guarantee_fees: Money,
+    pub project: ProjectKind,
+    /// Épargne mobilisable.
+    pub savings: Money,
+    /// Réserve de sécurité gardée hors de l'apport.
+    pub reserve: Money,
+}
+
+/// Capacité d'achat à une date (R-CRE-31, R-CRE-32).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Purchase {
+    pub max_payment: Money,
+    pub capital: Money,
+    pub down_payment: Money,
+    pub budget: Money,
+    pub max_price: Money,
+    pub notary_fees: Money,
+    /// Échéance totale du crédit au capital empruntable : mensualité + assurance.
+    pub payment: Money,
+    /// Épargne mobilisable − apport.
+    pub savings_after: Money,
+}
+
+/// Plus grand prix, à la centaine d'euros, dont le prix et les frais de notaire estimés tiennent dans le budget
+/// (R-CRE-31). Renvoie le prix et ses frais de notaire.
+pub fn max_price(kind: ProjectKind, budget: Money) -> (Money, Money) {
+    let hundred = 10_000;
+    let rate = match kind {
+        ProjectKind::ExistingHome => Decimal::new(1075, 3),
+        ProjectKind::NewHome => Decimal::new(1025, 3),
+        _ => Decimal::ONE,
+    };
+    let steps = (Decimal::from(budget.minor().max(0)) / rate / Decimal::from(hundred)).floor();
+    let mut price = Money::from_minor(steps.to_i64().unwrap_or_default() * hundred);
+    let mut notary = estimated_notary_fees(kind, price);
+    while price.is_positive() && price + notary > budget {
+        price -= Money::from_minor(hundred);
+        notary = estimated_notary_fees(kind, price);
+    }
+    (price, notary)
+}
+
+/// Capacité d'achat (R-CRE-31, R-CRE-32).
+pub fn purchase(input: &PurchaseInput) -> Purchase {
+    let ceiling = round(Decimal::from(input.income.minor()) * input.max_debt_ratio.to_fraction());
+    let max_payment = if ceiling > input.charges { ceiling - input.charges } else { Money::ZERO };
+    let capital = borrowing_capacity(max_payment, input.annual_rate, input.duration_months, input.insurance)
+        .unwrap_or(Money::ZERO);
+    let down_payment = if input.savings > input.reserve { input.savings - input.reserve } else { Money::ZERO };
+    let costs = input.fees + input.guarantee_fees;
+    let funds = capital + down_payment;
+    let budget = if funds > costs { funds - costs } else { Money::ZERO };
+    let (max_price, notary_fees) = max_price(input.project, budget);
+    let payment = if capital.is_positive() {
+        total_payment(capital, input.annual_rate, input.duration_months, input.insurance)
+    } else {
+        Money::ZERO
+    };
+    Purchase {
+        max_payment,
+        capital,
+        down_payment,
+        budget,
+        max_price,
+        notary_fees,
+        payment,
+        savings_after: input.savings - down_payment,
+    }
+}
+
+/// Patrimoine projeté avec l'achat (R-CRE-35) : chaque point du patrimoine projeté sans achat, diminué des frais
+/// payés à l'achat et du cumul des intérêts et de l'assurance des échéances passées à cette date.
+pub fn net_worth_with_purchase(
+    baseline: &[(Date, Money)],
+    one_off: Money,
+    schedule: &[Installment],
+) -> Vec<(Date, Money)> {
+    baseline
+        .iter()
+        .map(|(date, value)| {
+            let cost: Money = schedule.iter().take_while(|i| i.date <= *date).map(|i| i.interest + i.insurance).sum();
+            (*date, *value - one_off - cost)
+        })
+        .collect()
+}
+
 // ======================================================================= Statuts (CRE-06)
 
 /// Statut d'une demande de crédit (R-CRE-20).
@@ -576,5 +675,54 @@ mod tests {
         );
         assert_eq!(accept_offer(&[Sent, Offer], 0, true), Err(DomainError::OfferNotAcceptable));
         assert_eq!(accept_offer(&[Offer], 0, false), Err(DomainError::OfferNotAcceptable));
+    }
+    #[test]
+    fn r_cre_31_purchase_capacity_example() {
+        let input = PurchaseInput {
+            income: Money::from_minor(291_667),
+            charges: euros(230),
+            max_debt_ratio: MAX_DEBT_RATIO,
+            annual_rate: Rate::from_ppm(30_000),
+            duration_months: 240,
+            insurance: Insurance::None,
+            fees: Money::ZERO,
+            guarantee_fees: Money::ZERO,
+            project: ProjectKind::ExistingHome,
+            savings: euros(60_000),
+            reserve: euros(12_000),
+        };
+        let p = purchase(&input);
+        assert_eq!(p.max_payment, Money::from_minor(102_083 - 23_000));
+        assert_eq!(p.capital, euros(142_596));
+        assert_eq!(p.down_payment, euros(48_000));
+        assert_eq!(p.budget, euros(190_596));
+        assert_eq!((p.max_price, p.notary_fees), (euros(177_200), euros(13_290)), "exemple CRE-07");
+        assert_eq!(p.savings_after, euros(12_000));
+        assert!(p.payment <= p.max_payment);
+
+        // Une réserve plus grande que l'épargne : pas d'apport ; des frais plus grands que les fonds : pas de budget.
+        let poor = purchase(&PurchaseInput { savings: euros(5_000), income: Money::ZERO, ..input });
+        assert_eq!((poor.down_payment, poor.capital, poor.max_price), (Money::ZERO, Money::ZERO, Money::ZERO));
+        assert_eq!(poor.savings_after, euros(5_000));
+    }
+
+    #[test]
+    fn r_cre_31_max_price_fits_the_budget_with_notary_fees() {
+        let (price, notary) = max_price(ProjectKind::NewHome, euros(100_000));
+        assert_eq!((price, notary), (euros(97_500), euros(2_438)));
+        assert!(price + notary <= euros(100_000));
+        assert_eq!(max_price(ProjectKind::Vehicle, Money::from_minor(2_345_678)), (euros(23_400), Money::ZERO));
+        assert_eq!(max_price(ProjectKind::ExistingHome, Money::ZERO), (Money::ZERO, Money::ZERO));
+    }
+
+    #[test]
+    fn r_cre_35_net_worth_with_purchase_loses_fees_interest_and_insurance() {
+        let terms = SimulationTerms { fees: Money::ZERO, guarantee_fees: Money::ZERO, ..terms() };
+        let simulation = simulate(&terms, d(TODAY)).unwrap();
+        let baseline = [(d("2026-10-31"), euros(100_000)), (d("2026-12-31"), euros(110_000))];
+        let with = net_worth_with_purchase(&baseline, euros(20_000), &simulation.schedule);
+        assert_eq!(with[0], (d("2026-10-31"), euros(80_000)), "aucune échéance encore");
+        let first_two: Money = simulation.schedule[..2].iter().map(|i| i.interest + i.insurance).sum();
+        assert_eq!(with[1].1, euros(90_000) - first_two);
     }
 }

@@ -12,6 +12,8 @@ import { StrictHttpResponse } from '../strict-http-response';
 
 import { acceptOffer } from '../fn/credit/accept-offer';
 import { AcceptOffer$Params } from '../fn/credit/accept-offer';
+import { applicationFromCapacity } from '../fn/credit/application-from-capacity';
+import { ApplicationFromCapacity$Params } from '../fn/credit/application-from-capacity';
 import { ApplicationSummary } from '../models/application-summary';
 import { ApplicationView } from '../models/application-view';
 import { assignPiece } from '../fn/credit/assign-piece';
@@ -49,8 +51,13 @@ import { LoanApplicationSummary$Params } from '../fn/credit/loan-application-sum
 import { LoanCreated } from '../models/loan-created';
 import { loanSimulationSchedule } from '../fn/credit/loan-simulation-schedule';
 import { LoanSimulationSchedule$Params } from '../fn/credit/loan-simulation-schedule';
+import { purchaseCapacity } from '../fn/credit/purchase-capacity';
+import { PurchaseCapacity } from '../models/purchase-capacity';
+import { PurchaseCapacity$Params } from '../fn/credit/purchase-capacity';
 import { recordOffer } from '../fn/credit/record-offer';
 import { RecordOffer$Params } from '../fn/credit/record-offer';
+import { savePurchaseHypotheses } from '../fn/credit/save-purchase-hypotheses';
+import { SavePurchaseHypotheses$Params } from '../fn/credit/save-purchase-hypotheses';
 import { setPieceRequired } from '../fn/credit/set-piece-required';
 import { SetPieceRequired$Params } from '../fn/credit/set-piece-required';
 import { SimulationView } from '../models/simulation-view';
@@ -795,6 +802,111 @@ export class CreditService extends BaseService {
     const resp = this.loanSimulationSchedule$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Array<InstallmentView>>): Array<InstallmentView> => r.body)
+    );
+  }
+
+  /** Path part for operation `purchaseCapacity()` */
+  static readonly PurchaseCapacityPath = '/api/v1/purchase-capacity';
+
+  /**
+   * Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `purchaseCapacity()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  purchaseCapacity$Response(params?: PurchaseCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
+    const obs = purchaseCapacity(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `purchaseCapacity$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  purchaseCapacity(params?: PurchaseCapacity$Params, context?: HttpContext): Observable<PurchaseCapacity> {
+    const resp = this.purchaseCapacity$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<PurchaseCapacity>): PurchaseCapacity => r.body)
+    );
+  }
+
+  /** Path part for operation `savePurchaseHypotheses()` */
+  static readonly SavePurchaseHypothesesPath = '/api/v1/purchase-capacity';
+
+  /**
+   * Garde les hypothèses de la capacité d'achat (R-CRE-30).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `savePurchaseHypotheses()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  savePurchaseHypotheses$Response(params: SavePurchaseHypotheses$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
+    const obs = savePurchaseHypotheses(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Garde les hypothèses de la capacité d'achat (R-CRE-30).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `savePurchaseHypotheses$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  savePurchaseHypotheses(params: SavePurchaseHypotheses$Params, context?: HttpContext): Observable<PurchaseCapacity> {
+    const resp = this.savePurchaseHypotheses$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<PurchaseCapacity>): PurchaseCapacity => r.body)
+    );
+  }
+
+  /** Path part for operation `applicationFromCapacity()` */
+  static readonly ApplicationFromCapacityPath = '/api/v1/purchase-capacity/application';
+
+  /**
+   * Crée une demande à partir de la capacité d'achat (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `applicationFromCapacity()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromCapacity$Response(params: ApplicationFromCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = applicationFromCapacity(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Crée une demande à partir de la capacité d'achat (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `applicationFromCapacity$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromCapacity(params: ApplicationFromCapacity$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.applicationFromCapacity$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
     );
   }
 

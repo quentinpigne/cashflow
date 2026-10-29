@@ -13,7 +13,7 @@ use cashflow_domain::credit::{
 use cashflow_domain::documents as docs;
 use cashflow_domain::loans::{self, Insurance, LoanKind};
 use cashflow_domain::shared::ids::{
-    AssetId, DocumentId, InstitutionId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
+    AccountId, AssetId, DocumentId, InstitutionId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
 };
 use cashflow_domain::{Date, DomainError, Money, Rate};
 use serde::{Deserialize, Serialize};
@@ -998,6 +998,389 @@ pub async fn delete_lender_request(db: &Db, id: LoanApplicationId, request: Lend
         return Err(AppError::NotFound("démarche"));
     }
     Ok(())
+}
+
+// ======================================================================= Capacité d'achat (CRE-07)
+
+/// Réglage qui garde les hypothèses de la capacité d'achat (R-CRE-30).
+const PURCHASE_SETTING: &str = "credit.purchase_capacity";
+
+/// Hypothèses de la capacité d'achat (R-CRE-30).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PurchaseHypotheses {
+    pub project_kind: ProjectKind,
+    pub annual_rate_ppm: i64,
+    pub duration_months: u32,
+    pub insurance: Insurance,
+    pub fees_minor: i64,
+    pub guarantee_fees_minor: i64,
+    /// Taux d'endettement visé.
+    pub max_debt_ratio_ppm: i64,
+    /// Réserve de sécurité, en mois de dépenses moyennes.
+    pub reserve_months: u32,
+    /// Comptes mobilisables ; absent : ceux de l'épargne de précaution.
+    pub account_ids: Option<Vec<AccountId>>,
+    pub other_income_minor: i64,
+    pub other_charges_minor: i64,
+    pub co_borrower_income_minor: i64,
+    pub co_borrower_charges_minor: i64,
+    pub excluded_loan_ids: Vec<LoanId>,
+}
+
+impl Default for PurchaseHypotheses {
+    fn default() -> Self {
+        Self {
+            project_kind: ProjectKind::ExistingHome,
+            annual_rate_ppm: 32_000,
+            duration_months: 300,
+            insurance: Insurance::RateOnPrincipal { rate_ppm: 3_000 },
+            fees_minor: 100_000,
+            guarantee_fees_minor: 200_000,
+            max_debt_ratio_ppm: credit::MAX_DEBT_RATIO.ppm(),
+            reserve_months: 6,
+            account_ids: None,
+            other_income_minor: 0,
+            other_charges_minor: 0,
+            co_borrower_income_minor: 0,
+            co_borrower_charges_minor: 0,
+            excluded_loan_ids: vec![],
+        }
+    }
+}
+
+/// Un compte proposé pour l'apport (R-CRE-30).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SavingsAccount {
+    pub id: AccountId,
+    pub name: String,
+    pub balance_minor: i64,
+    pub selected: bool,
+}
+
+/// Capacité d'achat à une date (R-CRE-31, R-CRE-33).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PurchaseView {
+    pub date: Date,
+    pub income_minor: i64,
+    pub charges_minor: i64,
+    pub max_payment_minor: i64,
+    pub capital_minor: i64,
+    pub savings_minor: i64,
+    pub reserve_minor: i64,
+    pub down_payment_minor: i64,
+    pub budget_minor: i64,
+    pub max_price_minor: i64,
+    pub notary_fees_minor: i64,
+    /// Échéance totale du crédit au capital empruntable.
+    pub payment_minor: i64,
+}
+
+/// Prix maximal pour une durée et un taux (R-CRE-34).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SensitivityCell {
+    pub duration_months: u32,
+    pub annual_rate_ppm: i64,
+    pub max_price_minor: i64,
+}
+
+/// Patrimoine projeté sans et avec l'achat (R-CRE-35).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct NetWorthComparison {
+    pub date: Date,
+    pub without_minor: i64,
+    pub with_minor: i64,
+}
+
+/// Capacité d'achat (E40).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PurchaseCapacity {
+    pub hypotheses: PurchaseHypotheses,
+    pub accounts: Vec<SavingsAccount>,
+    pub loans: Vec<ChargeLine>,
+    /// Dépenses mensuelles moyennes (R-TDB-8).
+    pub expenses_minor: i64,
+    pub today: PurchaseView,
+    /// Épargne restante après l'apport, en mois de dépenses (dixièmes).
+    pub savings_after_minor: i64,
+    pub savings_after_tenths_of_months: Option<i64>,
+    pub remaining_income_minor: i64,
+    /// Capacité d'épargne mensuelle avant et après l'achat (R-CRE-32) ; absente sans capacité dans le scénario.
+    pub savings_capacity_before_minor: Option<i64>,
+    pub savings_capacity_after_minor: Option<i64>,
+    /// Les 5 prochaines années (R-CRE-33).
+    pub years: Vec<PurchaseView>,
+    pub sensitivity: Vec<SensitivityCell>,
+    pub net_worth: Vec<NetWorthComparison>,
+}
+
+async fn hypotheses(db: &Db) -> AppResult<PurchaseHypotheses> {
+    Ok(db::settings::get::<PurchaseHypotheses>(&db.read, PURCHASE_SETTING).await?.unwrap_or_default())
+}
+
+/// Garde les hypothèses (R-CRE-30) et renvoie la capacité d'achat.
+pub async fn save_purchase_hypotheses(db: &Db, input: &PurchaseHypotheses, today: Date) -> AppResult<PurchaseCapacity> {
+    let amounts = [
+        input.fees_minor,
+        input.guarantee_fees_minor,
+        input.other_income_minor,
+        input.other_charges_minor,
+        input.co_borrower_income_minor,
+        input.co_borrower_charges_minor,
+    ];
+    if amounts.iter().any(|m| *m < 0)
+        || input.annual_rate_ppm < 0
+        || !(1..=loans::MAX_DURATION_MONTHS).contains(&input.duration_months)
+        || !(1..=1_000_000).contains(&input.max_debt_ratio_ppm)
+        || input.reserve_months > 120
+    {
+        return Err(AppError::invalid("INVALID_HYPOTHESES", "hypothèses de la capacité d'achat invalides"));
+    }
+    db::settings::set(&db.write, PURCHASE_SETTING, input).await?;
+    purchase_capacity(db, today).await
+}
+
+/// Échéance totale d'un prêt avec tableau dans le mois de `date` ; zéro sinon.
+fn installment_in_month(schedule: &[loans::Installment], date: Date) -> Money {
+    let month = cashflow_domain::salaries::month_of(date);
+    schedule
+        .iter()
+        .find(|i| cashflow_domain::salaries::month_of(i.date) == month)
+        .map_or(Money::ZERO, loans::Installment::total)
+}
+
+fn purchase_view(date: Date, input: &credit::PurchaseInput, p: &credit::Purchase) -> PurchaseView {
+    PurchaseView {
+        date,
+        income_minor: input.income.minor(),
+        charges_minor: input.charges.minor(),
+        max_payment_minor: p.max_payment.minor(),
+        capital_minor: p.capital.minor(),
+        savings_minor: input.savings.minor(),
+        reserve_minor: input.reserve.minor(),
+        down_payment_minor: p.down_payment.minor(),
+        budget_minor: p.budget.minor(),
+        max_price_minor: p.max_price.minor(),
+        notary_fees_minor: p.notary_fees.minor(),
+        payment_minor: p.payment.minor(),
+    }
+}
+
+/// Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (R-CRE-31 à R-CRE-35).
+pub async fn purchase_capacity(db: &Db, today: Date) -> AppResult<PurchaseCapacity> {
+    let h = hypotheses(db).await?;
+    let sources = context(db, today).await?;
+    let excluded: HashSet<LoanId> = h.excluded_loan_ids.iter().copied().collect();
+
+    // Comptes mobilisables (R-CRE-30).
+    let accounts: Vec<SavingsAccount> = super::accounts::list(db, today)
+        .await?
+        .into_iter()
+        .filter(|a| a.closed_on.is_none_or(|c| c > today))
+        .map(|a| SavingsAccount {
+            selected: h.account_ids.as_ref().map_or(a.include_in_emergency_fund, |ids| ids.contains(&a.id)),
+            id: a.id,
+            name: a.name,
+            balance_minor: a.balance_minor,
+        })
+        .collect();
+    let savings: Money = accounts.iter().filter(|a| a.selected).map(|a| Money::from_minor(a.balance_minor)).sum();
+
+    // Scénario par défaut : salaires, dépenses, capacité d'épargne et patrimoine projetés (spec 07).
+    let horizon = 12 * 10 + 12;
+    let projection =
+        super::projections::net_worth(db, &super::projections::NetWorthQuery { months: Some(horizon) }, today).await?;
+    let scenario = projection.scenarios.iter().find(|s| s.is_default);
+    let capacity_points = scenario.and_then(|s| s.capacity.as_ref()).map(|c| &c.points);
+    let expenses = Money::from_minor(projection.capacity.expenses_minor);
+
+    // Prêts en cours, avec leur tableau.
+    let mut schedules = Vec::new();
+    for loan in db::loans::list(&db.read).await? {
+        if excluded.contains(&loan.id) {
+            continue;
+        }
+        if let Some(s) = &loan.schedule {
+            schedules.push(loans::schedule(&s.terms)?);
+        }
+    }
+    let loans_at = |date: Date| -> Money { schedules.iter().map(|s| installment_in_month(s, date)).sum() };
+
+    let rate = Rate::from_ppm(h.annual_rate_ppm);
+    let input_at = |income: Money, charges: Money, savings: Money, reserve: Money, duration: u32, rate: Rate| {
+        credit::PurchaseInput {
+            income,
+            charges,
+            max_debt_ratio: Rate::from_ppm(h.max_debt_ratio_ppm),
+            annual_rate: rate,
+            duration_months: duration,
+            insurance: h.insurance,
+            fees: Money::from_minor(h.fees_minor),
+            guarantee_fees: Money::from_minor(h.guarantee_fees_minor),
+            project: h.project_kind,
+            savings,
+            reserve,
+        }
+    };
+    let extra_income = Money::from_minor(h.other_income_minor + h.co_borrower_income_minor);
+    let extra_charges = Money::from_minor(h.other_charges_minor + h.co_borrower_charges_minor);
+    let months = i64::from(h.reserve_months);
+
+    // Aujourd'hui (R-CRE-31) : revenus et charges comme une demande (R-CRE-13, R-CRE-14).
+    let income = sources.employments.iter().map(|e| Money::from_minor(e.monthly_minor)).sum::<Money>() + extra_income;
+    let loan_lines: Vec<ChargeLine> = sources
+        .loans
+        .iter()
+        .map(|(id, name, monthly)| ChargeLine {
+            loan_id: *id,
+            name: name.clone(),
+            monthly_minor: monthly.map(Money::minor),
+            excluded: excluded.contains(id),
+        })
+        .collect();
+    let loan_charges: Money =
+        loan_lines.iter().filter(|l| !l.excluded).filter_map(|l| l.monthly_minor).map(Money::from_minor).sum();
+    let charges = loan_charges + extra_charges;
+    let reserve = Money::from_minor(expenses.minor() * months);
+    let now_input = input_at(income, charges, savings, reserve, h.duration_months, rate);
+    let now = credit::purchase(&now_input);
+
+    // Effet de l'achat (R-CRE-32).
+    let excluded_payments: Money =
+        loan_lines.iter().filter(|l| l.excluded).filter_map(|l| l.monthly_minor).map(Money::from_minor).sum();
+    let before = capacity_points.and_then(|p| p.first()).map(|p| p.total_minor);
+    let after = before.map(|b| b - now.payment.minor() + excluded_payments.minor());
+
+    // Dans les années à venir (R-CRE-33).
+    let mut years = vec![purchase_view(today, &now_input, &now)];
+    if let Some(points) = capacity_points {
+        for year in 1..=5_usize {
+            let start = 12 * year;
+            let Some(point) = points.get(start) else { break };
+            let next: Vec<i64> = points.iter().skip(start).take(12).map(|p| p.salaries_minor).collect();
+            let salaries = next.iter().sum::<i64>() / i64::try_from(next.len().max(1)).unwrap_or(1);
+            let cumulative: i64 = points.iter().take(start).map(|p| p.total_minor).sum();
+            let date = today.checked_add_months(chrono::Months::new(12 * year as u32)).unwrap_or(today);
+            let input = input_at(
+                Money::from_minor(salaries) + extra_income,
+                loans_at(date) + extra_charges,
+                savings + Money::from_minor(cumulative),
+                Money::from_minor(point.expenses_minor * months),
+                h.duration_months,
+                rate,
+            );
+            years.push(purchase_view(date, &input, &credit::purchase(&input)));
+        }
+    }
+
+    // Sensibilité (R-CRE-34).
+    let longest = if h.project_kind == ProjectKind::NewHome { 324 } else { 300 };
+    let mut sensitivity = Vec::new();
+    for duration in [180, 240, longest] {
+        for delta in [-5_000, 0, 5_000] {
+            let rate_ppm = (h.annual_rate_ppm + delta).max(0);
+            let input = input_at(income, charges, savings, reserve, duration, Rate::from_ppm(rate_ppm));
+            sensitivity.push(SensitivityCell {
+                duration_months: duration,
+                annual_rate_ppm: rate_ppm,
+                max_price_minor: credit::purchase(&input).max_price.minor(),
+            });
+        }
+    }
+
+    // Patrimoine projeté avec l'achat, sur 10 ans (R-CRE-35).
+    let mut net_worth = Vec::new();
+    if let Some(scenario) = scenario
+        && now.capital.is_positive()
+    {
+        let terms = SimulationTerms {
+            kind: LoanKind::Mortgage,
+            principal: now.capital,
+            annual_rate: rate,
+            duration_months: h.duration_months,
+            insurance: h.insurance,
+            fees: Money::from_minor(h.fees_minor),
+            guarantee_fees: Money::from_minor(h.guarantee_fees_minor),
+        };
+        let simulation = credit::simulate(&terms, today)?;
+        let baseline: Vec<(Date, Money)> =
+            scenario.points.iter().take(120).map(|p| (p.date, Money::from_minor(p.value_minor))).collect();
+        let one_off = now.notary_fees + terms.fees + terms.guarantee_fees;
+        let with = credit::net_worth_with_purchase(&baseline, one_off, &simulation.schedule);
+        net_worth = baseline
+            .iter()
+            .zip(with)
+            .map(|((date, without), (_, with))| NetWorthComparison {
+                date: *date,
+                without_minor: without.minor(),
+                with_minor: with.minor(),
+            })
+            .collect();
+    }
+
+    Ok(PurchaseCapacity {
+        accounts,
+        loans: loan_lines,
+        expenses_minor: expenses.minor(),
+        savings_after_minor: now.savings_after.minor(),
+        savings_after_tenths_of_months: expenses
+            .is_positive()
+            .then(|| now.savings_after.minor() * 10 / expenses.minor()),
+        remaining_income_minor: (income - charges - now.payment).minor(),
+        savings_capacity_before_minor: before,
+        savings_capacity_after_minor: after,
+        today: purchase_view(today, &now_input, &now),
+        years,
+        sensitivity,
+        net_worth,
+        hypotheses: h,
+    })
+}
+
+/// Crée une demande à partir de la capacité d'achat (R-CRE-36) : au prix maximal, avec l'apport possible et une
+/// simulation retenue au capital empruntable.
+pub async fn application_from_capacity(db: &Db, name: &str, today: Date) -> AppResult<ApplicationView> {
+    let capacity = purchase_capacity(db, today).await?;
+    let h = &capacity.hypotheses;
+    let mut input = ApplicationInput {
+        name: name.to_owned(),
+        project_kind: h.project_kind,
+        asset_id: None,
+        price_minor: capacity.today.max_price_minor,
+        notary_fees_minor: Some(capacity.today.notary_fees_minor),
+        works_minor: 0,
+        other_costs_minor: h.fees_minor + h.guarantee_fees_minor,
+        down_payment_minor: capacity.today.down_payment_minor,
+        other_income_minor: h.other_income_minor,
+        other_charges_minor: h.other_charges_minor,
+        co_borrower_name: (h.co_borrower_income_minor > 0 || h.co_borrower_charges_minor > 0)
+            .then(|| "Co-emprunteur".to_owned()),
+        co_borrower_income_minor: h.co_borrower_income_minor,
+        co_borrower_charges_minor: h.co_borrower_charges_minor,
+        excluded_loan_ids: h.excluded_loan_ids.clone(),
+        selected_simulation_id: None,
+        status: None,
+        note: Some("Créée depuis la capacité d'achat".to_owned()),
+    };
+    let application = save_application(db, None, &input, today).await?;
+    if capacity.today.capital_minor <= 0 {
+        return Ok(application);
+    }
+    let simulation = SimulationInput {
+        name: "Capacité d'achat".to_owned(),
+        kind: LoanKind::Mortgage,
+        principal_minor: capacity.today.capital_minor,
+        annual_rate_ppm: h.annual_rate_ppm,
+        duration_months: h.duration_months,
+        insurance: h.insurance,
+        fees_minor: h.fees_minor,
+        guarantee_fees_minor: h.guarantee_fees_minor,
+        institution_id: None,
+        application_id: Some(application.id),
+        note: None,
+    };
+    let simulation = save_simulation(db, None, &simulation, today).await?;
+    input.selected_simulation_id = Some(simulation.id);
+    save_application(db, Some(application.id), &input, today).await
 }
 
 // ======================================================================= Export (R-CRE-19)

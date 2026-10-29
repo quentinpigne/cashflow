@@ -365,6 +365,12 @@ export type { ConvertLoanSimulation$Params as ConvertLoanSimulation$Params } fro
 export { convertLoanSimulation as convertLoanSimulation } from './fn/credit/convert-loan-simulation';
 export type { LoanSimulationSchedule$Params as LoanSimulationSchedule$Params } from './fn/credit/loan-simulation-schedule';
 export { loanSimulationSchedule as loanSimulationSchedule } from './fn/credit/loan-simulation-schedule';
+export type { PurchaseCapacity$Params as PurchaseCapacity$Params } from './fn/credit/purchase-capacity';
+export { purchaseCapacity as purchaseCapacity } from './fn/credit/purchase-capacity';
+export type { SavePurchaseHypotheses$Params as SavePurchaseHypotheses$Params } from './fn/credit/save-purchase-hypotheses';
+export { savePurchaseHypotheses as savePurchaseHypotheses } from './fn/credit/save-purchase-hypotheses';
+export type { ApplicationFromCapacity$Params as ApplicationFromCapacity$Params } from './fn/credit/application-from-capacity';
+export { applicationFromCapacity as applicationFromCapacity } from './fn/credit/application-from-capacity';
 export type { ListLoans$Params as ListLoans$Params } from './fn/loans/list-loans';
 export { listLoans as listLoans } from './fn/loans/list-loans';
 export type { CreateLoan$Params as CreateLoan$Params } from './fn/loans/create-loan';

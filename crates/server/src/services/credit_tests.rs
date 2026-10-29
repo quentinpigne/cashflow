@@ -332,3 +332,63 @@ async fn cre_06_r_cre_20_to_r_cre_22_lender_requests_and_offers() {
     assert_eq!(code(error), "REQUIRED");
     credit::delete_lender_request(&db, view.id, ca).await.unwrap();
 }
+
+#[tokio::test]
+async fn cre_07_r_cre_30_to_r_cre_36_purchase_capacity() {
+    let (db, _dir) = setup().await;
+    let today = d(TODAY);
+    let f = fixture(&db).await;
+    loans::create(&db, &car_loan(&f), today).await.unwrap();
+
+    // Hypothèses par défaut : le compte courant fait partie de l'épargne de précaution (R-CPT-13).
+    let capacity = credit::purchase_capacity(&db, today).await.unwrap();
+    assert_eq!(capacity.today.income_minor, 270_000);
+    assert_eq!(capacity.today.charges_minor, 20_000);
+    assert_eq!(capacity.today.max_payment_minor, 94_500 - 20_000, "35 % de 2 700 € − 200 €");
+    assert!(capacity.today.capital_minor > 0);
+    assert!(capacity.accounts.iter().all(|a| a.selected));
+    assert_eq!(capacity.today.savings_minor, 6_000_000);
+    assert_eq!(capacity.sensitivity.len(), 9);
+    // Les 5 prochaines années, avec les salaires projetés du scénario par défaut (R-CRE-33).
+    assert_eq!(capacity.years.len(), 6);
+    assert!(capacity.years[5].income_minor > capacity.years[0].income_minor, "hausse des salaires");
+
+    // Le compte courant mobilisé, sans réserve ni frais, à 3 % sur 20 ans sans assurance.
+    let mut h = capacity.hypotheses.clone();
+    h.account_ids = Some(vec![f.checking]);
+    h.reserve_months = 0;
+    h.fees_minor = 0;
+    h.guarantee_fees_minor = 0;
+    h.insurance = Insurance::None;
+    h.annual_rate_ppm = 30_000;
+    h.duration_months = 240;
+    let capacity = credit::save_purchase_hypotheses(&db, &h, today).await.unwrap();
+    assert_eq!(capacity.today.down_payment_minor, 6_000_000, "R-CRE-31");
+    assert!(capacity.today.max_price_minor > capacity.today.capital_minor);
+    assert!(
+        capacity.today.max_price_minor + capacity.today.notary_fees_minor
+            <= capacity.today.capital_minor + capacity.today.down_payment_minor
+    );
+    assert_eq!(capacity.savings_after_minor, 0);
+    assert_eq!(capacity.remaining_income_minor, 270_000 - 20_000 - capacity.today.payment_minor);
+    assert_eq!(credit::purchase_capacity(&db, today).await.unwrap().hypotheses.duration_months, 240, "gardées");
+
+    // Patrimoine projeté : l'achat coûte les frais de notaire, puis les intérêts au fil des mois (R-CRE-35).
+    let gap = |p: &credit::NetWorthComparison| p.without_minor - p.with_minor;
+    assert_eq!(capacity.net_worth.len(), 120);
+    assert!(gap(&capacity.net_worth[0]) > capacity.today.notary_fees_minor);
+    assert!(gap(&capacity.net_worth[119]) > gap(&capacity.net_worth[0]));
+
+    // Hypothèses invalides refusées.
+    let invalid = credit::PurchaseHypotheses { duration_months: 0, ..h.clone() };
+    assert_eq!(code(credit::save_purchase_hypotheses(&db, &invalid, today).await.unwrap_err()), "INVALID_HYPOTHESES");
+
+    // Une demande créée depuis la capacité (R-CRE-36).
+    let view = credit::application_from_capacity(&db, "Projet", today).await.unwrap();
+    assert_eq!(view.price_minor, capacity.today.max_price_minor);
+    assert_eq!(view.down_payment_minor, 6_000_000);
+    assert_eq!(view.to_borrow_minor, capacity.today.max_price_minor + capacity.today.notary_fees_minor - 6_000_000);
+    assert!(view.to_borrow_minor <= capacity.today.capital_minor);
+    let selected = view.simulations.iter().find(|s| Some(s.id) == view.selected_simulation_id).unwrap();
+    assert_eq!(selected.principal_minor, capacity.today.capital_minor);
+}

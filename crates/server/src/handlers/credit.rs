@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use crate::error::{AppResult, Problem};
 use crate::services::credit::{
     self, ApplicationInput, ApplicationSummary, ApplicationView, ComputeInput, ComputeResult, LenderRequestInput,
-    SimulationInput, SimulationView,
+    PurchaseCapacity, PurchaseHypotheses, SimulationInput, SimulationView,
 };
 use crate::services::loans::{InstallmentView, LoanInput};
 use crate::state::AppState;
@@ -343,4 +343,46 @@ pub async fn summary(State(state): State<AppState>, Path(id): Path<LoanApplicati
         ],
         html,
     ))
+}
+
+// ---------------------------------------------------------------- Capacité d'achat
+
+/// Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).
+#[utoipa::path(
+    get, operation_id = "purchaseCapacity", path = "/purchase-capacity", tag = "credit",
+    responses((status = 200, body = PurchaseCapacity))
+)]
+pub async fn purchase_capacity(State(state): State<AppState>) -> AppResult<Json<PurchaseCapacity>> {
+    Ok(Json(credit::purchase_capacity(&state.db, state.clock.today()).await?))
+}
+
+/// Garde les hypothèses de la capacité d'achat (R-CRE-30).
+#[utoipa::path(
+    put, operation_id = "savePurchaseHypotheses", path = "/purchase-capacity", tag = "credit",
+    request_body = PurchaseHypotheses,
+    responses((status = 200, body = PurchaseCapacity), (status = 422, body = Problem))
+)]
+pub async fn save_purchase_hypotheses(
+    State(state): State<AppState>,
+    Json(input): Json<PurchaseHypotheses>,
+) -> AppResult<Json<PurchaseCapacity>> {
+    Ok(Json(credit::save_purchase_hypotheses(&state.db, &input, state.clock.today()).await?))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct FromCapacityInput {
+    pub name: String,
+}
+
+/// Crée une demande à partir de la capacité d'achat (R-CRE-36).
+#[utoipa::path(
+    post, operation_id = "applicationFromCapacity", path = "/purchase-capacity/application", tag = "credit",
+    request_body = FromCapacityInput,
+    responses((status = 200, body = ApplicationView), (status = 422, body = Problem))
+)]
+pub async fn application_from_capacity(
+    State(state): State<AppState>,
+    Json(input): Json<FromCapacityInput>,
+) -> AppResult<Json<ApplicationView>> {
+    Ok(Json(credit::application_from_capacity(&state.db, &input.name, state.clock.today()).await?))
 }

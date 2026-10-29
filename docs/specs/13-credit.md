@@ -241,10 +241,10 @@ prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000
 ### CRE-07 — Capacité d'achat
 
 - Revenus 2 916,67 €, prêt auto 230 €, taux visé 35 % : mensualité maximale 1 020,83 − 230 = 790,83 €. À 3 %
-  sur 20 ans sans assurance ni frais, le capital empruntable est d'environ 142 600 €.
+  sur 20 ans sans assurance ni frais, le capital empruntable est de 142 596 €.
 - Épargne de précaution 60 000 €, dépenses moyennes 2 000 € : réserve de 6 mois 12 000 €, apport possible
-  48 000 €. Budget environ 190 600 € ; dans l'ancien, prix maximal environ 177 300 € (177 300 + 13 298 de
-  notaire ≤ 190 600).
+  48 000 €. Budget 142 596 + 48 000 = 190 596 € ; dans l'ancien, prix maximal 177 200 € (177 200 + 13 290 de
+  notaire ≤ 190 596 ; à 177 300 €, 177 300 + 13 298 le dépasse).
 - Avec une hausse des salaires de 2 % par an et une capacité d'épargne de 600 € par mois, le prix maximal de
   l'an prochain est plus élevé : revenus et épargne mobilisable ont augmenté.
 - L'épargne restante est la réserve, 12 000 € soit 6 mois de dépenses ; la capacité d'épargne passe de 600 € à
