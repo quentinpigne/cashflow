@@ -34,7 +34,7 @@ test('E1, E7 : remboursement attendu, puis lié depuis l’entrée (TRX-12, R-TR
   });
   const { id } = await created.json();
   await page.goto(`/transactions/${id}`);
-  await page.getByRole('button', { name: 'Rembourse une dépense…' }).click();
+  await page.getByRole('button', { name: 'Lier une dépense' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.locator('.row').first()).toContainText('CABINET DENTAIRE');
   await expect(dialog.locator('.row').first()).toContainText('63,00 € attendus');
@@ -43,7 +43,9 @@ test('E1, E7 : remboursement attendu, puis lié depuis l’entrée (TRX-12, R-TR
   if (SHOTS) await dialog.screenshot({ path: `${SHOTS}/dialog.png` });
   await dialog.getByRole('button', { name: 'Ventiler' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('app-refund-panel')).toContainText(/63,00\s€ de CABINET DENTAIRE/);
+  await expect(page.locator('app-refund-panel')).toContainText(
+    /CABINET DENTAIRE · 8 oct\., −90,00\s€\s*63,00\s€/,
+  );
   if (SHOTS)
     await page.locator('app-refund-panel').screenshot({ path: `${SHOTS}/income-panel.png` });
 

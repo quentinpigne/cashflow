@@ -219,7 +219,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 
 ### TRX-12 — Remboursements de frais
 
-- Sur la fiche d'une entrée d'argent (E7) : « Rembourse une dépense… » liste les dépenses proposées (R-TRX-54),
+- Sur la fiche d'une entrée d'argent (E7) : « Lier une dépense » liste les dépenses proposées (R-TRX-54),
   avec leur reste à recevoir. On en coche une ou plusieurs et on ajuste le montant de chacune ; l'entrée est
   ventilée en conséquence, ce qui n'est affecté à aucune dépense garde sa ventilation d'avant.
 - Sur la fiche d'une dépense : le champ « Remboursement attendu », le remboursé (« 17,50 € remboursés sur

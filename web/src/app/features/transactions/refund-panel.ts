@@ -21,6 +21,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -68,7 +69,7 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
   };
 }
 
-/** « Rembourse une dépense… » : les dépenses proposées pour une entrée d'argent (R-TRX-54). */
+/** « Lier une dépense » : les dépenses proposées pour une entrée d'argent (R-TRX-54). */
 @Component({
   selector: 'app-refund-dialog',
   imports: [
@@ -216,7 +217,7 @@ export class RefundDialog {
 
 /**
  * Remboursements de frais d'une transaction (TRX-12) : remboursement attendu et reçus pour une dépense ;
- * dépenses remboursées et « Rembourse une dépense… » pour une entrée d'argent.
+ * dépenses remboursées et « Lier une dépense » pour une entrée d'argent.
  */
 @Component({
   selector: 'app-refund-panel',
@@ -227,6 +228,7 @@ export class RefundDialog {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatTooltipModule,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -234,69 +236,82 @@ export class RefundDialog {
   template: `
     @let t = transaction();
     @if (t.amount_minor < 0) {
-      <div class="refund card">
-        <strong>Remboursement</strong>
-        <div class="expected">
-          <mat-form-field subscriptSizing="dynamic">
-            <mat-label>Remboursement attendu</mat-label>
-            <input
-              matInput
-              inputmode="decimal"
-              [ngModel]="expected()"
-              (ngModelChange)="expected.set($event)"
-              (keydown.enter)="saveExpected(t)"
-              (blur)="saveExpected(t)"
-            />
-            <span matTextSuffix>€</span>
-          </mat-form-field>
-          @if (t.refund.expected_minor) {
-            <button mat-button type="button" (click)="setExpected(t, null)">Ne viendra pas</button>
-          }
-        </div>
+      <mat-form-field>
+        <mat-label>Remboursement attendu</mat-label>
+        <input
+          matInput
+          inputmode="decimal"
+          [ngModel]="expected()"
+          (ngModelChange)="expected.set($event)"
+          (keydown.enter)="saveExpected(t)"
+          (blur)="saveExpected(t)"
+        />
+        <span matTextSuffix>€</span>
+        @if (t.refund.expected_minor) {
+          <button
+            matIconSuffix
+            mat-icon-button
+            type="button"
+            aria-label="Ne viendra pas"
+            matTooltip="Ne viendra pas"
+            (click)="setExpected(t, null)"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
         @if (t.refund.refunded_minor > 0 || t.refund.expected_minor) {
-          <p>
+          <mat-hint>
             {{ t.refund.refunded_minor | money: t.currency }} remboursés sur
             {{ abs(t.amount_minor) | money: t.currency }}
             @if (t.refund.pending_minor > 0) {
               · <strong>{{ t.refund.pending_minor | money: t.currency }} à recevoir</strong>
             }
-          </p>
+          </mat-hint>
         }
-        @for (r of t.refund.received; track r.split_id) {
-          <div class="link">
-            <mat-icon>undo</mat-icon>
-            <a [routerLink]="['/transactions', r.transaction_id]">{{ r.label }}</a>
-            <span class="muted">{{ r.date | frDate: 'short' }}</span>
-            <span class="amount">{{ r.amount_minor | money: t.currency }}</span>
-          </div>
-        }
-      </div>
+      </mat-form-field>
+      @if (t.refund.received.length > 0) {
+        <div class="card">
+          <div class="head"><strong>Remboursée par</strong></div>
+          @for (r of t.refund.received; track r.split_id) {
+            <div class="row">
+              <span
+                ><a [routerLink]="['/transactions', r.transaction_id]">{{ r.label }}</a>
+                <span class="muted"> · {{ r.date | frDate: 'short' }}</span></span
+              >
+              <span class="amount">{{ r.amount_minor | money: t.currency }}</span>
+            </div>
+          }
+        </div>
+      }
     } @else {
-      <div class="refund card">
+      <div class="card">
         <div class="head">
-          <strong>Remboursement de frais</strong>
+          <strong>Remboursements</strong>
           <button mat-button type="button" [disabled]="available() <= 0" (click)="link(t)">
-            <mat-icon>undo</mat-icon>Rembourse une dépense…
+            Lier une dépense
           </button>
         </div>
         @for (r of t.refund.refunds; track r.split_id) {
-          <div class="link">
-            <mat-icon>undo</mat-icon>
-            <span>
-              {{ refundedAmount(r.split_id) | money: t.currency }} de
-              <a [routerLink]="['/transactions', r.transaction_id]">{{ r.label }}</a
-              >&nbsp;<span class="muted"
-                >({{ r.date | frDate: 'short' }}, {{ r.amount_minor | money: t.currency }})</span
-              >
-            </span>
-            <button
-              mat-icon-button
-              type="button"
-              [attr.aria-label]="'Retirer le lien avec ' + r.label"
-              (click)="unlink(t, r.split_id)"
+          <div class="row">
+            <span
+              ><a [routerLink]="['/transactions', r.transaction_id]">{{ r.label }}</a>
+              <span class="muted">
+                · {{ r.date | frDate: 'short' }}, {{ r.amount_minor | money: t.currency }}</span
+              ></span
             >
-              <mat-icon>link_off</mat-icon>
-            </button>
+            <span class="end">
+              <span class="amount">{{ refundedAmount(r.split_id) | money: t.currency }}</span>
+              <button
+                mat-icon-button
+                type="button"
+                class="compact"
+                [attr.aria-label]="'Retirer le lien avec ' + r.label"
+                matTooltip="Retirer le lien"
+                (click)="unlink(t, r.split_id)"
+              >
+                <mat-icon>link_off</mat-icon>
+              </button>
+            </span>
           </div>
         } @empty {
           <p class="muted">N'est liée à aucune dépense.</p>
@@ -308,31 +323,48 @@ export class RefundDialog {
     }
   `,
   styles: `
-    .refund {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    /* Les champs et encadrés prennent place dans le formulaire de la fiche, avec son espacement. */
+    :host {
+      display: contents;
     }
-    .head,
-    .expected {
+    /* Comme l'encadré « Ventilation » de la fiche. */
+    .head {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
-    }
-    .link {
-      display: flex;
       align-items: center;
       gap: 0.5rem;
+      min-height: 2.5rem;
 
-      .amount,
       button {
-        margin-left: auto;
+        white-space: nowrap;
+      }
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      min-height: 2.25rem;
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+    .end {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+    .compact {
+      --mat-icon-button-state-layer-size: 2rem;
+      padding: 0.25rem;
+
+      mat-icon {
+        font-size: 1.25rem;
+        width: 1.25rem;
+        height: 1.25rem;
       }
     }
     p {
-      margin: 0;
+      margin: 0.375rem 0 0;
     }
     .error {
       color: var(--mat-sys-error);
