@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM lender_request WHERE id = ? AND application_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "5f7f4acd2a6c4934a0770b9e940d4ad43bf74537a98440a1285a6e78f3cc2abc"
+}

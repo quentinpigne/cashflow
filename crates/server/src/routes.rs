@@ -5,6 +5,7 @@ mod accounts;
 mod assets;
 mod auth;
 mod budgeting;
+mod credit;
 mod documents;
 mod import;
 mod ledger;
@@ -46,6 +47,7 @@ use crate::state::AppState;
         (name = "assets", description = "Biens (spec 09)"),
         (name = "loans", description = "Prêts : suivi, tableau d'amortissement, mensualités (spec 09)"),
         (name = "salaries", description = "Salaires : emplois, rémunérations, primes (spec 10)"),
+        (name = "credit", description = "Simulations et demandes de crédit (spec 13)"),
         (name = "documents", description = "Bibliothèque de documents : envoi, rattachements, recherche (spec 12)"),
         (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
         (name = "projections", description = "Récurrences, scénarios et projections (spec 02, spec 07)"),
@@ -69,6 +71,7 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .merge(assets::router())
         .merge(salaries::router())
         .merge(documents::router())
+        .merge(credit::router())
         .merge(system::protected())
 }
 

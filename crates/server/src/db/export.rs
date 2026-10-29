@@ -49,6 +49,10 @@ pub const TABLES: &[&str] = &[
     "budget_override",
     "notification",
     "document_link",
+    "loan_application",
+    "loan_simulation",
+    "lender_request",
+    "loan_application_piece",
 ];
 
 async fn columns(conn: &mut SqliteConnection, table: &str) -> anyhow::Result<Vec<String>> {

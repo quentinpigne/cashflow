@@ -6,6 +6,7 @@ pub mod assets;
 pub mod auth;
 pub mod budgets;
 pub mod categories;
+pub mod credit;
 pub mod dashboard;
 pub mod documents;
 pub mod imports;

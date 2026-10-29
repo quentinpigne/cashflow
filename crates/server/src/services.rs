@@ -8,6 +8,7 @@ pub mod auth;
 pub mod backup;
 pub mod budgets;
 pub mod categories;
+pub mod credit;
 pub mod dashboard;
 pub mod demo;
 pub mod documents;
@@ -66,6 +67,8 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
 
 #[cfg(test)]
 mod budget_tests;
+#[cfg(test)]
+mod credit_tests;
 #[cfg(test)]
 mod import_tests;
 #[cfg(test)]

@@ -17,5 +17,6 @@ export { SystemService } from './services/system.service';
 export { PayeesService } from './services/payees.service';
 export { ImportsService } from './services/imports.service';
 export { InstitutionsService } from './services/institutions.service';
+export { CreditService } from './services/credit.service';
 export { LoansService } from './services/loans.service';
 export { RulesService } from './services/rules.service';

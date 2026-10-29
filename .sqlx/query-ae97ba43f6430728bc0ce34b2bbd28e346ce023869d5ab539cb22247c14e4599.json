@@ -1,0 +1,194 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, kind, principal, annual_rate, duration_months, insurance_mode, insurance_amount,\n                insurance_rate, fees, guarantee_fees, institution_id, application_id, loan_id, note\n         FROM loan_simulation ORDER BY created_at DESC, id DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "principal",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "principal"
+          }
+        }
+      },
+      {
+        "name": "annual_rate",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "annual_rate"
+          }
+        }
+      },
+      {
+        "name": "duration_months",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "duration_months"
+          }
+        }
+      },
+      {
+        "name": "insurance_mode",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "insurance_mode"
+          }
+        }
+      },
+      {
+        "name": "insurance_amount",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "insurance_amount"
+          }
+        }
+      },
+      {
+        "name": "insurance_rate",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "insurance_rate"
+          }
+        }
+      },
+      {
+        "name": "fees",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "fees"
+          }
+        }
+      },
+      {
+        "name": "guarantee_fees",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "guarantee_fees"
+          }
+        }
+      },
+      {
+        "name": "institution_id",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "institution_id"
+          }
+        }
+      },
+      {
+        "name": "application_id",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "application_id"
+          }
+        }
+      },
+      {
+        "name": "loan_id",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "loan_id"
+          }
+        }
+      },
+      {
+        "name": "note",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "loan_simulation",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "ae97ba43f6430728bc0ce34b2bbd28e346ce023869d5ab539cb22247c14e4599"
+}

@@ -692,7 +692,65 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
             receipt_for = Some(spend(db, checking, date, amount, label, None).await?);
         }
     }
-    library(db, data, loan, receipt_for, today).await
+    library(db, data, loan, receipt_for, today).await?;
+    credit(db, today).await
+}
+
+/// Une demande de crédit en cours (spec 13) : achat d'une maison, deux simulations, une démarche envoyée.
+async fn credit(db: &Db, today: Date) -> anyhow::Result<()> {
+    use super::credit::{ApplicationInput, LenderRequestInput, SimulationInput};
+    use cashflow_domain::credit::{LenderRequestStatus, ProjectKind};
+    let err = |e: crate::error::AppError| anyhow::anyhow!("{e}");
+    let input = ApplicationInput {
+        name: "Maison Annecy".into(),
+        project_kind: ProjectKind::ExistingHome,
+        asset_id: None,
+        price_minor: 42_000_000,
+        notary_fees_minor: None,
+        works_minor: 2_000_000,
+        other_costs_minor: 0,
+        down_payment_minor: 6_000_000,
+        other_income_minor: 0,
+        other_charges_minor: 0,
+        co_borrower_name: Some("Camille".into()),
+        co_borrower_income_minor: 310_000,
+        co_borrower_charges_minor: 0,
+        excluded_loan_ids: vec![],
+        selected_simulation_id: None,
+        status: None,
+        note: None,
+    };
+    let application = super::credit::save_application(db, None, &input, today).await.map_err(err)?;
+    let simulation = |name: &str, months: u32, rate_ppm: i64| SimulationInput {
+        name: name.into(),
+        kind: LoanKind::Mortgage,
+        principal_minor: application.to_borrow_minor,
+        annual_rate_ppm: rate_ppm,
+        duration_months: months,
+        insurance: Insurance::RateOnPrincipal { rate_ppm: 3_000 },
+        fees_minor: 100_000,
+        guarantee_fees_minor: 350_000,
+        institution_id: None,
+        application_id: Some(application.id),
+        note: None,
+    };
+    let selected = super::credit::save_simulation(db, None, &simulation("25 ans à 3,4 %", 300, 34_000), today)
+        .await
+        .map_err(err)?;
+    super::credit::save_simulation(db, None, &simulation("20 ans à 3,2 %", 240, 32_000), today).await.map_err(err)?;
+    let input = ApplicationInput { selected_simulation_id: Some(selected.id), ..input };
+    super::credit::save_application(db, Some(application.id), &input, today).await.map_err(err)?;
+    let request = LenderRequestInput {
+        institution_id: None,
+        lender_name: Some("Courtier Alpes Crédit".into()),
+        status: LenderRequestStatus::Sent,
+        sent_on: today.checked_sub_days(Days::new(5)).unwrap_or(today),
+        answered_on: None,
+        simulation_id: None,
+        note: None,
+    };
+    super::credit::save_lender_request(db, application.id, None, &request, today).await.map_err(err)?;
+    Ok(())
 }
 
 /// Bibliothèque de documents (spec 12) : un justificatif, l'offre du prêt, un contrat sans rattachement et un

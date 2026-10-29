@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO loan_application_piece (application_id, piece, document_id, not_required)\n         VALUES (?, ?, ?, 0)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "34f9878d486b251981ab75c4dd55b62f359c860fcb8e3186aaaff2c4f1872adc"
+}

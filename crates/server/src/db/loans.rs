@@ -41,7 +41,7 @@ impl LoanRow {
     }
 }
 
-fn insurance_from_db(mode: &str, amount: Option<i64>, rate: Option<i64>) -> anyhow::Result<Insurance> {
+pub fn insurance_from_db(mode: &str, amount: Option<i64>, rate: Option<i64>) -> anyhow::Result<Insurance> {
     Ok(match (mode, amount, rate) {
         ("NONE", _, _) => Insurance::None,
         ("FIXED", Some(amount_minor), _) => Insurance::Fixed { amount_minor },

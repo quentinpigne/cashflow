@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM loan_simulation WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "daee7afe95545fb37c1e8f5e01c2b387bca3290bc4167b0f1de6ef6966168bb3"
+}

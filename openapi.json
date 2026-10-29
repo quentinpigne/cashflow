@@ -3985,6 +3985,1045 @@
         }
       }
     },
+    "/api/v1/loan-applications": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "listLoanApplications",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "createLoanApplication",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Fiche d'une demande : plan, capacité, simulations, pièces, démarches (CRE-04 à CRE-06).",
+        "operationId": "getLoanApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "updateLoanApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Supprime une demande ; ses simulations restent (R-CRE-23).",
+        "operationId": "deleteLoanApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/export": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Archive ZIP du dossier : les pièces fournies et la synthèse (R-CRE-19).",
+        "operationId": "exportLoanApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archive ZIP du dossier",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/lender-requests": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "createLenderRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LenderRequestInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/lender-requests/{request_id}": {
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "updateLenderRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LenderRequestInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "deleteLenderRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/lender-requests/{request_id}/accept": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Accepte l'offre d'une démarche (R-CRE-22).",
+        "operationId": "acceptOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/lender-requests/{request_id}/offer": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Enregistre l'offre reçue d'une démarche, comme une simulation de la demande (R-CRE-21).",
+        "operationId": "recordOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LenderRequestId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/pieces/{piece}/documents": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Attribue un document à une pièce (R-CRE-18).",
+        "operationId": "assignPiece",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "piece",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Piece"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/pieces/{piece}/documents/{document_id}": {
+      "delete": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "unassignPiece",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "piece",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Piece"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/pieces/{piece}/required": {
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Marque une pièce non requise, ou de nouveau requise (R-CRE-18).",
+        "operationId": "setPieceRequired",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          },
+          {
+            "name": "piece",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Piece"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequiredInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-applications/{id}/summary": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Synthèse HTML de la demande (R-CRE-19).",
+        "operationId": "loanApplicationSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Synthèse HTML",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-simulations": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Simulations enregistrées, les plus récentes d'abord (CRE-01).",
+        "operationId": "listLoanSimulations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimulationView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "createLoanSimulation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-simulations/compute": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Calcule une simulation sans l'enregistrer, ou cherche son capital ou sa durée (CRE-01, CRE-02).",
+        "operationId": "computeLoanSimulation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComputeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComputeResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-simulations/{id}": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "getLoanSimulation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanSimulationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "updateLoanSimulation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanSimulationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Supprime une simulation ; démarches et demande perdent le lien (R-CRE-23).",
+        "operationId": "deleteLoanSimulation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanSimulationId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-simulations/{id}/loan": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Transforme une simulation en prêt (CRE-03, R-CRE-7).",
+        "operationId": "convertLoanSimulation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanSimulationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-simulations/{id}/schedule": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Tableau d'amortissement d'une simulation (R-CRE-2).",
+        "operationId": "loanSimulationSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanSimulationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstallmentView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/loans": {
       "get": {
         "tags": [
@@ -7964,6 +9003,311 @@
           }
         }
       },
+      "ApplicationInput": {
+        "type": "object",
+        "description": "Demande de crédit saisie (R-CRE-10, R-CRE-11, R-CRE-13, R-CRE-14, R-CRE-16).",
+        "required": [
+          "name",
+          "project_kind",
+          "price_minor"
+        ],
+        "properties": {
+          "asset_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssetId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "co_borrower_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "down_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "excluded_loan_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "notary_fees_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Absent : estimés (R-CRE-12)."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "other_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_costs_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          },
+          "selected_simulation_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanSimulationId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus",
+                "description": "Absent : inchangé (`PREPARING` à la création)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "works_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "description": "Statut d'une demande de crédit (R-CRE-20).",
+        "enum": [
+          "PREPARING",
+          "SUBMITTED",
+          "ACCEPTED",
+          "ABANDONED"
+        ]
+      },
+      "ApplicationSummary": {
+        "type": "object",
+        "description": "Une demande dans la liste (E38).",
+        "required": [
+          "id",
+          "name",
+          "project_kind",
+          "status",
+          "to_borrow_minor",
+          "missing_pieces"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/LoanApplicationId"
+          },
+          "missing_pieces": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "to_borrow_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApplicationView": {
+        "type": "object",
+        "description": "Fiche d'une demande (E39).",
+        "required": [
+          "id",
+          "name",
+          "project_kind",
+          "status",
+          "price_minor",
+          "notary_fees_minor",
+          "estimated_notary_fees_minor",
+          "works_minor",
+          "other_costs_minor",
+          "down_payment_minor",
+          "project_cost_minor",
+          "to_borrow_minor",
+          "other_income_minor",
+          "other_charges_minor",
+          "co_borrower_income_minor",
+          "co_borrower_charges_minor",
+          "excluded_loan_ids",
+          "capacity",
+          "simulations",
+          "pieces",
+          "lender_requests"
+        ],
+        "properties": {
+          "asset_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AssetId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "asset_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/CapacityView"
+          },
+          "co_borrower_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "down_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "estimated_notary_fees_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Estimation des frais de notaire pour ce type de projet et ce prix (R-CRE-12)."
+          },
+          "excluded_loan_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          },
+          "id": {
+            "$ref": "#/components/schemas/LoanApplicationId"
+          },
+          "lender_requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LenderRequestView"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "notary_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "other_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_costs_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pieces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PieceView"
+            }
+          },
+          "price_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_cost_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          },
+          "selected_simulation_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanSimulationId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "simulations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulationView"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "to_borrow_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "works_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ApplyInput": {
         "type": "object",
         "required": [
@@ -8216,6 +9560,17 @@
               "$ref": "#/components/schemas/AssetValuationView"
             },
             "description": "Estimations, la plus récente d'abord."
+          }
+        }
+      },
+      "AssignInput": {
+        "type": "object",
+        "required": [
+          "document_id"
+        ],
+        "properties": {
+          "document_id": {
+            "$ref": "#/components/schemas/DocumentId"
           }
         }
       },
@@ -9327,6 +10682,99 @@
           }
         }
       },
+      "CapacityView": {
+        "type": "object",
+        "description": "Capacité d'emprunt (R-CRE-13 à R-CRE-15).",
+        "required": [
+          "employments",
+          "loans",
+          "income_minor",
+          "charges_minor",
+          "remaining_income_minor",
+          "max_payment_minor",
+          "savings_minor",
+          "savings_after_minor",
+          "debt_ratio_exceeded",
+          "duration_exceeded",
+          "max_debt_ratio_ppm",
+          "max_duration_months"
+        ],
+        "properties": {
+          "borrowing_capacity_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "debt_ratio_exceeded": {
+            "type": "boolean"
+          },
+          "debt_ratio_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "duration_exceeded": {
+            "type": "boolean"
+          },
+          "employments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncomeLine"
+            }
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeLine"
+            }
+          },
+          "max_debt_ratio_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "max_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payment_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Mensualité de la simulation retenue, assurance comprise."
+          },
+          "remaining_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_after_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "Capitalization": {
         "type": "string",
         "description": "Rythme de capitalisation des intérêts (spec 06).",
@@ -9771,6 +11219,35 @@
           }
         }
       },
+      "ChargeLine": {
+        "type": "object",
+        "description": "Échéance d'un prêt en cours (R-CRE-14).",
+        "required": [
+          "loan_id",
+          "name",
+          "excluded"
+        ],
+        "properties": {
+          "excluded": {
+            "type": "boolean",
+            "description": "Remboursé par le nouveau crédit : hors des charges."
+          },
+          "loan_id": {
+            "$ref": "#/components/schemas/LoanId"
+          },
+          "monthly_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Échéance totale ; absente en suivi simple."
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "Checkpoint": {
         "type": "object",
         "required": [
@@ -9954,6 +11431,94 @@
           "transfers": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "ComputeInput": {
+        "type": "object",
+        "description": "Calcul du simulateur, sans rien enregistrer (E36).",
+        "required": [
+          "goal",
+          "kind",
+          "annual_rate_ppm",
+          "insurance"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_months": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Requise sauf pour chercher la durée.",
+            "minimum": 0
+          },
+          "fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "goal": {
+            "$ref": "#/components/schemas/SimulationGoal"
+          },
+          "guarantee_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanKind"
+          },
+          "principal_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Requis sauf pour chercher le capital."
+          },
+          "target_payment_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Mensualité visée, assurance comprise : requise pour chercher le capital ou la durée."
+          }
+        }
+      },
+      "ComputeResult": {
+        "type": "object",
+        "description": "Résultat du simulateur : le capital et la durée retenus, le coût et le tableau.",
+        "required": [
+          "principal_minor",
+          "duration_months",
+          "result",
+          "installments"
+        ],
+        "properties": {
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "installments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallmentView"
+            }
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "$ref": "#/components/schemas/SimulationResult"
           }
         }
       },
@@ -11306,6 +12871,27 @@
         "type": "string",
         "format": "uuid"
       },
+      "IncomeLine": {
+        "type": "object",
+        "description": "Revenu d'un emploi en cours (R-CRE-13).",
+        "required": [
+          "employment_id",
+          "employer",
+          "monthly_minor"
+        ],
+        "properties": {
+          "employer": {
+            "type": "string"
+          },
+          "employment_id": {
+            "$ref": "#/components/schemas/EmploymentId"
+          },
+          "monthly_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "InstallmentView": {
         "type": "object",
         "required": [
@@ -11688,6 +13274,143 @@
           }
         }
       },
+      "LenderRequestId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "LenderRequestInput": {
+        "type": "object",
+        "description": "Démarche saisie (R-CRE-21).",
+        "required": [
+          "status",
+          "sent_on"
+        ],
+        "properties": {
+          "answered_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lender_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sent_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "simulation_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanSimulationId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LenderRequestStatus"
+          }
+        }
+      },
+      "LenderRequestStatus": {
+        "type": "string",
+        "description": "Statut d'une démarche auprès d'un établissement (R-CRE-21).",
+        "enum": [
+          "SENT",
+          "OFFER",
+          "REFUSED",
+          "ACCEPTED",
+          "WITHDRAWN"
+        ]
+      },
+      "LenderRequestView": {
+        "type": "object",
+        "description": "Une démarche (R-CRE-21).",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "sent_on"
+        ],
+        "properties": {
+          "answered_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "id": {
+            "$ref": "#/components/schemas/LenderRequestId"
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lender_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom de l'établissement, sinon le nom libre."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sent_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "simulation_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanSimulationId",
+                "description": "L'offre reçue."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LenderRequestStatus"
+          }
+        }
+      },
       "LineReviewInput": {
         "type": "object",
         "description": "État complet de revue d'une ligne, envoyé par l'écran de revue (IMP-04).",
@@ -11849,6 +13572,21 @@
           "name": {
             "type": "string",
             "description": "Nom du compte, de l'employeur, du tiers… ; libellé d'une transaction."
+          }
+        }
+      },
+      "LoanApplicationId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "LoanCreated": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/LoanId"
           }
         }
       },
@@ -12195,6 +13933,10 @@
             "format": "int64"
           }
         }
+      },
+      "LoanSimulationId": {
+        "type": "string",
+        "format": "uuid"
       },
       "LoanSummary": {
         "type": "object",
@@ -13893,6 +15635,92 @@
           "YEARLY"
         ]
       },
+      "Piece": {
+        "type": "string",
+        "description": "Une pièce du catalogue (R-CRE-17).",
+        "enum": [
+          "IDENTITY",
+          "PROOF_OF_ADDRESS",
+          "PAYSLIPS",
+          "EMPLOYMENT_CONTRACT",
+          "TAX_NOTICES",
+          "BANK_STATEMENTS",
+          "SAVINGS_STATEMENT",
+          "LOAN_DOCUMENTS",
+          "SALE_AGREEMENT",
+          "QUOTES",
+          "CO_BORROWER_IDENTITY",
+          "CO_BORROWER_PAYSLIPS",
+          "CO_BORROWER_CONTRACT"
+        ]
+      },
+      "PieceDocument": {
+        "type": "object",
+        "description": "Document d'une pièce (R-CRE-18).",
+        "required": [
+          "id",
+          "title",
+          "file_name",
+          "assigned"
+        ],
+        "properties": {
+          "assigned": {
+            "type": "boolean",
+            "description": "Attribué à la main ; sinon trouvé dans la bibliothèque."
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/DocumentId"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "PieceStatus": {
+        "type": "string",
+        "description": "État d'une pièce (R-CRE-18).",
+        "enum": [
+          "PROVIDED",
+          "INCOMPLETE",
+          "MISSING",
+          "NOT_REQUIRED"
+        ]
+      },
+      "PieceView": {
+        "type": "object",
+        "description": "Une pièce à fournir et son état (R-CRE-17, R-CRE-18).",
+        "required": [
+          "piece",
+          "label",
+          "expected",
+          "status",
+          "documents"
+        ],
+        "properties": {
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PieceDocument"
+            }
+          },
+          "expected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string"
+          },
+          "piece": {
+            "$ref": "#/components/schemas/Piece"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PieceStatus"
+          }
+        }
+      },
       "PlannedPay": {
         "type": "object",
         "description": "Une rémunération ou une prime prévue (R-SAL-4).",
@@ -14265,6 +16093,17 @@
             "format": "date"
           }
         }
+      },
+      "ProjectKind": {
+        "type": "string",
+        "description": "Type de projet d'une demande (R-CRE-10).",
+        "enum": [
+          "EXISTING_HOME",
+          "NEW_HOME",
+          "WORKS",
+          "VEHICLE",
+          "OTHER"
+        ]
       },
       "ProjectSplit": {
         "type": "object",
@@ -15002,6 +16841,17 @@
           "YEAR"
         ]
       },
+      "RequiredInput": {
+        "type": "object",
+        "required": [
+          "not_required"
+        ],
+        "properties": {
+          "not_required": {
+            "type": "boolean"
+          }
+        }
+      },
       "RowFilter": {
         "type": "object",
         "description": "Ligne ignorée si la colonne correspond au motif (soldes, totaux…).",
@@ -15640,6 +17490,234 @@
           "debit",
           "credit"
         ]
+      },
+      "SimulationGoal": {
+        "type": "string",
+        "description": "Ce que cherche le simulateur (R-CRE-5).",
+        "enum": [
+          "PAYMENT",
+          "PRINCIPAL",
+          "DURATION"
+        ]
+      },
+      "SimulationInput": {
+        "type": "object",
+        "description": "Simulation enregistrée (R-CRE-1).",
+        "required": [
+          "name",
+          "kind",
+          "principal_minor",
+          "annual_rate_ppm",
+          "duration_months",
+          "insurance"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "application_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanApplicationId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guarantee_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SimulationResult": {
+        "type": "object",
+        "description": "Résultat d'une simulation (R-CRE-2 à R-CRE-4).",
+        "required": [
+          "payment_minor",
+          "insurance_minor",
+          "total_payment_minor",
+          "total_interest_minor",
+          "total_insurance_minor",
+          "total_cost_minor",
+          "apr_ppm"
+        ],
+        "properties": {
+          "apr_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "TAEG en millionièmes (R-CRE-4)."
+          },
+          "insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payment_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Mensualité hors assurance."
+          },
+          "total_cost_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Intérêts + assurance + frais (R-CRE-3)."
+          },
+          "total_insurance_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_interest_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_payment_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Échéance prélevée : mensualité + assurance."
+          }
+        }
+      },
+      "SimulationView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "principal_minor",
+          "annual_rate_ppm",
+          "duration_months",
+          "insurance",
+          "fees_minor",
+          "guarantee_fees_minor",
+          "result"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "application_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanApplicationId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "application_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guarantee_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/LoanSimulationId"
+          },
+          "institution_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InstitutionId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "institution_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanKind"
+          },
+          "loan_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LoanId",
+                "description": "Prêt créé à partir de la simulation (R-CRE-7)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "$ref": "#/components/schemas/SimulationResult"
+          }
+        }
       },
       "Split": {
         "type": "object",
@@ -17121,6 +19199,10 @@
     {
       "name": "salaries",
       "description": "Salaires : emplois, rémunérations, primes (spec 10)"
+    },
+    {
+      "name": "credit",
+      "description": "Simulations et demandes de crédit (spec 13)"
     },
     {
       "name": "documents",

@@ -7,6 +7,7 @@ pub mod budgets;
 pub mod categories;
 pub mod checkpoints;
 pub mod codec;
+pub mod credit;
 pub mod documents;
 pub mod export;
 pub mod imports;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO loan_application (id, name, project_kind, status, asset_id, price, notary_fees, works,\n                                       other_costs, down_payment, other_income, other_charges, co_borrower_name,\n                                       co_borrower_income, co_borrower_charges, excluded_loan_ids,\n                                       selected_simulation_id, note, created_at, updated_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT (id) DO UPDATE SET\n             name = excluded.name, project_kind = excluded.project_kind, status = excluded.status,\n             asset_id = excluded.asset_id, price = excluded.price, notary_fees = excluded.notary_fees,\n             works = excluded.works, other_costs = excluded.other_costs, down_payment = excluded.down_payment,\n             other_income = excluded.other_income, other_charges = excluded.other_charges,\n             co_borrower_name = excluded.co_borrower_name, co_borrower_income = excluded.co_borrower_income,\n             co_borrower_charges = excluded.co_borrower_charges, excluded_loan_ids = excluded.excluded_loan_ids,\n             selected_simulation_id = excluded.selected_simulation_id, note = excluded.note,\n             updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 20
+    },
+    "nullable": []
+  },
+  "hash": "eb3ec1b66b6ba316d6320b9ace93041a5249141b9b66d28e2dfbd21fa819ad63"
+}

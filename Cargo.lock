@@ -509,6 +509,7 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "uuid",
+ "zip",
 ]
 
 [[package]]

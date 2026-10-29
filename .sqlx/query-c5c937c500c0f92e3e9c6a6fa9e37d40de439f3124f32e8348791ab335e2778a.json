@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE loan_application SET selected_simulation_id = NULL WHERE selected_simulation_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c5c937c500c0f92e3e9c6a6fa9e37d40de439f3124f32e8348791ab335e2778a"
+}
