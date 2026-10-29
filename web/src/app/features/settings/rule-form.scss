@@ -25,6 +25,25 @@ h3 {
   }
 }
 
+.existing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+
+  h3 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  > button {
+    align-self: flex-start;
+  }
+}
+
 .error {
   color: var(--mat-sys-error);
 }

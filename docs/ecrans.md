@@ -456,8 +456,10 @@ Graphiques : ECharts (ADR-0009).
 Dans les réglages. Liste par priorité (glisser-déposer), avec nombre d'utilisations, actif / inactif.
 Formulaire : conditions (libellé contient / commence par / égal / motif avec `*`, montant, sens,
 comptes), actions (libellé, catégorie ou ventilation en %, virement vers un compte, note),
-« arrêter ici ». « Aperçu » liste les transactions existantes non catégorisées concernées, qu'on peut
-cocher et catégoriser d'un coup (R-IMP-19).
+« arrêter ici ». Un encadré **Appliquer aux transactions existantes** explique que la règle vaut pour les
+prochains imports et peut traiter les transactions déjà enregistrées ; « Rechercher les transactions » liste
+celles qui ne sont pas catégorisées et que la règle concerne, qu'on peut cocher et catégoriser d'un coup avec
+« Enregistrer et appliquer » (R-IMP-19).
 
 ## E17 — Profils d'import (IMP-02)
 

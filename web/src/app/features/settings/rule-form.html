@@ -158,26 +158,41 @@
     <mat-checkbox [ngModel]="active()" (ngModelChange)="active.set($event)">Active</mat-checkbox>
   </div>
 
-  <h3>
-    Transactions existantes non catégorisées{{ payee() && !transferTo() ? ' ou sans tiers' : '' }}
-  </h3>
-  <button mat-stroked-button (click)="preview()">Aperçu</button>
-  @if (matches(); as list) {
-    @for (m of list; track m.transaction_id) {
-      <mat-checkbox
-        [checked]="chosen().has(m.transaction_id)"
-        (change)="toggle(m.transaction_id, $event.checked)"
-      >
-        {{ m.date | frDate: 'short' }} · {{ m.account_name }} · {{ m.label }} ·
-        {{ m.amount_minor | money }}
-        @if (payee() && !transferTo()) {
-          <span class="muted"> · {{ change(m) }}</span>
-        }
-      </mat-checkbox>
-    } @empty {
-      <p class="muted">Aucune transaction concernée.</p>
+  <section class="existing card">
+    <h3>Appliquer aux transactions existantes</h3>
+    <p class="muted">
+      La règle s'applique aux prochains imports. Elle peut aussi traiter les transactions déjà
+      enregistrées qui ne sont pas catégorisées{{
+        payee() && !transferTo() ? ' ou qui n’ont pas de tiers' : ''
+      }}
+      : les retrouver, puis choisir celles à modifier.
+    </p>
+    <button mat-stroked-button (click)="preview()">
+      <mat-icon>search</mat-icon>Rechercher les transactions
+    </button>
+    @if (matches(); as list) {
+      @if (list.length > 0) {
+        <p>
+          {{ list.length }} transaction(s) concernée(s) : « Enregistrer et appliquer » modifie
+          celles qui sont cochées.
+        </p>
+      }
+      @for (m of list; track m.transaction_id) {
+        <mat-checkbox
+          [checked]="chosen().has(m.transaction_id)"
+          (change)="toggle(m.transaction_id, $event.checked)"
+        >
+          {{ m.date | frDate: 'short' }} · {{ m.account_name }} · {{ m.label }} ·
+          {{ m.amount_minor | money }}
+          @if (payee() && !transferTo()) {
+            <span class="muted"> · {{ change(m) }}</span>
+          }
+        </mat-checkbox>
+      } @empty {
+        <p class="muted">Aucune transaction concernée.</p>
+      }
     }
-  }
+  </section>
   @if (error()) {
     <p class="error" role="alert">{{ error() }}</p>
   }
