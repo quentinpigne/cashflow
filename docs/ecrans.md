@@ -901,24 +901,50 @@ Simulations et demandes de crédit, dans la rubrique **Prêts** (CRE-01 à CRE-0
 
 Ce qui change dans les écrans existants :
 
-- **E27 Prêts** : quatre onglets `[mat-tab-nav-bar]`, **Prêts** (la liste actuelle), **Capacité** (E40),
-  **Simulations** (E36) et **Demandes** (E38), chacun avec son adresse (`/prets`, `/prets/capacite`,
-  `/prets/simulations`, `/prets/demandes`).
+- **E27 Prêts** : trois onglets `[mat-tab-nav-bar]`, **Prêts** (la liste actuelle), **Simuler** (E36) et
+  **Demandes** (E38), chacun avec son adresse (`/prets`, `/prets/simuler`, `/prets/demandes`).
 - **E28 Fiche d'un prêt** : la section Documents propose l'offre de prêt comme type par défaut.
 
-## E36 — Simulations (CRE-01, CRE-02)
+## E36 — Simuler (CRE-01, CRE-02, CRE-07, CRE-08)
 
-- **Simulateur** en tête (`[mat-card]`) : type de prêt ; **ce que je cherche** `[mat-button-toggle-group]` :
+L'onglet du parcours : calculer sa capacité d'achat, optimiser le crédit, préparer une demande. Trois parties,
+dans l'ordre :
+
+**1. Capacité d'achat** (R-CRE-30 à R-CRE-35)
+
+- **Hypothèses** (`[mat-card]`, repliable sur mobile) : type de projet, taux, durée, assurance, frais de
+  dossier et de garantie, taux d'endettement visé, réserve en mois de dépenses ; **comptes mobilisables** (une
+  case et le solde de chaque compte ouvert) ; autres revenus et charges ; co-emprunteur (revenus, charges) ;
+  prêts en cours avec une case « remboursé par ce crédit ». Chaque changement recalcule et est gardé.
+- **Aujourd'hui** : le **prix d'achat maximal** en grand, puis le détail en cascade : revenus, charges,
+  mensualité maximale → capital empruntable ; épargne mobilisable − réserve → apport possible ; budget − frais
+  de notaire estimés → prix. **Effet de l'achat** : épargne restante (et en mois de dépenses), reste à vivre,
+  capacité d'épargne avant → après (en rouge si elle devient négative).
+- **Dans les années à venir** : tableau, une ligne par année (aujourd'hui, puis +1 à +5 ans) : revenus,
+  mensualité maximale, apport possible, prix maximal ; mention « hypothèses du scénario par défaut ». Sur
+  mobile, une carte par année.
+- **Sensibilité** : tableau prix maximal par durée (lignes) et taux (colonnes), la case des hypothèses en gras.
+- **Patrimoine projeté** sur 10 ans `[echarts]` : deux courbes, « sans achat » et « avec l'achat au prix
+  maximal », et la mention de l'approximation (R-CRE-35).
+- Bouton **« Créer une demande »** (R-CRE-36) : enregistre une simulation au capital empruntable, crée la
+  demande et l'ouvre (E39).
+
+**2. Simulateur** (R-CRE-37)
+
+- **Simulateur** (`[mat-card]`), parti des hypothèses de la capacité et du capital empruntable : type de prêt ; **ce que je cherche** `[mat-button-toggle-group]` :
   « La mensualité » (capital et durée saisis), « Le capital » (mensualité visée et durée saisies), « La durée »
   (capital et mensualité visée saisis) ; taux nominal, assurance (aucune, montant mensuel, taux annuel),
   frais de dossier, frais de garantie. Le résultat se recalcule à la saisie : mensualité, assurance, échéance
   totale, coût total (dont intérêts, assurance, frais), TAEG, et le capital ou la durée trouvés.
   « Enregistrer » demande un nom (et, en option, la demande de crédit à laquelle la rattacher).
+**3. Simulations enregistrées**
+
 - **Simulations enregistrées** : liste (nom, capital, durée, taux, mensualité totale, TAEG, coût total ; la
   demande et l'établissement en petit ; « prêt créé » s'il y a lieu). Cases à cocher et « Comparer »
   (E37 en dialogue). Un clic ouvre la simulation dans le simulateur, pour la modifier.
-- Menu ⋮ d'une simulation : Dupliquer, Tableau d'amortissement (dialogue, une année à la fois comme E28),
-  Transformer en prêt, Supprimer.
+- Par simulation, un bouton **« Préparer une demande »** (R-CRE-36), qui crée la demande et l'ouvre (E39) ;
+  menu ⋮ : Modifier, Dupliquer, Tableau d'amortissement (dialogue, une année à la fois comme E28), Transformer
+  en prêt, Supprimer.
 - **Transformer en prêt** : le formulaire de prêt (E28) prérempli (type, nom, capital, taux, durée, assurance)
   ; on saisit le déblocage, la première échéance, le compte payeur et le bien financé.
 
@@ -930,7 +956,8 @@ meilleure valeur de chaque ligne en gras, et l'écart de coût total à la moins
 
 ## E38 — Demandes de crédit (CRE-04 à CRE-06)
 
-Liste : nom, type de projet, montant à emprunter, statut (pastille), nombre de pièces manquantes. « Nouvelle
+Liste : nom, type de projet, montant à emprunter, statut (pastille), nombre de pièces manquantes, nombre de
+démarches à relancer (R-CRE-26). « Nouvelle
 demande » : nom, type de projet, bien concerné (optionnel), prix ; les frais de notaire sont estimés
 (R-CRE-12).
 
@@ -955,31 +982,34 @@ Sections :
   Actions par pièce : « Attribuer un document » (recherche dans la bibliothèque, ou envoi d'un nouveau
   document, rattaché comme dans une section Documents), retirer une attribution, « Non requise » /
   « Requise ». En tête : « N pièces manquantes ».
-- **Démarches** : une ligne par établissement ou courtier : nom, statut, envoyée le, réponse le, offre (lien
-  vers la simulation). « Nouvelle démarche » (établissement ou nom libre, date d'envoi) ; par ligne : changer le
-  statut, « Enregistrer l'offre » (simulation préremplie avec le montant à emprunter, rattachée à la démarche),
-  « Accepter l'offre » (confirmation, puis proposition de transformer en prêt), Supprimer. « Comparer les
-  offres » ouvre E37 avec les offres reçues.
+- **Démarches** : une ligne par établissement ou courtier : nom, statut, envoyée le, réponse le, prochaine
+  relance (pastille orange « à relancer » quand elle est passée, R-CRE-26), offre (lien vers la simulation).
+  Un clic déplie le **journal** (R-CRE-24) : les échanges datés, avec « Ajouter » (date, type, texte) et, par
+  entrée, ⋮ Modifier, Supprimer. « Nouvelle démarche » (établissement ou nom libre, date d'envoi, prochaine
+  relance proposée à +14 jours) ; par ligne : **« Relancer »** (inscrit la relance, propose la prochaine à +7
+  jours, modifiable), Modifier (statut, dates, prochaine relance), « Enregistrer l'offre » (simulation
+  préremplie avec le montant à emprunter, rattachée à la démarche), « Accepter l'offre » (confirmation, puis
+  l'assistant E41), Supprimer. « Comparer les offres » ouvre E37 avec les offres reçues.
 
 **Synthèse** : la page HTML rendue par le serveur (`/api/v1/loan-applications/{id}/summary`), ouverte dans un
 nouvel onglet et imprimable (PDF par l'impression du navigateur) : projet, plan de financement, revenus et
 charges, capacité, simulation retenue, pièces et leur état ; c'est aussi le `Synthèse.html` de l'archive.
 **Exporter le dossier** : avertit des pièces manquantes, puis télécharge l'archive ZIP (R-CRE-19).
 
-## E40 — Capacité d'achat (CRE-07)
+## E40 — (fusionné dans E36)
 
-- **Hypothèses** (`[mat-card]`, repliable sur mobile) : type de projet, taux, durée, assurance, frais de
-  dossier et de garantie, taux d'endettement visé, réserve en mois de dépenses ; **comptes mobilisables** (une
-  case et le solde de chaque compte ouvert) ; autres revenus et charges ; co-emprunteur (revenus, charges) ;
-  prêts en cours avec une case « remboursé par ce crédit ». Chaque changement recalcule et est gardé.
-- **Aujourd'hui** : le **prix d'achat maximal** en grand, puis le détail en cascade : revenus, charges,
-  mensualité maximale → capital empruntable ; épargne mobilisable − réserve → apport possible ; budget − frais
-  de notaire estimés → prix. **Effet de l'achat** : épargne restante (et en mois de dépenses), reste à vivre,
-  capacité d'épargne avant → après (en rouge si elle devient négative).
-- **Dans les années à venir** : tableau, une ligne par année (aujourd'hui, puis +1 à +5 ans) : revenus,
-  mensualité maximale, apport possible, prix maximal ; mention « hypothèses du scénario par défaut ». Sur
-  mobile, une carte par année.
-- **Sensibilité** : tableau prix maximal par durée (lignes) et taux (colonnes), la case des hypothèses en gras.
-- **Patrimoine projeté** sur 10 ans `[echarts]` : deux courbes, « sans achat » et « avec l'achat au prix
-  maximal », et la mention de l'approximation (R-CRE-35).
-- Bouton **« Créer une demande »** (R-CRE-36) : crée la demande et l'ouvre (E39).
+La capacité d'achat est la première partie de l'onglet Simuler (E36).
+
+## E41 — Assistant d'acceptation (CRE-10, R-CRE-27)
+
+Dialogue en trois étapes `[mat-stepper]` (vertical sur mobile), chacune avec « Passer » :
+
+1. **Bien** : si la demande a un bien, il est rappelé (« Le prêt financera Appartement ») ; sinon formulaire du
+   bien prérempli : nom (celui de la demande), type d'après le projet, prix d'achat (prix du plan de
+   financement), date d'achat (à saisir), compter dans le patrimoine. « Créer le bien ».
+2. **Prêt** : le formulaire de prêt (E28) prérempli depuis l'offre, bien financé = celui de l'étape 1 ; on saisit
+   le déblocage, la première échéance et le compte payeur. « Créer le prêt ».
+3. **Documents** : la liste des documents proposés (R-CRE-27), chacun coché avec sa destination (« → prêt »,
+   « → bien ») ; « Envoyer l'offre de prêt » ajoute un fichier, rattaché au prêt. « Rattacher ».
+
+À la fin, la fiche du prêt s'ouvre.

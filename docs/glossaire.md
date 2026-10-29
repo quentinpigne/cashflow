@@ -139,6 +139,9 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Apport possible | `possible down payment` | Épargne mobilisable − réserve de sécurité (R-CRE-31). |
 | Prix d'achat maximal | `max price` | Plus grand prix dont le prix et les frais de notaire tiennent dans le budget : capital empruntable + apport possible − frais (R-CRE-31). |
 | Démarche | `LenderRequest` | Envoi d'une demande à un établissement ou un courtier, et sa réponse (R-CRE-21). |
+| Journal (d'une démarche) | `LenderRequestEvent` | Échanges datés d'une démarche : envoi, relance, appel, rendez-vous, réponse, note (R-CRE-24). |
+| Relance, prochaine relance | `follow_up_on` | Date à laquelle relancer une démarche sans réponse (R-CRE-25) ; passée, la démarche est « à relancer » (R-CRE-26). |
+| Assistant d'acceptation | — | Après l'acceptation d'une offre, crée le bien, le prêt et range les documents du dossier (R-CRE-27). |
 
 ## Import et rapprochement
 

@@ -68,6 +68,7 @@ erDiagram
     LoanApplication ||--o{ LenderRequest : "démarches"
     LoanApplication ||--o{ LoanApplicationPiece : "pièces attribuées"
     LenderRequest }o--o| LoanSimulation : "offre reçue"
+    LenderRequest ||--o{ LenderRequestEvent : "journal"
     LoanSimulation |o--o| Loan : "transformée en"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
@@ -429,6 +430,16 @@ ligne `not_required` par pièce. Pas de `id` propre ni d'horodatage.
 | `sent_on` | `Date` | requis |
 | `answered_on` | `Date` | optionnel, ≥ `sent_on` |
 | `simulation_id` | `Id` → LoanSimulation | optionnel, `SET NULL` : l'offre reçue (R-CRE-21) |
+| `follow_up_on` | `Date` | optionnel : prochaine relance (R-CRE-25) |
+| `note` | texte | optionnel |
+
+### LenderRequestEvent (échange d'une démarche, R-CRE-24)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `lender_request_id` | `Id` → LenderRequest | requis, suppression en cascade |
+| `date` | `Date` | requis |
+| `kind` | `LenderEventKind` | `SENT` \| `FOLLOW_UP` \| `CALL` \| `MEETING` \| `ANSWER` \| `NOTE` |
 | `note` | texte | optionnel |
 
 ### Réglage de la capacité d'achat
@@ -735,7 +746,7 @@ ferment. Pas exporté, comme les sessions.
 
 | Champ | Type | Contraintes |
 |---|---|---|
-| `kind` | enum | `BUDGET_THRESHOLD`, `RECONCILIATION_GAP`, `MISSED_RECURRENCE`, `INTEREST_DUE`, `BACKUP_FAILED`… |
+| `kind` | enum | `BUDGET_THRESHOLD`, `RECONCILIATION_GAP`, `MISSED_RECURRENCE`, `INTEREST_DUE`, `BACKUP_FAILED`, `LENDER_FOLLOW_UP`… |
 | `title`, `body` | texte | requis |
 | `link` | texte | optionnel : route de l'interface vers l'objet concerné |
 | `dedupe_key` | texte | optionnel, unique ; ex. `budget:<line_id>:2027-03:80` (R-BUD-62) |

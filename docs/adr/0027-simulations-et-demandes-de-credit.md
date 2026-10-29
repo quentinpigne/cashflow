@@ -68,6 +68,12 @@ Options **2**, **4** et **6** (décision du propriétaire, 2026-10-29).
   l'achat se déduit de celui du scénario : seuls les frais, les intérêts et l'assurance du crédit l'abaissent,
   puisque le bien garde son prix (R-BIE-5). Les hypothèses sont gardées dans un réglage JSON
   (`credit.purchase_capacity`), pas dans une table : il n'y en a qu'un jeu.
+- **Parcours** (2026-10-30) : capacité et simulateur sont un seul onglet, « Simuler » ; une demande se prépare
+  depuis une simulation (R-CRE-36). Les démarches ont un **journal** (`lender_request_event`) et une date de
+  prochaine relance ; les relances dues émettent une notification (dédoublonnée par démarche et date) au
+  démarrage, après chaque écriture et chaque jour. L'**acceptation** enchaîne la création du bien, du prêt et le
+  rattachement des documents (R-CRE-27) ; l'interface orchestre ces étapes, chacune étant une opération
+  existante (bien, prêt, rattachement), pour qu'une étape passée ou abandonnée ne défasse pas les précédentes.
 - **Types de documents** (précise la spec 12) : acte de propriété, compromis de vente, certificat
   d'immatriculation, diagnostic, devis, garantie, offre de prêt, tableau d'amortissement, contrat
   d'assurance, pièce d'identité, justificatif de domicile. La migration recrée la table `document`

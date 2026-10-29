@@ -31,8 +31,19 @@ Demande « Achat appartement Grenoble »
   calcule le prix d'achat maximal, aujourd'hui et dans les années à venir, et l'effet de l'achat sur mon
   épargne et mon patrimoine projeté.
 
-Rien de tout cela n'entre dans le patrimoine, les budgets ou les projections : seul le prêt créé à partir
-d'une simulation compte, comme tout prêt (spec 09).
+Le **parcours** d'un achat :
+
+1. je calcule ma **capacité d'achat**, puis j'optimise le crédit avec le **simulateur**, qui part des mêmes
+   hypothèses (onglet **Simuler**) ;
+2. d'une simulation, je **prépare une demande** (R-CRE-36) ;
+3. j'envoie la demande à une ou plusieurs banques : chaque envoi est une **démarche**, que je suis et que je
+   **relance** (R-CRE-24 à R-CRE-26) ;
+4. je fournis les **pièces** demandées (R-CRE-17) ;
+5. quand une banque répond favorablement, j'**accepte son offre** : l'application crée le **bien** et le
+   **prêt**, et y range les documents du dossier (R-CRE-27).
+
+Rien de tout cela n'entre dans le patrimoine, les budgets ou les projections : seuls le bien et le prêt créés à
+l'acceptation comptent, comme tout bien ou prêt (spec 09).
 
 ## Simulations
 
@@ -137,14 +148,43 @@ d'une simulation compte, comme tout prêt (spec 09).
   envoyée et à `ACCEPTED` quand une offre est acceptée ; sinon il se change à la main.
 - **R-CRE-21** — Une **démarche** (`LenderRequest`) est l'envoi de la demande à un établissement ou un
   courtier : l'établissement (R-CPT-2) ou un nom libre, un **statut** (`SENT` envoyée, `OFFER` offre reçue,
-  `REFUSED` refusée, `ACCEPTED` acceptée, `WITHDRAWN` retirée), la date d'envoi, la date de réponse et une
-  note. Une offre reçue s'enregistre comme une **simulation** de la demande, rattachée à la démarche (taux,
-  durée, assurance, frais de l'offre).
+  `REFUSED` refusée, `ACCEPTED` acceptée, `WITHDRAWN` retirée), la date d'envoi, la date de réponse, la date
+  de **prochaine relance** (R-CRE-25) et une note. Une offre reçue s'enregistre comme une **simulation** de la
+  demande, rattachée à la démarche (taux, durée, assurance, frais de l'offre).
 - **R-CRE-22** — Les **offres reçues** se comparent comme des simulations (R-CRE-6). **Accepter** une offre
-  passe sa démarche à `ACCEPTED`, les autres démarches en cours à `WITHDRAWN`, et la demande à `ACCEPTED` ;
-  on propose alors de **transformer** sa simulation en prêt (R-CRE-7), rattaché au bien de la demande.
-- **R-CRE-23** — Supprimer une demande supprime ses démarches et ses attributions de pièces ; ses simulations
-  restent, sans demande. Supprimer une simulation retire le lien des démarches qui la portaient.
+  passe sa démarche à `ACCEPTED`, les autres démarches en cours à `WITHDRAWN`, et la demande à `ACCEPTED`, puis
+  ouvre l'assistant d'acceptation (R-CRE-27).
+- **R-CRE-23** — Supprimer une demande supprime ses démarches, leurs journaux et ses attributions de pièces ; ses
+  simulations restent, sans demande. Supprimer une simulation retire le lien des démarches qui la portaient.
+
+### Suivi et relances
+
+- **R-CRE-24** — Chaque démarche a un **journal** d'échanges (`LenderRequestEvent`) : une date, un type
+  (`SENT` envoi, `FOLLOW_UP` relance, `CALL` appel, `MEETING` rendez-vous, `ANSWER` réponse, `NOTE` note) et un
+  texte facultatif, du plus récent au plus ancien. Créer une démarche y inscrit son envoi ; enregistrer une
+  offre, ou passer la démarche à refusée, une réponse. On ajoute, modifie et supprime les autres entrées à la
+  main.
+- **R-CRE-25** — La **prochaine relance** d'une démarche est une date facultative, proposée à la date d'envoi +
+  14 jours. **Relancer** inscrit une relance au journal, datée du jour, et propose la prochaine relance 7 jours
+  plus tard ; une réponse (offre reçue, refus) l'efface.
+- **R-CRE-26** — Une démarche **à relancer** est une démarche envoyée ou avec une offre reçue dont la prochaine
+  relance est passée ou du jour. Elle est signalée sur la fiche de la demande et dans la liste des demandes, et
+  une **notification** l'annonce une fois par date de relance (centre de notifications, BUD-08), évaluée au
+  démarrage du serveur, après chaque écriture et chaque jour.
+
+### Acceptation
+
+- **R-CRE-27** — L'**assistant d'acceptation**, ouvert après l'acceptation d'une offre (R-CRE-22), en trois
+  étapes qu'on peut passer :
+  1. **Bien** : si la demande n'a pas de bien, il en crée un (R-BIE-1) : nom de la demande, type d'après le
+     projet (bien immobilier pour un achat ou des travaux, véhicule, autre), prix d'achat = prix du plan de
+     financement, date d'achat à saisir ; la demande est rattachée au bien. Si elle en a un, il est repris ;
+  2. **Prêt** : la simulation de l'offre est transformée en prêt (R-CRE-7), financé par le bien ;
+  3. **Documents** : les documents du dossier sont proposés, cochés, pour être rattachés : offre de prêt,
+     tableau d'amortissement et contrat d'assurance au prêt ; compromis de vente, acte de propriété, devis,
+     diagnostics et garanties au bien. Sont proposés les documents de ces types attribués ou trouvés pour les
+     pièces de la demande (R-CRE-18) et ceux de ces types qui ne sont rattachés à rien. On peut aussi y envoyer
+     l'offre de prêt reçue, rattachée d'office au prêt.
 
 ## Capacité d'achat
 
@@ -184,12 +224,17 @@ d'une simulation compte, comme tout prêt (spec 09).
   cumul des intérêts et de l'assurance du crédit. Le bien garde son prix (R-BIE-5) : l'apport et le capital
   remboursé changent de forme sans appauvrir. Approximation affichée comme telle : l'apport ne rapporte plus
   d'intérêts, ce que la courbe n'en retire pas.
-- **R-CRE-36** — **Créer une demande** à partir de la capacité d'achat : une demande (R-CRE-10) de ce type de
-  projet, au prix maximal (modifiable ensuite), avec les frais de notaire estimés, les frais de dossier et de
-  garantie en autres frais, l'**apport nécessaire** (coût du projet − capital empruntable, au plus l'apport
-  possible : le prix arrondi à la centaine laisse parfois un reliquat d'épargne), les autres revenus et charges,
-  le co-emprunteur et les prêts exclus des hypothèses, et une simulation retenue au montant à emprunter, aux
-  conditions des hypothèses.
+- **R-CRE-36** — **Préparer une demande** depuis une simulation enregistrée : une demande (R-CRE-10) du type
+  de projet des hypothèses de la capacité, dont la simulation est retenue (et rattachée à la demande). Son plan
+  de financement : le plus grand prix (R-CRE-31) qui tient dans le capital de la simulation + l'apport
+  possible − les frais de la simulation, ses frais de notaire estimés, les frais de dossier et de garantie en
+  autres frais, l'**apport nécessaire** (coût du projet − capital, au plus l'apport possible : le prix arrondi à
+  la centaine laisse parfois un reliquat d'épargne), et les autres revenus et charges, le co-emprunteur et les
+  prêts exclus des hypothèses. Tout se modifie ensuite. « Créer une demande » depuis la capacité d'achat
+  enregistre d'abord une simulation au capital empruntable, aux conditions des hypothèses.
+- **R-CRE-37** — Le **simulateur** de l'onglet Simuler part des hypothèses de la capacité (taux, durée,
+  assurance, frais) et, en cherchant la mensualité, du capital empruntable ; on les change librement, sans
+  modifier les hypothèses de la capacité.
 
 ## Features
 
@@ -202,6 +247,9 @@ d'une simulation compte, comme tout prêt (spec 09).
 | CRE-05 | V1 | Pièces à fournir reliées à la bibliothèque ; export ZIP et synthèse imprimable |
 | CRE-06 | V1 | Démarches auprès des banques et courtiers, offres reçues et comparées, acceptation |
 | CRE-07 | V1 | Capacité d'achat : prix maximal aujourd'hui et dans les années à venir, effet sur l'épargne et le patrimoine |
+| CRE-08 | V1 | Onglet Simuler : capacité et simulateur réunis ; préparer une demande depuis une simulation |
+| CRE-09 | V1 | Journal des démarches, relances et rappels |
+| CRE-10 | V1 | Acceptation d'une offre : bien, prêt et documents en une fois |
 
 Exemple commun : aujourd'hui 2026-10-29. Emploi en cours à 2 700 € net, 13e mois récurrent de 2 600 € ; un
 prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000 €.
@@ -251,3 +299,17 @@ prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000
   l'an prochain est plus élevé : revenus et épargne mobilisable ont augmenté.
 - L'épargne restante est la réserve, 12 000 € soit 6 mois de dépenses ; la capacité d'épargne passe de 600 € à
   600 − 790,83 = −190,83 € par mois, signalée.
+
+### CRE-09 — Relances
+
+- J'envoie la demande à LCL le 2026-10-20 : le journal note l'envoi, la prochaine relance est proposée au
+  2026-11-03. Le 2026-11-03, la démarche est « à relancer » et une notification l'annonce, une seule fois.
+- Je relance le 2026-11-04 : le journal note la relance ; la prochaine relance passe au 2026-11-11.
+- LCL envoie une offre : le journal note la réponse, la relance est effacée.
+
+### CRE-10 — Acceptation
+
+- J'accepte l'offre LCL de la demande « Maison Annecy » (sans bien) : l'assistant crée le bien « Maison
+  Annecy », bien immobilier à 420 000 €, acheté le 2027-01-15, puis le prêt de l'offre financé par ce bien ; le
+  compromis attribué à la pièce « Compromis de vente » est rattaché au bien, et l'offre de prêt envoyée dans
+  l'assistant au prêt.
