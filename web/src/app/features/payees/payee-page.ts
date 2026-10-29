@@ -18,11 +18,13 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { CategoriesStore, PayeesStore } from '../../shared/stores';
 import { formatAddress, mapLink } from './address';
 import { PayeeActions } from './payee-actions';
+import { DocumentSection } from '../documents/document-section';
 
 /** E32 — Fiche d'un tiers ou d'un groupe de tiers (TIE-04). */
 @Component({
   selector: 'app-payee-page',
   imports: [
+    DocumentSection,
     RouterLink,
     MatButtonModule,
     MatButtonToggleModule,
@@ -190,6 +192,9 @@ import { PayeeActions } from './payee-actions';
             <p class="muted">Aucune transaction.</p>
           }
         </section>
+        @if (kind() === 'payee') {
+          <app-document-section [target]="{ kind: 'PAYEE', id: id() }" />
+        }
       } @else if (summary.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       } @else if (summary.error()) {

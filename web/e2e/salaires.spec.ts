@@ -109,7 +109,7 @@ test('E30 : fiches de paie archivées et mois sans fiche (SAL-09, R-SAL-16, R-SA
   await section.getByRole('button', { name: 'Ajouter' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('Mois de paie')).toHaveText('Septembre');
-  await dialog.getByLabel('Fichier de la fiche de paie').setInputFiles(pdf);
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles(pdf);
   await dialog.getByLabel('Mois de paie').click();
   await page.getByRole('option', { name: 'Août' }).click();
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
@@ -118,9 +118,11 @@ test('E30 : fiches de paie archivées et mois sans fiche (SAL-09, R-SAL-16, R-SA
 
   // Le même fichier ne s'archive qu'une fois.
   await section.getByRole('button', { name: 'Ajouter' }).click();
-  await dialog.getByLabel('Fichier de la fiche de paie').setInputFiles(pdf);
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles(pdf);
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('déjà archivé (fiche de 08/2026)');
+  await expect(dialog.getByRole('alert')).toContainText(
+    'déjà archivé (Fiche de paie Acme Industries août 2026)',
+  );
   await dialog.getByRole('button', { name: 'Annuler' }).click();
 
   await section.getByRole('button', { name: 'Actions sur la fiche paie-aout.pdf' }).click();

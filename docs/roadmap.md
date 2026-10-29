@@ -109,16 +109,16 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] CPT-11 — archiver et consulter les relevés d'un compte, archivés aussi à l'import d'un PDF (ADR-0024,
       spec 01, R-IMP-28)
 
-## Compléments V1 — bibliothèque de documents (2026-10-29, à faire)
+## Compléments V1 — bibliothèque de documents (2026-10-29, livrés)
 
-- [ ] Migration : `document` typé (`kind`, titre, dates, mois, note), `document_link`, reprise des tables
+- [x] Migration : `document` typé (`kind`, titre, dates, mois, note), `document_link`, reprise des tables
       `payslip` et `bank_statement`, index FTS5 `document_search` (ADR-0024, spec 12)
-- [ ] CPT-11, SAL-09, R-IMP-28 portés sur la bibliothèque (relevés et fiches de paie = documents typés)
-- [ ] DOC-01 — bibliothèque : envoi multiple, documents à classer, fiche d'un document (E34, E35)
-- [ ] DOC-02 — rattachements multiples, section Documents des fiches, confirmations de suppression (R-DOC-12)
-- [ ] DOC-03 — recherche plein texte (description, rattachements, texte des PDF), filtres,
+- [x] CPT-11, SAL-09, R-IMP-28 portés sur la bibliothèque (relevés et fiches de paie = documents typés)
+- [x] DOC-01 — bibliothèque : envoi multiple, documents à classer, fiche d'un document (E34, E35)
+- [x] DOC-02 — rattachements multiples, section Documents des fiches, confirmations de suppression (R-DOC-12)
+- [x] DOC-03 — recherche plein texte (description, rattachements, texte des PDF), filtres,
       `cashflow documents reindex`
-- [ ] DOC-04 — justificatifs d'une transaction, photo depuis le téléphone, filtre en E14 (remplace TRX-11)
+- [x] DOC-04 — justificatifs d'une transaction, photo depuis le téléphone, filtre en E14 (remplace TRX-11)
 
 ## Mise en service (prochaine étape)
 

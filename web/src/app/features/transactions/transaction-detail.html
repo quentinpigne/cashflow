@@ -184,6 +184,15 @@
         <app-refund-panel [transaction]="t" />
       }
 
+      <app-document-section
+        heading="Justificatifs"
+        [target]="{ kind: 'TRANSACTION', id: t.id }"
+        [defaultKind]="t.amount_minor < 0 ? 'RECEIPT' : null"
+        [extra]="payeeTarget(t)"
+        [thumbnails]="true"
+        empty="Aucun justificatif. Ajoutez le ticket ou la facture."
+      />
+
       @if (!t.transfer && projectOptions().length > 0) {
         <mat-form-field>
           <mat-label>Projet</mat-label>

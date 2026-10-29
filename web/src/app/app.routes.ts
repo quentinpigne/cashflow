@@ -35,6 +35,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/assets/assets').then((m) => m.AssetsPage),
       },
       {
+        path: 'documents',
+        title: 'Documents — Cashflow',
+        loadComponent: () => import('./features/documents/documents').then((m) => m.DocumentsPage),
+      },
+      {
+        path: 'documents/:id',
+        title: 'Document — Cashflow',
+        loadComponent: () =>
+          import('./features/documents/document-page').then((m) => m.DocumentPage),
+      },
+      {
         path: 'biens/:id',
         title: 'Bien — Cashflow',
         loadComponent: () => import('./features/assets/assets').then((m) => m.AssetPage),

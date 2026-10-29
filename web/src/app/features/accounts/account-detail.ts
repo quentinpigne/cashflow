@@ -44,6 +44,7 @@ import { ReconciliationPanel } from './reconciliation-panel';
 import { AccountStatements } from './statements';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
+import { DocumentSection } from '../documents/document-section';
 
 interface Filters {
   from: Date | null;
@@ -91,6 +92,7 @@ const PAGE = 200;
     InterestPanel,
     ValuationPanel,
     AccountStatements,
+    DocumentSection,
     MoneyPipe,
     FrDatePipe,
     TransactionDetailView,

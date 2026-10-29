@@ -40,10 +40,14 @@ import { confirm } from '../../shared/confirm-dialog';
 import { PayeePicker } from '../../shared/payee-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AttachmentsStore, CategoriesStore, ProjectsStore } from '../../shared/stores';
+import { AttachmentsStore, CategoriesStore, PayeesStore, ProjectsStore } from '../../shared/stores';
 import { MarkTransferDialog } from './mark-transfer';
 import { RefundPanel } from './refund-panel';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
+import { DocumentSection } from '../documents/document-section';
+import { confirmDeletion } from '../documents/delete-confirmation';
+import { DocumentsService } from '../../api/services/documents.service';
+import { LinkTarget } from '../../api/models/link-target';
 
 type Direction = 'out' | 'in';
 
@@ -65,6 +69,7 @@ type Direction = 'out' | 'in';
     CategoryPicker,
     PayeePicker,
     RefundPanel,
+    DocumentSection,
     MoneyPipe,
     FrDatePipe,
   ],
@@ -74,6 +79,8 @@ type Direction = 'out' | 'in';
 })
 export class TransactionDetailView {
   private readonly api = inject(TransactionsService);
+  private readonly documents = inject(DocumentsService);
+  private readonly payeesStore = inject(PayeesStore);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
@@ -375,19 +382,43 @@ export class TransactionDetailView {
     }
   }
 
+  /** Le tiers de la transaction, proposé comme second rattachement d'un justificatif (DOC-04). */
+  protected payeeTarget(t: TransactionDetail): { target: LinkTarget; label: string } | null {
+    if (!t.payee_id) return null;
+    const name = this.payeesStore.byId().get(t.payee_id)?.name ?? 'son tiers';
+    return { target: { kind: 'PAYEE', id: t.payee_id }, label: name };
+  }
+
   protected async remove(t: TransactionDetail): Promise<void> {
+    // Sans justificatif, pas de confirmation : « Annuler » suffit (ecrans.md, principes) ; avec, la confirmation
+    // dit qu'ils restent dans la bibliothèque (R-DOC-12).
+    const deletion = await confirmDeletion(this.dialog, this.documents, t.id, {
+      title: 'Supprimer la transaction ?',
+      message: '',
+      action: 'Supprimer',
+      destructive: true,
+      objectName: 'cette transaction',
+      confirmWithoutDocuments: false,
+    });
+    if (!deletion) return;
+    const kept = deletion.deleteDocuments
+      ? []
+      : await firstValueFrom(this.documents.listDocuments({ link_id: t.id }));
     try {
-      await firstValueFrom(this.api.deleteTransaction({ id: t.id }));
+      await firstValueFrom(
+        this.api.deleteTransaction({ id: t.id, delete_documents: deletion.deleteDocuments }),
+      );
     } catch (error) {
       this.error.set(errorMessage(error));
       return;
     }
     this.version.bump();
     this.leave(t);
-    // Annuler plutôt que confirmer (ecrans.md, principes) : la transaction est recréée à l'identique.
+    // Annuler plutôt que confirmer : la transaction est recréée à l'identique, avec ses justificatifs restés dans
+    // la bibliothèque.
     const undo = this.snack.open('Transaction supprimée', 'Annuler', { duration: 5000 });
     undo.onAction().subscribe(async () => {
-      await firstValueFrom(
+      const { id } = await firstValueFrom(
         this.api.createTransaction({
           body: {
             account_id: t.account_id,
@@ -407,6 +438,11 @@ export class TransactionDetailView {
           },
         }),
       );
+      for (const d of kept) {
+        await firstValueFrom(
+          this.documents.linkDocument({ id: d.id, body: { kind: 'TRANSACTION', id } }),
+        );
+      }
       this.version.bump();
     });
   }

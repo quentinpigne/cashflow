@@ -33,6 +33,7 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
+import { DocumentSection } from '../documents/document-section';
 
 const FORM_STYLES = `
   .form {
@@ -394,6 +395,7 @@ export class AssetsPage {
 @Component({
   selector: 'app-asset-page',
   imports: [
+    DocumentSection,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -502,6 +504,10 @@ export class AssetsPage {
             }
           </section>
         }
+        <app-document-section
+          [target]="{ kind: 'ASSET', id: a.summary.id }"
+          defaultKind="INVOICE"
+        />
       } @else if (asset.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       } @else {

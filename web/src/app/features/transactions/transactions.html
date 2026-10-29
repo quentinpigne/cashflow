@@ -105,6 +105,14 @@
     >
       Sans tiers
     </mat-slide-toggle>
+    <mat-form-field>
+      <mat-label>Justificatif</mat-label>
+      <mat-select [ngModel]="withDocuments()" (ngModelChange)="withDocuments.set($event); reset()">
+        <mat-option [value]="null">Tous</mat-option>
+        <mat-option [value]="true">Avec</mat-option>
+        <mat-option [value]="false">Sans</mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
 
   @if (selection().size > 0) {
@@ -177,7 +185,12 @@
         />
         <button class="open" (click)="open(item)">
           <span class="text">
-            <span>{{ item.label }}</span>
+            <span
+              >{{ item.label }}
+              @if (item.has_documents) {
+                <mat-icon class="attached" aria-label="Avec justificatif">attach_file</mat-icon>
+              }
+            </span>
             <span class="muted small"
               >{{ item.date | frDate: 'short' }} · {{ item.account_name }} ·
               {{ categoryText(item) }}</span

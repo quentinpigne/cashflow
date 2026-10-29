@@ -29,6 +29,7 @@ import { openAndRefresh } from './budget-dialogs';
 import { BudgetGauge } from './gauge';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
+import { DocumentSection } from '../documents/document-section';
 
 /** Création ou modification d'un projet (BUD-06, R-BUD-20, R-BUD-21). */
 @Component({
@@ -300,7 +301,15 @@ export class ProjectsPage {
 /** E20 — Détail d'un projet : réel par catégorie, ventilations rattachées (R-BUD-22, R-BUD-23). */
 @Component({
   selector: 'app-project',
-  imports: [RouterLink, MatButtonModule, MatIconModule, MoneyPipe, FrDatePipe, BudgetGauge],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MoneyPipe,
+    FrDatePipe,
+    BudgetGauge,
+    DocumentSection,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -384,6 +393,7 @@ export class ProjectsPage {
             </p>
           }
         </section>
+        <app-document-section [target]="{ kind: 'PROJECT', id: p.id }" />
       }
     </div>
   `,

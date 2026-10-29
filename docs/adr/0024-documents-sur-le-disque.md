@@ -122,6 +122,9 @@ Options **2**, **4**, **6** et **8** (décisions du propriétaire, 2026-10-25 et
   contient désormais une partie du contenu des documents. Comme la base est sauvegardée chaque jour, ce texte
   est copié dans chaque sauvegarde.
 - Une nouvelle cible de rattachement (une récurrence, par exemple) demande une migration de `document_link`.
+- La vérification à la compilation de sqlx ne sait pas analyser une table virtuelle FTS5 (le compilateur
+  s'arrête) : les quelques requêtes sur `document_search` sont vérifiées à l'exécution et couvertes par les tests
+  d'intégration (exception prévue par ADR-0017).
 - Supprimer un objet ne supprime plus ses relevés ou ses fiches de paie : des documents sans rattachement
   peuvent s'accumuler, et la bibliothèque les montre (filtre « sans rattachement »).
 - La reconnaissance du texte des images (DOC-06) reste à décider : moteur local ou service tiers explicite

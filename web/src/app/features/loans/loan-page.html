@@ -182,6 +182,7 @@
         }
       </section>
     }
+    <app-document-section [target]="{ kind: 'LOAN', id: l.summary.id }" defaultKind="CONTRACT" />
   } @else if (loan.isLoading()) {
     <mat-progress-bar mode="indeterminate" />
   } @else {

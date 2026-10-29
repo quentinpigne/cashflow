@@ -64,18 +64,27 @@ export class Shell {
     { path: '/budget', label: 'Budget', icon: 'savings', exact: false },
     { path: '/import', label: 'Import', icon: 'upload_file', exact: false },
     { path: '/analyses', label: 'Analyses', icon: 'insights', exact: false },
+    { path: '/documents', label: 'Documents', icon: 'folder_open', exact: false },
     { path: '/projections', label: 'Projections', icon: 'timeline', exact: false },
     { path: '/reglages', label: 'Réglages', icon: 'settings', exact: false },
   ]);
 
   /**
    * Barre du bas (mobile), cinq entrées : l'import s'ouvre depuis un compte ou les réglages, et les
-   * réglages, les biens, les prêts et les salaires depuis le menu du haut (ecrans.md).
+   * réglages, les biens, les prêts, les salaires et les documents depuis le menu du haut (ecrans.md).
    */
   protected readonly mobileItems = computed(() =>
     this.items().filter(
       (i) =>
-        !['/import', '/reglages', '/projections', '/biens', '/prets', '/salaires'].includes(i.path),
+        ![
+          '/import',
+          '/reglages',
+          '/projections',
+          '/biens',
+          '/prets',
+          '/salaires',
+          '/documents',
+        ].includes(i.path),
     ),
   );
 

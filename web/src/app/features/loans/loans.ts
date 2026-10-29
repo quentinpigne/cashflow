@@ -54,6 +54,7 @@ import {
 } from '../../shared/stores';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
+import { DocumentSection } from '../documents/document-section';
 
 type InsuranceMode = Insurance['mode'];
 
@@ -755,6 +756,7 @@ export class LoansPage {
 @Component({
   selector: 'app-loan-page',
   imports: [
+    DocumentSection,
     RouterLink,
     MatButtonModule,
     MatIconModule,

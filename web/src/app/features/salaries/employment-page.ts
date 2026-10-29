@@ -36,6 +36,7 @@ import { uploadDocument } from '../documents/upload-dialog';
 import { formatChange } from './salaries';
 import { BonusDialog, EmploymentDialog, MONTH_NAMES, SalaryDialog } from './salary-dialogs';
 import { confirmDeletion } from '../documents/delete-confirmation';
+import { DocumentSection } from '../documents/document-section';
 
 /** Une ligne de la liste des fiches : une fiche, ou un mois sans fiche (R-SAL-18). */
 interface PayslipEntry {
@@ -53,6 +54,7 @@ interface PayslipYear {
 @Component({
   selector: 'app-employment-page',
   imports: [
+    DocumentSection,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -372,6 +374,11 @@ interface PayslipYear {
             </p>
           }
         </section>
+        <app-document-section
+          [target]="{ kind: 'EMPLOYMENT', id: j.summary.id }"
+          defaultKind="CONTRACT"
+          [exclude]="['PAYSLIP']"
+        />
       } @else if (job.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       } @else {

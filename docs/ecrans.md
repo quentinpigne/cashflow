@@ -809,46 +809,43 @@ Ce qui change dans les écrans existants :
 - **Navigation** : entrée **Documents** (E34) dans le menu latéral, après Analyses ; sur mobile, dans le menu ⋮
   de l'en-tête, avant Import.
 - **Section Documents** (DOC-02), sur les fiches d'un compte (E3, sous les relevés), d'un emploi (E30, sous les
-  fiches de paie), d'un bien (E26), d'un prêt (E28), d'un tiers ou d'un groupe (E32 ; pour un groupe, les
-  documents de ses tiers), d'un projet (E20, détail) : les documents rattachés, hors relevés et fiches de paie
-  qui ont leur propre section, du plus récent au plus ancien (date de référence, R-DOC-8). Chaque ligne montre
-  l'icône du type, le titre, la date et les autres rattachements en puces ; un clic ouvre la fiche du document
-  (E35). Actions : « Ajouter » (envoi, rattaché d'office, type proposé, R-DOC-15), « Rattacher un document
-  existant » (dialogue de recherche, R-DOC-16) et, par ligne, ⋮ « Détacher ». Un fichier déposé sur la section
-  ouvre l'envoi prérempli. Vide : « Aucun document. Ajouter un contrat, une facture… »
+  fiches de paie), d'un bien (E26), d'un prêt (E28), d'un tiers (E32, pas sur celle d'un groupe), d'un projet
+  (E20, détail) : les documents rattachés, hors relevés et fiches de paie qui ont leur propre section, du plus
+  récent au plus ancien (date de référence, R-DOC-8). Chaque ligne montre l'icône du type, le titre, le type, la
+  date et les autres rattachements en puces ; un clic ouvre la fiche du document (E35). Actions : « Ajouter »
+  (envoi, rattaché d'office, type proposé, R-DOC-15), ⋮ « Rattacher un document existant » (dialogue de
+  recherche, sélection multiple, R-DOC-16) et, par ligne, Ouvrir et ⋮ Télécharger, Détacher (« Annuler » dans la
+  snack-bar). Un fichier déposé sur la section ouvre l'envoi prérempli. Vide : « Aucun document. Ajouter un
+  contrat, une facture… »
 - **Relevés** (E3) et **Fiches de paie** (E30) : inchangés, sauf « Modifier », qui ouvre la fiche du document
   (E35).
-- **E7 Détail d'une transaction** : encadré **Justificatifs** (DOC-04) : vignettes (aperçu de l'image, icône
-  pour un PDF), un clic ouvre la fiche du document (E35) ; « Ajouter un justificatif » : sur mobile, choix
-  entre « Prendre une photo » (`<input type="file" accept="image/*" capture="environment">`) et « Choisir un
-  fichier » ; sur ordinateur, sélection ou dépôt d'un fichier. Le type proposé est ticket de caisse pour une
-  dépense, aucun pour une entrée ; le tiers de la transaction est proposé comme second rattachement, coché.
-  « Rattacher un document existant » ; ⋮ « Détacher » par vignette. Permis sur une transaction rapprochée,
-  sans déverrouiller (R-DOC-11).
+- **E7 Détail d'une transaction** : encadré **Justificatifs** (DOC-04), la section Documents en vignettes
+  (aperçu de l'image, icône pour un PDF), un clic ouvre la fiche du document (E35), un bouton « Détacher » par
+  vignette. Sur mobile, un bouton **Photo** ouvre l'appareil photo
+  (`<input type="file" accept="image/*" capture="environment">`) ; « Ajouter » choisit un fichier. Le type
+  proposé est ticket de caisse pour une dépense, aucun pour une entrée ; le tiers de la transaction est proposé
+  comme second rattachement, coché. Permis sur une transaction rapprochée, sans déverrouiller (R-DOC-11).
 - **E14 Transactions** : icône trombone sur les transactions qui ont un justificatif ; filtre **Justificatif** :
   avec, sans.
 - **Confirmations de suppression** d'un compte, d'un emploi, d'un bien, d'un prêt, d'un tiers, d'un projet ou
   d'une transaction qui a des documents (R-DOC-12) : « 3 documents sont rattachés : ils restent dans la
   bibliothèque. » et la case, décochée, « Supprimer aussi les 2 documents rattachés seulement à <objet> »
-  (absente si aucun ne l'est seulement à lui). Après une suppression de transaction, « Annuler » dans la
-  snack-bar rétablit aussi ses rattachements.
-- **E12 Import : historique** : un lot PDF validé affiche « Relevé archivé » avec un lien vers la fiche du
-  document (E35).
+  (absente si aucun ne l'est seulement à lui). Une transaction sans document se supprime toujours sans
+  confirmation ; après sa suppression, « Annuler » dans la snack-bar rétablit aussi ses rattachements.
 
 ## E34 — Documents (DOC-01, DOC-03)
 
 - **En-tête** : champ de recherche `[mat-form-field]` avec icône loupe, plein largeur ; bouton **« Envoyer des
   documents »** (sélection multiple) ; la page entière accepte le dépôt de fichiers.
-- **Filtres** (R-DOC-20), en puces `[mat-chip-listbox]` sous la recherche, dans un panneau sur mobile comme en
-  E3 : type (dont **À classer**, avec son nombre), année, rattaché à (nature d'objet, puis l'objet précis en
-  `[mat-autocomplete]`), **Sans rattachement**. Une pastille « À classer (3) » s'affiche en tête tant qu'il en
-  reste ; un clic applique le filtre.
+- **Filtres** (R-DOC-20), sous la recherche, en listes `[mat-select]` : type (Tous, **À classer**, chaque
+  type), année de la date de référence, rattaché à (Tout, **Sans rattachement**, chaque nature d'objet), et
+  « Effacer les filtres ». Un bouton « À classer (3) » s'affiche en tête tant qu'il en reste ; un clic applique
+  le filtre. Le filtre sur un objet précis est celui de sa section Documents.
 - **Liste** : sans recherche, groupée par année de la date de référence, du plus récent au plus ancien ; avec
   une recherche, une seule liste par pertinence, avec l'extrait du texte trouvé (`snippet` FTS5, mots en gras)
-  quand le mot est dans le contenu. Chaque ligne : icône du type (ou « à classer » en orange), titre, date de
-  référence, taille, rattachements en puces (compte, tiers…) ; « contenu non indexé » en gris pour une image ou
-  un scan (R-DOC-19). Sur ordinateur `[mat-table]` (type, titre, date, rattachements, taille, actions Ouvrir et
-  Télécharger) ; sur mobile, une liste à deux lignes. Un clic ouvre la fiche (E35).
+  quand le mot est dans le contenu. Chaque ligne : icône du type (ou « à classer » en orange), titre, type, date
+  de référence, taille, rattachements en puces (compte, tiers…) ; « contenu non indexé » pour une image ou un
+  scan (R-DOC-19) ; actions Ouvrir et, sur ordinateur, Télécharger. Un clic ouvre la fiche (E35).
 - **Envoi** : chaque fichier s'ajoute à la liste avec une barre de progression ; à la fin, une snack-bar
   « 3 documents archivés, 1 refusé » et un dialogue qui liste les refus et leur raison (R-DOC-14), avec
   « Ouvrir le document existant » pour un doublon (R-DOC-3).
@@ -873,7 +870,8 @@ Ce qui change dans les écrans existants :
 
 ## E35 — Fiche d'un document (DOC-01, DOC-02)
 
-Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible), comme E7.
+Une page (`/documents/:id`) : sur ordinateur, l'aperçu à gauche et la description à droite ; sur mobile, l'un
+sous l'autre.
 
 - **Aperçu** : l'image, ou le PDF dans un `<iframe>` (première page visible, défilement), servi avec
   `Content-Security-Policy: sandbox` (ADR-0024). Actions **Ouvrir** (nouvel onglet) et **Télécharger**.
@@ -884,9 +882,15 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
 - **Rattachements** : liste en puces, chacune avec un lien vers la fiche de l'objet et une croix pour
   détacher ; « Rattacher à… » ouvre un dialogue : nature d'objet (compte, établissement, emploi, transaction,
   bien, prêt, tiers, projet), puis l'objet en `[mat-autocomplete]` (pour une transaction : recherche par
-  libellé, montant et date, les plus proches de la date du document d'abord). Un relevé ou une fiche de paie
-  exige son compte ou son emploi (R-DOC-10) : le champ est alors dans la description, pas dans les puces.
+  libellé, les plus récentes d'abord). Le compte d'un relevé ou l'emploi d'une fiche de paie est une puce comme
+  les autres ; classer un document en relevé ou en fiche de paie demande de le rattacher d'abord à son compte ou
+  à son emploi (R-DOC-10).
 - Menu ⋮ : **Supprimer** (confirmation qui liste les rattachements, R-DOC-22).
 
-Dialogue **Rattacher un document existant** (depuis une fiche, R-DOC-16) : la recherche et les filtres d'E34
-dans un `[mat-dialog]`, sélection multiple, bouton « Rattacher ».
+Dialogue **Rattacher un document existant** (depuis une fiche, R-DOC-16) : la recherche d'E34 dans un
+`[mat-dialog]`, sans les documents déjà rattachés, sélection multiple, bouton « Rattacher ».
+
+Dialogue **Envoi d'un document** (depuis une section, R-DOC-15) : fichier (PDF, JPEG ou PNG, 10 Mo au plus ; PDF
+pour un relevé), type (absent depuis les sections Relevés et Fiches de paie), mois et année pour un relevé ou une
+fiche de paie (le mois précédent par défaut), sinon titre (le nom du fichier par défaut) et date du document,
+note. Un fichier déjà archivé (R-DOC-3) affiche « Ouvrir le document existant » et « Le rattacher ici ».

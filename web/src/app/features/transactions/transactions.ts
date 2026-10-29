@@ -96,6 +96,8 @@ export class TransactionsPage implements OnInit {
   protected readonly payee = signal<string | null>(null);
   protected readonly payeeGroup = signal<string | null>(null);
   protected readonly withoutPayee = signal(false);
+  /** Avec ou sans justificatif (DOC-04). */
+  protected readonly withDocuments = signal<boolean | null>(null);
   protected readonly bulkPayee = signal<string | null>(null);
   protected readonly limit = signal(PAGE);
   protected readonly selection = signal<Set<string>>(new Set());
@@ -123,6 +125,7 @@ export class TransactionsPage implements OnInit {
         payee_id: this.payee() ?? undefined,
         payee_group_id: this.payeeGroup() ?? undefined,
         without_payee: this.withoutPayee() || undefined,
+        with_documents: this.withDocuments() ?? undefined,
         limit: this.limit(),
         version: this.version.value(),
       };

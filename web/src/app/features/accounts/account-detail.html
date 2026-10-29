@@ -310,6 +310,11 @@
         <mat-progress-bar mode="indeterminate" />
       }
       <app-account-statements [accountId]="a.id" />
+      <app-document-section
+        [target]="{ kind: 'ACCOUNT', id: a.id }"
+        defaultKind="CONTRACT"
+        [exclude]="['BANK_STATEMENT']"
+      />
     }
   </div>
 

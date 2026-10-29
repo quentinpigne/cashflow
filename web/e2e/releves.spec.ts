@@ -31,7 +31,7 @@ test('E3 : relevés archivés et mois sans relevé (CPT-11, R-CPT-19, R-CPT-21)'
   await section.getByRole('button', { name: 'Ajouter' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('Mois du relevé')).toHaveText('Septembre');
-  await dialog.getByLabel('Fichier du relevé').setInputFiles(pdf);
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles(pdf);
   await dialog.getByLabel('Mois du relevé').click();
   await page.getByRole('option', { name: 'Août' }).click();
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
@@ -40,9 +40,9 @@ test('E3 : relevés archivés et mois sans relevé (CPT-11, R-CPT-19, R-CPT-21)'
 
   // Le même fichier ne s'archive qu'une fois.
   await section.getByRole('button', { name: 'Ajouter' }).click();
-  await dialog.getByLabel('Fichier du relevé').setInputFiles(pdf);
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles(pdf);
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('déjà archivé (relevé de 08/2026)');
+  await expect(dialog.getByRole('alert')).toContainText('déjà archivé (Relevé Compte courant');
   await dialog.getByRole('button', { name: 'Annuler' }).click();
 
   await section.getByRole('button', { name: 'Actions sur le relevé releve-aout.pdf' }).click();
