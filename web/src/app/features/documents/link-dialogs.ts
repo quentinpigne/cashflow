@@ -239,7 +239,7 @@ export async function pickLinkTarget(dialog: MatDialog): Promise<LinkTarget | un
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>Rattacher des documents</h2>
+    <h2 mat-dialog-title>{{ pick ? 'Choisir des documents' : 'Rattacher des documents' }}</h2>
     <mat-dialog-content class="form">
       <mat-form-field subscriptSizing="dynamic">
         <mat-icon matPrefix>search</mat-icon>
@@ -271,7 +271,7 @@ export async function pickLinkTarget(dialog: MatDialog): Promise<LinkTarget | un
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>Annuler</button>
       <button mat-flat-button [disabled]="chosen().size === 0 || busy()" (click)="attach()">
-        Rattacher
+        {{ pick ? 'Choisir' : 'Rattacher' }}
       </button>
     </mat-dialog-actions>
   `,
@@ -302,9 +302,11 @@ export async function pickLinkTarget(dialog: MatDialog): Promise<LinkTarget | un
   `,
 })
 export class AttachDocumentsDialog {
-  private readonly target = inject<LinkTarget>(MAT_DIALOG_DATA);
+  /** Rattacher à un objet, ou seulement choisir des documents (`null`) : leurs identifiants sont renvoyés. */
+  private readonly target = inject<LinkTarget | null>(MAT_DIALOG_DATA);
+  protected readonly pick = this.target === null;
   private readonly api = inject(DocumentsService);
-  private readonly ref = inject(MatDialogRef<AttachDocumentsDialog, boolean>);
+  private readonly ref = inject(MatDialogRef<AttachDocumentsDialog, boolean | string[]>);
 
   protected readonly icons = KIND_ICONS;
   protected readonly kindLabels = KIND_LABELS;
@@ -324,7 +326,7 @@ export class AttachDocumentsDialog {
   /** Les documents pas encore rattachés à l'objet. */
   protected readonly candidates = computed(() =>
     this.results()
-      .filter((d) => !d.links.some((l) => l.id === this.target.id))
+      .filter((d) => !d.links.some((l) => l.id === this.target?.id))
       .slice(0, 100),
   );
 
@@ -338,6 +340,10 @@ export class AttachDocumentsDialog {
   }
 
   protected async attach(): Promise<void> {
+    if (!this.target) {
+      this.ref.close([...this.chosen()]);
+      return;
+    }
     this.busy.set(true);
     try {
       for (const id of this.chosen()) {
@@ -354,9 +360,25 @@ export class AttachDocumentsDialog {
 
 /** Ouvre le rattachement de documents existants ; résout à `true` si des documents ont été rattachés. */
 export async function attachDocuments(dialog: MatDialog, target: LinkTarget): Promise<boolean> {
-  const ref = dialog.open<AttachDocumentsDialog, LinkTarget, boolean>(AttachDocumentsDialog, {
-    data: target,
-    maxWidth: '100vw',
-  });
+  const ref = dialog.open<AttachDocumentsDialog, LinkTarget | null, boolean | string[]>(
+    AttachDocumentsDialog,
+    {
+      data: target,
+      maxWidth: '100vw',
+    },
+  );
   return (await firstValueFrom(ref.afterClosed())) === true;
+}
+
+/** Choix de documents de la bibliothèque ; résout à leurs identifiants, vide si l'utilisateur renonce. */
+export async function pickDocuments(dialog: MatDialog): Promise<string[]> {
+  const ref = dialog.open<AttachDocumentsDialog, LinkTarget | null, boolean | string[]>(
+    AttachDocumentsDialog,
+    {
+      data: null,
+      maxWidth: '100vw',
+    },
+  );
+  const result = await firstValueFrom(ref.afterClosed());
+  return Array.isArray(result) ? result : [];
 }

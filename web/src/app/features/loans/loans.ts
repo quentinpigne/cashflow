@@ -55,6 +55,9 @@ import {
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
+import { SimulationView } from '../../api/models/simulation-view';
+import { CreditService } from '../../api/services/credit.service';
+import { LoansTabs } from '../credit/credit-shared';
 
 type InsuranceMode = Insurance['mode'];
 
@@ -331,8 +334,17 @@ const SHARED_STYLES = `
   styles: SHARED_STYLES,
 })
 export class LoanDialog {
-  protected readonly loan = inject<LoanView | null>(MAT_DIALOG_DATA);
+  /** Un prêt à modifier, une simulation à transformer en prêt (R-CRE-7), ou rien pour un nouveau prêt. */
+  private readonly data = inject<
+    LoanView | { simulation: SimulationView; assetId?: string | null } | null
+  >(MAT_DIALOG_DATA);
+  protected readonly loan = this.data && 'summary' in this.data ? this.data : null;
+  private readonly simulation =
+    this.data && 'simulation' in this.data ? this.data.simulation : null;
+  private readonly simulationAsset =
+    this.data && 'simulation' in this.data ? this.data.assetId : null;
   private readonly api = inject(LoansService);
+  private readonly credit = inject(CreditService);
   private readonly ref = inject(MatDialogRef<LoanDialog>);
   private readonly accounts = inject(AccountsStore);
   private readonly categories = inject(CategoriesStore);
@@ -352,13 +364,35 @@ export class LoanDialog {
     this.accounts.open().filter((a) => a.family === 'CASH' && a.currency === 'EUR'),
   );
 
-  private readonly s = this.loan?.schedule ?? null;
-  protected readonly name = signal(this.loan?.summary.name ?? '');
-  protected readonly kind = signal<LoanKind>(this.loan?.summary.kind ?? 'MORTGAGE');
-  protected readonly institution = signal<string | null>(this.loan?.institution_id ?? null);
-  protected readonly asset = signal<string | null>(this.loan?.summary.asset_id ?? null);
+  private readonly s =
+    this.loan?.schedule ??
+    (this.simulation
+      ? {
+          annual_rate_ppm: this.simulation.annual_rate_ppm,
+          duration_months: this.simulation.duration_months,
+          insurance: this.simulation.insurance,
+          first_installment_date: null,
+          payer_account_id: null,
+          interest_category_id: null,
+          insurance_category_id: null,
+        }
+      : null);
+  protected readonly name = signal(this.loan?.summary.name ?? this.simulation?.name ?? '');
+  protected readonly kind = signal<LoanKind>(
+    this.loan?.summary.kind ?? this.simulation?.kind ?? 'MORTGAGE',
+  );
+  protected readonly institution = signal<string | null>(
+    this.loan?.institution_id ?? this.simulation?.institution_id ?? null,
+  );
+  protected readonly asset = signal<string | null>(
+    this.loan?.summary.asset_id ?? this.simulationAsset ?? null,
+  );
   protected readonly principal = signal(
-    this.loan ? toEditable(this.loan.summary.principal_minor) : '',
+    this.loan
+      ? toEditable(this.loan.summary.principal_minor)
+      : this.simulation
+        ? toEditable(this.simulation.principal_minor)
+        : '',
   );
   protected readonly start = signal<Date | null>(
     this.loan ? fromIsoDate(this.loan.start_date) : fromIsoDate(todayIso()),
@@ -367,7 +401,7 @@ export class LoanDialog {
   protected readonly rate = signal(this.s ? rateEditable(this.s.annual_rate_ppm) : '');
   protected readonly duration = signal(this.s ? String(this.s.duration_months) : '240');
   protected readonly first = signal<Date | null>(
-    this.s ? fromIsoDate(this.s.first_installment_date) : null,
+    this.s?.first_installment_date ? fromIsoDate(this.s.first_installment_date) : null,
   );
   protected readonly insuranceMode = signal<InsuranceMode>(this.s?.insurance.mode ?? 'NONE');
   protected readonly insuranceAmount = signal(
@@ -477,6 +511,13 @@ export class LoanDialog {
     const body = this.body();
     if (!body) return;
     try {
+      if (this.simulation) {
+        const created = await firstValueFrom(
+          this.credit.convertLoanSimulation({ id: this.simulation.id, body }),
+        );
+        this.ref.close(created.id);
+        return;
+      }
       const saved = this.loan
         ? await firstValueFrom(this.api.updateLoan({ id: this.loan.summary.id, body }))
         : await firstValueFrom(this.api.createLoan({ body }));
@@ -659,6 +700,7 @@ export class LoanPaymentsDialog {
 @Component({
   selector: 'app-loans-page',
   imports: [
+    LoansTabs,
     RouterLink,
     MatButtonModule,
     MatExpansionModule,
@@ -674,6 +716,7 @@ export class LoanPaymentsDialog {
         <h1>Prêts</h1>
         <button mat-flat-button (click)="create()"><mat-icon>add</mat-icon>Nouveau prêt</button>
       </div>
+      <app-loans-tabs />
       @if (loans.isLoading() && !loans.hasValue()) {
         <mat-progress-bar mode="indeterminate" />
       } @else if (current().length === 0 && closed().length === 0) {

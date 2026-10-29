@@ -903,9 +903,7 @@ Ce qui change dans les écrans existants :
 
 - **E27 Prêts** : trois onglets `[mat-tab-nav-bar]`, **Prêts** (la liste actuelle), **Simulations** (E36) et
   **Demandes** (E38), chacun avec son adresse (`/prets`, `/prets/simulations`, `/prets/demandes`).
-- **E28 Fiche d'un prêt** : « Issu de la simulation X » (lien) quand le prêt vient d'une simulation. La section
-  Documents propose l'offre de prêt comme type par défaut.
-- **E26 Fiche d'un bien** : les demandes de crédit du bien (nom, statut, lien).
+- **E28 Fiche d'un prêt** : la section Documents propose l'offre de prêt comme type par défaut.
 
 ## E36 — Simulations (CRE-01, CRE-02)
 
@@ -937,8 +935,9 @@ demande » : nom, type de projet, bien concerné (optionnel), prix ; les frais d
 
 ## E39 — Fiche d'une demande (CRE-04 à CRE-06)
 
-En-tête : nom, type de projet, statut `[mat-select]`, menu ⋮ (Modifier, Synthèse, Exporter le dossier,
-Supprimer). Sections :
+En-tête : nom, statut `[mat-select]`, menu ⋮ (Modifier, Synthèse, Exporter le dossier, Supprimer) ; sous le
+titre, le type de projet, le bien et la note. Sur ordinateur, plan de financement et capacité côte à côte.
+Sections :
 
 - **Plan de financement** : prix, frais de notaire (indice « estimation : 7,5 % dans l'ancien »), travaux,
   autres frais, apport ; coût du projet et **montant à emprunter** calculés. Modifiable en place.
@@ -961,7 +960,7 @@ Supprimer). Sections :
   « Accepter l'offre » (confirmation, puis proposition de transformer en prêt), Supprimer. « Comparer les
   offres » ouvre E37 avec les offres reçues.
 
-**Synthèse** (`/prets/demandes/:id/synthese`) : page sans navigation, mise en page pour l'impression (`@media
-print`) : projet, plan de financement, revenus et charges, capacité, simulation retenue, pièces et leur état.
-Bouton « Imprimer » (masqué à l'impression). **Exporter le dossier** : avertit des pièces manquantes, puis
-télécharge l'archive ZIP (R-CRE-19).
+**Synthèse** : la page HTML rendue par le serveur (`/api/v1/loan-applications/{id}/summary`), ouverte dans un
+nouvel onglet et imprimable (PDF par l'impression du navigateur) : projet, plan de financement, revenus et
+charges, capacité, simulation retenue, pièces et leur état ; c'est aussi le `Synthèse.html` de l'archive.
+**Exporter le dossier** : avertit des pièces manquantes, puis télécharge l'archive ZIP (R-CRE-19).

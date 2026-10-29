@@ -32,7 +32,7 @@ test('E27, E28 : tableau d’amortissement et mensualités ventilées (PRE-02, P
 }) => {
   await login(page);
   await openSection(page, 'Prêts');
-  await page.getByRole('link', { name: /Prêt immobilier/ }).click();
+  await page.getByRole('link', { name: /^Prêt immobilier/ }).click();
   await expect(page.getByRole('heading', { name: 'Prêt immobilier' })).toBeVisible();
   await expect(page.getByText('1 109,20 €').first()).toBeVisible();
   const table = page.locator('table');
@@ -62,7 +62,7 @@ test('E28 : la mensualité se recalcule pendant la saisie des conditions (R-PRE-
 }) => {
   await login(page);
   await openSection(page, 'Prêts');
-  await page.getByRole('link', { name: /Prêt immobilier/ }).click();
+  await page.getByRole('link', { name: /^Prêt immobilier/ }).click();
   await page.getByRole('button', { name: 'Actions sur le prêt' }).click();
   await page.getByRole('menuitem', { name: 'Modifier' }).click();
   const dialog = page.getByRole('dialog');

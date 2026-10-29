@@ -64,7 +64,7 @@ test('E34, E35 : envoi, classement et rattachement (R-DOC-3, R-DOC-9, R-DOC-14)'
   // Fiche du document : classé en contrat, rattaché à un compte.
   await expect(page.getByRole('heading', { name: 'Contrat box internet', level: 1 })).toBeVisible();
   await page.getByLabel('Type').click();
-  await page.getByRole('option', { name: 'Contrat' }).click();
+  await page.getByRole('option', { name: 'Contrat', exact: true }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByText('Document enregistré')).toBeVisible();
 
