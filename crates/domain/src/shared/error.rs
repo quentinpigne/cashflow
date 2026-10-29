@@ -59,6 +59,18 @@ pub enum DomainError {
     #[error("le mois de paie d'une fiche tombe pendant l'emploi")]
     InvalidPayslipMonth,
 
+    // ----- Crédit (spec 13)
+    #[error("simulation invalide : capital positif, durée de 1 à 600 mois, taux et frais positifs ou nuls")]
+    InvalidSimulation,
+    #[error("la mensualité visée ne permet pas ce crédit : elle doit couvrir l'assurance, sur 600 mois au plus")]
+    TargetPaymentTooLow,
+    #[error("plan de financement invalide : montants positifs ou nuls, apport au plus égal au coût du projet")]
+    InvalidFinancingPlan,
+    #[error("cette simulation a déjà été transformée en prêt")]
+    SimulationAlreadyConverted,
+    #[error("seule une démarche avec une offre reçue peut être acceptée")]
+    OfferNotAcceptable,
+
     // ----- Documents (spec 12, ADR-0024)
     #[error("le fichier est vide")]
     EmptyDocument,
@@ -215,6 +227,11 @@ impl DomainError {
             InvalidSalary => "INVALID_SALARY",
             InvalidBonus => "INVALID_BONUS",
             InvalidPayslipMonth => "INVALID_PAYSLIP_MONTH",
+            InvalidSimulation => "INVALID_SIMULATION",
+            TargetPaymentTooLow => "TARGET_PAYMENT_TOO_LOW",
+            InvalidFinancingPlan => "INVALID_FINANCING_PLAN",
+            SimulationAlreadyConverted => "SIMULATION_ALREADY_CONVERTED",
+            OfferNotAcceptable => "OFFER_NOT_ACCEPTABLE",
             EmptyDocument => "EMPTY_DOCUMENT",
             DocumentTooLarge => "DOCUMENT_TOO_LARGE",
             UnsupportedDocumentType => "UNSUPPORTED_DOCUMENT_TYPE",
@@ -292,6 +309,11 @@ impl DomainError {
             InvalidSalary => "R-SAL-2",
             InvalidBonus => "R-SAL-5",
             InvalidPayslipMonth => "R-SAL-15",
+            InvalidSimulation => "R-CRE-1",
+            TargetPaymentTooLow => "R-CRE-5",
+            InvalidFinancingPlan => "R-CRE-11",
+            SimulationAlreadyConverted => "R-CRE-7",
+            OfferNotAcceptable => "R-CRE-22",
             EmptyDocument | DocumentTooLarge | UnsupportedDocumentType | StatementNotPdf => "R-DOC-1",
             DocumentAlreadyArchived { .. } => "R-DOC-3",
             InvalidDocumentTitle => "R-DOC-4",

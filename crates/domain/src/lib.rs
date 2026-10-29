@@ -6,6 +6,7 @@
 pub mod accounts;
 pub mod assets;
 pub mod budgeting;
+pub mod credit;
 pub mod documents;
 pub mod import;
 pub mod ledger;

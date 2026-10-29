@@ -166,7 +166,7 @@ prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000
 
 - Mensualité visée 1 200 € assurance comprise, 3 % sur 240 mois, assurance 0,30 % : le capital empruntable
   est le plus grand capital dont la mensualité et l'assurance ne dépassent pas 1 200 €.
-- 200 000 € à 3 %, sans assurance, mensualité visée 1 400 € : 182 mois (la mensualité à 181 mois dépasse
+- 200 000 € à 3 %, sans assurance, mensualité visée 1 400 € : 177 mois (1 399,71 € ; à 176 mois, la mensualité dépasse
   1 400 €).
 
 ### CRE-04 — Capacité
