@@ -47,7 +47,10 @@ fichiers techniques, attachés à un lot d'import. Un relevé PDF importé est c
 - **R-DOC-4** — Un document a un **titre** (≤ 120 caractères), prérempli avec le nom du fichier sans son
   extension, et un **nom de fichier** d'origine, conservé pour le téléchargement.
 - **R-DOC-5** — Le **type** (`DocumentKind`) est l'un de : relevé de compte, fiche de paie, contrat, ticket de
-  caisse, facture, document fiscal, attestation, courrier, autre. Un document **sans type** est **à classer** :
+  caisse, facture, document fiscal, attestation, courrier ; pour les biens, acte de propriété, compromis de
+  vente, certificat d'immatriculation, diagnostic, devis, garantie ; pour les prêts, offre de prêt, tableau
+  d'amortissement, contrat d'assurance ; pour une demande de crédit, pièce d'identité, justificatif de
+  domicile (spec 13) ; autre. Un document **sans type** est **à classer** :
   c'est l'état d'un document envoyé sans être décrit (R-DOC-14).
 - **R-DOC-6** — La **date du document** est facultative : date du ticket, de la facture, de signature d'un
   contrat, d'émission d'un avis. La **période** (début, fin) est facultative, chaque borne indépendamment,
@@ -88,7 +91,7 @@ fichiers techniques, attachés à un lot d'import. Un relevé PDF importé est c
 - **R-DOC-15** — Depuis la **fiche d'un objet**, le document envoyé est rattaché d'office à cet objet, avec un
   type proposé : relevé de compte depuis la section Relevés d'un compte, fiche de paie depuis la section
   Fiches de paie d'un emploi, ticket de caisse depuis une dépense, contrat depuis la section Documents d'un
-  compte, d'un emploi ou d'un prêt, facture depuis un bien ; aucun ailleurs. Le type reste modifiable avant
+  compte ou d'un emploi, offre de prêt depuis un prêt, facture depuis un bien ; aucun ailleurs. Le type reste modifiable avant
   d'enregistrer. Le titre d'un relevé ou d'une fiche de paie est prérempli d'après l'objet et le mois :
   « Relevé Compte courant septembre 2026 », « Fiche de paie Acme août 2026 ».
 - **R-DOC-16** — Depuis la fiche d'un objet, on peut aussi **rattacher un document existant**, choisi par la

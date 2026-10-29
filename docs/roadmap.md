@@ -120,6 +120,14 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       `cashflow documents reindex`
 - [x] DOC-04 — justificatifs d'une transaction, photo depuis le téléphone, filtre en E14 (remplace TRX-11)
 
+## Compléments V1 — crédit (2026-10-29)
+
+- [ ] Types de documents des biens, des prêts et des demandes de crédit (spec 12, ADR-0027)
+- [ ] CRE-01 à CRE-03 — simulations : calcul, TAEG, calculs inverses, comparaison, transformation en prêt
+- [ ] CRE-04 — demande de crédit : plan de financement, capacité d'emprunt, co-emprunteur
+- [ ] CRE-05 — pièces à fournir reliées à la bibliothèque, export ZIP et synthèse imprimable
+- [ ] CRE-06 — démarches auprès des banques et courtiers, offres comparées, acceptation
+
 ## Mise en service (prochaine étape)
 
 - [ ] Exposition sur Internet derrière un proxy, en HTTPS : passe d'exploitation et de sécurité (Q15, à

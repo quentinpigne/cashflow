@@ -101,7 +101,9 @@ l'interface n'en montre plus rien.
   aucun effet sur le patrimoine.
 - **R-PRE-11** — Supprimer un prêt annule d'abord la ventilation de ses mensualités (après confirmation) ;
   ses capitaux restants dus saisis sont supprimés avec lui. Ses documents restent dans la bibliothèque, sauf
-  demande contraire (R-DOC-12).
+  demande contraire (R-DOC-12). La simulation dont il est issu perd ce lien (R-CRE-7).
+
+Simuler un crédit et préparer une demande de crédit : spec 13.
 
 ## Activation
 

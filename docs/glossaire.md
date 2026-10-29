@@ -108,12 +108,32 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 |---|---|---|
 | Bibliothèque (de documents) | — | Ensemble des documents archivés, consultable et cherchable en un seul endroit (spec 12). |
 | Document | `Document` | Fichier envoyé par l'utilisateur (PDF, JPEG, PNG), immuable, conservé sur le disque (ADR-0024), avec sa description : type, titre, date, période, mois, note. |
-| Type de document | `DocumentKind` | `BANK_STATEMENT`, `PAYSLIP`, `CONTRACT`, `RECEIPT`, `INVOICE`, `TAX`, `CERTIFICATE`, `LETTER`, `OTHER` (R-DOC-5). |
+| Type de document | `DocumentKind` | `BANK_STATEMENT`, `PAYSLIP`, `CONTRACT`, `RECEIPT`, `INVOICE`, `TAX`, `CERTIFICATE`, `LETTER`, `DEED`, `SALE_AGREEMENT`, `VEHICLE_REGISTRATION`, `DIAGNOSTIC`, `QUOTE`, `WARRANTY`, `LOAN_OFFER`, `AMORTIZATION_SCHEDULE`, `INSURANCE`, `IDENTITY`, `PROOF_OF_ADDRESS`, `OTHER` (R-DOC-5). |
 | À classer | `kind` absent | État d'un document envoyé sans type (R-DOC-5, R-DOC-14). |
 | Rattachement (d'un document) | `DocumentLink` | Lien entre un document et un objet qu'il concerne : compte, établissement, emploi, transaction, bien, prêt, tiers, projet (R-DOC-9). Sans effet sur les montants ; à ne pas confondre avec le rattachement d'une ventilation (R-TRX-37). |
 | Justificatif | — | Document rattaché à une transaction : ticket de caisse, facture (DOC-04). |
 | Date de référence | `reference date` | Date qui classe un document : sa date, à défaut son mois, à défaut le début de sa période, à défaut sa date d'envoi (R-DOC-8). |
 | Contenu indexé | `content_indexed` | Texte extrait d'un PDF et indexé pour la recherche ; absent pour une image ou un scan (R-DOC-19). |
+
+## Crédit
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Simulation (de crédit) | `LoanSimulation` | Crédit envisagé, enregistré : capital, taux, durée, assurance, frais ; sa mensualité, son coût et son TAEG se calculent (spec 13). Une offre reçue est une simulation. |
+| Frais de dossier | `fees` | Frais payés une fois à la banque pour monter le crédit. |
+| Frais de garantie | `guarantee_fees` | Coût de la caution ou de l'hypothèque, payé une fois. |
+| Coût total du crédit | `total cost` | Intérêts + assurance + frais de dossier + frais de garantie (R-CRE-3). |
+| TAEG | `apr` | Taux annuel effectif global : taux actuariel qui égale le capital net des frais aux échéances actualisées (R-CRE-4). |
+| Mensualité visée | `target payment` | Mensualité, assurance comprise, d'où l'on déduit un capital ou une durée (R-CRE-5). |
+| Demande de crédit | `LoanApplication` | Dossier d'un projet à financer : plan de financement, capacité, pièces, démarches (spec 13). |
+| Type de projet | `ProjectKind` | `EXISTING_HOME` (ancien), `NEW_HOME` (neuf), `WORKS`, `VEHICLE`, `OTHER`. À distinguer du projet de budget (`Project`). |
+| Plan de financement | `financing plan` | Prix, frais de notaire, travaux, autres frais, apport et montant à emprunter (R-CRE-11). |
+| Apport | `down_payment` | Part du coût du projet payée sans emprunter. |
+| Taux d'endettement | `debt ratio` | (Charges + mensualité envisagée) / revenus mensuels (R-CRE-15). |
+| Reste à vivre | `remaining income` | Revenus − charges − mensualité envisagée (R-CRE-15). |
+| Co-emprunteur | `co_borrower` | Second emprunteur d'une demande, dont les revenus et charges sont saisis (R-CRE-16). |
+| Pièce (à fournir) | `LoanApplicationPiece` | Justificatif demandé par les banques (R-CRE-17), fourni par des documents trouvés ou attribués. |
+| Démarche | `LenderRequest` | Envoi d'une demande à un établissement ou un courtier, et sa réponse (R-CRE-21). |
 
 ## Import et rapprochement
 

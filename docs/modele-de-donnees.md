@@ -64,6 +64,11 @@ erDiagram
     DocumentLink }o--o| Asset : "bien"
     DocumentLink }o--o| Loan : "prêt"
     DocumentLink }o--o| Payee : "tiers"
+    LoanApplication ||--o{ LoanSimulation : "simulations et offres"
+    LoanApplication ||--o{ LenderRequest : "démarches"
+    LoanApplication ||--o{ LoanApplicationPiece : "pièces attribuées"
+    LenderRequest }o--o| LoanSimulation : "offre reçue"
+    LoanSimulation |o--o| Loan : "transformée en"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -351,6 +356,81 @@ Le tableau d'amortissement découle des conditions (R-PRE-3) et n'est pas stock�
 La mensualité porte une ventilation de remboursement (le capital) et des ventilations de dépense (intérêts,
 assurance).
 
+## Crédit — [spec 13](specs/13-credit.md)
+
+Décision : ADR-0027. Rien de ce qui suit n'entre dans le patrimoine, les budgets ou les projections.
+
+### LoanSimulation (simulation de crédit)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `name` | texte ≤ 80 | requis |
+| `kind` | `LoanKind` | `MORTGAGE` \| `CONSUMER` \| `OTHER` |
+| `principal` | `Money` | requis, > 0 |
+| `annual_rate` | `Rate` | requis, ≥ 0 : taux nominal annuel hors assurance |
+| `duration_months` | entier | requis, 1 à 600 |
+| `insurance_mode` | enum | `NONE` \| `FIXED` \| `RATE_ON_PRINCIPAL` |
+| `insurance_amount` | `Money` | requis et ≥ 0 si `FIXED` |
+| `insurance_rate` | `Rate` | requis et ≥ 0 si `RATE_ON_PRINCIPAL` |
+| `fees` | `Money` | requis, ≥ 0 : frais de dossier |
+| `guarantee_fees` | `Money` | requis, ≥ 0 : frais de garantie (caution, hypothèque) |
+| `institution_id` | `Id` → Institution | optionnel : établissement qui la propose |
+| `application_id` | `Id` → LoanApplication | optionnel, `SET NULL` à la suppression de la demande |
+| `loan_id` | `Id` → Loan | optionnel, unique, `SET NULL` à la suppression du prêt : prêt créé (R-CRE-7) |
+| `note` | texte | optionnel |
+
+Mensualité, coût total, TAEG et tableau se calculent (R-CRE-2 à R-CRE-4), jamais stockés.
+
+### LoanApplication (demande de crédit)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `name` | texte ≤ 80 | requis |
+| `project_kind` | `ProjectKind` | `EXISTING_HOME` \| `NEW_HOME` \| `WORKS` \| `VEHICLE` \| `OTHER` |
+| `status` | `ApplicationStatus` | `PREPARING` \| `SUBMITTED` \| `ACCEPTED` \| `ABANDONED` ; défaut `PREPARING` |
+| `asset_id` | `Id` → Asset | optionnel, `SET NULL` : bien concerné |
+| `price` | `Money` | requis, ≥ 0 |
+| `notary_fees` | `Money` | requis, ≥ 0 ; estimé à la création (R-CRE-12) |
+| `works` | `Money` | requis, ≥ 0 |
+| `other_costs` | `Money` | requis, ≥ 0 |
+| `down_payment` | `Money` | requis, ≥ 0, ≤ coût du projet |
+| `other_income` | `Money` | requis, ≥ 0 : autres revenus mensuels |
+| `other_charges` | `Money` | requis, ≥ 0 : autres charges mensuelles |
+| `co_borrower_name` | texte ≤ 80 | optionnel |
+| `co_borrower_income` | `Money` | requis, ≥ 0 ; 0 sans co-emprunteur |
+| `co_borrower_charges` | `Money` | requis, ≥ 0 ; 0 sans co-emprunteur |
+| `excluded_loan_ids` | `Json` | liste d'identifiants de prêts exclus des charges (R-CRE-14) ; défaut `[]` |
+| `selected_simulation_id` | `Id` → LoanSimulation | optionnel, `SET NULL` : simulation retenue (R-CRE-15) |
+| `note` | texte | optionnel |
+
+Revenus, charges, taux d'endettement, reste à vivre, capacité et épargne restante se calculent (R-CRE-13 à
+R-CRE-15).
+
+### LoanApplicationPiece (pièce d'une demande)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `application_id` | `Id` → LoanApplication | requis, suppression en cascade |
+| `piece` | texte | requis : code de la pièce du catalogue (R-CRE-17), ex. `IDENTITY`, `CO_BORROWER_PAYSLIPS` |
+| `document_id` | `Id` → Document | optionnel, suppression en cascade : document attribué à la main |
+| `not_required` | booléen | défaut `false` : pièce marquée non requise (R-CRE-18) |
+
+Une ligne par document attribué (`document_id` renseigné, unique avec `application_id` et `piece`), ou une
+ligne `not_required` par pièce. Pas de `id` propre ni d'horodatage.
+
+### LenderRequest (démarche auprès d'un établissement)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `application_id` | `Id` → LoanApplication | requis, suppression en cascade |
+| `institution_id` | `Id` → Institution | optionnel |
+| `lender_name` | texte ≤ 80 | requis si pas d'établissement : banque ou courtier |
+| `status` | `LenderRequestStatus` | `SENT` \| `OFFER` \| `REFUSED` \| `ACCEPTED` \| `WITHDRAWN` |
+| `sent_on` | `Date` | requis |
+| `answered_on` | `Date` | optionnel, ≥ `sent_on` |
+| `simulation_id` | `Id` → LoanSimulation | optionnel, `SET NULL` : l'offre reçue (R-CRE-21) |
+| `note` | texte | optionnel |
+
 ### Réglages
 
 Les rubriques Biens et Prêts s'activent par deux réglages (`AppSetting`) : `features.assets`,
@@ -426,7 +506,11 @@ Décision : ADR-0024.
 
 `DocumentKind` : `BANK_STATEMENT` (relevé de compte), `PAYSLIP` (fiche de paie), `CONTRACT` (contrat),
 `RECEIPT` (ticket de caisse), `INVOICE` (facture), `TAX` (document fiscal), `CERTIFICATE` (attestation),
-`LETTER` (courrier), `OTHER` (autre).
+`LETTER` (courrier), `DEED` (acte de propriété), `SALE_AGREEMENT` (compromis de vente),
+`VEHICLE_REGISTRATION` (certificat d'immatriculation), `DIAGNOSTIC` (diagnostic), `QUOTE` (devis),
+`WARRANTY` (garantie), `LOAN_OFFER` (offre de prêt), `AMORTIZATION_SCHEDULE` (tableau d'amortissement),
+`INSURANCE` (contrat d'assurance), `IDENTITY` (pièce d'identité), `PROOF_OF_ADDRESS` (justificatif de
+domicile), `OTHER` (autre).
 
 Le contenu est le fichier `/data/documents/<id>`, immuable. Seuls la description (`kind` à `note`) et les
 rattachements se modifient. La suppression d'un document est toujours explicite : elle déplace le fichier dans

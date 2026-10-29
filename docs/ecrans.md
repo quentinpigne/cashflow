@@ -894,3 +894,74 @@ Dialogue **Envoi d'un document** (depuis une section, R-DOC-15) : fichier (PDF, 
 pour un relevé), type (absent depuis les sections Relevés et Fiches de paie), mois et année pour un relevé ou une
 fiche de paie (le mois précédent par défaut), sinon titre (le nom du fichier par défaut) et date du document,
 note. Un fichier déjà archivé (R-DOC-3) affiche « Ouvrir le document existant » et « Le rattacher ici ».
+
+# Écrans — crédit (spec 13)
+
+Simulations et demandes de crédit, dans la rubrique **Prêts** (CRE-01 à CRE-06).
+
+Ce qui change dans les écrans existants :
+
+- **E27 Prêts** : trois onglets `[mat-tab-nav-bar]`, **Prêts** (la liste actuelle), **Simulations** (E36) et
+  **Demandes** (E38), chacun avec son adresse (`/prets`, `/prets/simulations`, `/prets/demandes`).
+- **E28 Fiche d'un prêt** : « Issu de la simulation X » (lien) quand le prêt vient d'une simulation. La section
+  Documents propose l'offre de prêt comme type par défaut.
+- **E26 Fiche d'un bien** : les demandes de crédit du bien (nom, statut, lien).
+
+## E36 — Simulations (CRE-01, CRE-02)
+
+- **Simulateur** en tête (`[mat-card]`) : type de prêt ; **ce que je cherche** `[mat-button-toggle-group]` :
+  « La mensualité » (capital et durée saisis), « Le capital » (mensualité visée et durée saisies), « La durée »
+  (capital et mensualité visée saisis) ; taux nominal, assurance (aucune, montant mensuel, taux annuel),
+  frais de dossier, frais de garantie. Le résultat se recalcule à la saisie : mensualité, assurance, échéance
+  totale, coût total (dont intérêts, assurance, frais), TAEG, et le capital ou la durée trouvés.
+  « Enregistrer » demande un nom (et, en option, la demande de crédit à laquelle la rattacher).
+- **Simulations enregistrées** : liste (nom, capital, durée, taux, mensualité totale, TAEG, coût total ; la
+  demande et l'établissement en petit ; « prêt créé » s'il y a lieu). Cases à cocher et « Comparer »
+  (E37 en dialogue). Un clic ouvre la simulation dans le simulateur, pour la modifier.
+- Menu ⋮ d'une simulation : Dupliquer, Tableau d'amortissement (dialogue, une année à la fois comme E28),
+  Transformer en prêt, Supprimer.
+- **Transformer en prêt** : le formulaire de prêt (E28) prérempli (type, nom, capital, taux, durée, assurance)
+  ; on saisit le déblocage, la première échéance, le compte payeur et le bien financé.
+
+## E37 — Comparaison de simulations (CRE-01, R-CRE-6)
+
+Dialogue, une colonne par simulation (au plus 4 ; sur mobile, une carte par simulation) : capital, durée,
+taux, assurance, mensualité, échéance totale, intérêts, assurance totale, frais, coût total, TAEG ; la
+meilleure valeur de chaque ligne en gras, et l'écart de coût total à la moins chère.
+
+## E38 — Demandes de crédit (CRE-04 à CRE-06)
+
+Liste : nom, type de projet, montant à emprunter, statut (pastille), nombre de pièces manquantes. « Nouvelle
+demande » : nom, type de projet, bien concerné (optionnel), prix ; les frais de notaire sont estimés
+(R-CRE-12).
+
+## E39 — Fiche d'une demande (CRE-04 à CRE-06)
+
+En-tête : nom, type de projet, statut `[mat-select]`, menu ⋮ (Modifier, Synthèse, Exporter le dossier,
+Supprimer). Sections :
+
+- **Plan de financement** : prix, frais de notaire (indice « estimation : 7,5 % dans l'ancien »), travaux,
+  autres frais, apport ; coût du projet et **montant à emprunter** calculés. Modifiable en place.
+- **Capacité d'emprunt** : revenus (détail : emplois, primes, autres revenus, co-emprunteur), charges (détail :
+  chaque prêt en cours avec une case « remboursé par ce crédit », autres charges, co-emprunteur), simulation
+  retenue `[mat-select]` ; **taux d'endettement** avec une jauge et le seuil de 35 % (orange au-delà),
+  **reste à vivre**, **mensualité maximale** et **capital empruntable**, **épargne restante** après l'apport.
+  Les dépassements des normes du HCSF s'affichent en avertissement, avec la mention « indicatif ».
+  Co-emprunteur : « Ajouter un co-emprunteur » (nom, revenus, charges mensuels).
+- **Simulations** : celles de la demande (comme E36), « Nouvelle simulation » préremplie avec le montant à
+  emprunter, « Comparer ».
+- **Pièces à fournir** : une ligne par pièce (R-CRE-17) : libellé, état (fournie ✓, incomplète « 1/2 »,
+  manquante ✗, non requise), documents (trouvés en italique, attribués en normal ; lien vers la fiche E35).
+  Actions par pièce : « Attribuer un document » (recherche dans la bibliothèque, ou envoi d'un nouveau
+  document, rattaché comme dans une section Documents), retirer une attribution, « Non requise » /
+  « Requise ». En tête : « N pièces manquantes ».
+- **Démarches** : une ligne par établissement ou courtier : nom, statut, envoyée le, réponse le, offre (lien
+  vers la simulation). « Nouvelle démarche » (établissement ou nom libre, date d'envoi) ; par ligne : changer le
+  statut, « Enregistrer l'offre » (simulation préremplie avec le montant à emprunter, rattachée à la démarche),
+  « Accepter l'offre » (confirmation, puis proposition de transformer en prêt), Supprimer. « Comparer les
+  offres » ouvre E37 avec les offres reçues.
+
+**Synthèse** (`/prets/demandes/:id/synthese`) : page sans navigation, mise en page pour l'impression (`@media
+print`) : projet, plan de financement, revenus et charges, capacité, simulation retenue, pièces et leur état.
+Bouton « Imprimer » (masqué à l'impression). **Exporter le dossier** : avertit des pièces manquantes, puis
+télécharge l'archive ZIP (R-CRE-19).
