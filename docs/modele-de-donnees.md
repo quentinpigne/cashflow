@@ -57,8 +57,13 @@ erDiagram
     Employment ||--o{ Salary : "rémunérations successives"
     Employment ||--o{ SalaryBonus : "primes"
     Category ||--o{ Employment : "salaire reçu sur"
-    Employment ||--o{ Payslip : "fiches de paie"
-    Payslip ||--|| Document : "fichier"
+    Document ||--o{ DocumentLink : "rattaché par"
+    DocumentLink }o--o| Account : "compte (relevés)"
+    DocumentLink }o--o| Employment : "emploi (fiches de paie)"
+    DocumentLink }o--o| Transaction : "justificatif"
+    DocumentLink }o--o| Asset : "bien"
+    DocumentLink }o--o| Loan : "prêt"
+    DocumentLink }o--o| Payee : "tiers"
     RateSchedule ||--o{ RatePeriod : "taux successifs"
     RateSchedule ||--o{ FixedSavingsTerms : "appliqué à"
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
@@ -126,20 +131,6 @@ erDiagram
 | `CASH` | `CHECKING`, `CASH_WALLET`, `OTHER_CASH` |
 | `FIXED_SAVINGS` | `LIVRET_A`, `LDDS`, `LEP`, `LIVRET_JEUNE`, `CEL`, `PEL`, `TERM_DEPOSIT`, `SAVINGS_OTHER` |
 | `VARIABLE_SAVINGS` | `LIFE_INSURANCE`, `PEA`, `PEA_PME`, `PER`, `SECURITIES`, `EMPLOYEE_SAVINGS`, `CRYPTO`, `VARIABLE_OTHER` |
-
-### BankStatement (relevé de compte, CPT-11)
-
-| Champ | Type | Contraintes |
-|---|---|---|
-| `account_id` | `Id` → Account | requis, suppression en cascade (le document est supprimé par le service) |
-| `statement_month` | `Date` | requis, premier jour d'un mois |
-| `period_start`, `period_end` | `Date` | optionnels, ensemble ; `period_start ≤ period_end` |
-| `document_id` | `Id` → Document | requis, unique ; un PDF |
-| `note` | texte | optionnel |
-
-Plusieurs relevés par mois sont permis (R-CPT-18). Un même fichier (`Document.sha256`) ne s'archive qu'une
-fois par compte (R-CPT-19). Le fichier est immuable : seuls `statement_month` et `note` se modifient
-(R-CPT-20).
 
 ### FixedSavingsTerms (1–1 avec un compte `FIXED_SAVINGS`)
 
@@ -408,38 +399,73 @@ Une rémunération dont `effective_month` est futur est prévue (R-SAL-4) ; rien
 | `recurring` | booléen | défaut `true` pour `THIRTEENTH_MONTH`, `false` sinon (R-SAL-11) |
 | `note` | texte | optionnel |
 
-### Payslip (fiche de paie)
-
-| Champ | Type | Contraintes |
-|---|---|---|
-| `employment_id` | `Id` → Employment | requis, suppression en cascade (le document est supprimé par le service) |
-| `pay_month` | `Date` | requis, premier jour d'un mois, entre le mois de début et le mois de fin de l'emploi |
-| `document_id` | `Id` → Document | requis, unique |
-| `note` | texte | optionnel |
-
-Plusieurs fiches par mois de paie sont permises (R-SAL-15). Un même fichier (`Document.sha256`) ne s'archive
-qu'une fois par emploi (R-SAL-16). Le fichier est immuable : seuls `pay_month` et `note` se modifient
-(R-SAL-17).
-
 ### Réglages
 
 `features.salaries` active la rubrique (R-SAL-14) ; `salaries.gap_tolerance` (`Rate`, défaut 5 %) fixe la
 tolérance de l'écart entre attendu et reçu (R-SAL-9).
 
-## Documents — ADR-0024
+## Documents — [spec 12](specs/12-documents.md)
+
+Décision : ADR-0024.
 
 ### Document
 
 | Champ | Type | Contraintes |
 |---|---|---|
+| `kind` | `DocumentKind` | optionnel : absent, le document est **à classer** (R-DOC-5) |
+| `title` | texte ≤ 120 | requis ; par défaut le nom du fichier sans extension (R-DOC-4) |
+| `document_date` | `Date` | optionnel (R-DOC-6) |
+| `period_start`, `period_end` | `Date` | optionnels, indépendants ; `period_start ≤ period_end` si les deux sont renseignés |
+| `month` | `Date` | premier jour d'un mois ; requis si `kind` vaut `BANK_STATEMENT` ou `PAYSLIP`, absent sinon (R-DOC-7) |
+| `note` | texte | optionnel |
 | `file_name` | texte ≤ 255 | requis : nom d'origine du fichier |
-| `media_type` | enum | `application/pdf` \| `image/jpeg` \| `image/png`, reconnu au contenu |
+| `media_type` | enum | `application/pdf` \| `image/jpeg` \| `image/png`, reconnu au contenu ; `application/pdf` si `kind` vaut `BANK_STATEMENT` |
 | `size_bytes` | entier | requis, > 0 et ≤ 10 Mo |
-| `sha256` | texte | requis : empreinte du contenu, 64 caractères hexadécimaux |
+| `sha256` | texte | requis, **unique** : empreinte du contenu, 64 caractères hexadécimaux (R-DOC-3) |
+| `content_indexed` | booléen | `true` si du texte a été extrait du fichier et indexé (R-DOC-19) |
 
-Le contenu est le fichier `/data/documents/<id>`, immuable. Un document est toujours rattaché : une fiche de
-paie (`Payslip`), un relevé de compte (`BankStatement`), plus tard une transaction (TRX-11). Sa suppression déplace le fichier dans
-`documents/trash/`, effacé après 400 jours.
+`DocumentKind` : `BANK_STATEMENT` (relevé de compte), `PAYSLIP` (fiche de paie), `CONTRACT` (contrat),
+`RECEIPT` (ticket de caisse), `INVOICE` (facture), `TAX` (document fiscal), `CERTIFICATE` (attestation),
+`LETTER` (courrier), `OTHER` (autre).
+
+Le contenu est le fichier `/data/documents/<id>`, immuable. Seuls la description (`kind` à `note`) et les
+rattachements se modifient. La suppression d'un document est toujours explicite : elle déplace le fichier dans
+`documents/trash/`, effacé après 400 jours (R-DOC-22).
+
+### DocumentLink (rattachement d'un document)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `document_id` | `Id` → Document | requis, suppression en cascade |
+| `account_id` | `Id` → Account | optionnel, suppression en cascade |
+| `institution_id` | `Id` → Institution | optionnel, suppression en cascade |
+| `employment_id` | `Id` → Employment | optionnel, suppression en cascade |
+| `transaction_id` | `Id` → Transaction | optionnel, suppression en cascade |
+| `asset_id` | `Id` → Asset | optionnel, suppression en cascade |
+| `loan_id` | `Id` → Loan | optionnel, suppression en cascade |
+| `payee_id` | `Id` → Payee | optionnel, suppression en cascade |
+| `project_id` | `Id` → Project | optionnel, suppression en cascade |
+
+**Exactement une** cible est renseignée (`CHECK`). Un document est rattaché au plus une fois à un même objet
+(un index unique partiel par cible : `(document_id, account_id) WHERE account_id IS NOT NULL`…). La suppression
+en cascade ne retire que le rattachement, jamais le document (R-DOC-12). Pas de `created_at`/`updated_at` :
+un rattachement se crée ou se supprime, il ne se modifie pas.
+
+Règles vérifiées par le domaine, pas par le schéma (R-DOC-10) : un document `BANK_STATEMENT` a au plus un
+rattachement à un compte, un document `PAYSLIP` au plus un à un emploi ; à la création ou au changement de
+type, ce rattachement est requis. Le mois d'une fiche de paie est compris entre le mois de début et le mois de
+fin de son emploi (R-SAL-15).
+
+Les vues **Relevés** d'un compte (CPT-11) et **Fiches de paie** d'un emploi (SAL-09) sont les documents de ce
+type rattachés à ce compte ou à cet emploi.
+
+### Index de recherche (R-DOC-18, R-DOC-19)
+
+Table virtuelle FTS5 `document_search` : colonne `document_id` (`UNINDEXED`), colonnes indexées `title`,
+`note`, `file_name`, `content` ; tokeniseur `unicode61 remove_diacritics 2`. Le lien passe par l'identifiant et
+non par le `rowid`, que `VACUUM` peut renuméroter sur une table sans clé `INTEGER PRIMARY KEY`. Tenue à jour par le service dans la même
+transaction que le document. Dérivée des documents et de leurs fichiers : ni exportée, ni soumise aux
+contraintes `STRICT` (une table virtuelle ne l'est pas), reconstruite par `cashflow documents reindex`.
 
 ## Import — [spec 03](specs/03-import.md)
 

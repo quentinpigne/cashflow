@@ -17,8 +17,8 @@ Les données sont bancaires. D'autres appareils partagent le réseau domestique 
   de sous-commandes : `serve`, `migrate`, `seed`, `export`, `import-export`, `backup`, `set-password`, `token` (jetons d'accès, ADR-0023).
 - **Image Docker** multi-étapes (build de l'interface, build Rust, image finale minimale non-root),
   publiée pour `linux/amd64` (serveur cible en x86-64) ; `linux/arm64` reste possible sans changement de code.
-- Un volume `/data` contient tout l'état : `cashflow.db`, `imports/` (fichiers source), `documents/` (fiches de
-  paie, ADR-0024), `backups/`.
+- Un volume `/data` contient tout l'état : `cashflow.db`, `imports/` (fichiers source), `documents/`
+  (bibliothèque de documents, ADR-0024), `backups/`.
 - Un `compose.yaml` : un seul service, `cashflow`, publié sur le réseau local.
 
 ### HTTP en V1, HTTPS par axum ensuite

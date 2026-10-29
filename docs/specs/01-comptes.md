@@ -39,7 +39,8 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
   valeur est marquée « estimée » lorsque la dernière valorisation date de plus de **90 jours** (seuil
   réglable).
 - **R-CPT-7** — Un compte qui a des transactions ne peut pas être supprimé, seulement clôturé.
-  Supprimer un compte vide supprime aussi ses conditions, valorisations et points de contrôle.
+  Supprimer un compte vide supprime aussi ses conditions, valorisations et points de contrôle ; ses
+  documents, relevés compris, restent dans la bibliothèque, sauf demande contraire (R-DOC-12).
 - **R-CPT-8** — Un IBAN saisi est validé (longueur par pays, clé modulo 97) et affiché masqué
   (`FR76 •••• •••• •••• •••• •••4 21`) sauf demande explicite.
 - **R-CPT-9** — Un compte `FIXED_SAVINGS` a obligatoirement des `FixedSavingsTerms`. Les natures
@@ -63,17 +64,19 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
 
 ### Relevés de compte
 
-- **R-CPT-18** — Un **relevé de compte** est un document PDF (ADR-0024) rattaché à un compte et à un **mois de
-  relevé**, avec sa période (début et fin) quand elle est connue et une note optionnelle. Le fichier est un PDF
-  d'au plus 10 Mo, reconnu à son contenu et non à son extension. Plusieurs relevés pour un même mois sont
-  permis (relevé rectificatif, relevé de clôture).
-- **R-CPT-19** — Un relevé arrive dans l'archive de deux façons : **à la validation d'un import** dont le
-  fichier source est un PDF (R-IMP-28), ou par un **envoi** depuis la fiche du compte (relevé ancien, compte
-  suivi sans import). Un même fichier (même empreinte SHA-256) ne s'archive qu'une fois par compte : un second
-  envoi est refusé, avec le mois du relevé existant ; à l'import, il est ignoré sans erreur.
-- **R-CPT-20** — Le fichier d'un relevé est **immuable** : on modifie son mois et sa note ; pour corriger le
-  fichier, on supprime le relevé et on en envoie un autre. Supprimer un relevé, ou son compte (R-CPT-7),
-  supprime son document (suppression différée, ADR-0024). Annuler l'import qui l'a archivé (R-IMP-17), ou
+- **R-CPT-18** — Un **relevé de compte** est un document de la bibliothèque (spec 12) de type relevé de compte,
+  rattaché à un seul compte (R-DOC-10) et à un **mois de relevé** (R-DOC-7), avec sa période (début et fin)
+  quand elle est connue et une note optionnelle. Le fichier est un PDF d'au plus 10 Mo, reconnu à son contenu
+  et non à son extension (R-DOC-1). Plusieurs relevés pour un même mois sont permis (relevé rectificatif,
+  relevé de clôture).
+- **R-CPT-19** — Un relevé arrive dans la bibliothèque de trois façons : **à la validation d'un import** dont
+  le fichier source est un PDF (R-IMP-28), par un **envoi** depuis la section Relevés du compte (relevé ancien,
+  compte suivi sans import), ou en **classant** dans la bibliothèque un document envoyé sans type. Un fichier
+  déjà archivé (R-DOC-3) est refusé à l'envoi, avec le titre du document existant ; à l'import, il est ignoré
+  sans erreur.
+- **R-CPT-20** — Le fichier d'un relevé est **immuable** (R-DOC-2) : on modifie son mois, sa période et sa
+  note. Supprimer un relevé le retire de la bibliothèque (R-DOC-22) ; supprimer son compte le laisse dans la
+  bibliothèque sans compte, sauf demande contraire (R-DOC-12). Annuler l'import qui l'a archivé (R-IMP-17), ou
   supprimer le fichier source de cet import (R-IMP-21), ne touche pas au relevé.
 - **R-CPT-21** — Les relevés s'affichent par année, du mois le plus récent au plus ancien ; chacun s'ouvre
   dans le navigateur ou se télécharge. Un **mois sans relevé** est un mois sans aucun relevé, compté à partir
@@ -143,6 +146,7 @@ Critères d'acceptation :
 - J'envoie depuis le compte le relevé PDF de mars 2024, sans l'importer : il est archivé en mars 2024 ; les
   mois d'avril 2024 à août 2026 sans relevé sont signalés « sans relevé ».
 - Envoyer une seconde fois le relevé de septembre 2026 est refusé : « Ce fichier est déjà archivé
-  (relevé de 09/2026). » Le réimporter puis valider l'import n'archive rien de plus.
+  (Relevé Compte courant septembre 2026). » Le réimporter puis valider l'import n'archive rien de plus.
 - Annuler l'import de septembre 2026 laisse le relevé dans l'archive.
 - Une image JPEG, ou un fichier de 12 Mo, est refusée.
+- Le relevé de septembre 2026 apparaît aussi dans la bibliothèque (E34), au filtre « Relevé de compte ».

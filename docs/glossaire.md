@@ -17,8 +17,8 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Solde calculé | `computed balance` | Solde d'ouverture + somme des transactions jusqu'à une date. Jamais stocké comme vérité. |
 | Valorisation | `Valuation` | Valeur constatée d'un compte d'épargne variable (relevé d'assurance vie, de PEA…), à une date. |
 | Compte clôturé | `closed_on` | Compte fermé à une date : aucune transaction possible après cette date. |
-| Relevé de compte | `BankStatement` | Document PDF archivé d'un compte pour un mois de relevé (CPT-11). |
-| Mois du relevé | `statement_month` | Mois que couvre un relevé de compte : celui qui contient le plus de jours de sa période (R-IMP-28). |
+| Relevé de compte | `BANK_STATEMENT` | Document de ce type (PDF), rattaché à un compte pour un mois de relevé (CPT-11, R-DOC-10). |
+| Mois du relevé | `Document.month` | Mois que couvre un relevé de compte : celui qui contient le plus de jours de sa période (R-IMP-28). |
 | Mois sans relevé | `missing statement month` | Mois d'un compte sans relevé, depuis le premier archivé (R-CPT-21). |
 
 ## Biens et prêts
@@ -56,10 +56,9 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Versement décalé | `paid_next_month` | Le salaire du mois M est versé en M+1. |
 | Revenu annuel | — | Net (ou brut) d'un emploi sur une année civile, primes comprises (R-SAL-7). |
 | Écart de salaire | `salary gap` | Net reçu sur la catégorie d'un emploi − net attendu, pour un mois (R-SAL-9). |
-| Fiche de paie | `Payslip` | Document archivé d'un emploi pour un mois de paie (SAL-09). |
-| Mois de paie | `pay_month` | Mois travaillé que couvre une fiche de paie. |
+| Fiche de paie | `PAYSLIP` | Document de ce type, rattaché à un emploi pour un mois de paie (SAL-09, R-DOC-10). |
+| Mois de paie | `Document.month` | Mois travaillé que couvre une fiche de paie. |
 | Mois sans fiche | `missing payslip month` | Mois d'un emploi sans fiche de paie, depuis la première archivée (R-SAL-18). |
-| Document | `Document` | Fichier envoyé par l'utilisateur (PDF, JPEG, PNG), conservé sur le disque, immuable (ADR-0024). |
 | Taux de hausse des salaires | `salary_growth_rate` | Hausse annuelle du net projeté, fixée par scénario. |
 | Taux de hausse des dépenses | `expense_growth_rate` | Hausse annuelle des dépenses projetées, fixée par scénario. |
 | Capacité d'épargne | `savings capacity` | Revenus projetés − dépenses projetées − échéances de prêts, pour un mois de projection (R-PRJ-42). |
@@ -102,6 +101,19 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Département | `Department` | Département français, déduit du code postal (R-TIE-24) ; code `38`, `2A`, `974`. |
 | Lieu | `Location` | Pays, département ou ville selon lequel l'analyse par lieu regroupe les tiers (R-TIE-28). |
 | Recherche d'adresse, géocodage | `Geocoding` | Proposition d'adresses et de coordonnées par la Base Adresse Nationale (BAN), à partir d'un texte saisi (R-TIE-26, ADR-0025). |
+
+## Documents
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Bibliothèque (de documents) | — | Ensemble des documents archivés, consultable et cherchable en un seul endroit (spec 12). |
+| Document | `Document` | Fichier envoyé par l'utilisateur (PDF, JPEG, PNG), immuable, conservé sur le disque (ADR-0024), avec sa description : type, titre, date, période, mois, note. |
+| Type de document | `DocumentKind` | `BANK_STATEMENT`, `PAYSLIP`, `CONTRACT`, `RECEIPT`, `INVOICE`, `TAX`, `CERTIFICATE`, `LETTER`, `OTHER` (R-DOC-5). |
+| À classer | `kind` absent | État d'un document envoyé sans type (R-DOC-5, R-DOC-14). |
+| Rattachement (d'un document) | `DocumentLink` | Lien entre un document et un objet qu'il concerne : compte, établissement, emploi, transaction, bien, prêt, tiers, projet (R-DOC-9). Sans effet sur les montants ; à ne pas confondre avec le rattachement d'une ventilation (R-TRX-37). |
+| Justificatif | — | Document rattaché à une transaction : ticket de caisse, facture (DOC-04). |
+| Date de référence | `reference date` | Date qui classe un document : sa date, à défaut son mois, à défaut le début de sa période, à défaut sa date d'envoi (R-DOC-8). |
+| Contenu indexé | `content_indexed` | Texte extrait d'un PDF et indexé pour la recherche ; absent pour une image ou un scan (R-DOC-19). |
 
 ## Import et rapprochement
 

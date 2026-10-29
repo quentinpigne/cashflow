@@ -30,10 +30,13 @@ Format de l'export complet (ADR-0008), produit par `GET /api/v1/export` ou `cash
   forme de chaîne. Les colonnes générées (`balance_date`) ne sont pas exportées.
 - Ne sont **pas** exportés : l'utilisateur et ses sessions. Après une restauration, on définit le mot de
   passe avec `cashflow set-password`.
-- Les tables `document`, `payslip` et `bank_statement` ne portent que les **métadonnées** des fiches de paie
-  et des relevés de compte (nom, type, taille, empreinte SHA-256). Leur contenu est dans le dossier `documents/` du volume, nommé par
-  l'identifiant du document (ADR-0024) : pour une restauration intégrale, on copie ce dossier à côté de la
-  base restaurée. L'archive ZIP de l'option « inclure les fichiers » (ADR-0008) les contiendra.
+- Les tables `document` et `document_link` ne portent que la **description** des documents (titre, type,
+  dates, note, nom de fichier, taille, empreinte SHA-256) et leurs rattachements. Leur contenu est dans le
+  dossier `documents/` du volume, nommé par l'identifiant du document (ADR-0024) : pour une restauration
+  intégrale, on copie ce dossier à côté de la base restaurée. L'archive ZIP de l'option « inclure les
+  fichiers » (ADR-0008) les contiendra.
+- L'index de recherche des documents (`document_search`) n'est pas exporté : il est dérivé des documents et se
+  reconstruit après une restauration (`cashflow documents reindex`, R-DOC-19).
 
 ## Garanties
 

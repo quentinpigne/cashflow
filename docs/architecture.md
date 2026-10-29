@@ -143,7 +143,7 @@ cashflow/
 │   │   └── src/{shared,accounts,ledger,import,reconciliation,
 │   │            budgeting,savings,projection,reporting}.rs + dossiers homonymes
 │   └── server/                ← binaire `cashflow` et ses sous-commandes
-│       ├── src/cli.rs + cli/  ← ligne de commande : un fichier par sous-commande (serve, données, mot de passe, jetons)
+│       ├── src/cli.rs + cli/  ← ligne de commande : un fichier par sous-commande (serve, données, mot de passe, jetons, documents)
 │       ├── src/routes.rs + routes/ ← assemblage des routes axum par domaine, contrat OpenAPI, fichiers statiques
 │       ├── src/handlers.rs + handlers/ ← handlers axum, DTO, description OpenAPI (utoipa)
 │       ├── src/middleware.rs       ← session, alertes de budget
@@ -223,6 +223,7 @@ server ──► domain
 | `savings` | `InterestEngine`, `PerformanceEngine` | `db::rates` | `/rate-schedules`, `/accounts/{id}/interest`, `/accounts/{id}/performance` |
 | `projection` | `ProjectionEngine` | `db::scenarios` | `/scenarios`, `/projections` |
 | `reporting` | `Indicators` | — | `/dashboard`, `/reports/*` |
+| `documents` | validation de la description et des rattachements (R-DOC-5 à R-DOC-10), date de référence | `db::documents` ; fichiers `documents/`, extraction du texte des PDF (`readers::pdf`) | `/documents`, `/documents/{id}/content`, `/documents/{id}/links` |
 | — | — | export JSON | `/export` (et sous-commande `cashflow export`) |
 
 ### SQLite

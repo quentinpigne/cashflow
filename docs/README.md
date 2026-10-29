@@ -52,7 +52,8 @@ docs/
 │   ├── 08-tableau-de-bord.md
 │   ├── 09-biens-et-prets.md
 │   ├── 10-salaires.md
-│   └── 11-tiers.md
+│   ├── 11-tiers.md
+│   └── 12-documents.md
 └── adr/               ← Architecture Decision Records
     ├── README.md      ← index + processus
     ├── template.md
@@ -70,6 +71,6 @@ Les consignes pour Claude Code sont dans `CLAUDE.md`, à la racine du dépôt.
   - Features : `<DOMAINE>-<nn>` (ex. `IMP-04`), avec une priorité `MVP`, `V1` ou `V2`.
   - Codes domaine : `CPT` comptes, `TRX` transactions, `IMP` import, `RAP` rapprochement,
     `BUD` budgets, `EPA` épargne, `PRJ` projections, `TDB` tableau de bord, `BIE` biens, `PRE` prêts, `SAL` salaires,
-    `TIE` tiers.
+    `TIE` tiers, `DOC` documents.
 - **Statut des documents** : chaque spec indique en tête `Brouillon`, `Revue` ou `Validée`.
 - **Décisions** : toute décision structurante passe par un ADR (voir [adr/README.md](adr/README.md)).

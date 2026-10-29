@@ -35,7 +35,8 @@ l'interface n'en montre plus rien.
   L'achat, l'apport, les frais et les travaux sont des transactions des comptes qui les paient (R-BIE-8).
 - **R-BIE-5** — Projection : un bien garde sa dernière valeur, sans plus-value ni dépréciation supposées.
 - **R-BIE-6** — Supprimer un bien supprime ses estimations ; les prêts qui le finançaient perdent ce lien,
-  et ses ventilations d'acquisition redeviennent non catégorisées.
+  et ses ventilations d'acquisition redeviennent non catégorisées. Ses documents restent dans la
+  bibliothèque, sauf demande contraire (R-DOC-12).
 - **R-BIE-8** — Une **ventilation d'acquisition** est rattachée à un bien, sans catégorie ni projet : elle
   n'entre ni dans les revenus, ni dans les dépenses, ni dans les budgets, ni dans le total non catégorisé.
   On l'emploie pour l'apport ou tout paiement qui entre dans le prix d'achat ; les frais et les travaux
@@ -99,7 +100,8 @@ l'interface n'en montre plus rien.
   du bien montre ses prêts et sa **valeur nette** (valeur − capital restant dû de ses prêts). Ce lien n'a
   aucun effet sur le patrimoine.
 - **R-PRE-11** — Supprimer un prêt annule d'abord la ventilation de ses mensualités (après confirmation) ;
-  ses capitaux restants dus saisis sont supprimés avec lui.
+  ses capitaux restants dus saisis sont supprimés avec lui. Ses documents restent dans la bibliothèque, sauf
+  demande contraire (R-DOC-12).
 
 ## Activation
 

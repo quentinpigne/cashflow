@@ -62,6 +62,7 @@ Les données sont sensibles et ne doivent pas quitter mon contrôle sans action 
 | Biens et prêts | Biens, prêts, tableau d'amortissement | [09](specs/09-biens-et-prets.md) |
 | Salaires | Emplois, rémunérations et primes déclarées, comparaison au reçu, projection, capacité d'épargne | [10](specs/10-salaires.md) |
 | Tiers | Tiers des transactions, groupes de tiers (enseignes), adresse, dépenses par tiers, par groupe et par lieu | [11](specs/11-tiers.md) |
+| Documents | Bibliothèque de documents (relevés, fiches de paie, contrats, tickets, factures…) rattachés aux comptes, emplois, transactions, biens, prêts, tiers et projets ; recherche dans leur contenu | [12](specs/12-documents.md) |
 
 ## Non-objectifs (au moins pour la V1)
 

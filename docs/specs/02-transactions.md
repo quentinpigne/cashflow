@@ -187,7 +187,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 | TRX-08 | V1 | Vue transverse de toutes les transactions (tous comptes) |
 | TRX-09 | — | *(supprimée : remplacée par la spec 11, TIE-01 à TIE-05)* |
 | TRX-10 | V2 | Étiquettes libres (tags) transverses aux catégories (« Vacances 2026 ») |
-| TRX-11 | V2 | Pièces jointes (justificatifs) |
+| TRX-11 | — | *(supprimée : devenue DOC-04, spec 12)* |
 | TRX-12 | V1 | Remboursements de frais : lier une entrée à une ou plusieurs dépenses, en tout ou partie ; remboursement attendu et reste à recevoir |
 
 ### TRX-01 — Saisir une transaction

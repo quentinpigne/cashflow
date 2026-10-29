@@ -46,7 +46,7 @@ opération à l'autre. Les règles de catégorisation font le lien entre les lib
 - **R-TIE-6** — Un tiers **archivé** n'est plus proposé en saisie. Ses transactions, ses récurrences et les
   règles qui l'affectent restent inchangées. Il reste visible dans les analyses et les filtres.
 - **R-TIE-7** — **Fusionner** le tiers A dans le tiers B réaffecte à B les transactions, les récurrences et
-  les actions de règle (`set_payee`) de A, puis supprime A. La confirmation indique le nombre de transactions
+  les actions de règle (`set_payee`) de A, ainsi que ses rattachements de documents (R-DOC-13), puis supprime A. La confirmation indique le nombre de transactions
   concernées. La fusion est atomique.
 
 ## Tiers d'une transaction

@@ -2,7 +2,7 @@
 
 Statut : **Validée** (2026-10-22)
 Modèle : [Employment, Salary, SalaryBonus, Payslip](../modele-de-donnees.md#salaires--spec-10)
-Décision : ADR-0022 (salaires déclarés et capacité d'épargne projetée), ADR-0024 (documents archivés)
+Décision : ADR-0022 (salaires déclarés et capacité d'épargne projetée), ADR-0024 (bibliothèque de documents)
 
 ## Concepts
 
@@ -45,6 +45,7 @@ La rubrique est **facultative**, comme Biens et Prêts.
   sinon). Une prime à date future est prévue (comme R-SAL-4). Un intéressement placé directement sur un plan
   d'épargne salariale n'est pas une prime : il se suit par les valorisations de ce compte (ADR-0010).
 - **R-SAL-6** — Supprimer un emploi supprime ses rémunérations et ses primes. Les transactions ne changent pas.
+  Ses documents, fiches de paie comprises, restent dans la bibliothèque, sauf demande contraire (R-DOC-12).
 
 ## Évolution
 
@@ -91,15 +92,16 @@ La rubrique est **facultative**, comme Biens et Prêts.
 
 ## Fiches de paie
 
-- **R-SAL-15** — Une **fiche de paie** est un document (ADR-0024) rattaché à un emploi et à un **mois de
-  paie** : le mois travaillé qu'elle couvre, entre le mois de début et le mois de fin de l'emploi. Le fichier
-  est un PDF, un JPEG ou un PNG d'au plus 10 Mo, reconnu à son contenu et non à son extension. Plusieurs
-  fiches pour un même mois sont permises (fiche rectificative, solde de tout compte). Note optionnelle.
-- **R-SAL-16** — Un même fichier (même empreinte SHA-256) ne s'archive qu'une fois par emploi : un second envoi
-  est refusé, avec le mois de la fiche existante.
-- **R-SAL-17** — Le fichier d'une fiche est **immuable** : on modifie son mois de paie et sa note ; pour
-  corriger le fichier, on supprime la fiche et on en envoie une autre. Supprimer une fiche, ou son emploi,
-  supprime son document (suppression différée, ADR-0024).
+- **R-SAL-15** — Une **fiche de paie** est un document de la bibliothèque (spec 12) de type fiche de paie,
+  rattaché à un seul emploi (R-DOC-10) et à un **mois de paie** (R-DOC-7) : le mois travaillé qu'elle couvre,
+  entre le mois de début et le mois de fin de l'emploi. Le fichier est un PDF, un JPEG ou un PNG d'au plus
+  10 Mo, reconnu à son contenu et non à son extension (R-DOC-1). Plusieurs fiches pour un même mois sont
+  permises (fiche rectificative, solde de tout compte). Note optionnelle.
+- **R-SAL-16** — Un fichier déjà archivé dans la bibliothèque (R-DOC-3) est refusé, avec le titre du document
+  existant.
+- **R-SAL-17** — Le fichier d'une fiche est **immuable** (R-DOC-2) : on modifie son mois de paie et sa note.
+  Supprimer une fiche la retire de la bibliothèque (R-DOC-22) ; supprimer son emploi la laisse dans la
+  bibliothèque sans emploi, sauf demande contraire (R-DOC-12).
 - **R-SAL-18** — Les fiches s'affichent par année, du mois le plus récent au plus ancien ; chacune s'ouvre
   dans le navigateur ou se télécharge. Un **mois sans fiche** est un mois de l'emploi sans aucune fiche,
   compté à partir du mois de la première fiche archivée et jusqu'au mois de fin de l'emploi ou au mois
@@ -162,6 +164,7 @@ janvier. Rémunérations : 2022-09 (embauche) 38 000 € brut, 2 400 € net ; 2
 
 - Fiches archivées : juillet 2026, août 2026 (deux fichiers : la fiche et sa rectificative), octobre 2026,
   envoyée en avance. Septembre 2026 est signalé « sans fiche » ; les mois d'avant juillet 2026 ne le sont pas.
-- Envoyer une seconde fois le PDF d'août 2026 est refusé : « Ce fichier est déjà archivé (août 2026). »
+- Envoyer une seconde fois le PDF d'août 2026 est refusé : « Ce fichier est déjà archivé (Fiche de paie Acme
+  août 2026). »
 - Un scan de 12 Mo est refusé, comme un document Word renommé en `.pdf`.
 - Mettre une fiche en septembre 2026 au lieu d'août : on modifie son mois de paie, le fichier ne change pas.
