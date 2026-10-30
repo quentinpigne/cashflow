@@ -806,8 +806,8 @@ concernent (DOC-01 à DOC-04).
 
 Ce qui change dans les écrans existants :
 
-- **Navigation** : entrée **Documents** (E34) dans le menu latéral, après Analyses ; sur mobile, dans le menu ⋮
-  de l'en-tête, avant Import.
+- **Navigation** : entrée **Documents** (E34) dans le menu latéral, entre Projections et Réglages ; sur mobile,
+  dans le menu ⋮ de l'en-tête, après Projections.
 - **Section Documents** (DOC-02), sur les fiches d'un compte (E3, sous les relevés), d'un emploi (E30, sous les
   fiches de paie), d'un bien (E26), d'un prêt (E28), d'un tiers (E32, pas sur celle d'un groupe), d'un projet
   (E20, détail) : les documents rattachés, hors relevés et fiches de paie qui ont leur propre section, du plus

@@ -64,8 +64,8 @@ export class Shell {
     { path: '/budget', label: 'Budget', icon: 'savings', exact: false },
     { path: '/import', label: 'Import', icon: 'upload_file', exact: false },
     { path: '/analyses', label: 'Analyses', icon: 'insights', exact: false },
-    { path: '/documents', label: 'Documents', icon: 'folder_open', exact: false },
     { path: '/projections', label: 'Projections', icon: 'timeline', exact: false },
+    { path: '/documents', label: 'Documents', icon: 'folder_open', exact: false },
     { path: '/reglages', label: 'Réglages', icon: 'settings', exact: false },
   ]);
 
