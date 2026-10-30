@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\", amount,\n                  exclude_from_period_budgets AS \"exclude: bool\", status, alert_thresholds, note\n           FROM project\n           ORDER BY CASE status WHEN 'ACTIVE' THEN 0 WHEN 'PLANNED' THEN 1 ELSE 2 END, start_date DESC,\n                    name COLLATE NOCASE",
+  "query": "SELECT id, name, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\", amount,\n                  exclude_from_period_budgets AS \"exclude: bool\", status, alert_thresholds, note,\n                  provision_from\n           FROM project\n           ORDER BY CASE status WHEN 'ACTIVE' THEN 0 WHEN 'PLANNED' THEN 1 ELSE 2 END, start_date DESC,\n                    name COLLATE NOCASE",
   "describe": {
     "columns": [
       {
@@ -101,6 +101,17 @@
             "name": "note"
           }
         }
+      },
+      {
+        "name": "provision_from",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project",
+            "name": "provision_from"
+          }
+        }
       }
     ],
     "parameters": {
@@ -115,8 +126,9 @@
       false,
       false,
       true,
+      true,
       true
     ]
   },
-  "hash": "2cb98daaaab191acea41eabb4d8f4dab5023331b293728e6b19884026e6864b8"
+  "hash": "77de347b9c169e43fcebdd84b167b42adad69d524670bd6fb4700626ea31bbc7"
 }

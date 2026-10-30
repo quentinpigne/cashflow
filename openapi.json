@@ -1537,6 +1537,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "planned_projects",
+            "in": "query",
+            "description": "Compter les projets en projet (R-BUD-72) ; oui par défaut.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -15524,6 +15533,8 @@
           "uncategorized_out_minor",
           "uncategorized_in_minor",
           "excluded_projects_minor",
+          "projects",
+          "planned_projects",
           "to_budget_minor",
           "balance_minor",
           "income_minor",
@@ -15575,6 +15586,17 @@
           "off_budget_income_minor": {
             "type": "integer",
             "format": "int64"
+          },
+          "planned_projects": {
+            "type": "boolean",
+            "description": "Compte des projets en projet (R-BUD-72)."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectMonthView"
+            },
+            "description": "Projets exclus des lignes du mois : prévu et réel (R-BUD-74)."
           },
           "savings_minor": {
             "type": "integer",
@@ -17251,6 +17273,13 @@
               "null"
             ]
           },
+          "provision_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Début de la mise de côté, `AAAA-MM` (R-BUD-73)."
+          },
           "start_date": {
             "type": "string",
             "format": "date"
@@ -17307,6 +17336,13 @@
           },
           "name": {
             "type": "string"
+          },
+          "planned_month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Mois prévu de la dépense, `AAAA-MM` (R-BUD-70)."
           }
         }
       },
@@ -17346,6 +17382,72 @@
           },
           "name": {
             "type": "string"
+          },
+          "planned_month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Mois prévu de la dépense, `AAAA-MM` (R-BUD-70)."
+          }
+        }
+      },
+      "ProjectMonthView": {
+        "type": "object",
+        "description": "Un projet dans le budget du mois (R-BUD-74).",
+        "required": [
+          "project_id",
+          "name",
+          "status",
+          "provision",
+          "planned_minor",
+          "actual_minor"
+        ],
+        "properties": {
+          "actual_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Réel du mois, rattaché au projet."
+          },
+          "name": {
+            "type": "string"
+          },
+          "planned_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId"
+          },
+          "provision": {
+            "type": "boolean",
+            "description": "Le prévu du mois est une quote-part de mise de côté (R-BUD-73)."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          }
+        }
+      },
+      "ProjectScheduleMonth": {
+        "type": "object",
+        "description": "Un mois du calendrier d'un projet : prévu (R-BUD-70) et réel.",
+        "required": [
+          "month",
+          "planned_minor",
+          "actual_minor"
+        ],
+        "properties": {
+          "actual_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string",
+            "description": "`AAAA-MM`."
+          },
+          "planned_minor": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -17426,6 +17528,8 @@
           "alert",
           "lines",
           "unassigned_minor",
+          "provision",
+          "schedule",
           "by_category",
           "splits"
         ],
@@ -17489,6 +17593,27 @@
               "null"
             ]
           },
+          "provision": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProvisionMonth"
+            },
+            "description": "Quotes-parts de la mise de côté ; vide sans mise de côté, ou si elle n'est plus possible."
+          },
+          "provision_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Début de la mise de côté, `AAAA-MM` (R-BUD-73)."
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectScheduleMonth"
+            },
+            "description": "Calendrier : les mois du prévu et ceux qui ont du réel, dans l'ordre."
+          },
           "splits": {
             "type": "array",
             "items": {
@@ -17531,6 +17656,24 @@
           "value_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "ProvisionMonth": {
+        "type": "object",
+        "description": "Une quote-part de la mise de côté (R-BUD-73).",
+        "required": [
+          "month",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "month": {
+            "type": "string",
+            "description": "`AAAA-MM`."
           }
         }
       },

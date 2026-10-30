@@ -32,7 +32,7 @@ fn line(kind: BudgetKind, category: CategoryId, amount: i64, from: &str) -> Budg
 }
 
 async fn view(db: &Db, month: &str) -> MonthBudgetView {
-    budgets::month(db, &MonthQuery { month: Some(month.into()) }, d(TODAY)).await.unwrap()
+    budgets::month(db, &MonthQuery { month: Some(month.into()), planned_projects: None }, d(TODAY)).await.unwrap()
 }
 
 fn actual(view: &MonthBudgetView, name: &str) -> i64 {
@@ -169,6 +169,7 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
         status: ProjectStatus::Active,
         alert_thresholds: None,
         note: None,
+        provision_from: None,
     };
     let project = budgets::save_project(&db, None, &input).await.unwrap();
     let dinner = transactions::create(&db, &tx(checking, "2026-03-10", -8_000, Some(restaurants))).await.unwrap();
@@ -246,7 +247,13 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
 }
 
 fn post(id: Option<ProjectLineId>, name: &str, amount: i64, categories: &[CategoryId]) -> ProjectLineInput {
-    ProjectLineInput { id, name: name.into(), amount_minor: amount, category_ids: categories.to_vec() }
+    ProjectLineInput {
+        id,
+        name: name.into(),
+        amount_minor: amount,
+        category_ids: categories.to_vec(),
+        planned_month: None,
+    }
 }
 
 fn line_of<'a>(project: &'a ProjectView, name: &str) -> &'a budgets::ProjectLineView {
@@ -278,6 +285,7 @@ async fn bud_11_project_lines_r_bud_26_to_28() {
         status: ProjectStatus::Active,
         alert_thresholds: None,
         note: None,
+        provision_from: None,
     };
     let project = budgets::save_project(&db, None, &input).await.unwrap();
     assert_eq!(project.amount_minor, 100_000);
@@ -537,4 +545,94 @@ async fn r_bud_10_r_bud_11_line_over_several_categories() {
     assert!(versions.iter().all(|v| v.category_ids.iter().filter(|c| **c == fuel).count() == 1));
     assert!(versions.iter().all(|v| !v.category_ids.contains(&toll)));
     assert_eq!(actual(&view(&db, "2026-03").await, "Voiture"), 7_500);
+}
+
+/// Critère d'acceptation de BUD-14 : mois prévu, mise de côté et projets dans le budget du mois (R-BUD-70 à R-BUD-74).
+#[tokio::test]
+async fn bud_14_project_in_month_budget_r_bud_70_to_74() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let restaurants = category(&db, "Resto B", CategoryKind::Expense, None).await;
+    let salary = category(&db, "Salaire B", CategoryKind::Income, None).await;
+    budgets::create_line(&db, &line(BudgetKind::Income, salary, 300_000, "2026-01")).await.unwrap();
+    let mut train = post(None, "Train", 50_000, &[]);
+    train.planned_month = Some("2026-05".into());
+    let input = ProjectInput {
+        name: "Italie".into(),
+        start_date: d("2026-07-01"),
+        end_date: Some(d("2026-07-31")),
+        amount_minor: None,
+        lines: vec![train, post(None, "Logement", 30_000, &[]), post(None, "Restaurants", 20_000, &[restaurants])],
+        exclude_from_period_budgets: true,
+        status: ProjectStatus::Planned,
+        alert_thresholds: None,
+        note: None,
+        provision_from: None,
+    };
+    let project = budgets::save_project(&db, None, &input).await.unwrap();
+    let planned: Vec<(&str, i64)> = project.schedule.iter().map(|m| (m.month.as_str(), m.planned_minor)).collect();
+    assert_eq!(planned, vec![("2026-05", 50_000), ("2026-07", 50_000)]);
+    assert_eq!(line_of(&project, "Train").planned_month.as_deref(), Some("2026-05"));
+
+    // Le projet en projet compte par défaut ; l'interrupteur coupé, il disparaît du reste à budgéter (R-BUD-72).
+    let may = view(&db, "2026-05").await;
+    assert_eq!(may.projects.len(), 1);
+    assert_eq!(may.projects[0].planned_minor, 50_000);
+    assert!(!may.projects[0].provision);
+    assert_eq!(may.to_budget_minor, 250_000);
+    let without =
+        budgets::month(&db, &MonthQuery { month: Some("2026-05".into()), planned_projects: Some(false) }, d(TODAY))
+            .await
+            .unwrap();
+    assert!(without.projects.is_empty());
+    assert_eq!(without.to_budget_minor, 300_000);
+
+    // Mise de côté de mars à avril, avant le train de mai (R-BUD-73) : les mois de la dépense n'ont plus de prévu.
+    let provisioned = budgets::save_project(
+        &db,
+        Some(project.id),
+        &ProjectInput { provision_from: Some("2026-03".into()), lines: project_lines(&project), ..input.clone() },
+    )
+    .await
+    .unwrap();
+    let provision: Vec<(&str, i64)> =
+        provisioned.provision.iter().map(|m| (m.month.as_str(), m.amount_minor)).collect();
+    assert_eq!(provision, vec![("2026-03", 50_000), ("2026-04", 50_000)]);
+    let march = view(&db, "2026-03").await;
+    assert!(march.projects[0].provision);
+    assert_eq!(march.to_budget_minor, 250_000);
+    assert!(view(&db, "2026-05").await.projects.is_empty());
+
+    // Le réel du mois s'affiche avec le projet (R-BUD-74).
+    let dinner = transactions::create(&db, &tx(checking, "2026-03-10", -4_500, Some(restaurants))).await.unwrap();
+    budgets::save_project(&db, Some(project.id), &ProjectInput { status: ProjectStatus::Active, ..input.clone() })
+        .await
+        .unwrap();
+    budgets::attach(&db, &AttachInput { transaction_ids: vec![dinner], project_id: Some(project.id) }).await.unwrap();
+    let march = view(&db, "2026-03").await;
+    assert_eq!(march.projects[0].actual_minor, 4_500);
+    assert_eq!(march.projects[0].planned_minor, 0);
+
+    // Une mise de côté sans mois avant la dépense est refusée.
+    let refused = budgets::save_project(
+        &db,
+        Some(project.id),
+        &ProjectInput { provision_from: Some("2026-05".into()), ..input.clone() },
+    )
+    .await;
+    assert_eq!(domain_error(refused), DomainError::InvalidProvision);
+}
+
+fn project_lines(project: &ProjectView) -> Vec<ProjectLineInput> {
+    project
+        .lines
+        .iter()
+        .map(|l| ProjectLineInput {
+            id: Some(l.id),
+            name: l.name.clone(),
+            amount_minor: l.amount_minor,
+            category_ids: l.category_ids.clone(),
+            planned_month: l.planned_month.clone(),
+        })
+        .collect()
 }

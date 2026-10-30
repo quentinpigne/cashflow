@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, project_id, name, amount FROM project_line ORDER BY project_id, position",
+  "query": "SELECT id, project_id, name, amount, planned_month FROM project_line ORDER BY project_id, position",
   "describe": {
     "columns": [
       {
@@ -46,6 +46,17 @@
             "name": "amount"
           }
         }
+      },
+      {
+        "name": "planned_month",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_line",
+            "name": "planned_month"
+          }
+        }
       }
     ],
     "parameters": {
@@ -55,8 +66,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "58f444b44aae4a4035b678a606e88d198650bd514d3f9f59a1fa1625bc17bf66"
+  "hash": "a322caeb980deb9a1822e2dcfc492b78b08b0229058aeee8a515b7e564ae9178"
 }

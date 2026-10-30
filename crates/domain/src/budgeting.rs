@@ -1,7 +1,7 @@
 //! Budgets (spec 05, ADR-0014) : lignes versionnées, surcharges, reports, objectifs d'épargne, projets,
 //! synthèse du mois et seuils d'alerte.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt;
 use std::hash::Hash;
 use std::str::FromStr;
@@ -309,6 +309,8 @@ pub struct BudgetData<'a, L, C, A, P> {
     pub splits: &'a [BudgetSplit<C, P>],
     pub moves: &'a [SavingsMove<A>],
     pub parents: &'a HashMap<C, C>,
+    /// Prévu par mois des projets dans le budget (R-BUD-74), déjà résolu par [`budget_forecast`].
+    pub projects: &'a [ProjectForecast<P>],
 }
 
 impl<'a, L, C, A, P> BudgetData<'a, L, C, A, P>
@@ -354,6 +356,7 @@ where
     L: Copy + Eq + Hash,
     C: Copy + Eq + Hash,
     A: Copy + Eq + Hash,
+    P: Copy + Eq + Hash,
 {
     fn in_force(&self, month: Month) -> Vec<&LineVersion<L, C, A>> {
         self.data.lines.iter().filter(|l| l.in_force(month)).collect()
@@ -434,7 +437,7 @@ where
     }
 
     /// Le budget d'un mois : lignes en vigueur et totaux (BUD-03).
-    pub fn month(&self, month: Month) -> MonthBudget<L, C> {
+    pub fn month(&self, month: Month) -> MonthBudget<L, C, P> {
         let lines: Vec<LineMonth<L>> = self.in_force(month).into_iter().map(|l| self.line_month(l, month)).collect();
         let in_force = self.in_force(month);
         let mut off_budget: HashMap<Option<C>, Money> = HashMap::new();
@@ -442,6 +445,15 @@ where
         let mut uncategorized_out = Money::ZERO;
         let mut uncategorized_in = Money::ZERO;
         let mut excluded_projects = Money::ZERO;
+        let mut projects: Vec<ProjectMonth<P>> = self
+            .data
+            .projects
+            .iter()
+            .filter_map(|f| {
+                let planned = f.planned.get(&month).copied().unwrap_or(Money::ZERO);
+                (!planned.is_zero()).then_some(ProjectMonth { project: f.project, planned, actual: Money::ZERO })
+            })
+            .collect();
         for split in self.data.splits.iter().filter(|s| month.contains(s.date)) {
             match destination(split, &in_force, self.data.parents) {
                 Destination::OffBudget if split.amount.is_negative() => {
@@ -450,7 +462,17 @@ where
                 Destination::OffBudget => off_budget_income += split.amount,
                 Destination::Uncategorized if split.amount.is_negative() => uncategorized_out += -split.amount,
                 Destination::Uncategorized => uncategorized_in += split.amount,
-                Destination::ExcludedProject => excluded_projects += -split.amount,
+                Destination::ExcludedProject => {
+                    excluded_projects += -split.amount;
+                    if let Some((project, _)) = split.project {
+                        match projects.iter_mut().find(|p| p.project == project) {
+                            Some(p) => p.actual += -split.amount,
+                            None => {
+                                projects.push(ProjectMonth { project, planned: Money::ZERO, actual: -split.amount })
+                            }
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -473,6 +495,7 @@ where
             .map(|l| self.actual(l, &[month]))
             .sum();
         let actual_savings = sum(BudgetKind::Savings, |l| l.actual);
+        let planned_projects: Money = projects.iter().map(|p| p.planned).sum();
         let income = actual_income + off_budget_income + uncategorized_in;
         let expenses = monthly_expenses + off_budget_total + uncategorized_out + excluded_projects;
         MonthBudget {
@@ -483,8 +506,9 @@ where
             uncategorized_out,
             uncategorized_in,
             excluded_projects,
+            projects,
             // R-BUD-40 : les quotes-parts annuelles sont déjà dans le prévu des lignes annuelles.
-            to_budget: planned_income - planned_expenses - planned_savings,
+            to_budget: planned_income - planned_expenses - planned_savings - planned_projects,
             // R-BUD-41.
             balance: income - expenses - actual_savings,
             income,
@@ -496,7 +520,7 @@ where
 
 /// Le budget d'un mois (BUD-03).
 #[derive(Debug, Clone)]
-pub struct MonthBudget<L, C> {
+pub struct MonthBudget<L, C, P> {
     pub month: Month,
     pub lines: Vec<LineMonth<L>>,
     /// Dépenses catégorisées sans ligne, par catégorie (R-BUD-12).
@@ -506,6 +530,8 @@ pub struct MonthBudget<L, C> {
     pub uncategorized_in: Money,
     /// Dépenses des projets exclus des lignes de période (R-BUD-41).
     pub excluded_projects: Money,
+    /// Projets du mois : prévu (R-BUD-74) et réel des projets exclus des lignes de période.
+    pub projects: Vec<ProjectMonth<P>>,
     /// Reste à budgéter, prévu (R-BUD-40).
     pub to_budget: Money,
     /// Solde du mois, réel (R-BUD-41).
@@ -537,6 +563,8 @@ pub struct ProjectLine<L, C> {
     pub name: String,
     pub amount: Money,
     pub categories: Vec<C>,
+    /// Mois où la dépense est attendue ; sans lui, le poste est étalé sur la période du projet (R-BUD-70).
+    pub planned_month: Option<Month>,
 }
 
 /// Valide le prévu d'un projet : un montant global positif sans poste, aucun avec des postes ; des postes de
@@ -591,6 +619,155 @@ pub fn project_line_actuals<L: Copy + Eq + Hash>(splits: &[(Money, Option<L>)]) 
         }
     }
     (by_line, unassigned)
+}
+
+/// Prévu d'un projet dans le budget, mois par mois (R-BUD-74).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectForecast<P> {
+    pub project: P,
+    pub planned: BTreeMap<Month, Money>,
+}
+
+/// Un projet dans le budget d'un mois (R-BUD-74).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectMonth<P> {
+    pub project: P,
+    pub planned: Money,
+    pub actual: Money,
+}
+
+/// Ce qu'il faut d'un projet pour le placer dans le temps (R-BUD-70 à R-BUD-73).
+#[derive(Debug, Clone, Copy)]
+pub struct ProjectTiming {
+    pub start: Date,
+    pub end: Option<Date>,
+    /// Montant global d'un projet sans poste (R-BUD-26).
+    pub amount: Option<Money>,
+    pub status: ProjectStatus,
+    pub exclude_from_period_budgets: bool,
+    pub provision_from: Option<Month>,
+}
+
+impl ProjectTiming {
+    /// Mois de la période du projet : du mois de début au mois de fin, ou le seul mois de début (R-BUD-70).
+    pub fn months(&self) -> Vec<Month> {
+        let start = Month::of(self.start);
+        start.until(self.end.map_or(start, Month::of))
+    }
+}
+
+/// Étale un montant sur des mois, exactement en centimes : parts arrondies à l'inférieur, le dernier mois absorbe le
+/// reste (R-BUD-70, comme R-BUD-16).
+pub fn spread(total: Money, months: &[Month]) -> BTreeMap<Month, Money> {
+    let mut result = BTreeMap::new();
+    let Some((last, rest)) = months.split_last() else { return result };
+    let count = i64::try_from(months.len()).unwrap_or(1);
+    let base = total.minor().div_euclid(count);
+    for month in rest {
+        *result.entry(*month).or_insert(Money::ZERO) += Money::from_minor(base);
+    }
+    *result.entry(*last).or_insert(Money::ZERO) += Money::from_minor(total.minor() - base * (count - 1));
+    result.retain(|_, amount| !amount.is_zero());
+    result
+}
+
+fn add_all(into: &mut BTreeMap<Month, Money>, from: BTreeMap<Month, Money>) {
+    for (month, amount) in from {
+        *into.entry(month).or_insert(Money::ZERO) += amount;
+    }
+    into.retain(|_, amount| !amount.is_zero());
+}
+
+/// Calendrier prévu d'un projet : chaque poste avec un mois prévu y tombe entièrement, le reste du prévu est étalé
+/// sur la période du projet (R-BUD-70).
+pub fn planned_schedule<L, C>(timing: &ProjectTiming, lines: &[ProjectLine<L, C>]) -> BTreeMap<Month, Money> {
+    let mut schedule = BTreeMap::new();
+    let mut spread_total = if lines.is_empty() { timing.amount.unwrap_or(Money::ZERO) } else { Money::ZERO };
+    for line in lines {
+        match line.planned_month {
+            Some(month) => add_all(&mut schedule, BTreeMap::from([(month, line.amount)])),
+            None => spread_total += line.amount,
+        }
+    }
+    add_all(&mut schedule, spread(spread_total, &timing.months()));
+    schedule
+}
+
+/// Restant prévu d'un projet à partir du mois en cours `current` (R-BUD-71) : par poste, ce qui reste à dépenser,
+/// dans son mois prévu ou étalé sur ce qui reste de la période, jamais avant `current`. `actual` est le réel du
+/// projet, `line_actuals` celui de chaque poste ; le réel hors postes ne réduit aucun restant.
+pub fn remaining_schedule<L: Eq + Hash, C>(
+    timing: &ProjectTiming,
+    lines: &[ProjectLine<L, C>],
+    actual: Money,
+    line_actuals: &HashMap<L, Money>,
+    current: Month,
+) -> BTreeMap<Month, Money> {
+    let mut schedule = BTreeMap::new();
+    if timing.status == ProjectStatus::Closed {
+        return schedule;
+    }
+    let left = |planned: Money, spent: Money| if planned > spent { planned - spent } else { Money::ZERO };
+    let ahead: Vec<Month> = timing.months().into_iter().filter(|m| *m >= current).collect();
+    let ahead = if ahead.is_empty() { vec![current] } else { ahead };
+    if lines.is_empty() {
+        add_all(&mut schedule, spread(left(timing.amount.unwrap_or(Money::ZERO), actual), &ahead));
+        return schedule;
+    }
+    let mut spread_total = Money::ZERO;
+    for line in lines {
+        let rest = left(line.amount, line_actuals.get(&line.id).copied().unwrap_or(Money::ZERO));
+        match line.planned_month {
+            Some(month) => add_all(&mut schedule, BTreeMap::from([(month.max(current), rest)])),
+            None => spread_total += rest,
+        }
+    }
+    add_all(&mut schedule, spread(spread_total, &ahead));
+    schedule
+}
+
+/// Mise de côté d'un projet (R-BUD-73) : son prévu en quotes-parts exactes, de `provision_from` au mois qui précède
+/// le premier mois de son calendrier prévu. Refusée sans mois avant la dépense, ou pour un projet dont les dépenses
+/// restent dans les lignes du mois.
+pub fn provision<L, C>(
+    timing: &ProjectTiming,
+    lines: &[ProjectLine<L, C>],
+) -> Result<BTreeMap<Month, Money>, DomainError> {
+    let Some(from) = timing.provision_from else { return Ok(BTreeMap::new()) };
+    let schedule = planned_schedule(timing, lines);
+    let first = schedule.keys().next().copied().unwrap_or(Month::of(timing.start));
+    let months = from.until(first.previous());
+    if months.is_empty() || !timing.exclude_from_period_budgets {
+        return Err(DomainError::InvalidProvision);
+    }
+    Ok(spread(project_planned(timing.amount, lines), &months))
+}
+
+/// Le projet compte-t-il dans le budget, l'évolution et les projections (R-BUD-72) ? Toujours en cours, jamais
+/// terminé, en projet selon l'interrupteur.
+pub fn counted(status: ProjectStatus, planned_projects: bool) -> bool {
+    match status {
+        ProjectStatus::Active => true,
+        ProjectStatus::Planned => planned_projects,
+        ProjectStatus::Closed => false,
+    }
+}
+
+/// Prévu d'un projet dans le budget, mois par mois (R-BUD-74) : sa mise de côté s'il en a une, sinon son calendrier
+/// prévu ; rien pour un projet non exclu des lignes du mois, ou qui ne compte pas (R-BUD-72). Une mise de côté
+/// devenue impossible (dates changées) laisse place au calendrier.
+pub fn budget_forecast<L, C>(
+    timing: &ProjectTiming,
+    lines: &[ProjectLine<L, C>],
+    planned_projects: bool,
+) -> BTreeMap<Month, Money> {
+    if !timing.exclude_from_period_budgets || !counted(timing.status, planned_projects) {
+        return BTreeMap::new();
+    }
+    match provision(timing, lines) {
+        Ok(provision) if !provision.is_empty() => provision,
+        _ => planned_schedule(timing, lines),
+    }
 }
 
 /// Seuils d'alerte par défaut, en pour cent du disponible (R-BUD-60).
@@ -694,7 +871,9 @@ mod tests {
         let lines = [line(10, ALIMENTATION, 80_000, "2027-01"), line(20, RESTAURANTS, 15_000, "2027-01")];
         let parents = HashMap::from([(RESTAURANTS, ALIMENTATION), (SUPERMARCHE, ALIMENTATION)]);
         let splits = [spend("2027-03-05", -6_000, SUPERMARCHE), spend("2027-03-06", -4_000, RESTAURANTS)];
-        let data = BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents }.build();
+        let data =
+            BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents, projects: &[] }
+                .build();
         let month = data.month(m("2027-03"));
         let actual = |id| month.lines.iter().find(|l| l.line == id).unwrap().actual;
         assert_eq!(actual(10), eur(6_000));
@@ -716,7 +895,9 @@ mod tests {
             spend("2027-03-06", -1_500, PEAGE),
             spend("2027-03-07", -9_000, ENTRETIEN),
         ];
-        let data = BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents }.build();
+        let data =
+            BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents, projects: &[] }
+                .build();
         let month = data.month(m("2027-03"));
         let line = |id| month.lines.iter().find(|l| l.line == id).unwrap();
         assert_eq!((line(10).actual, line(10).remaining()), (eur(7_500), eur(12_500)));
@@ -746,6 +927,7 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
+            projects: &[],
         }
         .build();
         let march = data.line_month(&supermarket, m("2027-03"));
@@ -766,6 +948,7 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
+            projects: &[],
         }
         .build();
         let march = data.line_month(&insurance, m("2027-03"));
@@ -804,6 +987,7 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
+            projects: &[],
         }
         .build();
         let month = data.month(m("2027-03"));
@@ -813,7 +997,7 @@ mod tests {
     }
 
     fn post(id: u32, name: &str, amount: i64, categories: &[u32]) -> ProjectLine<u32, u32> {
-        ProjectLine { id, name: name.into(), amount: eur(amount), categories: categories.to_vec() }
+        ProjectLine { id, name: name.into(), amount: eur(amount), categories: categories.to_vec(), planned_month: None }
     }
 
     /// Italie 2027 : Train (sans catégorie), Logement, Restaurants (catégorie 2), Loisirs (catégorie 7).
@@ -909,6 +1093,7 @@ mod tests {
             splits: &[],
             moves: &moves,
             parents: &parents,
+            projects: &[],
         }
         .build();
         assert_eq!(data.line_month(&goal, m("2027-03")).actual, eur(20_000));
@@ -926,6 +1111,7 @@ mod tests {
             splits: &[],
             moves: &[],
             parents: &parents,
+            projects: &[],
         }
         .build();
         assert_eq!(data.line_month(&gifts, m("2027-12")).planned, eur(30_000));
@@ -955,6 +1141,7 @@ mod tests {
             splits: &splits,
             moves: &[],
             parents: &parents,
+            projects: &[],
         }
         .build();
         let month = data.month(m("2027-03"));
@@ -980,5 +1167,146 @@ mod tests {
     fn bud_10_suggestion_rounds_up_to_the_euro() {
         assert_eq!(suggested_amount(&[eur(54_020), eur(61_000), eur(58_000)]), eur(57_700));
         assert_eq!(suggested_amount(&[]), Money::ZERO);
+    }
+
+    /// Italie 2027 de BUD-14 : Train en février 2027, les autres postes sans mois prévu.
+    fn italy_dated() -> Vec<ProjectLine<u32, u32>> {
+        let mut lines = italy();
+        lines[0].planned_month = Some(m("2027-02"));
+        lines
+    }
+
+    fn timing(status: ProjectStatus, end: Option<&str>, provision_from: Option<&str>) -> ProjectTiming {
+        ProjectTiming {
+            start: d("2027-07-01"),
+            end: end.map(d),
+            amount: None,
+            status,
+            exclude_from_period_budgets: true,
+            provision_from: provision_from.map(m),
+        }
+    }
+
+    /// Critère d'acceptation de BUD-14 / R-BUD-70 : un poste daté tombe dans son mois, le reste est étalé sur la période.
+    #[test]
+    fn r_bud_70_planned_schedule() {
+        let july = timing(ProjectStatus::Planned, Some("2027-07-31"), None);
+        assert_eq!(
+            planned_schedule(&july, &italy_dated()),
+            BTreeMap::from([(m("2027-02"), eur(50_000)), (m("2027-07"), eur(50_000))])
+        );
+        let summer = timing(ProjectStatus::Planned, Some("2027-08-31"), None);
+        assert_eq!(
+            planned_schedule(&summer, &italy_dated()),
+            BTreeMap::from([(m("2027-02"), eur(50_000)), (m("2027-07"), eur(25_000)), (m("2027-08"), eur(25_000))])
+        );
+        // Sans poste, le montant global ; sans fin, le seul mois de début ; étalement exact en centimes.
+        let global =
+            ProjectTiming { amount: Some(eur(100_000)), ..timing(ProjectStatus::Active, Some("2027-09-30"), None) };
+        let schedule = planned_schedule::<u32, u32>(&global, &[]);
+        assert_eq!(schedule.values().copied().collect::<Vec<_>>(), vec![eur(33_333), eur(33_333), eur(33_334)]);
+        let open = ProjectTiming { amount: Some(eur(100_000)), ..timing(ProjectStatus::Active, None, None) };
+        assert_eq!(planned_schedule::<u32, u32>(&open, &[]), BTreeMap::from([(m("2027-07"), eur(100_000))]));
+    }
+
+    /// Critère d'acceptation de BUD-14 / R-BUD-71 : seul ce qui reste à dépenser compte, jamais avant le mois en cours.
+    #[test]
+    fn r_bud_71_remaining_schedule() {
+        let july = timing(ProjectStatus::Planned, Some("2027-07-31"), None);
+        let none = HashMap::new();
+        assert_eq!(
+            remaining_schedule(&july, &italy_dated(), Money::ZERO, &none, m("2026-10")),
+            BTreeMap::from([(m("2027-02"), eur(50_000)), (m("2027-07"), eur(50_000))])
+        );
+        // Billet de 520 € rangé dans Train en décembre : Train ne compte plus.
+        let train = HashMap::from([(1, eur(52_000))]);
+        assert_eq!(
+            remaining_schedule(&july, &italy_dated(), eur(52_000), &train, m("2026-12")),
+            BTreeMap::from([(m("2027-07"), eur(50_000))])
+        );
+        // Un mois prévu passé, ou une période passée, ramènent le restant au mois en cours.
+        assert_eq!(
+            remaining_schedule(&july, &italy_dated(), Money::ZERO, &none, m("2027-09")),
+            BTreeMap::from([(m("2027-09"), eur(100_000))])
+        );
+        // Le hors postes ne réduit rien ; un projet terminé n'a plus de restant.
+        assert_eq!(
+            remaining_schedule(&july, &italy_dated(), eur(9_000), &none, m("2026-10")).values().copied().sum::<Money>(),
+            eur(100_000)
+        );
+        let closed = timing(ProjectStatus::Closed, Some("2027-07-31"), None);
+        assert!(remaining_schedule(&closed, &italy_dated(), Money::ZERO, &none, m("2026-10")).is_empty());
+        // Sans poste : prévu − réel du projet, étalé sur ce qui reste de la période.
+        let global =
+            ProjectTiming { amount: Some(eur(90_000)), ..timing(ProjectStatus::Active, Some("2027-09-30"), None) };
+        assert_eq!(
+            remaining_schedule::<u32, u32>(&global, &[], eur(30_000), &none, m("2027-08")),
+            BTreeMap::from([(m("2027-08"), eur(30_000)), (m("2027-09"), eur(30_000))])
+        );
+    }
+
+    /// R-BUD-72 : en cours toujours, en projet selon l'interrupteur, terminé jamais.
+    #[test]
+    fn r_bud_72_counted_projects() {
+        assert!(counted(ProjectStatus::Active, false));
+        assert!(counted(ProjectStatus::Planned, true));
+        assert!(!counted(ProjectStatus::Planned, false));
+        assert!(!counted(ProjectStatus::Closed, true));
+    }
+
+    /// Critère d'acceptation de BUD-14 / R-BUD-73 : la mise de côté s'arrête avant le premier mois prévu.
+    #[test]
+    fn r_bud_73_provision() {
+        let from_november = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2026-11"));
+        assert_eq!(
+            provision(&from_november, &italy_dated()),
+            Ok(BTreeMap::from([(m("2026-11"), eur(33_333)), (m("2026-12"), eur(33_333)), (m("2027-01"), eur(33_334))]))
+        );
+        let from_february = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2027-02"));
+        assert_eq!(provision(&from_february, &italy_dated()), Err(DomainError::InvalidProvision));
+        let kept_in_lines = ProjectTiming { exclude_from_period_budgets: false, ..from_november };
+        assert_eq!(provision(&kept_in_lines, &italy_dated()), Err(DomainError::InvalidProvision));
+    }
+
+    /// Critère d'acceptation de BUD-14 / R-BUD-74 et R-BUD-40 : le prévu du projet entre dans le reste à budgéter.
+    #[test]
+    fn r_bud_74_projects_in_month_budget() {
+        let july = timing(ProjectStatus::Planned, Some("2027-07-31"), None);
+        let forecast = |planned_projects| ProjectForecast {
+            project: 99,
+            planned: budget_forecast(&july, &italy_dated(), planned_projects),
+        };
+        let restaurants = line(1, 2, 15_000, "2027-01");
+        let mut dinner = spend("2027-07-10", -4_500, 2);
+        dinner.project = Some((99, true));
+        let splits = vec![dinner];
+        let parents = HashMap::new();
+        let month = |projects: &[ProjectForecast<u32>]| {
+            BudgetData {
+                lines: std::slice::from_ref(&restaurants),
+                overrides: &[],
+                splits: &splits,
+                moves: &[],
+                parents: &parents,
+                projects,
+            }
+            .build()
+            .month(m("2027-07"))
+        };
+        let with = month(&[forecast(true)]);
+        assert_eq!(with.projects, vec![ProjectMonth { project: 99, planned: eur(50_000), actual: eur(4_500) }]);
+        assert_eq!(with.to_budget, eur(-65_000));
+        // Interrupteur coupé : plus de prévu, le réel reste.
+        let without = month(&[forecast(false)]);
+        assert_eq!(without.projects, vec![ProjectMonth { project: 99, planned: Money::ZERO, actual: eur(4_500) }]);
+        assert_eq!(without.to_budget, eur(-15_000));
+        // Avec une mise de côté, les mois de la dépense n'ont plus de prévu.
+        let provisioned = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2026-11"));
+        let planned = budget_forecast(&provisioned, &italy_dated(), true);
+        assert_eq!(planned.get(&m("2026-12")), Some(&eur(33_333)));
+        assert_eq!(planned.get(&m("2027-07")), None);
+        // Un projet non exclu des lignes du mois n'a pas de prévu propre.
+        let kept = ProjectTiming { exclude_from_period_budgets: false, ..july };
+        assert!(budget_forecast(&kept, &italy_dated(), true).is_empty());
     }
 }

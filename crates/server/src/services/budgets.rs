@@ -4,7 +4,8 @@ use std::collections::{HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountFamily;
 use cashflow_domain::budgeting::{
-    self, BudgetData, BudgetKind, BudgetSplit, LineVersion, Month, Override, Periodicity, ProjectStatus, SavingsMove,
+    self, BudgetData, BudgetKind, BudgetSplit, LineVersion, Month, Override, Periodicity, ProjectForecast,
+    ProjectStatus, ProjectTiming, SavingsMove,
 };
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{AccountId, BudgetLineId, CategoryId, ProjectId, ProjectLineId, TransactionId};
@@ -27,6 +28,8 @@ const THRESHOLDS_SETTING: &str = "budget_alert_thresholds";
 pub struct MonthQuery {
     /// Mois, `AAAA-MM` ; le mois en cours par défaut.
     pub month: Option<String>,
+    /// Compter les projets en projet (R-BUD-72) ; oui par défaut.
+    pub planned_projects: Option<bool>,
 }
 
 /// Niveau d'alerte d'une ligne (R-BUD-61).
@@ -90,6 +93,19 @@ pub struct OffBudgetLine {
     pub amount_minor: i64,
 }
 
+/// Un projet dans le budget du mois (R-BUD-74).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ProjectMonthView {
+    pub project_id: ProjectId,
+    pub name: String,
+    pub status: ProjectStatus,
+    /// Le prévu du mois est une quote-part de mise de côté (R-BUD-73).
+    pub provision: bool,
+    pub planned_minor: i64,
+    /// Réel du mois, rattaché au projet.
+    pub actual_minor: i64,
+}
+
 /// Le budget d'un mois (BUD-03).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct MonthBudgetView {
@@ -104,6 +120,10 @@ pub struct MonthBudgetView {
     pub uncategorized_out_minor: i64,
     pub uncategorized_in_minor: i64,
     pub excluded_projects_minor: i64,
+    /// Projets exclus des lignes du mois : prévu et réel (R-BUD-74).
+    pub projects: Vec<ProjectMonthView>,
+    /// Compte des projets en projet (R-BUD-72).
+    pub planned_projects: bool,
     /// Reste à budgéter, prévu (R-BUD-40).
     pub to_budget_minor: i64,
     /// Solde du mois, réel (R-BUD-41).
@@ -389,11 +409,38 @@ pub async fn month(db: &Db, query: &MonthQuery, today: Date) -> AppResult<MonthB
         Some(m) => parse_month(m)?,
         None => Month::of(today),
     };
-    compute(db, month, today).await
+    compute(db, month, today, query.planned_projects.unwrap_or(true)).await
 }
 
-async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetView> {
+/// Ce qu'il faut d'un projet pour le placer dans le temps (R-BUD-70 à R-BUD-73).
+pub fn timing(p: &ProjectRow) -> ProjectTiming {
+    ProjectTiming {
+        start: p.start_date,
+        end: p.end_date,
+        amount: p.amount,
+        status: p.status,
+        exclude_from_period_budgets: p.exclude_from_period_budgets,
+        provision_from: p.provision_from,
+    }
+}
+
+/// Postes d'un projet, pour le domaine.
+pub fn plan_of(lines: &[ProjectLineRow], project: ProjectId) -> Vec<budgeting::ProjectLine<ProjectLineId, CategoryId>> {
+    lines.iter().filter(|l| l.project_id == project).map(plan_line).collect()
+}
+
+async fn compute(db: &Db, month: Month, today: Date, planned_projects: bool) -> AppResult<MonthBudgetView> {
     let loaded = Loaded::load(db, month).await?;
+    let project_rows = db::budgets::projects(&db.read).await?;
+    let project_lines = db::budgets::project_lines(&mut *db.read.acquire().await?).await?;
+    let forecasts: Vec<ProjectForecast<ProjectId>> = project_rows
+        .iter()
+        .map(|p| ProjectForecast {
+            project: p.id,
+            planned: budgeting::budget_forecast(&timing(p), &plan_of(&project_lines, p.id), planned_projects),
+        })
+        .filter(|f| !f.planned.is_empty())
+        .collect();
     let thresholds = default_thresholds(db).await?;
     let versions: Vec<_> = loaded.rows.iter().map(version).collect();
     let overrides: Vec<Override<BudgetLineId>> =
@@ -404,9 +451,29 @@ async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetVie
         splits: &loaded.splits,
         moves: &loaded.moves,
         parents: &loaded.parents,
+        projects: &forecasts,
     }
     .build();
     let result = budget.month(month);
+    let mut projects: Vec<ProjectMonthView> = result
+        .projects
+        .iter()
+        .filter_map(|p| {
+            let row = project_rows.iter().find(|r| r.id == p.project)?;
+            let provision = !p.planned.is_zero()
+                && budgeting::provision(&timing(row), &plan_of(&project_lines, row.id))
+                    .is_ok_and(|months| months.contains_key(&month));
+            Some(ProjectMonthView {
+                project_id: row.id,
+                name: row.name.clone(),
+                status: row.status,
+                provision,
+                planned_minor: p.planned.minor(),
+                actual_minor: p.actual.minor(),
+            })
+        })
+        .collect();
+    projects.sort_by_key(|p| project_rows.iter().position(|r| r.id == p.project_id));
 
     let categories = db::categories::list(&db.read).await?;
     let names: HashMap<CategoryId, (String, Option<CategoryId>)> =
@@ -513,6 +580,8 @@ async fn compute(db: &Db, month: Month, today: Date) -> AppResult<MonthBudgetVie
         uncategorized_out_minor: result.uncategorized_out.minor(),
         uncategorized_in_minor: result.uncategorized_in.minor(),
         excluded_projects_minor: result.excluded_projects.minor(),
+        projects,
+        planned_projects,
         to_budget_minor: result.to_budget.minor(),
         balance_minor: result.balance.minor(),
         income_minor: result.income.minor(),
@@ -886,9 +955,28 @@ pub struct ProjectLineView {
     pub amount_minor: i64,
     /// Catégories qui proposent le poste (R-BUD-27).
     pub category_ids: Vec<CategoryId>,
+    /// Mois prévu de la dépense, `AAAA-MM` (R-BUD-70).
+    pub planned_month: Option<String>,
     pub actual_minor: i64,
     /// Selon les seuils du projet, sans notification (R-BUD-29).
     pub alert: AlertLevel,
+}
+
+/// Un mois du calendrier d'un projet : prévu (R-BUD-70) et réel.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ProjectScheduleMonth {
+    /// `AAAA-MM`.
+    pub month: String,
+    pub planned_minor: i64,
+    pub actual_minor: i64,
+}
+
+/// Une quote-part de la mise de côté (R-BUD-73).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ProvisionMonth {
+    /// `AAAA-MM`.
+    pub month: String,
+    pub amount_minor: i64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -910,6 +998,12 @@ pub struct ProjectView {
     pub lines: Vec<ProjectLineView>,
     /// Réel hors postes (R-BUD-28) ; nul pour un projet sans postes.
     pub unassigned_minor: i64,
+    /// Début de la mise de côté, `AAAA-MM` (R-BUD-73).
+    pub provision_from: Option<String>,
+    /// Quotes-parts de la mise de côté ; vide sans mise de côté, ou si elle n'est plus possible.
+    pub provision: Vec<ProvisionMonth>,
+    /// Calendrier : les mois du prévu et ceux qui ont du réel, dans l'ordre.
+    pub schedule: Vec<ProjectScheduleMonth>,
     pub by_category: Vec<ProjectCategory>,
     pub splits: Vec<ProjectSplit>,
 }
@@ -934,6 +1028,9 @@ pub struct ProjectInput {
     pub alert_thresholds: Option<Vec<u32>>,
     #[serde(default)]
     pub note: Option<String>,
+    /// Début de la mise de côté, `AAAA-MM` (R-BUD-73).
+    #[serde(default)]
+    pub provision_from: Option<String>,
 }
 
 fn yes() -> bool {
@@ -950,6 +1047,9 @@ pub struct ProjectLineInput {
     /// Catégories de dépense qui proposent le poste (R-BUD-27).
     #[serde(default)]
     pub category_ids: Vec<CategoryId>,
+    /// Mois prévu de la dépense, `AAAA-MM` (R-BUD-70).
+    #[serde(default)]
+    pub planned_month: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -991,8 +1091,17 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
             let by_category = budgeting::project_actual(&facts, p.id);
             let actual: Money = by_category.iter().map(|(_, a)| *a).sum();
             let line_thresholds = p.alert_thresholds.clone().unwrap_or_else(|| thresholds.clone());
-            let plan: Vec<_> = all_lines.iter().filter(|l| l.project_id == p.id).map(plan_line).collect();
+            let plan = plan_of(&all_lines, p.id);
             let planned = budgeting::project_planned(p.amount, &plan);
+            let mut schedule: std::collections::BTreeMap<Month, (Money, Money)> =
+                budgeting::planned_schedule(&timing(&p), &plan)
+                    .into_iter()
+                    .map(|(month, amount)| (month, (amount, Money::ZERO)))
+                    .collect();
+            for split in &own {
+                schedule.entry(Month::of(split.date)).or_insert((Money::ZERO, Money::ZERO)).1 += -split.amount;
+            }
+            let provision = budgeting::provision(&timing(&p), &plan).unwrap_or_default();
             let gauge = |planned: Money, actual: Money| {
                 let line = budgeting::LineMonth {
                     line: BudgetLineId::new(),
@@ -1017,6 +1126,7 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                         name: l.name.clone(),
                         amount_minor: l.amount.minor(),
                         category_ids: l.categories.clone(),
+                        planned_month: l.planned_month.map(|m| m.to_string()),
                         actual_minor: actual.minor(),
                         alert: gauge(l.amount, actual),
                     }
@@ -1035,6 +1145,19 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                 alert: gauge(planned, actual),
                 actual_minor: actual.minor(),
                 unassigned_minor: if plan.is_empty() { 0 } else { unassigned.minor() },
+                provision_from: p.provision_from.map(|m| m.to_string()),
+                provision: provision
+                    .into_iter()
+                    .map(|(month, amount)| ProvisionMonth { month: month.to_string(), amount_minor: amount.minor() })
+                    .collect(),
+                schedule: schedule
+                    .into_iter()
+                    .map(|(month, (planned, actual))| ProjectScheduleMonth {
+                        month: month.to_string(),
+                        planned_minor: planned.minor(),
+                        actual_minor: actual.minor(),
+                    })
+                    .collect(),
                 lines,
                 by_category,
                 splits: own
@@ -1080,6 +1203,7 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
             name: required(&line.name, "lines", 80)?,
             amount: Money::from_minor(line.amount_minor),
             categories: line.category_ids.clone(),
+            planned_month: line.planned_month.as_deref().map(parse_month).transpose()?,
         });
     }
     let plan: Vec<_> = lines.iter().map(plan_line).collect();
@@ -1124,7 +1248,9 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
         status: input.status,
         alert_thresholds: check_thresholds(input.alert_thresholds.as_ref())?,
         note: clean(input.note.as_deref()),
+        provision_from: input.provision_from.as_deref().map(parse_month).transpose()?,
     };
+    budgeting::provision(&timing(&row), &plan)?;
     db::budgets::upsert_project(&mut *tx, &row).await?;
     db::budgets::replace_project_lines(&mut tx, row.id, &lines).await?;
     // Les ventilations hors postes rejoignent leur poste proposé (R-BUD-28).
@@ -1142,7 +1268,13 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
 }
 
 fn plan_line(l: &ProjectLineRow) -> budgeting::ProjectLine<ProjectLineId, CategoryId> {
-    budgeting::ProjectLine { id: l.id, name: l.name.clone(), amount: l.amount, categories: l.categories.clone() }
+    budgeting::ProjectLine {
+        id: l.id,
+        name: l.name.clone(),
+        amount: l.amount,
+        categories: l.categories.clone(),
+        planned_month: l.planned_month,
+    }
 }
 
 /// Postes d'un projet et parentes des catégories, pour proposer le poste d'une ventilation (R-BUD-27).
@@ -1323,7 +1455,7 @@ pub async fn evaluate_alerts(db: &Db, today: Date) -> AppResult<usize> {
     let current = Month::of(today);
     let mut crossings: Vec<Crossing> = Vec::new();
 
-    let view = compute(db, current, today).await?;
+    let view = compute(db, current, today, true).await?;
     for line in view.lines.iter().filter(|l| l.kind == BudgetKind::Expense) {
         let thresholds = line.alert_thresholds.clone().unwrap_or_else(|| view.thresholds.clone());
         let period = match line.periodicity {
@@ -1349,7 +1481,7 @@ pub async fn evaluate_alerts(db: &Db, today: Date) -> AppResult<usize> {
     }
 
     // Objectifs d'épargne du mois écoulé, signalés une fois le mois fini (R-BUD-61).
-    let previous = compute(db, current.previous(), today).await?;
+    let previous = compute(db, current.previous(), today, true).await?;
     for line in previous.lines.iter().filter(|l| l.alert == AlertLevel::Missed) {
         crossings.push(Crossing {
             key: format!("savings:{}:{}:missed", line.line_id, current.previous()),

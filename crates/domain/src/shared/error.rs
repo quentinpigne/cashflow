@@ -198,6 +198,8 @@ pub enum DomainError {
     InvalidProjectPlan,
     #[error("une catégorie ne propose qu'un seul poste du projet")]
     ProjectLineCategoryTaken,
+    #[error("la mise de côté demande au moins un mois avant la dépense, et un projet exclu des lignes du mois")]
+    InvalidProvision,
     #[error("ce poste n'appartient pas au projet de la ventilation")]
     ProjectLineMismatch,
 
@@ -293,6 +295,7 @@ impl DomainError {
             InvalidProjectPlan => "INVALID_PROJECT_PLAN",
             ProjectLineCategoryTaken => "PROJECT_LINE_CATEGORY_TAKEN",
             ProjectLineMismatch => "PROJECT_LINE_MISMATCH",
+            InvalidProvision => "INVALID_PROVISION",
             RuleWithoutCondition => "RULE_WITHOUT_CONDITION",
         }
     }
@@ -363,6 +366,7 @@ impl DomainError {
             ProjectClosed => "R-BUD-24",
             InvalidProjectPlan => "R-BUD-26",
             ProjectLineCategoryTaken | ProjectLineMismatch => "R-BUD-27",
+            InvalidProvision => "R-BUD-73",
             RuleWithoutCondition => "R-IMP-12",
         })
     }

@@ -236,12 +236,15 @@ pub struct ProjectRow {
     pub status: ProjectStatus,
     pub alert_thresholds: Option<Vec<u32>>,
     pub note: Option<String>,
+    /// Début de la mise de côté (R-BUD-73).
+    pub provision_from: Option<Month>,
 }
 
 pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<ProjectRow>> {
     let rows = sqlx::query!(
         r#"SELECT id, name, start_date AS "start_date: Date", end_date AS "end_date: Date", amount,
-                  exclude_from_period_budgets AS "exclude: bool", status, alert_thresholds, note
+                  exclude_from_period_budgets AS "exclude: bool", status, alert_thresholds, note,
+                  provision_from
            FROM project
            ORDER BY CASE status WHEN 'ACTIVE' THEN 0 WHEN 'PLANNED' THEN 1 ELSE 2 END, start_date DESC,
                     name COLLATE NOCASE"#
@@ -260,6 +263,7 @@ pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Project
                 status: enum_from_db(&r.status)?,
                 alert_thresholds: thresholds_from_db(r.alert_thresholds.as_deref())?,
                 note: r.note,
+                provision_from: r.provision_from.as_deref().map(month_from_db).transpose()?,
             })
         })
         .collect()
@@ -270,16 +274,18 @@ pub async fn upsert_project(db: impl SqliteExecutor<'_>, p: &ProjectRow) -> anyh
     let amount = p.amount.map(Money::minor);
     let status = enum_to_db(&p.status);
     let thresholds = thresholds_to_db(p.alert_thresholds.as_ref())?;
+    let provision_from = p.provision_from.map(|m| m.to_string());
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO project (id, name, start_date, end_date, amount, exclude_from_period_budgets, status, alert_thresholds,
-                              note, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)
+                              note, provision_from, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?11, ?10, ?10)
          ON CONFLICT (id) DO UPDATE SET name = excluded.name, start_date = excluded.start_date, end_date = excluded.end_date,
                                         amount = excluded.amount,
                                         exclude_from_period_budgets = excluded.exclude_from_period_budgets,
                                         status = excluded.status, alert_thresholds = excluded.alert_thresholds,
-                                        note = excluded.note, updated_at = excluded.updated_at",
+                                        note = excluded.note, provision_from = excluded.provision_from,
+                                        updated_at = excluded.updated_at",
         id,
         p.name,
         p.start_date,
@@ -289,7 +295,8 @@ pub async fn upsert_project(db: impl SqliteExecutor<'_>, p: &ProjectRow) -> anyh
         status,
         thresholds,
         p.note,
-        now
+        now,
+        provision_from
     )
     .execute(db)
     .await?;
@@ -340,13 +347,17 @@ pub struct ProjectLineRow {
     pub amount: Money,
     /// Catégories qui proposent le poste (R-BUD-27).
     pub categories: Vec<CategoryId>,
+    /// Mois prévu de la dépense (R-BUD-70).
+    pub planned_month: Option<Month>,
 }
 
 /// Postes de tous les projets, dans leur ordre.
 pub async fn project_lines(conn: &mut SqliteConnection) -> anyhow::Result<Vec<ProjectLineRow>> {
-    let rows = sqlx::query!("SELECT id, project_id, name, amount FROM project_line ORDER BY project_id, position")
-        .fetch_all(&mut *conn)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT id, project_id, name, amount, planned_month FROM project_line ORDER BY project_id, position"
+    )
+    .fetch_all(&mut *conn)
+    .await?;
     let links = sqlx::query!("SELECT project_line_id, category_id FROM project_line_category ORDER BY rowid")
         .fetch_all(&mut *conn)
         .await?;
@@ -363,6 +374,7 @@ pub async fn project_lines(conn: &mut SqliteConnection) -> anyhow::Result<Vec<Pr
                 name: r.name,
                 amount: Money::from_minor(r.amount),
                 categories,
+                planned_month: r.planned_month.as_deref().map(month_from_db).transpose()?,
             })
         })
         .collect()
@@ -393,17 +405,20 @@ pub async fn replace_project_lines(
         let id = line.id.to_string();
         let amount = line.amount.minor();
         let position = i64::try_from(position)?;
+        let planned_month = line.planned_month.map(|m| m.to_string());
         sqlx::query!(
-            "INSERT INTO project_line (id, project_id, name, amount, position, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+            "INSERT INTO project_line (id, project_id, name, amount, position, planned_month, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?7, ?6, ?6)
              ON CONFLICT (id) DO UPDATE SET name = excluded.name, amount = excluded.amount,
-                                            position = excluded.position, updated_at = excluded.updated_at",
+                                            position = excluded.position, planned_month = excluded.planned_month,
+                                            updated_at = excluded.updated_at",
             id,
             project,
             line.name,
             amount,
             position,
-            now
+            now,
+            planned_month
         )
         .execute(&mut *conn)
         .await?;

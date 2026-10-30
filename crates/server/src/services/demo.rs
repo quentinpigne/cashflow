@@ -1090,6 +1090,7 @@ async fn budget(
         name: name.into(),
         amount_minor,
         category_ids: category.into_iter().collect(),
+        planned_month: None,
     };
     let project = budgets::ProjectInput {
         name: "Week-end à Lyon".into(),
@@ -1105,17 +1106,23 @@ async fn budget(
         status: ProjectStatus::Active,
         alert_thresholds: None,
         note: None,
+        provision_from: None,
     };
     let project = budgets::save_project(db, None, &project).await.map_err(|e| anyhow::anyhow!("{e}"))?;
-    // Un voyage envisagé, en projet : rien n'y est encore rattaché (R-BUD-20, R-BUD-24).
-    if let Some(summer) = today.checked_add_days(Days::new(240)) {
+    // Un voyage envisagé, en projet : rien n'y est encore rattaché (R-BUD-20, R-BUD-24). Le train se réserve quatre
+    // mois plus tôt (R-BUD-70) et le voyage se met de côté dès ce mois-ci (R-BUD-73).
+    if let Some(summer) = today.checked_add_days(Days::new(240))
+        && let Some(booking) = today.checked_add_days(Days::new(120))
+    {
+        let mut train_post = post("Train", 50_000, train);
+        train_post.planned_month = Some(Month::of(booking).to_string());
         let planned = budgets::ProjectInput {
             name: "Italie 2027".into(),
             start_date: summer,
             end_date: summer.checked_add_days(Days::new(14)),
             amount_minor: None,
             lines: vec![
-                post("Train", 50_000, train),
+                train_post,
                 post("Logement", 30_000, None),
                 post("Restaurants", 10_000, restaurants),
                 post("Loisirs", 10_000, None),
@@ -1124,6 +1131,7 @@ async fn budget(
             status: ProjectStatus::Planned,
             alert_thresholds: None,
             note: None,
+            provision_from: Some(Month::of(today).to_string()),
         };
         budgets::save_project(db, None, &planned).await.map_err(|e| anyhow::anyhow!("{e}"))?;
     }
@@ -1176,7 +1184,8 @@ mod tests {
         assert!(dashboard.uncategorized.total >= 3);
         assert!(dashboard.month.income_minor >= 0);
         // Les virements ne changent pas le patrimoine : il ne dépend que des flux catégorisés et non catégorisés.
-        let budget = budgets::month(&db, &budgets::MonthQuery { month: None }, today).await.unwrap();
+        let budget =
+            budgets::month(&db, &budgets::MonthQuery { month: None, planned_projects: None }, today).await.unwrap();
         assert!(budget.lines.len() >= 10);
         assert_eq!(budgets::projects(&db).await.unwrap()[0].actual_minor, 40_200);
         // Les mensualités de la démo sont ventilées selon leurs échéances (PRE-03).
