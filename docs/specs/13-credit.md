@@ -26,15 +26,16 @@ Demande « Achat appartement Grenoble »
  └─ Démarches             LCL : offre reçue (simulation « Offre LCL ») ; Crédit Agricole : envoyée
 ```
 
-- la **capacité d'achat** répond à la question inverse de la demande : non pas « ce projet passe-t-il ? », mais
-  « **que puis-je acheter ?** ». À partir de mes salaires, de mes prêts, de mon épargne et de mes dépenses, elle
-  calcule le prix d'achat maximal, aujourd'hui et dans les années à venir, et l'effet de l'achat sur mon
-  épargne et mon patrimoine projeté.
+- l'onglet **Simuler** part d'un **projet** (logement, travaux, véhicule, autre) et de ma **situation
+  d'emprunteur** (salaires, prêts, épargne, dépenses), et répond à trois questions : « **que puis-je
+  acheter ?** » (la **capacité d'achat** : le prix maximal, aujourd'hui et dans les années à venir),
+  « **puis-je financer cet achat ?** » (le prix est connu) et « **que coûte ce prêt ?** » (le montant à
+  emprunter est connu).
 
 Le **parcours** d'un achat :
 
-1. je calcule ma **capacité d'achat**, puis j'optimise le crédit avec le **simulateur**, qui part des mêmes
-   hypothèses (onglet **Simuler**) ;
+1. dans l'onglet **Simuler**, je choisis mon projet, je calcule ce que je peux acheter ou je vérifie que
+   l'achat repéré se finance, et j'enregistre le calcul en simulation ;
 2. d'une simulation, je **prépare une demande** (R-CRE-36) ;
 3. j'envoie la demande à une ou plusieurs banques : chaque envoi est une **démarche**, que je suis et que je
    **relance** (R-CRE-24 à R-CRE-26) ;
@@ -186,28 +187,53 @@ l'acceptation comptent, comme tout bien ou prêt (spec 09).
      pièces de la demande (R-CRE-18) et ceux de ces types qui ne sont rattachés à rien. On peut aussi y envoyer
      l'offre de prêt reçue, rattachée d'office au prêt.
 
-## Capacité d'achat
+## Onglet Simuler
 
-- **R-CRE-30** — **Hypothèses** de la capacité d'achat, préremplies et modifiables, gardées d'une visite à
-  l'autre : type de projet (R-CRE-10), taux nominal, durée, assurance, frais de dossier et de garantie, **taux
-  d'endettement visé** (35 % par défaut), **réserve de sécurité** en mois de dépenses (6 par défaut), **comptes
-  mobilisables** pour l'apport (par défaut ceux de l'épargne de précaution, R-CPT-13 ; tout compte ouvert peut
-  être coché), autres revenus et charges mensuels, co-emprunteur (revenus et charges), prêts exclus des charges
-  (R-CRE-14).
+L'onglet répond à trois **questions**, pour tout **type de projet** (R-CRE-10), logement, travaux, véhicule ou
+autre : « Que puis-je acheter ? » (R-CRE-31), « Puis-je financer cet achat ? » (R-CRE-40) et « Que coûte ce
+prêt ? » (R-CRE-41). Les trois reposent sur la même **situation d'emprunteur** (R-CRE-30) et sur les
+**conditions** du projet choisi (R-CRE-38, R-CRE-39).
+
+### Situation d'emprunteur et conditions
+
+- **R-CRE-30** — La **situation d'emprunteur**, commune aux trois questions et à tous les projets, gardée d'une
+  visite à l'autre : **taux d'endettement visé** (35 % par défaut), **réserve de sécurité** en mois de dépenses
+  (6 par défaut), **comptes mobilisables** pour l'apport (par défaut ceux de l'épargne de précaution,
+  R-CPT-13 ; tout compte ouvert peut être coché), autres revenus et charges mensuels, co-emprunteur (revenus et
+  charges), prêts exclus des charges (R-CRE-14). Elle se résume en une ligne : revenus, charges, épargne
+  mobilisable, apport possible, taux d'endettement visé (R-CRE-31).
+- **R-CRE-38** — Les **conditions par défaut** de chaque type de projet, modifiables dans les réglages : type
+  de prêt (R-PRE-1), taux nominal, durée, assurance, frais de dossier, frais de garantie. Valeurs initiales,
+  des ordres de grandeur à ajuster :
+
+  | Projet | Type de prêt | Taux | Durée | Assurance | Dossier | Garantie |
+  |---|---|---|---|---|---|---|
+  | Achat dans l'ancien, dans le neuf | immobilier | 3,20 % | 25 ans | 0,30 % du capital | 1 000 € | 2 000 € |
+  | Travaux | immobilier | 3,50 % | 15 ans | 0,30 % du capital | 500 € | 0 € |
+  | Véhicule | consommation | 5,00 % | 60 mois | aucune | 0 € | 0 € |
+  | Autre | consommation | 6,00 % | 48 mois | aucune | 0 € | 0 € |
+
+- **R-CRE-39** — Choisir un projet charge ses conditions par défaut dans les **conditions du calcul**, que l'on
+  modifie librement sans changer les conditions par défaut ; « Conditions par défaut » les y ramène. L'onglet
+  garde son dernier état d'une visite à l'autre : projet, question, conditions du calcul et montants saisis.
+
+### Que puis-je acheter ?
+
 - **R-CRE-31** — **Aujourd'hui** :
   - revenus et charges mensuels comme une demande (R-CRE-13, R-CRE-14) ;
   - **mensualité maximale** = taux d'endettement visé × revenus − charges, jamais négative ;
-  - **capital empruntable** avec cette mensualité, aux taux, durée et assurance des hypothèses (R-CRE-5) ;
+  - **capital empruntable** avec cette mensualité, aux taux, durée et assurance des conditions du calcul
+    (R-CRE-5) ;
   - **épargne mobilisable** = soldes des comptes cochés (valeur pour l'épargne variable, R-CPT-6) ;
   - **réserve** = nombre de mois × dépenses mensuelles moyennes (R-TDB-8) ;
   - **apport possible** = épargne mobilisable − réserve, jamais négatif ;
   - **budget** = capital empruntable + apport possible − frais de dossier − frais de garantie ;
   - **prix d'achat maximal** : le plus grand prix, à la centaine d'euros, dont le prix et les frais de notaire
-    estimés (R-CRE-12) tiennent dans le budget.
-- **R-CRE-32** — **Effet de l'achat**, au prix maximal : épargne restante (mobilisable − apport) et ce qu'elle
-  représente en mois de dépenses ; reste à vivre (revenus − charges − échéance du crédit) ; **capacité
-  d'épargne** mensuelle (R-PRJ-42, scénario par défaut, mois prochain) **avant** et **après** l'achat (après =
-  avant − échéance du crédit + échéances des prêts exclus).
+    estimés (R-CRE-12, nuls hors logement) tiennent dans le budget.
+- **R-CRE-32** — **Effet de l'achat**, au prix maximal ou au prix saisi (R-CRE-40) : épargne restante
+  (mobilisable − apport) et ce qu'elle représente en mois de dépenses ; reste à vivre (revenus − charges −
+  échéance du crédit) ; **capacité d'épargne** mensuelle (R-PRJ-42, scénario par défaut, mois prochain)
+  **avant** et **après** l'achat (après = avant − échéance du crédit + échéances des prêts exclus).
 - **R-CRE-33** — **Dans les années à venir** : pour chacune des 5 prochaines années, à la même date, les mêmes
   calculs avec les données projetées du scénario par défaut (spec 07) :
   - revenus = moyenne des salaires projetés (R-PRJ-43, hausse du scénario) sur les 12 mois qui suivent, plus
@@ -217,24 +243,51 @@ l'acceptation comptent, comme tout bien ou prêt (spec 09).
   - réserve = nombre de mois × dépenses projetées (R-PRJ-44) à cette date.
   Ce sont des hypothèses, pas des prévisions. Si le scénario par défaut n'a pas de capacité d'épargne
   (R-PRJ-47), seule l'année en cours est calculée.
-- **R-CRE-34** — **Sensibilité** : le prix d'achat maximal d'aujourd'hui pour des durées de 15, 20 et 25 ans
-  (27 dans le neuf) et des taux de 0,5 point en dessous, égal et 0,5 point au-dessus du taux des hypothèses.
-- **R-CRE-35** — **Patrimoine projeté avec l'achat**, sur 10 ans, à côté de celui du scénario par défaut :
-  le patrimoine projeté, diminué au mois de l'achat des frais (notaire, dossier, garantie) et, chaque mois, du
-  cumul des intérêts et de l'assurance du crédit. Le bien garde son prix (R-BIE-5) : l'apport et le capital
-  remboursé changent de forme sans appauvrir. Approximation affichée comme telle : l'apport ne rapporte plus
-  d'intérêts, ce que la courbe n'en retire pas.
-- **R-CRE-36** — **Préparer une demande** depuis une simulation enregistrée : une demande (R-CRE-10) du type
-  de projet des hypothèses de la capacité, dont la simulation est retenue (et rattachée à la demande). Son plan
-  de financement : le plus grand prix (R-CRE-31) qui tient dans le capital de la simulation + l'apport
-  possible − les frais de la simulation, ses frais de notaire estimés, les frais de dossier et de garantie en
-  autres frais, l'**apport nécessaire** (coût du projet − capital, au plus l'apport possible : le prix arrondi à
-  la centaine laisse parfois un reliquat d'épargne), et les autres revenus et charges, le co-emprunteur et les
-  prêts exclus des hypothèses. Tout se modifie ensuite. « Créer une demande » depuis la capacité d'achat
-  enregistre d'abord une simulation au capital empruntable, aux conditions des hypothèses.
-- **R-CRE-37** — Le **simulateur** de l'onglet Simuler part des hypothèses de la capacité (taux, durée,
-  assurance, frais) et, en cherchant la mensualité, du capital empruntable ; on les change librement, sans
-  modifier les hypothèses de la capacité.
+- **R-CRE-34** — **Sensibilité** : le prix d'achat maximal d'aujourd'hui pour trois durées et des taux de
+  0,5 point en dessous, égal et 0,5 point au-dessus du taux des conditions. Durées : 15, 20 et 25 ans pour un
+  logement (27 dans le neuf) ; sinon la durée des conditions, 12 mois de moins et 12 mois de plus (au moins
+  12 mois).
+- **R-CRE-35** — **Patrimoine projeté avec l'achat**, pour un logement ou des travaux, sur 10 ans, à côté de
+  celui du scénario par défaut : le patrimoine projeté, diminué au mois de l'achat des frais (notaire,
+  dossier, garantie) et, chaque mois, du cumul des intérêts et de l'assurance du crédit. Le bien garde son prix
+  (R-BIE-5) : l'apport et le capital remboursé changent de forme sans appauvrir. Approximation affichée comme
+  telle : l'apport ne rapporte plus d'intérêts, ce que la courbe n'en retire pas. Un véhicule perd de sa
+  valeur : la courbe n'est pas proposée pour les autres projets.
+
+### Puis-je financer cet achat ?
+
+- **R-CRE-40** — Le prix est connu : on saisit le **prix** et l'**apport** (proposé : le plus petit de
+  l'apport possible et du coût du projet). **Coût du projet** = prix + frais de notaire estimés (R-CRE-12) +
+  frais de dossier + frais de garantie ; **capital** = coût − apport. Résultat : capital, mensualité aux
+  conditions du calcul (ou la durée, si l'on fixe une mensualité visée, R-CRE-5), coût total, TAEG, taux
+  d'endettement et reste à vivre (R-CRE-15), effet de l'achat (R-CRE-32). Sont **signalés**, sans rien bloquer :
+  un taux d'endettement au-delà du taux visé, un apport au-delà de l'apport possible (il entame la réserve) et
+  les seuils du HCSF pour un logement (R-CRE-15). Un apport égal au coût ne laisse rien à emprunter : achat
+  comptant, sans crédit.
+
+### Que coûte ce prêt ?
+
+- **R-CRE-41** — Le montant à emprunter est connu : le simulateur (R-CRE-1 à R-CRE-5) cherche la mensualité
+  (capital saisi), le capital (mensualité visée saisie) ou la durée (capital et mensualité visée saisis), aux
+  conditions du calcul. Il montre aussi le taux d'endettement et le reste à vivre que donnerait ce prêt
+  (R-CRE-15).
+
+### Enregistrer et préparer une demande
+
+- **R-CRE-36** — **Préparer une demande** (R-CRE-10), du type de projet choisi, avec la simulation retenue (et
+  rattachée à la demande), les autres revenus et charges, le co-emprunteur et les prêts exclus de la situation :
+  - depuis « Puis-je financer cet achat ? » : le plan de financement reprend le prix, les frais de notaire
+    estimés, les frais de dossier et de garantie en autres frais, et l'apport saisis ;
+  - depuis « Que puis-je acheter ? » : une simulation au capital empruntable est d'abord enregistrée, et le
+    plan reprend le prix maximal ;
+  - depuis une simulation enregistrée : le plan est le plus grand prix (R-CRE-31) qui tient dans le capital de
+    la simulation + l'apport possible − les frais de la simulation, ses frais de notaire estimés, les frais de
+    dossier et de garantie en autres frais, l'**apport nécessaire** (coût du projet − capital, au plus l'apport
+    possible : le prix arrondi à la centaine laisse parfois un reliquat d'épargne).
+  Tout se modifie ensuite dans la demande.
+- **R-CRE-37** — Chaque question s'**enregistre** en simulation (R-CRE-1) : son capital et les conditions du
+  calcul. **Ouvrir** une simulation enregistrée la reprend dans « Que coûte ce prêt ? » (capital et conditions)
+  ; la situation d'emprunteur et les conditions par défaut ne changent pas.
 
 ## Features
 
@@ -248,6 +301,8 @@ l'acceptation comptent, comme tout bien ou prêt (spec 09).
 | CRE-06 | V1 | Démarches auprès des banques et courtiers, offres reçues et comparées, acceptation |
 | CRE-07 | V1 | Capacité d'achat : prix maximal aujourd'hui et dans les années à venir, effet sur l'épargne et le patrimoine |
 | CRE-08 | V1 | Onglet Simuler : capacité et simulateur réunis ; préparer une demande depuis une simulation |
+| CRE-11 | V1 | Onglet Simuler par projet : situation d'emprunteur, trois questions (que puis-je acheter, financer un achat, coût d'un prêt) |
+| CRE-12 | V1 | Conditions de crédit par défaut de chaque type de projet, dans les réglages |
 | CRE-09 | V1 | Journal des démarches, relances et rappels |
 | CRE-10 | V1 | Acceptation d'une offre : bien, prêt et documents en une fois |
 
@@ -313,3 +368,23 @@ prêt auto avec tableau à 230 € d'échéance ; épargne de précaution 60 000
   Annecy », bien immobilier à 420 000 €, acheté le 2027-01-15, puis le prêt de l'offre financé par ce bien ; le
   compromis attribué à la pièce « Compromis de vente » est rattaché au bien, et l'offre de prêt envoyée dans
   l'assistant au prêt.
+
+### CRE-11 — Onglet Simuler par projet
+
+- Projet « Véhicule », question « Puis-je financer cet achat ? » : voiture à 25 000 €, apport 5 000 €, aux
+  conditions par défaut (5 % sur 60 mois, sans assurance ni frais) : pas de frais de notaire, capital
+  20 000 €, mensualité 377,42 €. Avec le prêt auto de 230 € et des revenus de 2 916,67 €, endettement
+  (230 + 377,42) / 2 916,67 = 20,8 %.
+- Même achat avec un apport de 55 000 € alors que l'apport possible est de 48 000 € : l'apport est signalé, il
+  entame la réserve.
+- Projet « Véhicule », question « Que puis-je acheter ? » : le prix maximal est le capital empruntable à 5 %
+  sur 60 mois + l'apport possible, sans frais de notaire ; les années à venir se calculent de même, la
+  sensibilité porte sur 48, 60 et 72 mois, et le patrimoine projeté n'est pas proposé.
+- J'ouvre la simulation « 25 ans à 3,4 % » : elle passe dans « Que coûte ce prêt ? » avec son capital, à
+  3,40 % ; les conditions par défaut du logement restent à 3,20 %.
+
+### CRE-12 — Conditions par défaut
+
+- Je règle le véhicule à 4,5 % sur 48 mois : choisir le projet « Véhicule » charge 4,5 % et 48 mois. Je
+  passe à 4,2 % pour un calcul : les conditions par défaut restent à 4,5 % ; « Conditions par défaut » remet
+  4,5 %.

@@ -442,12 +442,20 @@ ligne `not_required` par pièce. Pas de `id` propre ni d'horodatage.
 | `kind` | `LenderEventKind` | `SENT` \| `FOLLOW_UP` \| `CALL` \| `MEETING` \| `ANSWER` \| `NOTE` |
 | `note` | texte | optionnel |
 
-### Réglage de la capacité d'achat
+### Réglages de l'onglet Simuler
 
-`credit.purchase_capacity` (`AppSetting`, `Json`) garde les hypothèses de la capacité d'achat (R-CRE-30) :
-type de projet, taux, durée, assurance, frais, taux d'endettement visé, réserve en mois de dépenses, comptes
-mobilisables, autres revenus et charges, revenus et charges du co-emprunteur, prêts exclus. Absent, les valeurs
-par défaut s'appliquent. Les résultats se calculent (R-CRE-31 à R-CRE-35).
+- `credit.borrower_situation` (`AppSetting`, `Json`) garde la situation d'emprunteur (R-CRE-30) : taux
+  d'endettement visé, réserve en mois de dépenses, comptes mobilisables, autres revenus et charges, revenus et
+  charges du co-emprunteur, prêts exclus.
+- `credit.project_defaults` (`AppSetting`, `Json`) garde les conditions par défaut de chaque type de projet
+  (R-CRE-38) : type de prêt, taux, durée, assurance, frais de dossier, frais de garantie. Un type absent prend
+  les valeurs initiales.
+- `credit.simulate_state` (`AppSetting`, `Json`) garde le dernier état de l'onglet (R-CRE-39) : projet,
+  question (`MAX_PRICE`, `FINANCE_PURCHASE`, `LOAN`), conditions du calcul, montants saisis (prix, apport,
+  capital, mensualité visée).
+
+Absents, les valeurs par défaut s'appliquent. Les résultats se calculent (R-CRE-31 à R-CRE-35, R-CRE-40,
+R-CRE-41). Ces réglages remplacent `credit.purchase_capacity`, que la migration répartit puis supprime.
 
 ### Réglages
 
