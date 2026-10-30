@@ -139,9 +139,9 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       financer un achat au prix connu), un seul jeu de conditions
 - [x] CRE-12 — conditions de crédit par défaut de chaque type de projet, dans les réglages (E42)
 
-## Compléments V1 — postes des projets (2026-10-30)
+## Compléments V1 — postes des projets (2026-10-30, livrés)
 
-- [ ] BUD-11 — postes d'un projet : prévu détaillé, catégories facultatives, réel par poste et hors postes
+- [x] BUD-11 — postes d'un projet : prévu détaillé, catégories facultatives, réel par poste et hors postes
       (spec 05, R-BUD-26 à R-BUD-29)
 
 ## Mise en service (prochaine étape)

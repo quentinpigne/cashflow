@@ -85,6 +85,50 @@ test('E20 : créer un projet et y rattacher une transaction (BUD-06)', async ({ 
   await expect(page.locator('a.row')).toHaveCount(1);
 });
 
+test('E20 : postes d’un projet, hors postes et poste d’une transaction (BUD-11)', async ({
+  page,
+}) => {
+  test.skip(isMobile(page), 'données partagées : modifié une seule fois, sur ordinateur');
+  await login(page);
+  // La démo détaille son projet en postes (R-BUD-26).
+  await page.goto('/budget/projets');
+  await page.getByRole('link', { name: /Week-end à Lyon/ }).click();
+  await expect(page.getByRole('heading', { name: 'Postes' })).toBeVisible();
+  await expect(page.getByText('Hôtel', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hors postes', { exact: true })).toHaveCount(0);
+
+  // Le premier poste reprend le montant global ; le champ global disparaît.
+  await page.goto('/budget/projets');
+  await page.getByRole('link', { name: /Ski 2027/ }).click();
+  await page.getByRole('button', { name: /Modifier/ }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: /Ajouter un poste/ }).click();
+  await expect(dialog.getByLabel('Montant prévu')).toHaveCount(0);
+  await dialog.getByRole('textbox', { name: 'Poste', exact: true }).fill('Logement');
+  await expect(dialog.getByRole('textbox', { name: 'Montant', exact: true })).toHaveValue(
+    /1\s?500/,
+  );
+  await dialog.getByRole('button', { name: /Ajouter un poste/ }).click();
+  await dialog.getByRole('textbox', { name: 'Poste', exact: true }).nth(1).fill('Forfaits');
+  await dialog.getByRole('textbox', { name: 'Montant', exact: true }).nth(1).fill('400');
+  await dialog.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText('Forfaits', { exact: true })).toBeVisible();
+  // La transaction rattachée n'a pas de poste proposé : hors postes (R-BUD-27, R-BUD-28).
+  await expect(page.getByText('Hors postes', { exact: true })).toBeVisible();
+
+  // Rangée dans Forfaits depuis son détail.
+  await page.locator('a.row').first().click();
+  await page.getByLabel('Poste du projet').click();
+  await page.getByRole('option', { name: 'Forfaits' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByText('Transaction enregistrée')).toBeVisible();
+  await page.goto('/budget/projets');
+  await page.getByRole('link', { name: /Ski 2027/ }).click();
+  await expect(page.getByText('Forfaits', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hors postes', { exact: true })).toHaveCount(0);
+});
+
 test('E21 : centre de notifications (BUD-08)', async ({ page }) => {
   await login(page);
   const bell = page.getByRole('button', { name: /^Notifications/ });

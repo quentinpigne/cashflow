@@ -193,8 +193,8 @@ export class TransactionDetailView {
       this.payee.set(t.payee_id ?? null);
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       const lines = new Set(t.splits.map((s) => s.project_line_id ?? null));
-      this.line.set(lines.size > 1 ? this.MIXED : (t.splits[0]?.project_line_id ?? null));
-      this.initialLine = this.line();
+      this.initialLine = lines.size > 1 ? this.MIXED : (t.splits[0]?.project_line_id ?? null);
+      this.line.set(this.initialLine);
       this.pendingSplits.set(null);
       // Rapprochée : montant et date de solde verrouillés (R-TRX-3).
       // Mensualité ventilée selon son échéance : montant verrouillé (R-CPT-17).
