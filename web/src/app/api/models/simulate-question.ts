@@ -5,5 +5,5 @@
 /**
  * Question posée dans l'onglet Simuler.
  */
-export type SimulateQuestion = 'MAX_PRICE' | 'FINANCE_PURCHASE' | 'LOAN';
+export type SimulateQuestion = 'MAX_PRICE' | 'FINANCE_PURCHASE';
 

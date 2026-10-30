@@ -451,11 +451,10 @@ ligne `not_required` par pièce. Pas de `id` propre ni d'horodatage.
   (R-CRE-38) : type de prêt, taux, durée, assurance, frais de dossier, frais de garantie. Un type absent prend
   les valeurs initiales.
 - `credit.simulate_state` (`AppSetting`, `Json`) garde le dernier état de l'onglet (R-CRE-39) : projet,
-  question (`MAX_PRICE`, `FINANCE_PURCHASE`, `LOAN`), conditions du calcul, montants saisis (prix, apport,
-  capital, mensualité visée).
+  question (`MAX_PRICE`, `FINANCE_PURCHASE`), conditions du calcul, montants saisis (prix, apport, frais de
+  notaire, mensualité visée).
 
-Absents, les valeurs par défaut s'appliquent. Les résultats se calculent (R-CRE-31 à R-CRE-35, R-CRE-40,
-R-CRE-41). Ces réglages remplacent `credit.purchase_capacity`, que la migration répartit puis supprime.
+Absents, les valeurs par défaut s'appliquent. Les résultats se calculent (R-CRE-31 à R-CRE-35, R-CRE-40). Ces réglages remplacent `credit.purchase_capacity`, que la migration répartit puis supprime.
 
 ### Réglages
 

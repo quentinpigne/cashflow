@@ -81,7 +81,7 @@ export class LoanFigures {
   protected readonly duration = formatDuration;
 }
 
-/** Endettement, reste à vivre et capacité d'épargne d'une échéance (R-CRE-15, R-CRE-32, R-CRE-41). */
+/** Endettement, reste à vivre et capacité d'épargne d'une échéance (R-CRE-15, R-CRE-32, R-CRE-40). */
 @Component({
   selector: 'app-affordability',
   imports: [MatIconModule, MoneyPipe],

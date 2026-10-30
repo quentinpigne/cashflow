@@ -2383,45 +2383,6 @@
         }
       }
     },
-    "/api/v1/credit/loan-cost": {
-      "post": {
-        "tags": [
-          "credit"
-        ],
-        "summary": "Que coûte ce prêt ? (R-CRE-41)",
-        "operationId": "loanCost",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoanCostRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoanCostView"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/credit/project-defaults": {
       "get": {
         "tags": [
@@ -14715,37 +14676,6 @@
         "type": "string",
         "format": "uuid"
       },
-      "LoanCostRequest": {
-        "type": "object",
-        "description": "Un prêt au montant connu, et le projet qu'il finance.",
-        "required": [
-          "project_kind",
-          "loan"
-        ],
-        "properties": {
-          "loan": {
-            "$ref": "#/components/schemas/ComputeInput"
-          },
-          "project_kind": {
-            "$ref": "#/components/schemas/ProjectKind"
-          }
-        }
-      },
-      "LoanCostView": {
-        "type": "object",
-        "required": [
-          "loan",
-          "affordability"
-        ],
-        "properties": {
-          "affordability": {
-            "$ref": "#/components/schemas/AffordabilityView"
-          },
-          "loan": {
-            "$ref": "#/components/schemas/ComputeResult"
-          }
-        }
-      },
       "LoanCreated": {
         "type": "object",
         "required": [
@@ -17496,6 +17426,17 @@
           "affordability": {
             "$ref": "#/components/schemas/AffordabilityView"
           },
+          "loan": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ComputeResult",
+                "description": "Le crédit au capital empruntable, avec son tableau ; absent sans capital empruntable."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "net_worth": {
             "type": "array",
             "items": {
@@ -18891,8 +18832,7 @@
         "description": "Question posée dans l'onglet Simuler.",
         "enum": [
           "MAX_PRICE",
-          "FINANCE_PURCHASE",
-          "LOAN"
+          "FINANCE_PURCHASE"
         ]
       },
       "SimulateState": {
@@ -18902,7 +18842,6 @@
           "project_kind",
           "question",
           "conditions",
-          "goal",
           "fix_payment"
         ],
         "properties": {
@@ -18921,10 +18860,6 @@
             "type": "boolean",
             "description": "« Puis-je financer cet achat ? » : la mensualité est fixée, on cherche la durée."
           },
-          "goal": {
-            "$ref": "#/components/schemas/SimulationGoal",
-            "description": "« Que coûte ce prêt ? » : ce que cherche le simulateur."
-          },
           "notary_fees_minor": {
             "type": [
               "integer",
@@ -18934,13 +18869,6 @@
             "description": "Frais de notaire saisis ; absents, estimés."
           },
           "price_minor": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          },
-          "principal_minor": {
             "type": [
               "integer",
               "null"
@@ -18959,7 +18887,7 @@
               "null"
             ],
             "format": "int64",
-            "description": "Mensualité visée : fixée pour un achat, ou saisie dans le simulateur."
+            "description": "Mensualité visée, quand elle est fixée."
           }
         }
       },

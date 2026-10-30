@@ -21,16 +21,13 @@
     class="questions"
     aria-label="Question"
     [value]="question()"
-    (change)="selectQuestion($event.value)"
+    (change)="question.set($event.value)"
   >
     <mat-button-toggle value="MAX_PRICE">
       <span class="long">Que puis-je acheter ?</span><span class="short">Acheter ?</span>
     </mat-button-toggle>
     <mat-button-toggle value="FINANCE_PURCHASE">
       <span class="long">Puis-je financer cet achat ?</span><span class="short">Financer</span>
-    </mat-button-toggle>
-    <mat-button-toggle value="LOAN">
-      <span class="long">Que coûte ce prêt ?</span><span class="short">Coût</span>
     </mat-button-toggle>
   </mat-button-toggle-group>
 
@@ -108,46 +105,6 @@
             </div>
           }
         }
-        @case ('LOAN') {
-          <h2>{{ editing()?.name ?? 'Le prêt' }}</h2>
-          <mat-button-toggle-group
-            class="goal"
-            aria-label="Je cherche"
-            [value]="goal()"
-            (change)="goal.set($event.value)"
-          >
-            <mat-button-toggle value="PAYMENT">La mensualité</mat-button-toggle>
-            <mat-button-toggle value="PRINCIPAL">Le capital</mat-button-toggle>
-            <mat-button-toggle value="DURATION">La durée</mat-button-toggle>
-          </mat-button-toggle-group>
-          <div class="fields">
-            @if (goal() !== 'PRINCIPAL') {
-              <mat-form-field>
-                <mat-label>Capital</mat-label>
-                <input
-                  matInput
-                  inputmode="decimal"
-                  [ngModel]="principal()"
-                  (ngModelChange)="principal.set($event)"
-                />
-                <span matTextSuffix>€</span>
-              </mat-form-field>
-            }
-            @if (goal() !== 'PAYMENT') {
-              <mat-form-field>
-                <mat-label>Mensualité visée</mat-label>
-                <input
-                  matInput
-                  inputmode="decimal"
-                  [ngModel]="target()"
-                  (ngModelChange)="target.set($event)"
-                />
-                <span matTextSuffix>€</span>
-                <mat-hint>assurance comprise</mat-hint>
-              </mat-form-field>
-            }
-          </div>
-        }
       }
 
       @if (conditions(); as c) {
@@ -207,12 +164,12 @@
             n'est possible sans exclure un prêt remboursé par ce crédit ou réduire les charges.
           </p>
         }
+        @if (r.loan; as loan) {
+          <h3>Le crédit au capital empruntable</h3>
+          <app-loan-figures [loan]="loan" main="NONE" />
+        }
         <h3>Effet de l'achat</h3>
         <div class="figures">
-          <div>
-            <span class="muted">Échéance du crédit</span>
-            <strong>{{ r.today.payment_minor | money }}</strong>
-          </div>
           <div>
             <span class="muted">Épargne restante</span>
             <strong>{{ r.savings_after_minor | money }}</strong>
@@ -252,6 +209,7 @@
           </p>
         }
         @if (f.loan; as loan) {
+          <h3>Le crédit</h3>
           <app-loan-figures [loan]="loan" />
         } @else {
           <p class="hint"><mat-icon>info</mat-icon>L'apport couvre l'achat : rien à emprunter.</p>
@@ -276,38 +234,14 @@
         <app-affordability [value]="f.affordability" />
       }
 
-      @if (cost(); as c) {
-        @if (goal() === 'PRINCIPAL') {
-          <span class="muted">Capital empruntable</span>
-          <strong class="headline">{{ c.loan.principal_minor | money }}</strong>
-        } @else if (goal() === 'DURATION') {
-          <span class="muted">Durée</span>
-          <strong class="headline">{{ durationText(c.loan.duration_months) }}</strong>
-        }
-        <app-loan-figures [loan]="c.loan" [main]="goal() === 'PAYMENT' ? 'PAYMENT' : 'NONE'" />
-        <app-affordability [value]="c.affordability" />
-      }
-
-      @if (capacity() || financing() || cost()) {
+      @if (capacity() || financing()) {
         <div class="actions">
-          @if (editing(); as e) {
-            <button mat-flat-button (click)="update(e)">Enregistrer les modifications</button>
-            <button mat-stroked-button (click)="save()">Enregistrer comme nouvelle</button>
-          } @else {
-            <button mat-stroked-button [disabled]="!canSave()" (click)="save()">
-              <mat-icon>bookmark_add</mat-icon>Enregistrer
-            </button>
-          }
+          <button mat-stroked-button [disabled]="!canSave()" (click)="save()">
+            <mat-icon>bookmark_add</mat-icon>Enregistrer
+          </button>
           <button mat-flat-button [disabled]="!canSave()" (click)="prepare()">
             <mat-icon>assignment</mat-icon>Préparer une demande
           </button>
-          @if (capacity(); as r) {
-            @if (r.today.capital_minor > 0) {
-              <button mat-button (click)="startFromCapacity(r.today.capital_minor)">
-                <mat-icon>calculate</mat-icon>Simuler ce prêt
-              </button>
-            }
-          }
           @if (loan()) {
             <button mat-button (click)="schedule()">
               <mat-icon>table_chart</mat-icon>Tableau d'amortissement

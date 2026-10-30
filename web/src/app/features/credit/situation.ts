@@ -12,12 +12,27 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { catchError, debounceTime, distinctUntilChanged, filter, of, skip, switchMap } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  firstValueFrom,
+  map,
+  of,
+  skip,
+  switchMap,
+} from 'rxjs';
 
 import { BorrowerSituation } from '../../api/models/borrower-situation';
 import { SituationView } from '../../api/models/situation-view';
@@ -99,6 +114,8 @@ export class SituationBar {
     this.dialog.open(SituationPanel, {
       data,
       autoFocus: false,
+      // Le panneau se ferme lui-même, une fois la dernière saisie gardée.
+      disableClose: true,
       // Durées du glissement (styles.scss) : la fermeture attend la fin de l'animation.
       enterAnimationDuration: 250,
       exitAnimationDuration: 200,
@@ -250,7 +267,7 @@ interface SituationPanelData {
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-flat-button mat-dialog-close>Fermer</button>
+      <button mat-flat-button (click)="close()">Fermer</button>
     </mat-dialog-actions>
   `,
   styles: `
@@ -288,6 +305,7 @@ interface SituationPanelData {
 export class SituationPanel {
   private readonly api = inject(CreditService);
   private readonly data = inject<SituationPanelData>(MAT_DIALOG_DATA);
+  private readonly ref = inject(MatDialogRef<SituationPanel>);
 
   protected readonly view = signal(this.data.view);
   protected readonly busy = signal(false);
@@ -332,6 +350,8 @@ export class SituationPanel {
     };
   });
   protected readonly invalid = computed(() => this.draft() === null);
+  /** La dernière situation gardée, telle que saisie. */
+  private lastSaved = JSON.stringify(this.draft());
 
   constructor() {
     toObservable(this.draft)
@@ -344,6 +364,7 @@ export class SituationPanel {
         switchMap((body) => {
           this.busy.set(true);
           return this.api.saveBorrowerSituation({ body }).pipe(
+            map((view) => ({ body, view })),
             catchError((e) => {
               this.error.set(errorMessage(e));
               return of(null);
@@ -352,13 +373,37 @@ export class SituationPanel {
         }),
         takeUntilDestroyed(inject(DestroyRef)),
       )
-      .subscribe((view) => {
+      .subscribe((saved) => {
         this.busy.set(false);
-        if (!view) return;
-        this.error.set(null);
-        this.view.set(view);
-        this.data.changed(view);
+        if (saved) this.saved(saved.body, saved.view);
       });
+    // Fond ou Échap : la même fermeture que le bouton, qui garde d'abord la dernière saisie.
+    this.ref.backdropClick().subscribe(() => void this.close());
+    this.ref
+      .keydownEvents()
+      .pipe(filter((e) => e.key === 'Escape'))
+      .subscribe(() => void this.close());
+  }
+
+  private saved(body: BorrowerSituation, view: SituationView): void {
+    this.lastSaved = JSON.stringify(body);
+    this.error.set(null);
+    this.view.set(view);
+    this.data.changed(view);
+  }
+
+  /** Garde la saisie pas encore enregistrée (encore dans le délai de frappe), puis ferme. */
+  protected async close(): Promise<void> {
+    const draft = this.draft();
+    if (draft && JSON.stringify(draft) !== this.lastSaved) {
+      try {
+        this.saved(draft, await firstValueFrom(this.api.saveBorrowerSituation({ body: draft })));
+      } catch (e) {
+        this.error.set(errorMessage(e));
+        return;
+      }
+    }
+    this.ref.close();
   }
 
   protected toggleAccount(id: string): void {

@@ -10,9 +10,7 @@ use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::loans::{Insurance, LoanKind};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, EmploymentId, LoanApplicationId};
 
-use super::credit::simulate::{
-    self, CapacityRequest, CreditConditions, FinancingRequest, LoanCostRequest, SimulateQuestion,
-};
+use super::credit::simulate::{self, CapacityRequest, CreditConditions, FinancingRequest, SimulateQuestion};
 use super::credit::{self, ApplicationInput, ComputeInput, LenderRequestInput, SimulationGoal, SimulationInput};
 use super::documents::{self, Upload};
 use super::loans::{self, LoanInput, ScheduleInput};
@@ -387,6 +385,11 @@ async fn cre_07_r_cre_30_to_r_cre_36_purchase_capacity() {
             <= capacity.today.capital_minor + capacity.today.down_payment_minor
     );
     assert_eq!(capacity.savings_after_minor, 0);
+    // Le crédit au capital empruntable, avec son tableau : son échéance est celle de l'effet de l'achat.
+    let loan = capacity.loan.as_ref().unwrap();
+    assert_eq!((loan.principal_minor, loan.duration_months), (capacity.today.capital_minor, 240));
+    assert_eq!(loan.result.total_payment_minor, capacity.today.payment_minor);
+    assert_eq!(loan.installments.len(), 240);
     assert_eq!(capacity.affordability.remaining_income_minor, 270_000 - 20_000 - capacity.today.payment_minor);
     assert_eq!(simulate::borrower_situation(&db, today).await.unwrap().situation.reserve_months, 0, "gardée");
 
@@ -462,7 +465,7 @@ async fn cre_12_r_cre_38_r_cre_39_project_defaults_and_state() {
 }
 
 #[tokio::test]
-async fn cre_11_r_cre_40_r_cre_41_finance_a_purchase_and_cost_of_a_loan() {
+async fn cre_11_r_cre_40_finance_a_purchase() {
     let (db, _dir) = setup().await;
     let today = d(TODAY);
     let f = fixture(&db).await;
@@ -531,30 +534,6 @@ async fn cre_11_r_cre_40_r_cre_41_finance_a_purchase_and_cost_of_a_loan() {
     assert_eq!((application.price_minor, application.down_payment_minor), (2_500_000, 500_000));
     assert_eq!(application.to_borrow_minor, 2_000_000);
     assert!(application.selected_simulation_id.is_some());
-
-    // Que coûte ce prêt ? Le simulateur, et l'endettement qu'il donnerait (R-CRE-41).
-    let cost = simulate::loan_cost(
-        &db,
-        &LoanCostRequest {
-            project_kind: ProjectKind::Vehicle,
-            loan: ComputeInput {
-                goal: SimulationGoal::Payment,
-                kind: LoanKind::Consumer,
-                principal_minor: Some(2_000_000),
-                duration_months: Some(60),
-                target_payment_minor: None,
-                annual_rate_ppm: 50_000,
-                insurance: Insurance::None,
-                fees_minor: 0,
-                guarantee_fees_minor: 0,
-            },
-        },
-        today,
-    )
-    .await
-    .unwrap();
-    assert_eq!(cost.loan.result.total_payment_minor, 37_742);
-    assert_eq!(cost.affordability.remaining_income_minor, 270_000 - 20_000 - 37_742);
 }
 
 #[tokio::test]

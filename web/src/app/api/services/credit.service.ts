@@ -61,9 +61,6 @@ import { listLoanSimulations } from '../fn/credit/list-loan-simulations';
 import { ListLoanSimulations$Params } from '../fn/credit/list-loan-simulations';
 import { loanApplicationSummary } from '../fn/credit/loan-application-summary';
 import { LoanApplicationSummary$Params } from '../fn/credit/loan-application-summary';
-import { loanCost } from '../fn/credit/loan-cost';
-import { LoanCost$Params } from '../fn/credit/loan-cost';
-import { LoanCostView } from '../models/loan-cost-view';
 import { LoanCreated } from '../models/loan-created';
 import { loanSimulationSchedule } from '../fn/credit/loan-simulation-schedule';
 import { LoanSimulationSchedule$Params } from '../fn/credit/loan-simulation-schedule';
@@ -178,41 +175,6 @@ export class CreditService extends BaseService {
     const resp = this.applicationFromFinancing$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
-    );
-  }
-
-  /** Path part for operation `loanCost()` */
-  static readonly LoanCostPath = '/api/v1/credit/loan-cost';
-
-  /**
-   * Que coûte ce prêt ? (R-CRE-41).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `loanCost()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  loanCost$Response(params: LoanCost$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanCostView>> {
-    const obs = loanCost(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Que coûte ce prêt ? (R-CRE-41).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `loanCost$Response()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  loanCost(params: LoanCost$Params, context?: HttpContext): Observable<LoanCostView> {
-    const resp = this.loanCost$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<LoanCostView>): LoanCostView => r.body)
     );
   }
 

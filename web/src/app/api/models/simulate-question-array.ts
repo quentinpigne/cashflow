@@ -8,6 +8,5 @@ import { SimulateQuestion } from './simulate-question';
  */
 export const SIMULATE_QUESTION: SimulateQuestion[] = [
   'MAX_PRICE',
-  'FINANCE_PURCHASE',
-  'LOAN'
+  'FINANCE_PURCHASE'
 ];

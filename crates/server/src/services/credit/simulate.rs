@@ -1,5 +1,5 @@
 //! Onglet Simuler (CRE-07, CRE-08, CRE-11, CRE-12) : la situation d'emprunteur, les conditions par défaut de chaque
-//! type de projet, et les trois questions : que puis-je acheter, puis-je financer cet achat, que coûte ce prêt.
+//! type de projet, et les deux questions : que puis-je acheter, puis-je financer cet achat.
 //! Les calculs sont dans `cashflow_domain::credit`.
 
 use std::collections::HashSet;
@@ -119,8 +119,6 @@ pub enum SimulateQuestion {
     MaxPrice,
     /// Puis-je financer cet achat ? (R-CRE-40)
     FinancePurchase,
-    /// Que coûte ce prêt ? (R-CRE-41)
-    Loan,
 }
 
 /// Dernier état de l'onglet : projet, question, conditions du calcul et montants saisis (R-CRE-39).
@@ -134,10 +132,7 @@ pub struct SimulateState {
     pub down_payment_minor: Option<i64>,
     /// Frais de notaire saisis ; absents, estimés.
     pub notary_fees_minor: Option<i64>,
-    /// « Que coûte ce prêt ? » : ce que cherche le simulateur.
-    pub goal: SimulationGoal,
-    pub principal_minor: Option<i64>,
-    /// Mensualité visée : fixée pour un achat, ou saisie dans le simulateur.
+    /// Mensualité visée, quand elle est fixée.
     pub target_payment_minor: Option<i64>,
     /// « Puis-je financer cet achat ? » : la mensualité est fixée, on cherche la durée.
     pub fix_payment: bool,
@@ -155,8 +150,6 @@ pub async fn simulate_state(db: &Db) -> AppResult<SimulateState> {
         price_minor: None,
         down_payment_minor: None,
         notary_fees_minor: None,
-        goal: SimulationGoal::Payment,
-        principal_minor: None,
         target_payment_minor: None,
         fix_payment: false,
     })
@@ -164,7 +157,7 @@ pub async fn simulate_state(db: &Db) -> AppResult<SimulateState> {
 
 pub async fn save_simulate_state(db: &Db, input: &SimulateState) -> AppResult<SimulateState> {
     input.conditions.domain()?;
-    let amounts = [input.price_minor, input.down_payment_minor, input.notary_fees_minor, input.principal_minor];
+    let amounts = [input.price_minor, input.down_payment_minor, input.notary_fees_minor];
     if amounts.iter().flatten().any(|m| *m < 0) || input.target_payment_minor.is_some_and(|m| m < 0) {
         return Err(AppError::invalid("INVALID_AMOUNT", "montant négatif"));
     }
@@ -361,7 +354,7 @@ pub async fn save_borrower_situation(db: &Db, input: &BorrowerSituation, today: 
 
 // ======================================================================= Endettement et effet de l'achat
 
-/// Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-41).
+/// Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-40).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AffordabilityView {
     /// Échéance totale envisagée : mensualité + assurance.
@@ -402,6 +395,21 @@ fn affordability(s: &Situation, project: ProjectKind, payment: Money, duration_m
 fn savings_after(s: &Situation, down_payment: Money) -> (i64, Option<i64>) {
     let after = (s.savings - down_payment).minor();
     (after, s.expenses.is_positive().then(|| after * 10 / s.expenses.minor()))
+}
+
+/// Le calcul d'un capital aux conditions : sa mensualité, ou sa durée si la mensualité est fixée (R-CRE-5).
+fn payment_of(conditions: &Conditions, principal: Money, target: Option<Money>) -> ComputeInput {
+    ComputeInput {
+        goal: if target.is_some() { SimulationGoal::Duration } else { SimulationGoal::Payment },
+        kind: conditions.kind,
+        principal_minor: Some(principal.minor()),
+        duration_months: Some(conditions.duration_months),
+        target_payment_minor: target.map(Money::minor),
+        annual_rate_ppm: conditions.annual_rate.ppm(),
+        insurance: conditions.insurance,
+        fees_minor: conditions.fees.minor(),
+        guarantee_fees_minor: conditions.guarantee_fees.minor(),
+    }
 }
 
 // ======================================================================= Que puis-je acheter ? (R-CRE-31 à R-CRE-35)
@@ -454,6 +462,8 @@ pub struct PurchaseCapacity {
     pub savings_after_minor: i64,
     pub savings_after_tenths_of_months: Option<i64>,
     pub affordability: AffordabilityView,
+    /// Le crédit au capital empruntable, avec son tableau ; absent sans capital empruntable.
+    pub loan: Option<ComputeResult>,
     /// Les 5 prochaines années (R-CRE-33).
     pub years: Vec<PurchaseView>,
     pub sensitivity: Vec<SensitivityCell>,
@@ -587,8 +597,15 @@ pub async fn purchase_capacity(db: &Db, request: &CapacityRequest, today: Date) 
             .collect();
     }
 
+    let loan = if now.capital.is_positive() {
+        Some(super::compute(&payment_of(&conditions, now.capital, None), today)?)
+    } else {
+        None
+    };
+
     Ok(PurchaseCapacity {
         affordability: affordability(&s, project, now.payment, conditions.duration_months),
+        loan,
         savings_after_minor,
         savings_after_tenths_of_months,
         today: purchase_view(today, &now_input, &now),
@@ -661,22 +678,8 @@ async fn financing_of(db: &Db, request: &FinancingRequest, today: Date) -> AppRe
     let plan = purchase.plan()?;
     let to_borrow = plan.to_borrow();
     let loan = if to_borrow.is_positive() {
-        let input = ComputeInput {
-            goal: if request.target_payment_minor.is_some() {
-                SimulationGoal::Duration
-            } else {
-                SimulationGoal::Payment
-            },
-            kind: conditions.kind,
-            principal_minor: Some(to_borrow.minor()),
-            duration_months: Some(conditions.duration_months),
-            target_payment_minor: request.target_payment_minor,
-            annual_rate_ppm: conditions.annual_rate.ppm(),
-            insurance: conditions.insurance,
-            fees_minor: conditions.fees.minor(),
-            guarantee_fees_minor: conditions.guarantee_fees.minor(),
-        };
-        Some(super::compute(&input, today)?)
+        let target = request.target_payment_minor.map(Money::from_minor);
+        Some(super::compute(&payment_of(&conditions, to_borrow, target), today)?)
     } else {
         None
     };
@@ -704,30 +707,6 @@ async fn financing_of(db: &Db, request: &FinancingRequest, today: Date) -> AppRe
 /// Puis-je financer cet achat ? (R-CRE-40)
 pub async fn financing(db: &Db, request: &FinancingRequest, today: Date) -> AppResult<FinancingView> {
     Ok(financing_of(db, request, today).await?.view)
-}
-
-// ======================================================================= Que coûte ce prêt ? (R-CRE-41)
-
-/// Un prêt au montant connu, et le projet qu'il finance.
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LoanCostRequest {
-    pub project_kind: ProjectKind,
-    pub loan: ComputeInput,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct LoanCostView {
-    pub loan: ComputeResult,
-    pub affordability: AffordabilityView,
-}
-
-/// Que coûte ce prêt ? Le simulateur, et l'endettement que donnerait le prêt (R-CRE-41).
-pub async fn loan_cost(db: &Db, request: &LoanCostRequest, today: Date) -> AppResult<LoanCostView> {
-    let loan = super::compute(&request.loan, today)?;
-    let s = situation(db, today, 1).await?;
-    let payment = Money::from_minor(loan.result.total_payment_minor);
-    let affordability = affordability(&s, request.project_kind, payment, loan.duration_months);
-    Ok(LoanCostView { loan, affordability })
 }
 
 // ======================================================================= Préparer une demande (R-CRE-36)

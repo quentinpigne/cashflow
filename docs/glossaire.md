@@ -137,7 +137,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Situation d'emprunteur | `borrower situation` | Ce qui, dans mes données et mes réglages, fixe ce que je peux emprunter : taux d'endettement visé, réserve, comptes mobilisables, autres revenus et charges, co-emprunteur, prêts exclus (R-CRE-30). |
 | Conditions par défaut | `project defaults` | Type de prêt, taux, durée, assurance et frais proposés pour un type de projet, réglés dans les réglages (R-CRE-38). |
 | Conditions du calcul | `terms` | Conditions appliquées au calcul en cours de l'onglet Simuler, parties des conditions par défaut (R-CRE-39). |
-| Question (de l'onglet Simuler) | `SimulateQuestion` | `MAX_PRICE` que puis-je acheter, `FINANCE_PURCHASE` puis-je financer cet achat, `LOAN` que coûte ce prêt (R-CRE-31, R-CRE-40, R-CRE-41). |
+| Question (de l'onglet Simuler) | `SimulateQuestion` | `MAX_PRICE` que puis-je acheter, `FINANCE_PURCHASE` puis-je financer cet achat (R-CRE-31, R-CRE-40). |
 | Épargne mobilisable | `available savings` | Soldes des comptes choisis pour financer l'apport (R-CRE-31). |
 | Réserve de sécurité | `reserve` | Épargne gardée hors de l'apport, en mois de dépenses moyennes (R-CRE-30). |
 | Apport possible | `possible down payment` | Épargne mobilisable − réserve de sécurité (R-CRE-31). |

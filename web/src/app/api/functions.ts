@@ -199,8 +199,6 @@ export type { PurchaseFinancing$Params as PurchaseFinancing$Params } from './fn/
 export { purchaseFinancing as purchaseFinancing } from './fn/credit/purchase-financing';
 export type { ApplicationFromFinancing$Params as ApplicationFromFinancing$Params } from './fn/credit/application-from-financing';
 export { applicationFromFinancing as applicationFromFinancing } from './fn/credit/application-from-financing';
-export type { LoanCost$Params as LoanCost$Params } from './fn/credit/loan-cost';
-export { loanCost as loanCost } from './fn/credit/loan-cost';
 export type { ProjectDefaults$Params as ProjectDefaults$Params } from './fn/credit/project-defaults';
 export { projectDefaults as projectDefaults } from './fn/credit/project-defaults';
 export type { SaveProjectDefaults$Params as SaveProjectDefaults$Params } from './fn/credit/save-project-defaults';

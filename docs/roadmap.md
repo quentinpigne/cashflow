@@ -135,8 +135,8 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 
 ## Compléments V1 — onglet Simuler par projet (2026-10-30, livrés)
 
-- [x] CRE-11 — onglet Simuler par projet : situation d'emprunteur, trois questions (que puis-je acheter,
-      financer un achat au prix connu, coût d'un prêt), un seul jeu de conditions
+- [x] CRE-11 — onglet Simuler par projet : situation d'emprunteur, deux questions (que puis-je acheter,
+      financer un achat au prix connu), un seul jeu de conditions
 - [x] CRE-12 — conditions de crédit par défaut de chaque type de projet, dans les réglages (E42)
 
 ## Mise en service (prochaine étape)

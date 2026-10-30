@@ -544,7 +544,7 @@ impl ProjectKind {
     }
 }
 
-/// Endettement d'une mensualité envisagée face à la situation d'emprunteur (R-CRE-40, R-CRE-41).
+/// Endettement d'une mensualité envisagée face à la situation d'emprunteur (R-CRE-40).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Affordability {
     pub debt_ratio: Option<Rate>,
@@ -996,7 +996,7 @@ mod tests {
     }
 
     #[test]
-    fn r_cre_41_affordability_against_the_target_ratio() {
+    fn r_cre_40_affordability_against_the_target_ratio() {
         let check = affordability(euros(3_000), euros(500), euros(700), Rate::from_ppm(350_000));
         assert_eq!(check.debt_ratio, Some(Rate::from_ppm(400_000)));
         assert!(check.debt_ratio_exceeded);

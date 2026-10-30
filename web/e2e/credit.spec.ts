@@ -4,7 +4,7 @@ import { isMobile, login } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
-test('E36 : situation, projet, trois questions et demande préparée (CRE-07, CRE-08, CRE-11)', async ({
+test('E36 : situation, projet, deux questions et demande préparée (CRE-07, CRE-08, CRE-11)', async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -48,42 +48,56 @@ test('E36 : situation, projet, trois questions et demande préparée (CRE-07, CR
   await expect(page.getByLabel('Assurance', { exact: true })).toContainText('Aucune');
   await expect(result).toContainText('20 000,00');
   await expect(result).toContainText('377,42');
+  await expect(result).toContainText('Coût total du crédit');
   await expect(result).toContainText("Taux d'endettement");
   await shot('financer');
 
-  // Que coûte ce prêt ? 200 000 € sur 20 ans à 3 %, assurance 0,3 % (R-CRE-41).
+  // Que puis-je acheter ? Le crédit au capital empruntable, son coût total et son tableau ; les conditions du
+  // calcul changent sans toucher aux conditions par défaut (R-CRE-39).
   await page.getByRole('option', { name: 'Ancien' }).click();
-  await page.getByRole('radio', { name: /Que coûte ce prêt|Coût/ }).click();
+  await page.getByRole('radio', { name: /Que puis-je acheter|Acheter/ }).click();
+  // Un endettement visé large garantit un capital empruntable, quels que soient les prêts créés avant.
+  const debtRatio = async (value: string) => {
+    await situation.getByRole('button', { name: 'Ajuster' }).click();
+    await panel.getByLabel('Endettement visé').fill(value);
+    // Fermé aussitôt : la saisie encore dans le délai de frappe est gardée quand même.
+    await panel.getByRole('button', { name: 'Fermer' }).click();
+    await expect(panel).toBeHidden();
+    await expect(situation).toContainText(`Endettement visé ${value},00`);
+  };
+  await debtRatio('100');
   await page.getByLabel('Taux nominal').fill('3');
   await page.getByLabel('Durée', { exact: true }).fill('240');
-  await page.getByRole('radio', { name: 'La mensualité' }).click();
-  await page.getByLabel('Capital', { exact: true }).fill('200 000');
-  await expect(result).toContainText('1 159,20');
-  await page.getByRole('radio', { name: 'Le capital' }).click();
-  await page.getByLabel('Mensualité visée').fill('1 200');
-  await expect(result).toContainText('Capital empruntable');
-  await shot('cout');
+  await expect(result).toContainText('Le crédit au capital empruntable');
+  await expect(result).toContainText('Coût total du crédit');
+  await result.getByRole('button', { name: "Tableau d'amortissement" }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText("Tableau d'amortissement");
+  await dialog.getByRole('button', { name: 'Fermer' }).click();
+  await expect(dialog).toBeHidden();
+  await shot('acheter-credit');
   await page.getByRole('button', { name: 'Conditions par défaut' }).click();
   await expect(page.getByLabel('Taux nominal')).toHaveValue('3,20');
-  if (isMobile(page)) return;
+  if (isMobile(page)) {
+    await debtRatio('35');
+    return;
+  }
 
-  // Une simulation ouverte passe dans « Que coûte ce prêt ? », avec ses conditions (R-CRE-37).
+  // Une simulation ouverte reprend ses conditions dans le calcul en cours (R-CRE-37).
   await page.locator('.row', { hasText: '25 ans à 3,4 %' }).getByRole('button').first().click();
   await expect(page.getByLabel('Taux nominal')).toHaveValue('3,40');
-  await expect(page.getByRole('heading', { name: '25 ans à 3,4 %' })).toBeVisible();
   await page.getByRole('button', { name: 'Conditions par défaut' }).click();
+  await debtRatio('35');
 
   // Enregistrer, puis préparer une demande depuis la simulation (R-CRE-36).
-  await page.getByRole('radio', { name: 'Le capital' }).click();
   await result.getByRole('button', { name: 'Enregistrer' }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Nom', { exact: true }).fill('Capacité 1 200 €');
+  await dialog.getByLabel('Nom', { exact: true }).fill('Capacité test');
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(dialog).toBeHidden();
-  const row = page.locator('.row', { hasText: 'Capacité 1 200 €' });
+  const row = page.locator('.row', { hasText: 'Capacité test' });
   await row.getByRole('button', { name: 'Préparer une demande' }).click();
-  await expect(page.getByRole('heading', { name: 'Capacité 1 200 €', level: 1 })).toBeVisible();
-  await expect(page.locator('section.capacity')).toContainText('Capacité 1 200 €');
+  await expect(page.getByRole('heading', { name: 'Capacité test', level: 1 })).toBeVisible();
+  await expect(page.locator('section.capacity')).toContainText('Capacité test');
 
   // Une demande préparée depuis « Puis-je financer cet achat ? » reprend le prix et l'apport.
   await page.goto('/prets/simuler');

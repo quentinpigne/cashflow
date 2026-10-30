@@ -175,8 +175,6 @@ export type { LinkKind } from './models/link-kind';
 export type { LinkTarget } from './models/link-target';
 export type { LinkView } from './models/link-view';
 export type { LoanApplicationId } from './models/loan-application-id';
-export type { LoanCostRequest } from './models/loan-cost-request';
-export type { LoanCostView } from './models/loan-cost-view';
 export type { LoanCreated } from './models/loan-created';
 export type { LoanId } from './models/loan-id';
 export type { LoanInput } from './models/loan-input';

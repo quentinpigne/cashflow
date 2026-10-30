@@ -4,7 +4,6 @@
 import { CreditConditions } from '../models/credit-conditions';
 import { ProjectKind } from '../models/project-kind';
 import { SimulateQuestion } from '../models/simulate-question';
-import { SimulationGoal } from '../models/simulation-goal';
 
 /**
  * Dernier état de l'onglet : projet, question, conditions du calcul et montants saisis (R-CRE-39).
@@ -23,21 +22,15 @@ export interface SimulateState {
   fix_payment: boolean;
 
   /**
-   * « Que coûte ce prêt ? » : ce que cherche le simulateur.
-   */
-  goal: SimulationGoal;
-
-  /**
    * Frais de notaire saisis ; absents, estimés.
    */
   notary_fees_minor?: (number | null);
   price_minor?: (number | null);
-  principal_minor?: (number | null);
   project_kind: ProjectKind;
   question: SimulateQuestion;
 
   /**
-   * Mensualité visée : fixée pour un achat, ou saisie dans le simulateur.
+   * Mensualité visée, quand elle est fixée.
    */
   target_payment_minor?: (number | null);
 }

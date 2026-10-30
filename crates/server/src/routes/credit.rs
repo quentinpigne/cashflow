@@ -28,7 +28,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(credit::simulate_state, credit::save_simulate_state))
         .routes(routes!(credit::purchase_capacity))
         .routes(routes!(credit::financing))
-        .routes(routes!(credit::loan_cost))
         .routes(routes!(credit::application_from_capacity))
         .routes(routes!(credit::application_from_financing))
         .routes(routes!(credit::application_from_simulation))

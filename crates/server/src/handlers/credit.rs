@@ -12,8 +12,8 @@ use utoipa::ToSchema;
 
 use crate::error::{AppResult, Problem};
 use crate::services::credit::simulate::{
-    self as simulate, BorrowerSituation, CapacityRequest, FinancingRequest, FinancingView, LoanCostRequest,
-    LoanCostView, ProjectDefaults, ProjectDefaultsInput, PurchaseCapacity, SimulateState, SituationView,
+    self as simulate, BorrowerSituation, CapacityRequest, FinancingRequest, FinancingView, ProjectDefaults,
+    ProjectDefaultsInput, PurchaseCapacity, SimulateState, SituationView,
 };
 use crate::services::credit::{
     self, ApplicationInput, ApplicationSummary, ApplicationView, ComputeInput, ComputeResult, FollowUpInput,
@@ -443,19 +443,6 @@ pub async fn financing(
     Json(input): Json<FinancingRequest>,
 ) -> AppResult<Json<FinancingView>> {
     Ok(Json(simulate::financing(&state.db, &input, state.clock.today()).await?))
-}
-
-/// Que coûte ce prêt ? (R-CRE-41)
-#[utoipa::path(
-    post, operation_id = "loanCost", path = "/credit/loan-cost", tag = "credit",
-    request_body = LoanCostRequest,
-    responses((status = 200, body = LoanCostView), (status = 422, body = Problem))
-)]
-pub async fn loan_cost(
-    State(state): State<AppState>,
-    Json(input): Json<LoanCostRequest>,
-) -> AppResult<Json<LoanCostView>> {
-    Ok(Json(simulate::loan_cost(&state.db, &input, state.clock.today()).await?))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

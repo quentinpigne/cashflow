@@ -908,7 +908,7 @@ Ce qui change dans les écrans existants :
 
 ## E36 — Simuler (CRE-01, CRE-02, CRE-07, CRE-08, CRE-11)
 
-L'onglet part d'un **projet** et pose **une question à la fois** (R-CRE-31, R-CRE-40, R-CRE-41). La situation
+L'onglet part d'un **projet** et pose **l'une de deux questions** (R-CRE-31, R-CRE-40). La situation
 d'emprunteur, qui change rarement, tient en une ligne ; les conditions du crédit ne sont saisies qu'à un
 endroit ; le résultat reste en vue pendant la saisie.
 
@@ -920,7 +920,7 @@ Ordinateur
 └────────────────────────────────────────────────────────────────────────────────┘
  Projet   (Ancien) (Neuf) (Travaux) (●Véhicule) (Autre)
 
- [Que puis-je acheter ?] [●Puis-je financer cet achat ?] [Que coûte ce prêt ?]
+ [Que puis-je acheter ?] [●Puis-je financer cet achat ?]
 
 ┌ L'achat ───────────────────────────┐  ┌ Résultat ─────────────────────────────┐
 │ Prix          25 000 €             │  │ À emprunter          20 000,00 €       │
@@ -940,7 +940,7 @@ Ordinateur
 Mobile
 Ma situation  2 917 € · 35 %   [Ajuster]
 Projet  ‹ Ancien  Neuf  Travaux  Véhicule ›
-[Acheter ?] [Financer] [Coût]
+[Acheter ?] [Financer]
 ┌ L'achat ────────────────┐
 │ Prix, apport            │
 │ Conditions du crédit    │
@@ -961,8 +961,8 @@ co-emprunteur. Chaque changement est gardé et recalcule le résultat.
 **Projet** (R-CRE-38, R-CRE-39) : `[mat-chip-listbox]` à choix unique, défilant sur mobile. Le choisir charge
 ses conditions par défaut.
 
-**Question** : `[mat-button-toggle-group]`, trois choix ; sur mobile, libellés courts (« Acheter ? »,
-« Financer », « Coût »).
+**Question** : `[mat-button-toggle-group]`, deux choix ; sur mobile, libellés courts (« Acheter ? »,
+« Financer »).
 
 **Zone de saisie** (`[mat-card]`), selon la question :
 
@@ -970,10 +970,8 @@ ses conditions par défaut.
 - *Puis-je financer cet achat ?* : prix, apport (proposé, R-CRE-40 ; l'apport possible rappelé dessous,
   signalé quand on le dépasse), frais de notaire estimés pour un logement (modifiables) ; une case « Je fixe
   la mensualité » remplace la durée par une mensualité visée.
-- *Que coûte ce prêt ?* : « Je cherche » la mensualité, le capital ou la durée, puis le capital et/ou la
-  mensualité visée.
 
-Puis **Conditions du crédit**, partagées par les trois questions : type de prêt, taux nominal, durée,
+Puis **Conditions du crédit**, partagées par les deux questions : type de prêt, taux nominal, durée,
 assurance (aucune, montant mensuel, taux annuel), frais de dossier, frais de garantie, et le bouton
 **« Conditions par défaut »** (R-CRE-39). C'est une section de la zone de saisie, toujours dépliée.
 
@@ -981,17 +979,15 @@ assurance (aucune, montant mensuel, taux annuel), frais de dossier, frais de gar
 
 - *Que puis-je acheter ?* : le **prix d'achat maximal** en grand, puis le détail en cascade (R-CRE-31) :
   revenus, charges, mensualité maximale → capital empruntable ; épargne mobilisable − réserve → apport
-  possible ; budget − frais de notaire estimés → prix. Puis l'effet de l'achat (R-CRE-32).
-- *Puis-je financer cet achat ?* : à emprunter, mensualité (ou durée), TAEG, coût total ; taux d'endettement
-  (vert sous le taux visé, orange au-delà), reste à vivre ; effet de l'achat (R-CRE-32) ; signalements
-  (R-CRE-40).
-- *Que coûte ce prêt ?* : mensualité, assurance, échéance totale, coût total (dont intérêts, assurance,
-  frais), TAEG, le capital ou la durée trouvés ; taux d'endettement et reste à vivre (R-CRE-41).
+  possible ; budget − frais de notaire estimés → prix. Puis **le crédit au capital empruntable** (échéance,
+  coût total, TAEG) et l'effet de l'achat (R-CRE-32).
+- *Puis-je financer cet achat ?* : à emprunter, puis **le crédit** : échéance (ou durée), coût total, TAEG ;
+  taux d'endettement (vert sous le taux visé, orange au-delà), reste à vivre ; effet de l'achat (R-CRE-32) ;
+  signalements (R-CRE-40).
 
 Sous le résultat : **« Enregistrer »** (un nom et, en option, la demande à laquelle rattacher la simulation,
-R-CRE-37), **« Préparer une demande »** (R-CRE-36), **« Tableau d'amortissement »** (dialogue, une année à la
-fois comme E28) quand un crédit est calculé, et, pour « Que puis-je acheter ? », **« Simuler ce prêt »** qui
-ouvre « Que coûte ce prêt ? » au capital empruntable.
+R-CRE-37), **« Préparer une demande »** (R-CRE-36) et **« Tableau d'amortissement »** (dialogue, une année à
+la fois comme E28), pour les deux questions dès qu'un crédit est calculé.
 
 **Détails repliés** (`[mat-expansion-panel]`), sous la zone de travail :
 
@@ -1002,8 +998,8 @@ ouvre « Que coûte ce prêt ? » au capital empruntable.
 
 **Simulations enregistrées** : liste (nom, capital, durée, taux, mensualité totale, TAEG, coût total ; la
 demande et l'établissement en petit ; « prêt créé » s'il y a lieu). Cases à cocher et « Comparer » (E37 en
-dialogue). Un clic ouvre la simulation dans « Que coûte ce prêt ? » (R-CRE-37) ; le projet et la situation ne
-changent pas. Par simulation, un bouton **« Préparer une demande »** (R-CRE-36) ; menu ⋮ : Modifier,
+dialogue). Un clic reprend les conditions de la simulation dans le calcul en cours (R-CRE-37) ; le projet et
+la situation ne changent pas. Par simulation, un bouton **« Préparer une demande »** (R-CRE-36) ; menu ⋮ : Modifier,
 Dupliquer, Tableau d'amortissement, Transformer en prêt, Supprimer. **Transformer en prêt** : le formulaire de
 prêt (E28) prérempli (type, nom, capital, taux, durée, assurance) ; on saisit le déblocage, la première
 échéance, le compte payeur et le bien financé.
