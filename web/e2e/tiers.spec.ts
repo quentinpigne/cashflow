@@ -48,7 +48,10 @@ test('E5 : un tiers choisi propose la catégorie de sa dernière transaction (R-
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByText('Transaction enregistrée')).toBeVisible();
   await page.getByRole('button', { name: 'Voir', exact: true }).click();
-  await expect(page.locator('app-payee-picker input')).toHaveValue('Carrefour Meylan');
+  // La saisie rapide peut encore être dans la page pendant qu'elle se ferme (sur mobile) : on vise le détail.
+  await expect(page.locator('app-transaction-detail app-payee-picker input')).toHaveValue(
+    'Carrefour Meylan',
+  );
 });
 
 test('E5 : créer un tiers depuis la saisie (R-TIE-15)', async ({ page }) => {
