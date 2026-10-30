@@ -249,6 +249,24 @@ pub async fn merge(conn: &mut SqliteConnection, source: CategoryId, target: Cate
     )
     .execute(&mut *conn)
     .await?;
+    // Idem pour les postes de projet ; une cible déjà portée par un autre poste du projet y reste (R-BUD-27).
+    sqlx::query!(
+        "UPDATE OR IGNORE project_line_category SET category_id = ?1
+         WHERE category_id = ?2 OR (?3 AND category_id IN (SELECT id FROM category WHERE parent_id = ?2))",
+        target,
+        source,
+        with_children
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM project_line_category
+         WHERE category_id = ?1 OR (?2 AND category_id IN (SELECT id FROM category WHERE parent_id = ?1))",
+        source,
+        with_children
+    )
+    .execute(&mut *conn)
+    .await?;
     sqlx::query!(
         "UPDATE fixed_savings_terms SET interest_category_id = ?1, updated_at = ?2
          WHERE interest_category_id = ?3

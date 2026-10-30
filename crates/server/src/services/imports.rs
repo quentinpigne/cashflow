@@ -1173,6 +1173,10 @@ pub async fn commit(
                 lock.check(date)?;
                 let transfer_to = review.transfer_to;
                 let project = review.project.filter(|p| transfer_to.is_none() && active_projects.contains(p));
+                let proposer = match project {
+                    Some(project) => Some(super::budgets::LineProposer::load(&mut tx, project).await?),
+                    None => None,
+                };
                 let splits: Vec<DraftSplit> = match (&review.splits, transfer_to) {
                     (_, Some(_)) | (None, None) => {
                         vec![DraftSplit { category_id: None, amount_minor: amount.minor(), note: None }]
@@ -1217,6 +1221,7 @@ pub async fn commit(
                         category_id: s.category_id,
                         note: s.note.as_deref(),
                         project_id: project,
+                        project_line_id: proposer.as_ref().and_then(|p| p.propose(s.category_id)),
                         ..Default::default()
                     })
                     .collect();

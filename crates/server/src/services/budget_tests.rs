@@ -4,11 +4,11 @@ use cashflow_domain::DomainError;
 use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::budgeting::{BudgetKind, Periodicity};
 use cashflow_domain::ledger::category::CategoryKind;
-use cashflow_domain::shared::ids::{CategoryId, TransactionId};
+use cashflow_domain::shared::ids::{CategoryId, ProjectLineId, TransactionId};
 
 use super::budgets::{
     self, AlertLevel, AmountChange, AmountScope, AttachInput, BudgetLineInput, MonthBudgetView, MonthInput, MonthQuery,
-    ProjectInput,
+    ProjectInput, ProjectLineInput, ProjectView,
 };
 use super::reports;
 use super::tests::{TODAY, account, category, d, domain_error, setup, split, tx};
@@ -163,7 +163,8 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
         name: "Italie".into(),
         start_date: d("2026-04-01"),
         end_date: Some(d("2026-04-15")),
-        amount_minor: 250_000,
+        amount_minor: Some(250_000),
+        lines: Vec::new(),
         exclude_from_period_budgets: true,
         active: true,
         alert_thresholds: None,
@@ -228,6 +229,144 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
     assert_eq!(restaurants_total(&with), 8_000);
     let without = reports::categories(&db, &report(true), d(TODAY)).await.unwrap();
     assert_eq!(restaurants_total(&without), 0);
+}
+
+fn post(id: Option<ProjectLineId>, name: &str, amount: i64, categories: &[CategoryId]) -> ProjectLineInput {
+    ProjectLineInput { id, name: name.into(), amount_minor: amount, category_ids: categories.to_vec() }
+}
+
+fn line_of<'a>(project: &'a ProjectView, name: &str) -> &'a budgets::ProjectLineView {
+    project.lines.iter().find(|l| l.name == name).unwrap()
+}
+
+/// Critère d'acceptation de BUD-11 : postes, poste proposé, réel par poste et hors postes (R-BUD-26 à R-BUD-28).
+#[tokio::test]
+async fn bud_11_project_lines_r_bud_26_to_28() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let restaurants = category(&db, "Resto B", CategoryKind::Expense, None).await;
+    let leisure = category(&db, "Loisirs B", CategoryKind::Expense, None).await;
+    let culture = category(&db, "Culture B", CategoryKind::Expense, Some(leisure)).await;
+    let travel = category(&db, "Voyages B", CategoryKind::Expense, None).await;
+    let salary = category(&db, "Salaire B", CategoryKind::Income, None).await;
+    let input = ProjectInput {
+        name: "Italie 2027".into(),
+        start_date: d("2026-03-01"),
+        end_date: None,
+        amount_minor: None,
+        lines: vec![
+            post(None, "Train", 50_000, &[]),
+            post(None, "Logement", 30_000, &[]),
+            post(None, "Restaurants", 10_000, &[restaurants]),
+            post(None, "Loisirs", 10_000, &[leisure]),
+        ],
+        exclude_from_period_budgets: true,
+        active: true,
+        alert_thresholds: None,
+        note: None,
+    };
+    let project = budgets::save_project(&db, None, &input).await.unwrap();
+    assert_eq!(project.amount_minor, 100_000);
+    assert_eq!(project.lines.len(), 4);
+
+    // Rattachement en masse : chaque ventilation rejoint son poste proposé, sinon hors postes (R-BUD-27).
+    let dinner = transactions::create(&db, &tx(checking, "2026-03-10", -4_500, Some(restaurants))).await.unwrap();
+    let museum = transactions::create(&db, &tx(checking, "2026-03-11", -1_200, Some(culture))).await.unwrap();
+    let ticket = transactions::create(&db, &tx(checking, "2026-03-12", -18_000, Some(travel))).await.unwrap();
+    budgets::attach(&db, &AttachInput { transaction_ids: vec![dinner, museum, ticket], project_id: Some(project.id) })
+        .await
+        .unwrap();
+    let project = budgets::project(&db, project.id).await.unwrap();
+    assert_eq!(line_of(&project, "Restaurants").actual_minor, 4_500);
+    assert_eq!(line_of(&project, "Loisirs").actual_minor, 1_200);
+    assert_eq!(project.unassigned_minor, 18_000);
+    assert_eq!(project.actual_minor, 23_700);
+
+    // Le billet, catégorisé Voyages, est rangé dans Train depuis le détail de la transaction (R-BUD-27, R-BUD-28).
+    let train = line_of(&project, "Train").id;
+    let mut moved = split(-18_000, Some(travel));
+    moved.project_id = Some(project.id);
+    moved.project_line_id = Some(train);
+    let update = TransactionUpdateInput {
+        account_id: checking,
+        date: d("2026-03-12"),
+        amount_minor: -18_000,
+        label: "Billet".into(),
+        note: None,
+        splits: Some(vec![moved.clone()]),
+        payee_id: None,
+    };
+    transactions::update(&db, ticket, &update).await.unwrap();
+    let project = budgets::project(&db, project.id).await.unwrap();
+    assert_eq!(line_of(&project, "Train").actual_minor, 18_000);
+    assert_eq!(project.unassigned_minor, 0);
+
+    // Un poste d'un autre projet, ou sans projet, est refusé (R-BUD-27).
+    let other = budgets::save_project(
+        &db,
+        None,
+        &ProjectInput { name: "Autre".into(), lines: vec![post(None, "Divers", 100, &[])], ..input.clone() },
+    )
+    .await
+    .unwrap();
+    let foreign = TransactionUpdateInput {
+        splits: Some(vec![super::transactions::SplitInput {
+            project_line_id: Some(other.lines[0].id),
+            ..moved.clone()
+        }]),
+        ..update.clone()
+    };
+    assert_eq!(domain_error(transactions::update(&db, ticket, &foreign).await), DomainError::ProjectLineMismatch);
+    let orphan = TransactionUpdateInput {
+        splits: Some(vec![super::transactions::SplitInput { project_id: None, ..moved.clone() }]),
+        ..update.clone()
+    };
+    assert_eq!(domain_error(transactions::update(&db, ticket, &orphan).await), DomainError::ProjectLineMismatch);
+
+    // Une catégorie dans deux postes, une catégorie de revenu, ni montant ni poste : refusés (R-BUD-26, R-BUD-27).
+    let ids: Vec<_> = project.lines.iter().map(|l| Some(l.id)).collect();
+    let mut twice = input.clone();
+    twice.lines[1] = post(ids[1], "Logement", 30_000, &[restaurants]);
+    assert_eq!(
+        domain_error(budgets::save_project(&db, Some(project.id), &twice).await),
+        DomainError::ProjectLineCategoryTaken
+    );
+    let mut income = input.clone();
+    income.lines[1] = post(ids[1], "Logement", 30_000, &[salary]);
+    assert!(budgets::save_project(&db, Some(project.id), &income).await.is_err());
+    let empty = ProjectInput { lines: Vec::new(), ..input.clone() };
+    assert_eq!(
+        domain_error(budgets::save_project(&db, Some(project.id), &empty).await),
+        DomainError::InvalidProjectPlan
+    );
+
+    // Supprimer Train renvoie le billet hors postes et retire son montant du prévu (R-BUD-28).
+    let mut without_train = input.clone();
+    without_train.lines = project
+        .lines
+        .iter()
+        .filter(|l| l.name != "Train")
+        .map(|l| post(Some(l.id), &l.name, l.amount_minor, &l.category_ids))
+        .collect();
+    let project = budgets::save_project(&db, Some(project.id), &without_train).await.unwrap();
+    assert_eq!(project.amount_minor, 50_000);
+    assert_eq!(project.unassigned_minor, 18_000);
+    assert!(project.splits.iter().all(|s| s.project_line_id.is_some() || s.amount_minor == -18_000));
+
+    // Un nouveau poste « Transport » sur Voyages récupère le billet hors postes à l'enregistrement (R-BUD-28).
+    let mut with_transport = without_train;
+    with_transport.lines =
+        project.lines.iter().map(|l| post(Some(l.id), &l.name, l.amount_minor, &l.category_ids)).collect();
+    with_transport.lines.push(post(None, "Transport", 50_000, &[travel]));
+    let project = budgets::save_project(&db, Some(project.id), &with_transport).await.unwrap();
+    assert_eq!(line_of(&project, "Transport").actual_minor, 18_000);
+    assert_eq!(project.unassigned_minor, 0);
+
+    // Détacher la ventilation la retire aussi de son poste.
+    budgets::attach(&db, &AttachInput { transaction_ids: vec![ticket], project_id: None }).await.unwrap();
+    let project = budgets::project(&db, project.id).await.unwrap();
+    assert_eq!(line_of(&project, "Transport").actual_minor, 0);
+    assert_eq!(project.actual_minor, 5_700);
 }
 
 #[tokio::test]

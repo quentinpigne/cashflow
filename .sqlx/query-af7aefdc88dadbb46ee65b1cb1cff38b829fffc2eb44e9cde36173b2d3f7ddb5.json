@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO project_line (id, project_id, name, amount, position, created_at, updated_at)\n             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)\n             ON CONFLICT (id) DO UPDATE SET name = excluded.name, amount = excluded.amount,\n                                            position = excluded.position, updated_at = excluded.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "af7aefdc88dadbb46ee65b1cb1cff38b829fffc2eb44e9cde36173b2d3f7ddb5"
+}

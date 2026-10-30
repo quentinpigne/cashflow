@@ -4,6 +4,7 @@
 import { AlertLevel } from '../models/alert-level';
 import { ProjectCategory } from '../models/project-category';
 import { ProjectId } from '../models/project-id';
+import { ProjectLineView } from '../models/project-line-view';
 import { ProjectSplit } from '../models/project-split';
 export interface ProjectView {
   active: boolean;
@@ -14,13 +15,27 @@ export interface ProjectView {
   actual_minor: number;
   alert: AlertLevel;
   alert_thresholds?: (Array<number> | null);
+
+  /**
+   * Prévu : le montant global, ou la somme des postes (R-BUD-26).
+   */
   amount_minor: number;
   by_category: Array<ProjectCategory>;
   end_date?: (string | null);
   exclude_from_period_budgets: boolean;
   id: ProjectId;
+
+  /**
+   * Postes, dans leur ordre ; vide si le projet n'est pas détaillé (R-BUD-26).
+   */
+  lines: Array<ProjectLineView>;
   name: string;
   note?: (string | null);
   splits: Array<ProjectSplit>;
   start_date: string;
+
+  /**
+   * Réel hors postes (R-BUD-28) ; nul pour un projet sans postes.
+   */
+  unassigned_minor: number;
 }

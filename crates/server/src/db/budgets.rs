@@ -1,7 +1,9 @@
 //! Budgets (spec 05) : lignes, surcharges, projets, faits budgétaires et notifications.
 
 use cashflow_domain::budgeting::{BudgetKind, Month, Periodicity};
-use cashflow_domain::shared::ids::{AccountId, BudgetLineId, CategoryId, NotificationId, ProjectId};
+use cashflow_domain::shared::ids::{
+    AccountId, BudgetLineId, CategoryId, NotificationId, ProjectId, ProjectLineId, SplitId,
+};
 use cashflow_domain::{Date, Money};
 use sqlx::{SqliteConnection, SqliteExecutor};
 
@@ -228,7 +230,8 @@ pub struct ProjectRow {
     pub name: String,
     pub start_date: Date,
     pub end_date: Option<Date>,
-    pub amount: Money,
+    /// Montant global ; absent quand le projet a des postes (R-BUD-26).
+    pub amount: Option<Money>,
     pub exclude_from_period_budgets: bool,
     pub active: bool,
     pub alert_thresholds: Option<Vec<u32>>,
@@ -250,7 +253,7 @@ pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Project
                 name: r.name,
                 start_date: r.start_date,
                 end_date: r.end_date,
-                amount: Money::from_minor(r.amount),
+                amount: r.amount.map(Money::from_minor),
                 exclude_from_period_budgets: r.exclude,
                 active: r.status == "ACTIVE",
                 alert_thresholds: thresholds_from_db(r.alert_thresholds.as_deref())?,
@@ -262,7 +265,7 @@ pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Project
 
 pub async fn upsert_project(db: impl SqliteExecutor<'_>, p: &ProjectRow) -> anyhow::Result<()> {
     let id = p.id.to_string();
-    let amount = p.amount.minor();
+    let amount = p.amount.map(Money::minor);
     let status = if p.active { "ACTIVE" } else { "CLOSED" };
     let thresholds = thresholds_to_db(p.alert_thresholds.as_ref())?;
     let now = timestamp();
@@ -302,16 +305,131 @@ pub async fn delete_project(db: impl SqliteExecutor<'_>, id: ProjectId) -> anyho
     Ok(())
 }
 
-/// Rattache (ou détache) des ventilations à un projet.
+/// Rattache (ou détache) une ventilation à un projet, rangée dans un de ses postes ou hors postes (R-BUD-27).
 pub async fn set_split_project(
     db: impl SqliteExecutor<'_>,
-    split: cashflow_domain::shared::ids::SplitId,
+    split: SplitId,
     project: Option<ProjectId>,
+    line: Option<ProjectLineId>,
 ) -> anyhow::Result<()> {
     let split = split.to_string();
     let project = project.map(|p| p.to_string());
+    let line = line.map(|l| l.to_string());
     let now = timestamp();
-    sqlx::query!("UPDATE split SET project_id = ?, updated_at = ? WHERE id = ?", project, now, split)
+    sqlx::query!(
+        "UPDATE split SET project_id = ?, project_line_id = ?, updated_at = ? WHERE id = ?",
+        project,
+        line,
+        now,
+        split
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------- Postes d'un projet
+
+#[derive(Debug, Clone)]
+pub struct ProjectLineRow {
+    pub id: ProjectLineId,
+    pub project_id: ProjectId,
+    pub name: String,
+    pub amount: Money,
+    /// Catégories qui proposent le poste (R-BUD-27).
+    pub categories: Vec<CategoryId>,
+}
+
+/// Postes de tous les projets, dans leur ordre.
+pub async fn project_lines(conn: &mut SqliteConnection) -> anyhow::Result<Vec<ProjectLineRow>> {
+    let rows = sqlx::query!("SELECT id, project_id, name, amount FROM project_line ORDER BY project_id, position")
+        .fetch_all(&mut *conn)
+        .await?;
+    let links = sqlx::query!("SELECT project_line_id, category_id FROM project_line_category ORDER BY rowid")
+        .fetch_all(&mut *conn)
+        .await?;
+    rows.into_iter()
+        .map(|r| {
+            let categories = links
+                .iter()
+                .filter(|l| l.project_line_id == r.id)
+                .map(|l| id_from_db(&l.category_id))
+                .collect::<anyhow::Result<_>>()?;
+            Ok(ProjectLineRow {
+                id: id_from_db(&r.id)?,
+                project_id: id_from_db(&r.project_id)?,
+                name: r.name,
+                amount: Money::from_minor(r.amount),
+                categories,
+            })
+        })
+        .collect()
+}
+
+/// Remplace les postes d'un projet : met à jour ceux qui restent, crée les nouveaux, supprime les autres, dont
+/// les ventilations repassent hors postes (R-BUD-28).
+pub async fn replace_project_lines(
+    conn: &mut SqliteConnection,
+    project: ProjectId,
+    lines: &[ProjectLineRow],
+) -> anyhow::Result<()> {
+    let project = project.to_string();
+    let now = timestamp();
+    sqlx::query!("DELETE FROM project_line_category WHERE project_id = ?", project).execute(&mut *conn).await?;
+    let kept: Vec<String> = lines.iter().map(|l| l.id.to_string()).collect();
+    let kept = serde_json::to_string(&kept)?;
+    sqlx::query!(
+        "DELETE FROM project_line WHERE project_id = ? AND id NOT IN (SELECT value FROM json_each(?))",
+        project,
+        kept
+    )
+    .execute(&mut *conn)
+    .await?;
+    // Les noms permutés entre deux postes ne doivent pas heurter l'unicité en cours de route.
+    sqlx::query!("UPDATE project_line SET name = id WHERE project_id = ?", project).execute(&mut *conn).await?;
+    for (position, line) in lines.iter().enumerate() {
+        let id = line.id.to_string();
+        let amount = line.amount.minor();
+        let position = i64::try_from(position)?;
+        sqlx::query!(
+            "INSERT INTO project_line (id, project_id, name, amount, position, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+             ON CONFLICT (id) DO UPDATE SET name = excluded.name, amount = excluded.amount,
+                                            position = excluded.position, updated_at = excluded.updated_at",
+            id,
+            project,
+            line.name,
+            amount,
+            position,
+            now
+        )
+        .execute(&mut *conn)
+        .await?;
+        for category in &line.categories {
+            let category = category.to_string();
+            sqlx::query!(
+                "INSERT INTO project_line_category (project_line_id, project_id, category_id) VALUES (?, ?, ?)",
+                id,
+                project,
+                category
+            )
+            .execute(&mut *conn)
+            .await?;
+        }
+    }
+    Ok(())
+}
+
+/// Range une ventilation dans un poste de son projet, ou hors postes (R-BUD-27).
+pub async fn set_split_line(
+    db: impl SqliteExecutor<'_>,
+    split: SplitId,
+    line: Option<ProjectLineId>,
+) -> anyhow::Result<()> {
+    let split = split.to_string();
+    let line = line.map(|l| l.to_string());
+    let now = timestamp();
+    sqlx::query!("UPDATE split SET project_line_id = ?, updated_at = ? WHERE id = ?", line, now, split)
         .execute(db)
         .await?;
     Ok(())
@@ -369,7 +487,9 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
 
 /// Ventilations rattachées à un projet, toutes dates et tous comptes (R-BUD-23, R-BUD-25).
 pub struct ProjectSplitRow {
+    pub id: SplitId,
     pub project_id: ProjectId,
+    pub project_line_id: Option<ProjectLineId>,
     pub transaction_id: cashflow_domain::shared::ids::TransactionId,
     pub date: Date,
     pub label: String,
@@ -380,7 +500,7 @@ pub struct ProjectSplitRow {
 
 pub async fn project_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<ProjectSplitRow>> {
     let rows = sqlx::query!(
-        r#"SELECT s.project_id AS "project_id!", t.id AS "transaction_id!", t.date AS "date!: Date", t.label AS "label!",
+        r#"SELECT s.id, s.project_id AS "project_id!", s.project_line_id, t.id AS "transaction_id!", t.date AS "date!: Date", t.label AS "label!",
                   a.name AS account_name, s.amount, s.category_id
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
@@ -393,7 +513,9 @@ pub async fn project_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<P
     rows.into_iter()
         .map(|r| {
             Ok(ProjectSplitRow {
+                id: id_from_db(&r.id)?,
                 project_id: id_from_db(&r.project_id)?,
+                project_line_id: opt_id_from_db(r.project_line_id.as_deref())?,
                 transaction_id: id_from_db(&r.transaction_id)?,
                 date: r.date,
                 label: r.label,

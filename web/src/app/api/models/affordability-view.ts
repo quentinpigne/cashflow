@@ -3,7 +3,7 @@
 
 
 /**
- * Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-41).
+ * Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-40).
  */
 export interface AffordabilityView {
   charges_minor: number;

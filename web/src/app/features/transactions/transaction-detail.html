@@ -151,7 +151,7 @@
         <app-category-picker
           [value]="category()"
           [attachments]="true"
-          (valueChange)="category.set($event)"
+          (valueChange)="changeCategory($event)"
           [kind]="direction() === 'out' ? 'EXPENSE' : 'INCOME'"
         />
         @if (loanProposal.value(); as p) {
@@ -196,10 +196,24 @@
       @if (!t.transfer && projectOptions().length > 0) {
         <mat-form-field>
           <mat-label>Projet</mat-label>
-          <mat-select [value]="project()" (selectionChange)="project.set($event.value)">
+          <mat-select [value]="project()" (selectionChange)="changeProject(t, $event.value)">
             <mat-option [value]="null">Aucun</mat-option>
             @for (p of projectOptions(); track p.id) {
               <mat-option [value]="p.id">{{ p.name }}{{ p.active ? '' : ' (terminé)' }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+      @if (!t.transfer && projectLines().length > 0) {
+        <mat-form-field>
+          <mat-label>Poste du projet</mat-label>
+          <mat-select [value]="line()" (selectionChange)="line.set($event.value)">
+            @if (line() === MIXED) {
+              <mat-option [value]="MIXED">Plusieurs postes</mat-option>
+            }
+            <mat-option [value]="null">Hors postes</mat-option>
+            @for (l of projectLines(); track l.id) {
+              <mat-option [value]="l.id">{{ l.name }}</mat-option>
             }
           </mat-select>
         </mat-form-field>

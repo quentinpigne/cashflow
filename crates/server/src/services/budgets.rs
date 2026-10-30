@@ -7,13 +7,13 @@ use cashflow_domain::budgeting::{
     self, BudgetData, BudgetKind, BudgetSplit, LineVersion, Month, Override, Periodicity, SavingsMove,
 };
 use cashflow_domain::ledger::category::CategoryKind;
-use cashflow_domain::shared::ids::{AccountId, BudgetLineId, CategoryId, ProjectId, TransactionId};
+use cashflow_domain::shared::ids::{AccountId, BudgetLineId, CategoryId, ProjectId, ProjectLineId, TransactionId};
 use cashflow_domain::{Currency, Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use super::{clean, required};
-use crate::db::budgets::{LineRow, OverrideRow, ProjectRow};
+use crate::db::budgets::{LineRow, OverrideRow, ProjectLineRow, ProjectRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -871,9 +871,24 @@ pub struct ProjectSplit {
     pub label: String,
     pub account_name: String,
     pub category_id: Option<CategoryId>,
+    /// Poste où la ventilation est rangée ; absent : hors postes (R-BUD-27).
+    pub project_line_id: Option<ProjectLineId>,
     pub amount_minor: i64,
     /// Date hors de [début, fin] : signalée seulement (R-BUD-23).
     pub out_of_range: bool,
+}
+
+/// Poste d'un projet (R-BUD-26), avec son réel (R-BUD-28).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ProjectLineView {
+    pub id: ProjectLineId,
+    pub name: String,
+    pub amount_minor: i64,
+    /// Catégories qui proposent le poste (R-BUD-27).
+    pub category_ids: Vec<CategoryId>,
+    pub actual_minor: i64,
+    /// Selon les seuils du projet, sans notification (R-BUD-29).
+    pub alert: AlertLevel,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -882,6 +897,7 @@ pub struct ProjectView {
     pub name: String,
     pub start_date: Date,
     pub end_date: Option<Date>,
+    /// Prévu : le montant global, ou la somme des postes (R-BUD-26).
     pub amount_minor: i64,
     pub exclude_from_period_budgets: bool,
     pub active: bool,
@@ -890,16 +906,25 @@ pub struct ProjectView {
     /// Réel, remboursements déduits (R-BUD-22).
     pub actual_minor: i64,
     pub alert: AlertLevel,
+    /// Postes, dans leur ordre ; vide si le projet n'est pas détaillé (R-BUD-26).
+    pub lines: Vec<ProjectLineView>,
+    /// Réel hors postes (R-BUD-28) ; nul pour un projet sans postes.
+    pub unassigned_minor: i64,
     pub by_category: Vec<ProjectCategory>,
     pub splits: Vec<ProjectSplit>,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct ProjectInput {
     pub name: String,
     pub start_date: Date,
     pub end_date: Option<Date>,
-    pub amount_minor: i64,
+    /// Montant global, requis sans poste ; absent avec des postes (R-BUD-26).
+    #[serde(default)]
+    pub amount_minor: Option<i64>,
+    /// Postes du projet, dans leur ordre ; ceux qui manquent sont supprimés (R-BUD-28).
+    #[serde(default)]
+    pub lines: Vec<ProjectLineInput>,
     #[serde(default = "yes")]
     pub exclude_from_period_budgets: bool,
     #[serde(default = "yes")]
@@ -912,6 +937,18 @@ pub struct ProjectInput {
 
 fn yes() -> bool {
     true
+}
+
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+pub struct ProjectLineInput {
+    /// Absent : nouveau poste.
+    #[serde(default)]
+    pub id: Option<ProjectLineId>,
+    pub name: String,
+    pub amount_minor: i64,
+    /// Catégories de dépense qui proposent le poste (R-BUD-27).
+    #[serde(default)]
+    pub category_ids: Vec<CategoryId>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -931,6 +968,7 @@ pub struct AttachResult {
 pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
     let rows = db::budgets::projects(&db.read).await?;
     let splits = db::budgets::project_splits(&db.read).await?;
+    let all_lines = db::budgets::project_lines(&mut *db.read.acquire().await?).await?;
     let thresholds = default_thresholds(db).await?;
     let names: HashMap<CategoryId, String> =
         db::categories::list(&db.read).await?.into_iter().map(|c| (c.id, c.name)).collect();
@@ -952,15 +990,37 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
             let by_category = budgeting::project_actual(&facts, p.id);
             let actual: Money = by_category.iter().map(|(_, a)| *a).sum();
             let line_thresholds = p.alert_thresholds.clone().unwrap_or_else(|| thresholds.clone());
-            let line = budgeting::LineMonth {
-                line: BudgetLineId::new(),
-                kind: BudgetKind::Expense,
-                periodicity: Periodicity::Monthly,
-                planned: p.amount,
-                actual,
-                carried: Money::ZERO,
-                available: p.amount,
+            let plan: Vec<_> = all_lines.iter().filter(|l| l.project_id == p.id).map(plan_line).collect();
+            let planned = budgeting::project_planned(p.amount, &plan);
+            let gauge = |planned: Money, actual: Money| {
+                let line = budgeting::LineMonth {
+                    line: BudgetLineId::new(),
+                    kind: BudgetKind::Expense,
+                    periodicity: Periodicity::Monthly,
+                    planned,
+                    actual,
+                    carried: Money::ZERO,
+                    available: planned,
+                };
+                level(&line, &line_thresholds, false)
             };
+            let assigned: Vec<(Money, Option<ProjectLineId>)> =
+                own.iter().map(|s| (s.amount, s.project_line_id)).collect();
+            let (by_line, unassigned) = budgeting::project_line_actuals(&assigned);
+            let lines = plan
+                .iter()
+                .map(|l| {
+                    let actual = by_line.get(&l.id).copied().unwrap_or(Money::ZERO);
+                    ProjectLineView {
+                        id: l.id,
+                        name: l.name.clone(),
+                        amount_minor: l.amount.minor(),
+                        category_ids: l.categories.clone(),
+                        actual_minor: actual.minor(),
+                        alert: gauge(l.amount, actual),
+                    }
+                })
+                .collect();
             let mut by_category: Vec<ProjectCategory> = by_category
                 .into_iter()
                 .map(|(c, a)| ProjectCategory {
@@ -971,8 +1031,10 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                 .collect();
             by_category.sort_by_key(|c| std::cmp::Reverse(c.amount_minor));
             ProjectView {
-                alert: level(&line, &line_thresholds, false),
+                alert: gauge(planned, actual),
                 actual_minor: actual.minor(),
+                unassigned_minor: if plan.is_empty() { 0 } else { unassigned.minor() },
+                lines,
                 by_category,
                 splits: own
                     .iter()
@@ -982,6 +1044,7 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                         label: s.label.clone(),
                         account_name: s.account_name.clone(),
                         category_id: s.category_id,
+                        project_line_id: s.project_line_id,
                         amount_minor: s.amount.minor(),
                         out_of_range: s.date < p.start_date || p.end_date.is_some_and(|end| s.date > end),
                     })
@@ -990,7 +1053,7 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                 name: p.name,
                 start_date: p.start_date,
                 end_date: p.end_date,
-                amount_minor: p.amount.minor(),
+                amount_minor: planned.minor(),
                 exclude_from_period_budgets: p.exclude_from_period_budgets,
                 active: p.active,
                 alert_thresholds: p.alert_thresholds,
@@ -1006,9 +1069,30 @@ pub async fn project(db: &Db, id: ProjectId) -> AppResult<ProjectView> {
 
 pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) -> AppResult<ProjectView> {
     let name = required(&input.name, "name", 80)?;
-    let amount = Money::from_minor(input.amount_minor);
-    if !amount.is_positive() {
-        return Err(DomainError::BudgetAmountNotPositive.into());
+    let amount = input.amount_minor.map(Money::from_minor);
+    let project_id = id.unwrap_or_else(ProjectId::new);
+    let mut lines = Vec::with_capacity(input.lines.len());
+    for line in &input.lines {
+        lines.push(ProjectLineRow {
+            id: line.id.unwrap_or_else(ProjectLineId::new),
+            project_id,
+            name: required(&line.name, "lines", 80)?,
+            amount: Money::from_minor(line.amount_minor),
+            categories: line.category_ids.clone(),
+        });
+    }
+    let plan: Vec<_> = lines.iter().map(plan_line).collect();
+    budgeting::check_project_plan(amount, &plan)?;
+    let categories: HashMap<CategoryId, CategoryKind> =
+        db::categories::list(&db.read).await?.into_iter().map(|c| (c.id, c.kind)).collect();
+    for category in plan.iter().flat_map(|l| &l.categories) {
+        match categories.get(category) {
+            None => return Err(AppError::NotFound("catégorie")),
+            Some(kind) if *kind != CategoryKind::Expense => {
+                return Err(AppError::invalid_field("NOT_AN_EXPENSE", "lines", "un poste ne porte que des dépenses"));
+            }
+            Some(_) => {}
+        }
     }
     if input.end_date.is_some_and(|end| end < input.start_date) {
         return Err(AppError::invalid_field("END_BEFORE_START", "end_date", "la fin précède le début"));
@@ -1022,8 +1106,15 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
     {
         return Err(AppError::NotFound("projet"));
     }
+    let mut tx = db.write.begin().await?;
+    let current = db::budgets::project_lines(&mut tx).await?;
+    if current.iter().any(|l| l.project_id != project_id && lines.iter().any(|n| n.id == l.id))
+        || input.lines.iter().any(|l| l.id.is_some_and(|id| !current.iter().any(|c| c.id == id)))
+    {
+        return Err(AppError::NotFound("poste"));
+    }
     let row = ProjectRow {
-        id: id.unwrap_or_else(ProjectId::new),
+        id: project_id,
         name,
         start_date: input.start_date,
         end_date: input.end_date,
@@ -1033,8 +1124,59 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
         alert_thresholds: check_thresholds(input.alert_thresholds.as_ref())?,
         note: clean(input.note.as_deref()),
     };
-    db::budgets::upsert_project(&db.write, &row).await?;
+    db::budgets::upsert_project(&mut *tx, &row).await?;
+    db::budgets::replace_project_lines(&mut tx, row.id, &lines).await?;
+    // Les ventilations hors postes rejoignent leur poste proposé (R-BUD-28).
+    let proposer = LineProposer::load(&mut tx, row.id).await?;
+    for split in db::budgets::project_splits(&mut *tx).await? {
+        if split.project_id == row.id
+            && split.project_line_id.is_none()
+            && let Some(line) = proposer.propose(split.category_id)
+        {
+            db::budgets::set_split_line(&mut *tx, split.id, Some(line)).await?;
+        }
+    }
+    tx.commit().await?;
     project(db, row.id).await
+}
+
+fn plan_line(l: &ProjectLineRow) -> budgeting::ProjectLine<ProjectLineId, CategoryId> {
+    budgeting::ProjectLine { id: l.id, name: l.name.clone(), amount: l.amount, categories: l.categories.clone() }
+}
+
+/// Postes d'un projet et parentes des catégories, pour proposer le poste d'une ventilation (R-BUD-27).
+pub struct LineProposer {
+    lines: Vec<budgeting::ProjectLine<ProjectLineId, CategoryId>>,
+    parents: HashMap<CategoryId, CategoryId>,
+}
+
+impl LineProposer {
+    pub async fn load(conn: &mut sqlx::SqliteConnection, project: ProjectId) -> AppResult<Self> {
+        let lines = db::budgets::project_lines(&mut *conn)
+            .await?
+            .iter()
+            .filter(|l| l.project_id == project)
+            .map(plan_line)
+            .collect();
+        let parents = db::categories::list(&mut *conn)
+            .await?
+            .into_iter()
+            .filter_map(|c| c.parent_id.map(|p| (c.id, p)))
+            .collect();
+        Ok(Self { lines, parents })
+    }
+
+    pub fn propose(&self, category: Option<CategoryId>) -> Option<ProjectLineId> {
+        budgeting::proposed_line(&self.lines, category, category.and_then(|c| self.parents.get(&c).copied()))
+    }
+
+    /// Le poste choisi appartient au projet (R-BUD-27).
+    pub fn check(&self, line: Option<ProjectLineId>) -> AppResult<()> {
+        match line {
+            Some(line) if !self.lines.iter().any(|l| l.id == line) => Err(DomainError::ProjectLineMismatch.into()),
+            _ => Ok(()),
+        }
+    }
 }
 
 /// Un projet qui a des ventilations se clôture, il ne se supprime pas. Ses documents restent, sauf ceux rattachés
@@ -1074,9 +1216,13 @@ pub async fn check_active(conn: &mut sqlx::SqliteConnection, id: ProjectId) -> A
 /// Rattache (ou détache) toutes les ventilations de transactions à un projet (BUD-06, en masse).
 pub async fn attach(db: &Db, input: &AttachInput) -> AppResult<AttachResult> {
     let mut tx = db.write.begin().await?;
-    if let Some(project) = input.project_id {
-        check_active(&mut tx, project).await?;
-    }
+    let proposer = match input.project_id {
+        Some(project) => {
+            check_active(&mut tx, project).await?;
+            Some(LineProposer::load(&mut tx, project).await?)
+        }
+        None => None,
+    };
     let mut result = AttachResult { attached: 0, skipped: 0 };
     for id in &input.transaction_ids {
         if db::transactions::transfer_of(&mut *tx, *id).await?.is_some() {
@@ -1088,7 +1234,13 @@ pub async fn attach(db: &Db, input: &AttachInput) -> AppResult<AttachResult> {
             return Err(AppError::NotFound("transaction"));
         }
         for split in splits {
-            db::budgets::set_split_project(&mut *tx, split.id, input.project_id).await?;
+            // Une ventilation déjà dans ce projet garde son poste ; les autres reçoivent le poste proposé (R-BUD-27).
+            let line = match &proposer {
+                Some(_) if split.project_id == input.project_id => split.project_line_id,
+                Some(proposer) => proposer.propose(split.category_id),
+                None => None,
+            };
+            db::budgets::set_split_project(&mut *tx, split.id, input.project_id, line).await?;
         }
         result.attached += 1;
     }

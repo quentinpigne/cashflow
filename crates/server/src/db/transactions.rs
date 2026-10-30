@@ -3,7 +3,8 @@
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, CategoryId, LoanId, PayeeId, ProjectId, RecurringRuleId, SplitId, TransactionId, TransferId,
+    AccountId, AssetId, CategoryId, LoanId, PayeeId, ProjectId, ProjectLineId, RecurringRuleId, SplitId, TransactionId,
+    TransferId,
 };
 use cashflow_domain::{Date, Money};
 use sqlx::{SqliteConnection, SqliteExecutor};
@@ -39,6 +40,8 @@ pub struct SplitRow {
     pub category_id: Option<CategoryId>,
     pub note: Option<String>,
     pub project_id: Option<ProjectId>,
+    /// Poste du projet où la ventilation est rangée (R-BUD-27).
+    pub project_line_id: Option<ProjectLineId>,
     /// Ventilation de remboursement d'un prêt (R-PRE-7).
     pub loan_id: Option<LoanId>,
     /// Ventilation d'acquisition d'un bien (R-BIE-8).
@@ -83,6 +86,7 @@ pub struct NewSplit<'a> {
     pub category_id: Option<CategoryId>,
     pub note: Option<&'a str>,
     pub project_id: Option<ProjectId>,
+    pub project_line_id: Option<ProjectLineId>,
     pub loan_id: Option<LoanId>,
     pub asset_id: Option<AssetId>,
     pub refunds_transaction_id: Option<TransactionId>,
@@ -120,6 +124,7 @@ macro_rules! split_row {
             category_id: opt_id_from_db(r.category_id.as_deref())?,
             note: r.note,
             project_id: opt_id_from_db(r.project_id.as_deref())?,
+            project_line_id: opt_id_from_db(r.project_line_id.as_deref())?,
             loan_id: opt_id_from_db(r.loan_id.as_deref())?,
             asset_id: opt_id_from_db(r.asset_id.as_deref())?,
             refunds_transaction_id: opt_id_from_db(r.refunds_transaction_id.as_deref())?,
@@ -161,7 +166,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::Res
 pub async fn splits_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -> anyhow::Result<Vec<SplitRow>> {
     let account = account.to_string();
     let rows = sqlx::query!(
-        r#"SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.loan_id, s.asset_id,
+        r#"SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.project_line_id, s.loan_id, s.asset_id,
                   s.refunds_transaction_id
            FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id
            WHERE t.account_id = ? ORDER BY s.transaction_id, s.position"#,
@@ -175,7 +180,7 @@ pub async fn splits_for_account(db: impl SqliteExecutor<'_>, account: AccountId)
 pub async fn splits_of(db: impl SqliteExecutor<'_>, transaction: TransactionId) -> anyhow::Result<Vec<SplitRow>> {
     let transaction = transaction.to_string();
     let rows = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id
+        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id
          FROM split WHERE transaction_id = ? ORDER BY position",
         transaction
     )
@@ -187,7 +192,7 @@ pub async fn splits_of(db: impl SqliteExecutor<'_>, transaction: TransactionId) 
 pub async fn find_split(db: impl SqliteExecutor<'_>, id: SplitId) -> anyhow::Result<Option<SplitRow>> {
     let id = id.to_string();
     let row = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id FROM split WHERE id = ?",
+        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id FROM split WHERE id = ?",
         id
     )
     .fetch_optional(db)
@@ -374,14 +379,15 @@ pub async fn replace_splits(
         let amount = split.amount.minor();
         let category = split.category_id.map(|c| c.to_string());
         let project = split.project_id.map(|p| p.to_string());
+        let project_line = split.project_line_id.map(|l| l.to_string());
         let loan = split.loan_id.map(|l| l.to_string());
         let asset = split.asset_id.map(|a| a.to_string());
         let refunds = split.refunds_transaction_id.map(|t| t.to_string());
         let position = i64::try_from(position)?;
         sqlx::query!(
-            "INSERT INTO split (id, transaction_id, amount, category_id, note, position, project_id, loan_id, asset_id,
-                                refunds_transaction_id, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO split (id, transaction_id, amount, category_id, note, position, project_id, project_line_id,
+                                loan_id, asset_id, refunds_transaction_id, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             id,
             transaction,
             amount,
@@ -389,6 +395,7 @@ pub async fn replace_splits(
             split.note,
             position,
             project,
+            project_line,
             loan,
             asset,
             refunds,
@@ -681,7 +688,7 @@ pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Transac
 
 pub async fn all_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<SplitRow>> {
     let rows = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id
+        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id
          FROM split ORDER BY transaction_id, position"
     )
     .fetch_all(db)

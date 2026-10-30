@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id\n         FROM split WHERE transaction_id = ? ORDER BY position",
+  "query": "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id\n         FROM split ORDER BY transaction_id, position",
   "describe": {
     "columns": [
       {
@@ -70,8 +70,19 @@
         }
       },
       {
-        "name": "loan_id",
+        "name": "project_line_id",
         "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "project_line_id"
+          }
+        }
+      },
+      {
+        "name": "loan_id",
+        "ordinal": 7,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -82,7 +93,7 @@
       },
       {
         "name": "asset_id",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -93,7 +104,7 @@
       },
       {
         "name": "refunds_transaction_id",
-        "ordinal": 8,
+        "ordinal": 9,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -104,7 +115,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -115,8 +126,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "7edcea790348137dc98cc56e1691faad3aee6ba8d72e12199b6e5e73c0191b07"
+  "hash": "668c6aeac8a13382974ae653b326cb1230980412192ea6212a54711c96d90212"
 }

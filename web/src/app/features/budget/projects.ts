@@ -22,7 +22,7 @@ import { BudgetsService } from '../../api/services/budgets.service';
 import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, toIsoDate, todayIso } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
-import { parseMoney, toEditable } from '../../core/money';
+import { parseMoney, sum, toEditable } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { openAndRefresh } from './budget-dialogs';
@@ -30,12 +30,26 @@ import { BudgetGauge } from './gauge';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
+import { LineCategories } from './line-categories';
+import { CategoriesStore } from '../../shared/stores';
 
-/** Création ou modification d'un projet (BUD-06, R-BUD-20, R-BUD-21). */
+/** Poste en cours de saisie (R-BUD-26) ; `key` identifie la ligne du formulaire. */
+interface LineDraft {
+  key: number;
+  id: string | null;
+  name: string;
+  amount: string;
+  categories: string[];
+}
+
+/** Création ou modification d'un projet (BUD-06, R-BUD-20, R-BUD-21), et de ses postes (BUD-11, R-BUD-26). */
 @Component({
   selector: 'app-project-dialog',
   imports: [
     FormsModule,
+    MatIconModule,
+    MoneyPipe,
+    LineCategories,
     MatDialogModule,
     MatButtonModule,
     MatCheckboxModule,
@@ -75,16 +89,86 @@ import { DocumentSection } from '../documents/document-section';
           <mat-datepicker #endPicker />
         </mat-form-field>
       </div>
-      <mat-form-field>
-        <mat-label>Montant prévu</mat-label>
-        <input
-          matInput
-          inputmode="decimal"
-          [ngModel]="amount()"
-          (ngModelChange)="amount.set($event)"
-        />
-        <span matTextSuffix>€</span>
-      </mat-form-field>
+      @if (lines().length === 0) {
+        <mat-form-field>
+          <mat-label>Montant prévu</mat-label>
+          <input
+            matInput
+            inputmode="decimal"
+            [ngModel]="amount()"
+            (ngModelChange)="amount.set($event)"
+          />
+          <span matTextSuffix>€</span>
+        </mat-form-field>
+      }
+      <section class="lines" aria-label="Postes">
+        <div class="lines-head">
+          <strong>Postes</strong>
+          @if (lines().length > 0) {
+            <span class="muted">
+              Total
+              @if (linesTotal(); as total) {
+                {{ total | money }}
+              } @else {
+                —
+              }
+            </span>
+          }
+        </div>
+        @if (lines().length === 0) {
+          <p class="muted small">
+            Détaillez le prévu (train, logement, restaurants…) : le montant du projet devient la
+            somme de ses postes.
+          </p>
+        }
+        @for (line of lines(); track line.key; let i = $index) {
+          <div class="line">
+            <div class="line-fields">
+              <mat-form-field class="line-name" subscriptSizing="dynamic">
+                <mat-label>Poste</mat-label>
+                <input
+                  matInput
+                  maxlength="80"
+                  [ngModel]="line.name"
+                  (ngModelChange)="patch(i, { name: $event })"
+                />
+              </mat-form-field>
+              <mat-form-field class="line-amount" subscriptSizing="dynamic">
+                <mat-label>Montant</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  [ngModel]="line.amount"
+                  (ngModelChange)="patch(i, { amount: $event })"
+                />
+                <span matTextSuffix>€</span>
+              </mat-form-field>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="removeLine(i)"
+                [attr.aria-label]="'Retirer le poste ' + (line.name || i + 1)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+            <app-line-categories
+              kind="EXPENSE"
+              [value]="line.categories"
+              (valueChange)="patch(i, { categories: $event })"
+            />
+          </div>
+        }
+        <button mat-button type="button" class="add" (click)="addLine()">
+          <mat-icon>add</mat-icon> Ajouter un poste
+        </button>
+        @if (lines().length > 0) {
+          <p class="muted small">
+            Les catégories d'un poste y rangent les transactions rattachées au projet ; les autres
+            vont « hors postes », et se rangent depuis le détail de la transaction.
+          </p>
+        }
+      </section>
       <mat-checkbox [ngModel]="exclude()" (ngModelChange)="exclude.set($event)">
         Retirer ses dépenses des lignes du mois
       </mat-checkbox>
@@ -121,11 +205,47 @@ import { DocumentSection } from '../documents/document-section';
       display: flex;
       flex-direction: column;
       gap: var(--field-gap);
-      min-width: min(26rem, 80vw);
+      min-width: min(34rem, 80vw);
     }
     .dates {
       display: flex;
       gap: var(--field-gap);
+    }
+    .lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .lines-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .line {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.75rem 0;
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+    .line-fields {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .line-name {
+      flex: 2;
+      min-width: 0;
+    }
+    .line-amount {
+      flex: 1;
+      min-width: 6rem;
+    }
+    .add {
+      align-self: flex-start;
+    }
+    .small {
+      font: var(--mat-sys-body-small);
     }
     .error {
       color: var(--mat-sys-error);
@@ -144,7 +264,24 @@ export class ProjectDialog {
   protected readonly end = signal<Date | null>(
     this.project?.end_date ? fromIsoDate(this.project.end_date) : null,
   );
-  protected readonly amount = signal(this.project ? toEditable(this.project.amount_minor) : '');
+  protected readonly amount = signal(
+    this.project && this.project.lines.length === 0 ? toEditable(this.project.amount_minor) : '',
+  );
+  private nextKey = 0;
+  protected readonly lines = signal<LineDraft[]>(
+    (this.project?.lines ?? []).map((l) => ({
+      key: this.nextKey++,
+      id: l.id,
+      name: l.name,
+      amount: toEditable(l.amount_minor),
+      categories: l.category_ids,
+    })),
+  );
+  /** Prévu du projet détaillé : somme des postes, `null` tant qu'un montant est illisible (R-BUD-26). */
+  protected readonly linesTotal = computed(() => {
+    const amounts = this.lines().map((l) => parseMoney(l.amount));
+    return amounts.every((a) => a !== null) ? sum(amounts as number[]) : null;
+  });
   protected readonly exclude = signal(this.project?.exclude_from_period_budgets ?? true);
   protected readonly closed = signal(this.project ? !this.project.active : false);
   protected readonly note = signal(this.project?.note ?? '');
@@ -152,9 +289,42 @@ export class ProjectDialog {
   protected readonly saving = signal(false);
 
   protected readonly valid = computed(() => {
-    const amount = parseMoney(this.amount());
-    return !!this.name().trim() && !!this.start() && amount !== null && amount > 0;
+    if (!this.name().trim() || !this.start()) return false;
+    const lines = this.lines();
+    if (lines.length === 0) {
+      const amount = parseMoney(this.amount());
+      return amount !== null && amount > 0;
+    }
+    return lines.every((l) => {
+      const amount = parseMoney(l.amount);
+      return !!l.name.trim() && amount !== null && amount > 0;
+    });
   });
+
+  /** Le premier poste reprend le montant global déjà saisi. */
+  protected addLine(): void {
+    const first = this.lines().length === 0;
+    this.lines.update((lines) => [
+      ...lines,
+      {
+        key: this.nextKey++,
+        id: null,
+        name: '',
+        amount: first ? this.amount() : '',
+        categories: [],
+      },
+    ]);
+  }
+
+  /** Retirer le dernier poste rend au projet un montant global : la somme qu'il avait. */
+  protected removeLine(index: number): void {
+    if (this.lines().length === 1) this.amount.set(this.lines()[0].amount);
+    this.lines.update((lines) => lines.filter((_, i) => i !== index));
+  }
+
+  protected patch(index: number, change: Partial<LineDraft>): void {
+    this.lines.update((lines) => lines.map((l, i) => (i === index ? { ...l, ...change } : l)));
+  }
 
   protected async save(): Promise<void> {
     const start = this.start();
@@ -164,7 +334,13 @@ export class ProjectDialog {
       name: this.name(),
       start_date: toIsoDate(start),
       end_date: end ? toIsoDate(end) : null,
-      amount_minor: parseMoney(this.amount()) ?? 0,
+      amount_minor: this.lines().length === 0 ? (parseMoney(this.amount()) ?? 0) : null,
+      lines: this.lines().map((l) => ({
+        id: l.id,
+        name: l.name,
+        amount_minor: parseMoney(l.amount) ?? 0,
+        category_ids: l.categories,
+      })),
       exclude_from_period_budgets: this.exclude(),
       active: !this.closed(),
       note: this.note() || null,
@@ -356,6 +532,37 @@ export class ProjectsPage {
           }
         </section>
 
+        @if (p.lines.length > 0) {
+          <section class="card">
+            <h2>Postes</h2>
+            @for (l of p.lines; track l.id) {
+              <div class="post">
+                <div class="post-head">
+                  <span>{{ l.name }}</span>
+                  <span class="amount"
+                    >{{ l.actual_minor | money }} / {{ l.amount_minor | money }}</span
+                  >
+                </div>
+                <app-budget-gauge
+                  [actual]="l.actual_minor"
+                  [available]="l.amount_minor"
+                  [alert]="l.alert"
+                  [label]="'Consommation du poste ' + l.name"
+                />
+                @if (l.category_ids.length > 0) {
+                  <span class="muted small">{{ categoryNames(l.category_ids) }}</span>
+                }
+              </div>
+            }
+            @if (p.unassigned_minor !== 0) {
+              <div class="row">
+                <span>Hors postes</span>
+                <span class="amount">{{ p.unassigned_minor | money }}</span>
+              </div>
+            }
+          </section>
+        }
+
         @if (p.by_category.length > 0) {
           <section class="card">
             <h2>Par catégorie</h2>
@@ -378,6 +585,9 @@ export class ProjectsPage {
                 >
                 <br />
                 {{ s.label }}
+                @if (p.lines.length > 0) {
+                  <span class="muted small">· {{ lineName(p, s.project_line_id) }}</span>
+                }
                 @if (s.out_of_range) {
                   <mat-icon class="warn" aria-label="Hors des dates du projet">event_busy</mat-icon>
                 }
@@ -423,6 +633,18 @@ export class ProjectsPage {
       color: inherit;
       text-decoration: none;
     }
+    .post {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.5rem 0;
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+    .post-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
     .link:hover {
       background: var(--mat-sys-surface-container);
     }
@@ -453,8 +675,18 @@ export class ProjectPage {
   private readonly dialog = inject(MatDialog);
   private readonly documents = inject(DocumentsService);
   private readonly router = inject(Router);
+  private readonly categories = inject(CategoriesStore);
 
   readonly id = input.required<string>();
+
+  protected categoryNames(ids: string[]): string {
+    return ids.map((id) => this.categories.label(id)).join(', ');
+  }
+
+  /** Poste d'une ventilation du projet, ou « hors postes » (R-BUD-27). */
+  protected lineName(project: ProjectView, id: string | null | undefined): string {
+    return project.lines.find((l) => l.id === id)?.name ?? 'hors postes';
+  }
 
   protected readonly project = rxResource({
     params: () => ({ id: this.id(), version: this.version.value() }),

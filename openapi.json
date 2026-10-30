@@ -9438,7 +9438,7 @@
       },
       "AffordabilityView": {
         "type": "object",
-        "description": "Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-41).",
+        "description": "Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-40).",
         "required": [
           "payment_minor",
           "income_minor",
@@ -17203,8 +17203,7 @@
         "type": "object",
         "required": [
           "name",
-          "start_date",
-          "amount_minor"
+          "start_date"
         ],
         "properties": {
           "active": {
@@ -17222,8 +17221,12 @@
             }
           },
           "amount_minor": {
-            "type": "integer",
-            "format": "int64"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Montant global, requis sans poste ; absent avec des postes (R-BUD-26)."
           },
           "end_date": {
             "type": [
@@ -17234,6 +17237,13 @@
           },
           "exclude_from_period_budgets": {
             "type": "boolean"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectLineInput"
+            },
+            "description": "Postes du projet, dans leur ordre ; ceux qui manquent sont supprimés (R-BUD-28)."
           },
           "name": {
             "type": "string"
@@ -17260,6 +17270,83 @@
           "VEHICLE",
           "OTHER"
         ]
+      },
+      "ProjectLineId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ProjectLineInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            },
+            "description": "Catégories de dépense qui proposent le poste (R-BUD-27)."
+          },
+          "id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLineId",
+                "description": "Absent : nouveau poste."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectLineView": {
+        "type": "object",
+        "description": "Poste d'un projet (R-BUD-26), avec son réel (R-BUD-28).",
+        "required": [
+          "id",
+          "name",
+          "amount_minor",
+          "category_ids",
+          "actual_minor",
+          "alert"
+        ],
+        "properties": {
+          "actual_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "alert": {
+            "$ref": "#/components/schemas/AlertLevel",
+            "description": "Selon les seuils du projet, sans notification (R-BUD-29)."
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryId"
+            },
+            "description": "Catégories qui proposent le poste (R-BUD-27)."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProjectLineId"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
       },
       "ProjectSplit": {
         "type": "object",
@@ -17300,6 +17387,17 @@
             "type": "boolean",
             "description": "Date hors de [début, fin] : signalée seulement (R-BUD-23)."
           },
+          "project_line_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLineId",
+                "description": "Poste où la ventilation est rangée ; absent : hors postes (R-BUD-27)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "transaction_id": {
             "$ref": "#/components/schemas/TransactionId"
           }
@@ -17316,6 +17414,8 @@
           "active",
           "actual_minor",
           "alert",
+          "lines",
+          "unassigned_minor",
           "by_category",
           "splits"
         ],
@@ -17344,7 +17444,8 @@
           },
           "amount_minor": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Prévu : le montant global, ou la somme des postes (R-BUD-26)."
           },
           "by_category": {
             "type": "array",
@@ -17365,6 +17466,13 @@
           "id": {
             "$ref": "#/components/schemas/ProjectId"
           },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectLineView"
+            },
+            "description": "Postes, dans leur ordre ; vide si le projet n'est pas détaillé (R-BUD-26)."
+          },
           "name": {
             "type": "string"
           },
@@ -17383,6 +17491,11 @@
           "start_date": {
             "type": "string",
             "format": "date"
+          },
+          "unassigned_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Réel hors postes (R-BUD-28) ; nul pour un projet sans postes."
           }
         }
       },
@@ -19239,6 +19352,17 @@
               }
             ]
           },
+          "project_line_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLineId",
+                "description": "Poste du projet où la ventilation est rangée ; absent : hors postes (R-BUD-27)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "refunds_transaction_id": {
             "oneOf": [
               {
@@ -19308,6 +19432,17 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/ProjectId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_line_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLineId",
+                "description": "Poste de `project_id` ; absent : hors postes (R-BUD-27)."
               },
               {
                 "type": "null"

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, transaction_id, amount, category_id, note, project_id, loan_id, asset_id, refunds_transaction_id FROM split WHERE id = ?",
+  "query": "SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.project_line_id, s.loan_id, s.asset_id,\n                  s.refunds_transaction_id\n           FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id\n           WHERE t.account_id = ? ORDER BY s.transaction_id, s.position",
   "describe": {
     "columns": [
       {
@@ -70,8 +70,19 @@
         }
       },
       {
-        "name": "loan_id",
+        "name": "project_line_id",
         "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "project_line_id"
+          }
+        }
+      },
+      {
+        "name": "loan_id",
+        "ordinal": 7,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -82,7 +93,7 @@
       },
       {
         "name": "asset_id",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -93,7 +104,7 @@
       },
       {
         "name": "refunds_transaction_id",
-        "ordinal": 8,
+        "ordinal": 9,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -115,8 +126,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "6c25c5eb4b95ba27130ffe1c753ad13ccef9700d1b21c65eda025b749965a95b"
+  "hash": "5787f0c4a6cbb1ca62509e829f7063b43acda43b6fdc7cca0eb844bdde393daf"
 }

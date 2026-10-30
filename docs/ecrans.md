@@ -524,8 +524,8 @@ cochées à partir du mois en cours.
 - **Liste** : en cours, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
 - **Dialogue de projet** : nom, dates, **Postes** (BUD-11) : une ligne par poste (nom, montant,
   catégories facultatives), « Ajouter un poste », total des postes. Sans poste, un champ **Montant
-  prévu** global ; il disparaît dès le premier poste (R-BUD-26), et ajouter le premier poste lui reprend
-  ce montant.
+  prévu** global ; il disparaît dès le premier poste (R-BUD-26) : le premier poste reprend ce montant,
+  et retirer le dernier poste le rend au montant global.
 - **Détail** : réel et jauge, dates, exclusion des lignes du mois ; **postes** (s'il y en a) : réel sur
   prévu et jauge de chacun, puis « Hors postes » s'il n'est pas nul (R-BUD-28) ; réel **par catégorie** ;
   transactions rattachées, avec leur poste, celles hors des dates signalées (R-BUD-23). « Modifier » (y

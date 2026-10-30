@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO project_line_category (project_line_id, project_id, category_id) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "650df32bdcc4b31b067662311380453d520f42dc657e24e167d751a9e374c97c"
+}

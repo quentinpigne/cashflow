@@ -63,6 +63,7 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
     category_id: s.category_id ?? null,
     note: s.note ?? null,
     project_id: s.project_id ?? null,
+    project_line_id: s.project_line_id ?? null,
     loan_id: s.loan_id ?? null,
     asset_id: s.asset_id ?? null,
     refunds_transaction_id: s.refunds_transaction_id ?? null,

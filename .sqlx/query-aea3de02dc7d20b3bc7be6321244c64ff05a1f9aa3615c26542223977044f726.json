@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE OR IGNORE project_line_category SET category_id = ?1\n         WHERE category_id = ?2 OR (?3 AND category_id IN (SELECT id FROM category WHERE parent_id = ?2))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "aea3de02dc7d20b3bc7be6321244c64ff05a1f9aa3615c26542223977044f726"
+}

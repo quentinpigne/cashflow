@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE split SET project_id = ?, project_line_id = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "3bb55b235aaba230f8624f72074bbb2aa96811eac0a2c5a672253f441c08424d"
+}

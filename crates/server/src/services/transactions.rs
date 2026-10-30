@@ -9,7 +9,8 @@ use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::{self, BalanceAffectingChange, ClearingStatus, TransactionOrigin};
 use cashflow_domain::payees;
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, CategoryId, LoanId, PayeeGroupId, PayeeId, ProjectId, SplitId, TransactionId, TransferId,
+    AccountId, AssetId, CategoryId, LoanId, PayeeGroupId, PayeeId, ProjectId, ProjectLineId, SplitId, TransactionId,
+    TransferId,
 };
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,8 @@ pub struct Split {
     pub category_id: Option<CategoryId>,
     pub note: Option<String>,
     pub project_id: Option<ProjectId>,
+    /// Poste du projet où la ventilation est rangée ; absent : hors postes (R-BUD-27).
+    pub project_line_id: Option<ProjectLineId>,
     /// Ventilation de remboursement d'un prêt (R-PRE-7).
     pub loan_id: Option<LoanId>,
     /// Ventilation d'acquisition d'un bien (R-BIE-8).
@@ -47,6 +50,7 @@ impl From<SplitRow> for Split {
             category_id: r.category_id,
             note: r.note,
             project_id: r.project_id,
+            project_line_id: r.project_line_id,
             loan_id: r.loan_id,
             asset_id: r.asset_id,
             refunds_transaction_id: r.refunds_transaction_id,
@@ -138,6 +142,9 @@ pub struct SplitInput {
     pub category_id: Option<CategoryId>,
     pub note: Option<String>,
     pub project_id: Option<ProjectId>,
+    /// Poste de `project_id` ; absent : hors postes (R-BUD-27).
+    #[serde(default)]
+    pub project_line_id: Option<ProjectLineId>,
     /// Remboursement d'un prêt, à la place d'une catégorie (R-PRE-7).
     #[serde(default)]
     pub loan_id: Option<LoanId>,
@@ -166,7 +173,7 @@ pub struct TransactionInput {
 
 /// Modification d'une transaction. Sans `splits`, la ventilation existante est conservée ; une
 /// ventilation unique suit alors le nouveau montant (R-TRX-4).
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct TransactionUpdateInput {
     pub account_id: AccountId,
     pub date: Date,
@@ -391,6 +398,13 @@ async fn check_references(conn: &mut SqliteConnection, splits: &[SplitInput], ke
         {
             super::budgets::check_active(conn, project).await?;
         }
+        match s.project_id {
+            Some(project) if s.project_line_id.is_some() => {
+                super::budgets::LineProposer::load(conn, project).await?.check(s.project_line_id)?;
+            }
+            None if s.project_line_id.is_some() => return Err(DomainError::ProjectLineMismatch.into()),
+            _ => {}
+        }
     }
     Ok(())
 }
@@ -413,6 +427,7 @@ fn new_splits(splits: &[SplitInput]) -> Vec<NewSplit<'_>> {
             category_id: s.category_id,
             note: s.note.as_deref().map(str::trim).filter(|n| !n.is_empty()),
             project_id: s.project_id,
+            project_line_id: s.project_line_id,
             loan_id: s.loan_id,
             asset_id: s.asset_id,
             refunds_transaction_id: s.refunds_transaction_id,
@@ -537,6 +552,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
             category_id: existing[0].category_id,
             note: existing[0].note.clone(),
             project_id: existing[0].project_id,
+            project_line_id: existing[0].project_line_id,
             loan_id: existing[0].loan_id,
             asset_id: existing[0].asset_id,
             refunds_transaction_id: existing[0].refunds_transaction_id,
@@ -548,6 +564,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 category_id: s.category_id,
                 note: s.note.clone(),
                 project_id: s.project_id,
+                project_line_id: s.project_line_id,
                 loan_id: s.loan_id,
                 asset_id: s.asset_id,
                 refunds_transaction_id: s.refunds_transaction_id,

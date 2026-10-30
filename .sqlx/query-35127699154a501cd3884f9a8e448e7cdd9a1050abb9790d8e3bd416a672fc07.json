@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT project_line_id, category_id FROM project_line_category ORDER BY rowid",
+  "describe": {
+    "columns": [
+      {
+        "name": "project_line_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_line_category",
+            "name": "project_line_id"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_line_category",
+            "name": "category_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "35127699154a501cd3884f9a8e448e7cdd9a1050abb9790d8e3bd416a672fc07"
+}

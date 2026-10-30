@@ -220,9 +220,13 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
             applied += 1;
             continue;
         }
-        if let Some(project) = rule.actions.set_project {
-            super::budgets::check_active(&mut tx, project).await?;
-        }
+        let proposer = match rule.actions.set_project {
+            Some(project) => {
+                super::budgets::check_active(&mut tx, project).await?;
+                Some(super::budgets::LineProposer::load(&mut tx, project).await?)
+            }
+            None => None,
+        };
         let label = rule.actions.set_label.clone().unwrap_or_else(|| t.label.clone());
         let note = rule.actions.set_note.clone().or_else(|| t.note.clone());
         let update = TransactionUpdate {
@@ -250,13 +254,20 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
                     category_id: s.category_id,
                     note: None,
                     project_id: rule.actions.set_project,
+                    project_line_id: proposer.as_ref().and_then(|p| p.propose(s.category_id)),
                     ..Default::default()
                 })
                 .collect();
             db::transactions::replace_splits(&mut tx, t.id, &splits).await?;
-        } else if let Some(project) = rule.actions.set_project {
+        } else if let (Some(project), Some(proposer)) = (rule.actions.set_project, &proposer) {
             for split in db::transactions::splits_of(&mut *tx, t.id).await? {
-                db::budgets::set_split_project(&mut *tx, split.id, Some(project)).await?;
+                // Déjà dans ce projet, la ventilation garde son poste (R-BUD-27).
+                let line = if split.project_id == Some(project) {
+                    split.project_line_id
+                } else {
+                    proposer.propose(split.category_id)
+                };
+                db::budgets::set_split_project(&mut *tx, split.id, Some(project), line).await?;
             }
         }
         db::rules::add_hit(&mut *tx, id).await?;

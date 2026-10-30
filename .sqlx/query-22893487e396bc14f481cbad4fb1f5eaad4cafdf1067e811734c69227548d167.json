@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO split (id, transaction_id, amount, category_id, note, position, project_id, project_line_id,\n                                loan_id, asset_id, refunds_transaction_id, created_at, updated_at)\n             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "22893487e396bc14f481cbad4fb1f5eaad4cafdf1067e811734c69227548d167"
+}

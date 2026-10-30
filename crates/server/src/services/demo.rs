@@ -1081,21 +1081,36 @@ async fn budget(
     if departure < start {
         return Ok(());
     }
+    // Prévu détaillé en postes (R-BUD-26) ; l'hôtel, sans catégorie qui le propose, y est rangé à la main.
+    let train = c.get("Auto & transports", "Transports en commun");
+    let restaurants = c.get("Alimentation & restauration", "Restaurants");
+    let post = |name: &str, amount_minor: i64, category: Option<CategoryId>| budgets::ProjectLineInput {
+        id: None,
+        name: name.into(),
+        amount_minor,
+        category_ids: category.into_iter().collect(),
+    };
     let project = budgets::ProjectInput {
         name: "Week-end à Lyon".into(),
         start_date: departure,
         end_date: Some(back),
-        amount_minor: 60_000,
+        amount_minor: None,
+        lines: vec![
+            post("Train", 12_000, train),
+            post("Hôtel", 30_000, None),
+            post("Restaurants", 15_000, restaurants),
+        ],
         exclude_from_period_budgets: true,
         active: true,
         alert_thresholds: None,
         note: None,
     };
     let project = budgets::save_project(db, None, &project).await.map_err(|e| anyhow::anyhow!("{e}"))?;
-    for (date, amount, label, category) in [
-        (departure, -9_800, "SNCF CONNECT", c.get("Voyages", "Transport")),
-        (departure, -24_000, "HOTEL LYON PRESQU ILE", c.get("Voyages", "Hébergement")),
-        (back, -6_400, "BOUCHON LYONNAIS", c.get("Alimentation & restauration", "Restaurants")),
+    let line = |name: &str| project.lines.iter().find(|l| l.name == name).map(|l| l.id);
+    for (date, amount, label, category, post) in [
+        (departure, -9_800, "SNCF CONNECT", train, line("Train")),
+        (departure, -24_000, "HOTEL LYON PRESQU ILE", None, line("Hôtel")),
+        (back, -6_400, "BOUCHON LYONNAIS", restaurants, line("Restaurants")),
     ] {
         let input = TransactionInput {
             account_id: checking,
@@ -1109,6 +1124,7 @@ async fn budget(
                 category_id: category,
                 note: None,
                 project_id: Some(project.id),
+                project_line_id: post,
                 ..Default::default()
             }]),
             payee_id: None,

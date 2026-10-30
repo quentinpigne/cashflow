@@ -48,6 +48,7 @@ import { DocumentSection } from '../documents/document-section';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentsService } from '../../api/services/documents.service';
 import { LinkTarget } from '../../api/models/link-target';
+import { proposedLine } from '../budget/project-lines';
 
 type Direction = 'out' | 'in';
 
@@ -126,6 +127,14 @@ export class TransactionDetailView {
     const current = this.project();
     return this.projects.list().filter((p) => p.active || p.id === current);
   });
+  /** Poste de la transaction dans son projet (BUD-11), le même pour toutes ses ventilations, ou `MIXED`. */
+  protected readonly line = signal<string | null>(null);
+  protected readonly MIXED = 'mixed';
+  private initialLine: string | null = null;
+  protected readonly projectLines = computed(() => {
+    const id = this.project();
+    return id ? (this.projects.byId().get(id)?.lines ?? []) : [];
+  });
   /** Ventilation modifiée, pas encore enregistrée. */
   protected readonly pendingSplits = signal<SplitDraft[] | null>(null);
 
@@ -183,6 +192,9 @@ export class TransactionDetailView {
       this.category.set(t.splits.length === 1 ? encodeAttachment(t.splits[0]) : null);
       this.payee.set(t.payee_id ?? null);
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
+      const lines = new Set(t.splits.map((s) => s.project_line_id ?? null));
+      this.line.set(lines.size > 1 ? this.MIXED : (t.splits[0]?.project_line_id ?? null));
+      this.initialLine = this.line();
       this.pendingSplits.set(null);
       // Rapprochée : montant et date de solde verrouillés (R-TRX-3).
       // Mensualité ventilée selon son échéance : montant verrouillé (R-CPT-17).
@@ -261,11 +273,12 @@ export class TransactionDetailView {
         },
       ];
     }
-    // Une ventilation multiple inchangée garde ses ventilations, mais le projet peut avoir changé.
+    // Une ventilation multiple inchangée garde ses ventilations, mais le projet ou le poste peut avoir changé.
+    const unchanged = !splits && this.isSplit();
     if (
-      !splits &&
-      this.isSplit() &&
-      this.project() !== (t.splits.find((s) => s.project_id)?.project_id ?? null)
+      unchanged &&
+      (this.project() !== (t.splits.find((s) => s.project_id)?.project_id ?? null) ||
+        this.line() !== this.initialLine)
     ) {
       splits = t.splits.map((s) => ({
         amount_minor: s.amount_minor,
@@ -288,10 +301,11 @@ export class TransactionDetailView {
             note: value.note || null,
             payee_id: t.transfer ? null : this.payee(),
             splits:
-              splits?.map((s) => ({
+              splits?.map((s, i) => ({
                 ...s,
                 ...decodeAttachment(s.category_id),
                 project_id: this.project(),
+                project_line_id: this.splitLine(s.category_id, unchanged ? t.splits[i] : undefined),
               })) ?? null,
           },
         }),
@@ -433,6 +447,7 @@ export class TransactionDetailView {
               asset_id: s.asset_id ?? null,
               note: s.note ?? null,
               project_id: this.keptProject(s.project_id),
+              project_line_id: this.keptProject(s.project_id) ? (s.project_line_id ?? null) : null,
               refunds_transaction_id: s.refunds_transaction_id ?? null,
             })),
           },
@@ -466,12 +481,51 @@ export class TransactionDetailView {
                 asset_id: s.asset_id ?? null,
                 note: s.note ?? null,
                 project_id: this.keptProject(s.project_id),
+                project_line_id: this.keptProject(s.project_id)
+                  ? (s.project_line_id ?? null)
+                  : null,
               })),
         },
       }),
     );
     this.version.bump();
     await this.router.navigate(['/transactions', created.id]);
+  }
+
+  /** Changer de projet présélectionne le poste proposé par les catégories (R-BUD-27). */
+  protected changeProject(t: TransactionDetail, id: string | null): void {
+    this.project.set(id);
+    const attachments =
+      this.pendingSplits()?.map((s) => s.category_id) ??
+      (this.isSplit() ? t.splits.map((s) => s.category_id ?? null) : [this.category()]);
+    const proposals = new Set(attachments.map((a) => this.proposal(a)));
+    this.line.set(proposals.size > 1 ? this.MIXED : ([...proposals][0] ?? null));
+  }
+
+  /** Une nouvelle catégorie déplace la transaction dans son poste, si le poste était celui proposé. */
+  protected changeCategory(value: string | null): void {
+    if (this.line() === this.proposal(this.category())) {
+      this.line.set(this.proposal(value));
+    }
+    this.category.set(value);
+  }
+
+  private proposal(attachment: string | null | undefined): string | null {
+    const category = decodeAttachment(attachment).category_id;
+    const parent = category ? this.categories.byId().get(category)?.parentId : null;
+    return proposedLine(this.projectLines(), category, parent);
+  }
+
+  /** Poste d'une ventilation enregistrée : celui choisi, ou, pour « plusieurs postes », le sien ou le proposé. */
+  private splitLine(
+    attachment: string | null,
+    existing: { project_id?: string | null; project_line_id?: string | null } | undefined,
+  ): string | null {
+    if (!this.project()) return null;
+    if (this.line() !== this.MIXED) return this.line();
+    return existing && existing.project_id === this.project()
+      ? (existing.project_line_id ?? null)
+      : this.proposal(attachment);
   }
 
   /** Projet repris par une copie : seulement s'il est encore en cours (R-BUD-24). */

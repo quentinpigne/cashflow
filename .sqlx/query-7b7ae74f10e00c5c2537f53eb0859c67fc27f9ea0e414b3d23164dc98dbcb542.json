@@ -1,11 +1,22 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT s.project_id AS \"project_id!\", t.id AS \"transaction_id!\", t.date AS \"date!: Date\", t.label AS \"label!\",\n                  a.name AS account_name, s.amount, s.category_id\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           WHERE s.project_id IS NOT NULL\n           ORDER BY t.date DESC",
+  "query": "SELECT s.id, s.project_id AS \"project_id!\", s.project_line_id, t.id AS \"transaction_id!\", t.date AS \"date!: Date\", t.label AS \"label!\",\n                  a.name AS account_name, s.amount, s.category_id\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           WHERE s.project_id IS NOT NULL\n           ORDER BY t.date DESC",
   "describe": {
     "columns": [
       {
-        "name": "project_id!",
+        "name": "id",
         "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "project_id!",
+        "ordinal": 1,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -15,8 +26,19 @@
         }
       },
       {
+        "name": "project_line_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "project_line_id"
+          }
+        }
+      },
+      {
         "name": "transaction_id!",
-        "ordinal": 1,
+        "ordinal": 3,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -27,7 +49,7 @@
       },
       {
         "name": "date!: Date",
-        "ordinal": 2,
+        "ordinal": 4,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -38,7 +60,7 @@
       },
       {
         "name": "label!",
-        "ordinal": 3,
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -49,7 +71,7 @@
       },
       {
         "name": "account_name",
-        "ordinal": 4,
+        "ordinal": 6,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,7 +82,7 @@
       },
       {
         "name": "amount",
-        "ordinal": 5,
+        "ordinal": 7,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -71,7 +93,7 @@
       },
       {
         "name": "category_id",
-        "ordinal": 6,
+        "ordinal": 8,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -85,6 +107,8 @@
       "Right": 0
     },
     "nullable": [
+      false,
+      true,
       true,
       false,
       false,
@@ -94,5 +118,5 @@
       true
     ]
   },
-  "hash": "f806cb8f2ad9f5851e630aabd97c02d9a5ae8f599669a857742fc209aa31d90f"
+  "hash": "7b7ae74f10e00c5c2537f53eb0859c67fc27f9ea0e414b3d23164dc98dbcb542"
 }
