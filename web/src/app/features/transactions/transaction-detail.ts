@@ -48,7 +48,7 @@ import { DocumentSection } from '../documents/document-section';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentsService } from '../../api/services/documents.service';
 import { LinkTarget } from '../../api/models/link-target';
-import { proposedLine } from '../budget/project-lines';
+import { projectSuffix, proposedLine } from '../budget/project-lines';
 
 type Direction = 'out' | 'in';
 
@@ -122,10 +122,11 @@ export class TransactionDetailView {
   /** Projet de la transaction (BUD-06) : l'interface le porte sur toutes ses ventilations. */
   protected readonly project = signal<string | null>(null);
   protected readonly projects = inject(ProjectsStore);
+  protected readonly projectSuffix = projectSuffix;
   /** Projets proposés : ceux en cours, plus le projet actuel même clôturé (R-BUD-24). */
   protected readonly projectOptions = computed(() => {
     const current = this.project();
-    return this.projects.list().filter((p) => p.active || p.id === current);
+    return this.projects.list().filter((p) => p.status === 'ACTIVE' || p.id === current);
   });
   /** Poste de la transaction dans son projet (BUD-11), le même pour toutes ses ventilations, ou `MIXED`. */
   protected readonly line = signal<string | null>(null);
@@ -530,7 +531,7 @@ export class TransactionDetailView {
 
   /** Projet repris par une copie : seulement s'il est encore en cours (R-BUD-24). */
   private keptProject(id: string | null | undefined): string | null {
-    return id && this.projects.byId().get(id)?.active ? id : null;
+    return id && this.projects.byId().get(id)?.status === 'ACTIVE' ? id : null;
   }
 
   protected leave(t: TransactionDetail): void {

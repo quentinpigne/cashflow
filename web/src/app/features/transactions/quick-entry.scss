@@ -47,3 +47,13 @@
 .save {
   height: 3rem;
 }
+
+.project {
+  display: flex;
+  gap: var(--field-gap);
+
+  mat-form-field {
+    flex: 1;
+    min-width: 0;
+  }
+}

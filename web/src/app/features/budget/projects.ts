@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import {
@@ -31,6 +32,8 @@ import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
 import { LineCategories } from './line-categories';
+import { PROJECT_STATUS_LABELS } from './project-lines';
+import { ProjectStatus } from '../../api/models/project-status';
 import { CategoriesStore } from '../../shared/stores';
 
 /** Poste en cours de saisie (R-BUD-26) ; `key` identifie la ligne du formulaire. */
@@ -52,6 +55,7 @@ interface LineDraft {
     LineCategories,
     MatDialogModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatCheckboxModule,
     MatDatepickerModule,
     MatFormFieldModule,
@@ -65,6 +69,19 @@ interface LineDraft {
         <mat-label>Nom</mat-label>
         <input matInput maxlength="80" [ngModel]="name()" (ngModelChange)="name.set($event)" />
       </mat-form-field>
+      <mat-button-toggle-group
+        class="status"
+        aria-label="Statut du projet"
+        [ngModel]="status()"
+        (ngModelChange)="status.set($event)"
+      >
+        @for (s of statuses; track s) {
+          <mat-button-toggle [value]="s">{{ statusLabels[s] }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <p class="muted small">
+        Seul un projet en cours reçoit des transactions et figure dans la saisie rapide.
+      </p>
       <div class="dates">
         <mat-form-field>
           <mat-label>Début</mat-label>
@@ -175,11 +192,6 @@ interface LineDraft {
       <p class="muted small">
         Elles restent comptées dans les analyses par catégorie et dans le solde du mois.
       </p>
-      @if (project) {
-        <mat-checkbox [ngModel]="closed()" (ngModelChange)="closed.set($event)">
-          Projet terminé (clôturé)
-        </mat-checkbox>
-      }
       <mat-form-field>
         <mat-label>Note</mat-label>
         <textarea
@@ -210,6 +222,9 @@ interface LineDraft {
     .dates {
       display: flex;
       gap: var(--field-gap);
+    }
+    .status {
+      align-self: flex-start;
     }
     .lines {
       display: flex;
@@ -283,7 +298,9 @@ export class ProjectDialog {
     return amounts.every((a) => a !== null) ? sum(amounts as number[]) : null;
   });
   protected readonly exclude = signal(this.project?.exclude_from_period_budgets ?? true);
-  protected readonly closed = signal(this.project ? !this.project.active : false);
+  protected readonly status = signal<ProjectStatus>(this.project?.status ?? 'ACTIVE');
+  protected readonly statuses: ProjectStatus[] = ['PLANNED', 'ACTIVE', 'CLOSED'];
+  protected readonly statusLabels = PROJECT_STATUS_LABELS;
   protected readonly note = signal(this.project?.note ?? '');
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
@@ -342,7 +359,7 @@ export class ProjectDialog {
         category_ids: l.categories,
       })),
       exclude_from_period_budgets: this.exclude(),
-      active: !this.closed(),
+      status: this.status(),
       note: this.note() || null,
       alert_thresholds: this.project?.alert_thresholds ?? null,
     };
@@ -459,8 +476,9 @@ export class ProjectsPage {
   protected readonly groups = computed(() => {
     const all = this.projects.value() ?? [];
     return [
-      { title: 'En cours', projects: all.filter((p) => p.active) },
-      { title: 'Terminés', projects: all.filter((p) => !p.active) },
+      { title: 'En cours', projects: all.filter((p) => p.status === 'ACTIVE') },
+      { title: 'En projet', projects: all.filter((p) => p.status === 'PLANNED') },
+      { title: 'Terminés', projects: all.filter((p) => p.status === 'CLOSED') },
     ].filter((g) => g.projects.length > 0);
   });
 
@@ -495,8 +513,8 @@ export class ProjectsPage {
             <mat-icon>arrow_back</mat-icon>
           </a>
           <h1>{{ p.name }}</h1>
-          @if (!p.active) {
-            <span class="tag">terminé</span>
+          @if (p.status !== 'ACTIVE') {
+            <span class="tag">{{ statusLabels[p.status].toLowerCase() }}</span>
           }
           <button mat-button (click)="edit(p)"><mat-icon>edit</mat-icon> Modifier</button>
           @if (p.splits.length === 0) {
@@ -676,6 +694,7 @@ export class ProjectPage {
   private readonly documents = inject(DocumentsService);
   private readonly router = inject(Router);
   private readonly categories = inject(CategoriesStore);
+  protected readonly statusLabels = PROJECT_STATUS_LABELS;
 
   readonly id = input.required<string>();
 

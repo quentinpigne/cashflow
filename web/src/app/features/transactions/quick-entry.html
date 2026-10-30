@@ -66,6 +66,34 @@
         [kind]="categoryKind()"
       />
     }
+    <!-- Projet et poste, seulement s'il existe un projet en cours (BUD-06, BUD-11). -->
+    @if (projects.active().length > 0) {
+      <div class="project">
+        <mat-form-field>
+          <mat-label>Projet</mat-label>
+          <mat-select [value]="project()" (selectionChange)="chooseProject($event.value)">
+            <mat-option [value]="null">Aucun</mat-option>
+            @for (p of projects.active(); track p.id) {
+              <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (projectLines().length > 0) {
+          <mat-form-field>
+            <mat-label>Poste du projet</mat-label>
+            <mat-select [value]="line()" (selectionChange)="chooseLine($event.value)">
+              @if (line() === MIXED) {
+                <mat-option [value]="MIXED">Selon les catégories</mat-option>
+              }
+              <mat-option [value]="null">Hors postes</mat-option>
+              @for (l of projectLines(); track l.id) {
+                <mat-option [value]="l.id">{{ l.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+      </div>
+    }
   }
 
   <mat-form-field>

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login, pickCategory } from './helpers';
+import { isMobile, login, openQuickEntry, pickCategory } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -127,6 +127,36 @@ test('E20 : postes d’un projet, hors postes et poste d’une transaction (BUD-
   await page.getByRole('link', { name: /Ski 2027/ }).click();
   await expect(page.getByText('Forfaits', { exact: true })).toBeVisible();
   await expect(page.getByText('Hors postes', { exact: true })).toHaveCount(0);
+});
+
+test('E5 : projet et poste à la saisie rapide, projet en projet écarté (R-BUD-20, R-BUD-27)', async ({
+  page,
+}) => {
+  test.skip(isMobile(page), 'données partagées : créé une seule fois, sur ordinateur');
+  await login(page);
+  await page.goto('/budget/projets');
+  await expect(page.getByRole('heading', { name: 'En projet' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Italie 2027/ })).toBeVisible();
+
+  await openQuickEntry(page);
+  const entry = page.locator('app-quick-entry');
+  await entry.getByLabel('Montant').fill('30');
+  await entry.getByLabel('Compte', { exact: true }).click();
+  await page.getByRole('option', { name: 'Compte courant', exact: true }).click();
+  await pickCategory(page, entry, 'Restaurants', 'Restaurants');
+  await entry.getByLabel('Libellé').fill('Brasserie Lyon');
+  await entry.getByLabel('Projet', { exact: true }).click();
+  // Seuls les projets en cours sont proposés (R-BUD-24).
+  await expect(page.getByRole('option', { name: 'Italie 2027' })).toHaveCount(0);
+  await page.getByRole('option', { name: 'Week-end à Lyon' }).click();
+  // Le poste suit la catégorie (R-BUD-27).
+  await expect(entry.getByLabel('Poste du projet')).toContainText('Restaurants');
+  await entry.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByText('Transaction enregistrée')).toBeVisible();
+
+  await page.goto('/budget/projets');
+  await page.getByRole('link', { name: /Week-end à Lyon/ }).click();
+  await expect(page.getByText(/94,00\s€\s\/\s150,00/)).toBeVisible();
 });
 
 test('E21 : centre de notifications (BUD-08)', async ({ page }) => {

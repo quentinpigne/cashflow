@@ -143,7 +143,7 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 
 - [x] BUD-11 — postes d'un projet : prévu détaillé, catégories facultatives, réel par poste et hors postes
       (spec 05, R-BUD-26 à R-BUD-29)
-- [ ] Statut « en projet » d'un projet (R-BUD-20) ; projet et poste dans la saisie rapide (E5)
+- [x] Statut « en projet » d'un projet (R-BUD-20) ; projet et poste dans la saisie rapide (E5)
 
 ## Mise en service (prochaine étape)
 

@@ -42,7 +42,8 @@ import { Layout } from '../../core/layout';
 import { formatMoney, negate, parseMoney, sum } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { PayeePicker } from '../../shared/payee-picker';
-import { AccountsStore, CategoriesStore, PayeesStore } from '../../shared/stores';
+import { AccountsStore, CategoriesStore, PayeesStore, ProjectsStore } from '../../shared/stores';
+import { proposedLine } from '../budget/project-lines';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
 export interface QuickEntryData {
@@ -128,6 +129,24 @@ export class QuickEntryForm {
   private readonly payees = inject(PayeesStore);
   private readonly categories = inject(CategoriesStore);
   protected readonly splits = signal<SplitDraft[] | null>(null);
+  /** Projet en cours de la transaction (BUD-06), et son poste (BUD-11). */
+  protected readonly projects = inject(ProjectsStore);
+  protected readonly project = signal<string | null>(null);
+  protected readonly MIXED = 'mixed';
+  /** Poste choisi à la main ; `undefined` tant qu'il suit la catégorie (R-BUD-27). */
+  private readonly chosenLine = signal<string | null | undefined>(undefined);
+  protected readonly projectLines = computed(() => {
+    const id = this.project();
+    return id ? (this.projects.byId().get(id)?.lines ?? []) : [];
+  });
+  /** Poste affiché : celui choisi, sinon celui proposé par la catégorie, ou `MIXED` pour une ventilation. */
+  protected readonly line = computed(() => {
+    const chosen = this.chosenLine();
+    if (chosen !== undefined) return chosen;
+    const attachments = this.splits()?.map((s) => s.category_id) ?? [this.category()];
+    const proposals = new Set(attachments.map((a) => this.proposal(a)));
+    return proposals.size > 1 ? this.MIXED : ([...proposals][0] ?? null);
+  });
   protected readonly showNote = signal(false);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -199,6 +218,21 @@ export class QuickEntryForm {
     }
   }
 
+  protected chooseProject(id: string | null): void {
+    this.project.set(id);
+    this.chosenLine.set(undefined);
+  }
+
+  protected chooseLine(id: string | null): void {
+    this.chosenLine.set(id === this.MIXED ? undefined : id);
+  }
+
+  private proposal(attachment: string | null | undefined): string | null {
+    const category = decodeAttachment(attachment).category_id;
+    const parent = category ? this.categories.byId().get(category)?.parentId : null;
+    return proposedLine(this.projectLines(), category, parent);
+  }
+
   protected setMode(mode: Mode): void {
     this.mode.set(mode);
     this.splits.set(null);
@@ -254,8 +288,16 @@ export class QuickEntryForm {
    */
   private apiSplits(splits: SplitDraft[] | null, amount: number): SplitInput[] | null {
     const lines = splits ?? [{ amount_minor: amount, category_id: this.category(), note: null }];
-    if (!splits && !isAttachment(this.category())) return null;
-    return lines.map((s) => ({ ...s, ...decodeAttachment(s.category_id), project_id: null }));
+    const project = this.project();
+    if (!splits && !project && !isAttachment(this.category())) return null;
+    const line = this.line();
+    return lines.map((s) => ({
+      ...s,
+      ...decodeAttachment(s.category_id),
+      project_id: project,
+      // Poste choisi pour toutes les ventilations, ou celui que propose la catégorie de chacune (R-BUD-27).
+      project_line_id: !project ? null : line === this.MIXED ? this.proposal(s.category_id) : line,
+    }));
   }
 
   protected async save(): Promise<void> {
@@ -301,7 +343,7 @@ export class QuickEntryForm {
               amount_minor: amount,
               label: value.label,
               note: value.note || null,
-              category_id: splits || isAttachment(this.category()) ? null : this.category(),
+              category_id: this.apiSplits(splits, amount) ? null : this.category(),
               splits: this.apiSplits(splits, amount),
               payee_id: this.payee(),
             },

@@ -135,7 +135,7 @@
         <mat-select [ngModel]="project()" (ngModelChange)="project.set($event)">
           <mat-option value="">Aucun</mat-option>
           @for (p of projectOptions(); track p.id) {
-            <mat-option [value]="p.id">{{ p.name }}{{ p.active ? '' : ' (terminé)' }}</mat-option>
+            <mat-option [value]="p.id">{{ p.name }}{{ projectSuffix(p.status) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>

@@ -140,7 +140,7 @@ export class HomeBudget {
     (this.budget.value()?.lines ?? []).filter((l) => l.kind === 'SAVINGS'),
   );
   protected readonly projects = computed(() =>
-    (this.allProjects.value() ?? []).filter((p) => p.active),
+    (this.allProjects.value() ?? []).filter((p) => p.status === 'ACTIVE'),
   );
   protected readonly menuItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'budget.goals', 'Objectifs d’épargne'),

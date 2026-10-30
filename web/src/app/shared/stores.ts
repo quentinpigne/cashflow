@@ -155,7 +155,7 @@ export class ProjectsStore {
   });
   readonly list = computed<ProjectView[]>(() => (this.all.hasValue() ? this.all.value() : []));
   /** On ne rattache de nouvelles transactions qu'à un projet en cours (R-BUD-24). */
-  readonly active = computed(() => this.list().filter((p) => p.active));
+  readonly active = computed(() => this.list().filter((p) => p.status === 'ACTIVE'));
   readonly byId = computed(() => new Map(this.list().map((p) => [p.id, p])));
 }
 

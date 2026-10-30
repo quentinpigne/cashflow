@@ -20,6 +20,7 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PayeePicker } from '../../shared/payee-picker';
 import { AccountsStore, ProjectsStore } from '../../shared/stores';
+import { projectSuffix } from '../budget/project-lines';
 
 export interface RuleFormData {
   rule: RuleView | null;
@@ -84,8 +85,9 @@ export class RuleFormDialog {
   /** Action `set_project` (BUD-06). */
   protected readonly project = signal<string>(this.source.actions?.set_project ?? '');
   private readonly projects = inject(ProjectsStore);
+  protected readonly projectSuffix = projectSuffix;
   protected readonly projectOptions = computed(() =>
-    this.projects.list().filter((p) => p.active || p.id === this.project()),
+    this.projects.list().filter((p) => p.status !== 'CLOSED' || p.id === this.project()),
   );
   protected readonly shares = signal<Share[]>(this.initialShares());
   protected readonly stop = signal(this.source.stop_processing ?? true);

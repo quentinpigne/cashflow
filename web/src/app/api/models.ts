@@ -262,6 +262,7 @@ export type { ProjectLineId } from './models/project-line-id';
 export type { ProjectLineInput } from './models/project-line-input';
 export type { ProjectLineView } from './models/project-line-view';
 export type { ProjectSplit } from './models/project-split';
+export type { ProjectStatus } from './models/project-status';
 export type { ProjectView } from './models/project-view';
 export type { PurchaseCapacity } from './models/purchase-capacity';
 export type { PurchaseView } from './models/purchase-view';

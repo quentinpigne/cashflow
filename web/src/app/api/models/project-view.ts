@@ -6,8 +6,8 @@ import { ProjectCategory } from '../models/project-category';
 import { ProjectId } from '../models/project-id';
 import { ProjectLineView } from '../models/project-line-view';
 import { ProjectSplit } from '../models/project-split';
+import { ProjectStatus } from '../models/project-status';
 export interface ProjectView {
-  active: boolean;
 
   /**
    * Réel, remboursements déduits (R-BUD-22).
@@ -33,6 +33,7 @@ export interface ProjectView {
   note?: (string | null);
   splits: Array<ProjectSplit>;
   start_date: string;
+  status: ProjectStatus;
 
   /**
    * Réel hors postes (R-BUD-28) ; nul pour un projet sans postes.

@@ -199,7 +199,7 @@
           <mat-select [value]="project()" (selectionChange)="changeProject(t, $event.value)">
             <mat-option [value]="null">Aucun</mat-option>
             @for (p of projectOptions(); track p.id) {
-              <mat-option [value]="p.id">{{ p.name }}{{ p.active ? '' : ' (terminé)' }}</mat-option>
+              <mat-option [value]="p.id">{{ p.name }}{{ projectSuffix(p.status) }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
