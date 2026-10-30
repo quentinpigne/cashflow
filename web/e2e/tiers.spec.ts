@@ -87,6 +87,9 @@ test('E31 : saisir l’adresse d’un tiers à la main (TIE-06, R-TIE-23)', asyn
   await page.goto('/reglages/tiers');
   await page.getByRole('button', { name: 'Nouveau tiers' }).click();
   const dialog = page.getByRole('dialog');
+  // Le dialogue donne le focus au nom à la fin de son ouverture : sur une machine lente, ce focus
+  // arrivant pendant la saisie d'un autre champ y détournerait le texte tapé.
+  await expect(dialog.getByLabel('Nom')).toBeFocused();
   await dialog.getByLabel('Nom').fill(name);
   // Recherche d'adresse désactivée par défaut : pas de champ de recherche (R-TIE-26).
   await expect(dialog.getByLabel('Rechercher une adresse')).toHaveCount(0);
