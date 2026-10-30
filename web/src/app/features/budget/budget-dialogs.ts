@@ -314,8 +314,10 @@ export interface LineEditData {
       }
       <mat-form-field>
         <mat-label>{{ line.periodicity === 'YEARLY' ? 'Montant par an' : 'Montant' }}</mat-label>
+        <!-- Le focus initial va au montant, pas au sélecteur de catégorie : sa liste s'ouvrirait sur le formulaire. -->
         <input
           matInput
+          cdkFocusInitial
           inputmode="decimal"
           [ngModel]="amount()"
           (ngModelChange)="amount.set($event)"

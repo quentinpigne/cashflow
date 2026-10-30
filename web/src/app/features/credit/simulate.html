@@ -4,262 +4,268 @@
 
   <app-situation-bar [view]="situation()" (changed)="situation.set($event)" />
 
-  <mat-chip-listbox
-    class="projects"
-    aria-label="Projet"
-    [value]="project()"
-    (change)="selectProject($event.value)"
-  >
-    @for (p of projects; track p) {
-      <mat-chip-option [value]="p" [selectable]="p !== project()">{{
-        projectLabels[p]
-      }}</mat-chip-option>
-    }
-  </mat-chip-listbox>
+  <!-- Rien à choisir avant le dernier état : un choix fait pendant le chargement serait écrasé. -->
+  @if (loaded()) {
+    <mat-chip-listbox
+      class="projects"
+      aria-label="Projet"
+      [value]="project()"
+      (change)="selectProject($event.value)"
+    >
+      @for (p of projects; track p) {
+        <mat-chip-option [value]="p" [selectable]="p !== project()">{{
+          projectLabels[p]
+        }}</mat-chip-option>
+      }
+    </mat-chip-listbox>
 
-  <mat-button-toggle-group
-    class="questions"
-    aria-label="Question"
-    [value]="question()"
-    (change)="question.set($event.value)"
-  >
-    <mat-button-toggle value="MAX_PRICE">
-      <span class="long">Que puis-je acheter ?</span><span class="short">Acheter ?</span>
-    </mat-button-toggle>
-    <mat-button-toggle value="FINANCE_PURCHASE">
-      <span class="long">Puis-je financer cet achat ?</span><span class="short">Financer</span>
-    </mat-button-toggle>
-  </mat-button-toggle-group>
+    <mat-button-toggle-group
+      class="questions"
+      aria-label="Question"
+      [value]="question()"
+      (change)="question.set($event.value)"
+    >
+      <mat-button-toggle value="MAX_PRICE">
+        <span class="long">Que puis-je acheter ?</span><span class="short">Acheter ?</span>
+      </mat-button-toggle>
+      <mat-button-toggle value="FINANCE_PURCHASE">
+        <span class="long">Puis-je financer cet achat ?</span><span class="short">Financer</span>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
 
-  <div class="workspace">
-    <section class="card input" aria-label="Saisie">
-      @switch (question()) {
-        @case ('MAX_PRICE') {
-          <h2>Que puis-je acheter ?</h2>
-          <p class="muted small">
-            Le prix maximal que permettent votre situation et les conditions du crédit.
-          </p>
-        }
-        @case ('FINANCE_PURCHASE') {
-          <h2>L'achat</h2>
-          <div class="fields">
-            <mat-form-field>
-              <mat-label>Prix</mat-label>
-              <input
-                matInput
-                inputmode="decimal"
-                [ngModel]="price()"
-                (ngModelChange)="price.set($event)"
-              />
-              <span matTextSuffix>€</span>
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>Apport</mat-label>
-              <input
-                matInput
-                inputmode="decimal"
-                [ngModel]="downPayment()"
-                (ngModelChange)="downPayment.set($event)"
-                [placeholder]="financing() ? (financing()!.down_payment_minor | money) : ''"
-              />
-              <span matTextSuffix>€</span>
-              @if (situation(); as s) {
-                <mat-hint [class.warn]="financing()?.down_payment_exceeds_possible"
-                  >apport possible {{ s.possible_down_payment_minor | money }}</mat-hint
-                >
-              }
-            </mat-form-field>
-            @if (isHome()) {
-              <mat-form-field>
-                <mat-label>Frais de notaire</mat-label>
-                <input
-                  matInput
-                  inputmode="decimal"
-                  [ngModel]="notaryFees()"
-                  (ngModelChange)="notaryFees.set($event)"
-                  [placeholder]="
-                    financing() ? (financing()!.estimated_notary_fees_minor | money) : ''
-                  "
-                />
-                <span matTextSuffix>€</span>
-                <mat-hint>vide : estimés</mat-hint>
-              </mat-form-field>
-            }
-          </div>
-          <mat-checkbox [checked]="fixPayment()" (change)="fixPayment.set($event.checked)"
-            >Je fixe la mensualité</mat-checkbox
-          >
-          @if (fixPayment()) {
+    <div class="workspace">
+      <section class="card input" aria-label="Saisie">
+        @switch (question()) {
+          @case ('MAX_PRICE') {
+            <h2>Que puis-je acheter ?</h2>
+            <p class="muted small">
+              Le prix maximal que permettent votre situation et les conditions du crédit.
+            </p>
+          }
+          @case ('FINANCE_PURCHASE') {
+            <h2>L'achat</h2>
             <div class="fields">
               <mat-form-field>
-                <mat-label>Mensualité visée</mat-label>
+                <mat-label>Prix</mat-label>
                 <input
                   matInput
                   inputmode="decimal"
-                  [ngModel]="target()"
-                  (ngModelChange)="target.set($event)"
+                  [ngModel]="price()"
+                  (ngModelChange)="price.set($event)"
                 />
                 <span matTextSuffix>€</span>
-                <mat-hint>assurance comprise ; la durée est cherchée</mat-hint>
               </mat-form-field>
+              <mat-form-field>
+                <mat-label>Apport</mat-label>
+                <input
+                  matInput
+                  inputmode="decimal"
+                  [ngModel]="downPayment()"
+                  (ngModelChange)="downPayment.set($event)"
+                  [placeholder]="financing() ? (financing()!.down_payment_minor | money) : ''"
+                />
+                <span matTextSuffix>€</span>
+                @if (situation(); as s) {
+                  <mat-hint [class.warn]="financing()?.down_payment_exceeds_possible"
+                    >apport possible {{ s.possible_down_payment_minor | money }}</mat-hint
+                  >
+                }
+              </mat-form-field>
+              @if (isHome()) {
+                <mat-form-field>
+                  <mat-label>Frais de notaire</mat-label>
+                  <input
+                    matInput
+                    inputmode="decimal"
+                    [ngModel]="notaryFees()"
+                    (ngModelChange)="notaryFees.set($event)"
+                    [placeholder]="
+                      financing() ? (financing()!.estimated_notary_fees_minor | money) : ''
+                    "
+                  />
+                  <span matTextSuffix>€</span>
+                  <mat-hint>vide : estimés</mat-hint>
+                </mat-form-field>
+              }
             </div>
+            <mat-checkbox [checked]="fixPayment()" (change)="fixPayment.set($event.checked)"
+              >Je fixe la mensualité</mat-checkbox
+            >
+            @if (fixPayment()) {
+              <div class="fields">
+                <mat-form-field>
+                  <mat-label>Mensualité visée</mat-label>
+                  <input
+                    matInput
+                    inputmode="decimal"
+                    [ngModel]="target()"
+                    (ngModelChange)="target.set($event)"
+                  />
+                  <span matTextSuffix>€</span>
+                  <mat-hint>assurance comprise ; la durée est cherchée</mat-hint>
+                </mat-form-field>
+              </div>
+            }
           }
         }
-      }
 
+        @if (conditions(); as c) {
+          <section class="conditions" aria-labelledby="conditions-title">
+            <header>
+              <h3 id="conditions-title">Conditions du crédit</h3>
+              <button mat-button [disabled]="conditionsAreDefaults()" (click)="resetConditions()">
+                <mat-icon>restart_alt</mat-icon>Conditions par défaut
+              </button>
+            </header>
+            <app-conditions-fields
+              [value]="c"
+              [durationComputed]="durationComputed()"
+              (changed)="conditions.set($event)"
+            />
+          </section>
+        }
+      </section>
+
+      <section class="card result" aria-label="Résultat" aria-live="polite">
+        @if (busy()) {
+          <mat-progress-bar mode="indeterminate" class="busy" />
+        }
+        @if (error(); as e) {
+          <p class="muted">{{ e }}</p>
+        }
+
+        @if (capacity(); as r) {
+          <span class="muted">Prix d'achat maximal aujourd'hui</span>
+          <strong class="headline">{{ r.today.max_price_minor | money }}</strong>
+          @if (r.today.notary_fees_minor > 0) {
+            <span class="muted small"
+              >+ {{ r.today.notary_fees_minor | money }} de frais de notaire estimés</span
+            >
+          }
+          <div class="cascade">
+            <span>Revenus mensuels</span
+            ><span class="amount">{{ r.today.income_minor | money }}</span>
+            <span>Charges mensuelles</span
+            ><span class="amount">{{ r.today.charges_minor | money }}</span>
+            <span>Mensualité maximale</span
+            ><strong class="amount">{{ r.today.max_payment_minor | money }}</strong>
+            <span>Capital empruntable</span
+            ><strong class="amount">{{ r.today.capital_minor | money }}</strong>
+            <span>Épargne mobilisable</span
+            ><span class="amount">{{ r.today.savings_minor | money }}</span>
+            <span>Réserve gardée</span
+            ><span class="amount">− {{ r.today.reserve_minor | money }}</span>
+            <span>Apport possible</span
+            ><strong class="amount">{{ r.today.down_payment_minor | money }}</strong>
+            <span>Budget, frais de dossier déduits</span
+            ><strong class="amount">{{ r.today.budget_minor | money }}</strong>
+          </div>
+          @if (r.today.max_payment_minor <= 0) {
+            <p class="hint">
+              <mat-icon>info</mat-icon>Vos charges atteignent déjà l'endettement visé : aucun crédit
+              n'est possible sans exclure un prêt remboursé par ce crédit ou réduire les charges.
+            </p>
+          }
+          @if (r.loan; as loan) {
+            <h3>Le crédit au capital empruntable</h3>
+            <app-loan-figures [loan]="loan" main="NONE" />
+          }
+          <h3>Effet de l'achat</h3>
+          <div class="figures">
+            <div>
+              <span class="muted">Épargne restante</span>
+              <strong>{{ r.savings_after_minor | money }}</strong>
+              @if (
+                r.savings_after_tenths_of_months !== null &&
+                r.savings_after_tenths_of_months !== undefined
+              ) {
+                <span class="small muted"
+                  >{{ months(r.savings_after_tenths_of_months) }} de dépenses</span
+                >
+              }
+            </div>
+          </div>
+          <app-affordability [value]="r.affordability" />
+        }
+
+        @if (financing(); as f) {
+          <div class="cascade">
+            <span>Prix</span><span class="amount">{{ f.price_minor | money }}</span>
+            @if (f.notary_fees_minor > 0) {
+              <span>Frais de notaire</span
+              ><span class="amount">+ {{ f.notary_fees_minor | money }}</span>
+            }
+            @if (f.other_costs_minor > 0) {
+              <span>Frais de dossier et de garantie</span
+              ><span class="amount">+ {{ f.other_costs_minor | money }}</span>
+            }
+            <span>Apport</span><span class="amount">− {{ f.down_payment_minor | money }}</span>
+            <strong>À emprunter</strong
+            ><strong class="amount headline-small">{{ f.to_borrow_minor | money }}</strong>
+          </div>
+          @if (f.down_payment_exceeds_possible) {
+            <p class="warning">
+              <mat-icon>warning</mat-icon>L'apport dépasse l'apport possible ({{
+                f.possible_down_payment_minor | money
+              }}) : il entame la réserve de sécurité.
+            </p>
+          }
+          @if (f.loan; as loan) {
+            <h3>Le crédit</h3>
+            <app-loan-figures [loan]="loan" />
+          } @else {
+            <p class="hint"><mat-icon>info</mat-icon>L'apport couvre l'achat : rien à emprunter.</p>
+          }
+          <h3>Effet de l'achat</h3>
+          <div class="figures">
+            <div>
+              <span class="muted">Épargne restante</span>
+              <strong [class.negative]="f.savings_after_minor < 0">{{
+                f.savings_after_minor | money
+              }}</strong>
+              @if (
+                f.savings_after_tenths_of_months !== null &&
+                f.savings_after_tenths_of_months !== undefined
+              ) {
+                <span class="small muted"
+                  >{{ months(f.savings_after_tenths_of_months) }} de dépenses</span
+                >
+              }
+            </div>
+          </div>
+          <app-affordability [value]="f.affordability" />
+        }
+
+        @if (capacity() || financing()) {
+          <div class="actions">
+            <button mat-stroked-button [disabled]="!canSave()" (click)="save()">
+              <mat-icon>bookmark_add</mat-icon>Enregistrer
+            </button>
+            <button mat-flat-button [disabled]="!canSave()" (click)="prepare()">
+              <mat-icon>assignment</mat-icon>Préparer une demande
+            </button>
+            @if (loan()) {
+              <button mat-button (click)="schedule()">
+                <mat-icon>table_chart</mat-icon>Tableau d'amortissement
+              </button>
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    @if (capacity(); as r) {
       @if (conditions(); as c) {
-        <section class="conditions" aria-labelledby="conditions-title">
-          <header>
-            <h3 id="conditions-title">Conditions du crédit</h3>
-            <button mat-button [disabled]="conditionsAreDefaults()" (click)="resetConditions()">
-              <mat-icon>restart_alt</mat-icon>Conditions par défaut
-            </button>
-          </header>
-          <app-conditions-fields
-            [value]="c"
-            [durationComputed]="durationComputed()"
-            (changed)="conditions.set($event)"
-          />
-        </section>
+        <app-capacity-details [result]="r" [conditions]="c" />
       }
-    </section>
-
-    <section class="card result" aria-label="Résultat" aria-live="polite">
-      @if (busy()) {
-        <mat-progress-bar mode="indeterminate" class="busy" />
-      }
-      @if (error(); as e) {
-        <p class="muted">{{ e }}</p>
-      }
-
-      @if (capacity(); as r) {
-        <span class="muted">Prix d'achat maximal aujourd'hui</span>
-        <strong class="headline">{{ r.today.max_price_minor | money }}</strong>
-        @if (r.today.notary_fees_minor > 0) {
-          <span class="muted small"
-            >+ {{ r.today.notary_fees_minor | money }} de frais de notaire estimés</span
-          >
-        }
-        <div class="cascade">
-          <span>Revenus mensuels</span
-          ><span class="amount">{{ r.today.income_minor | money }}</span>
-          <span>Charges mensuelles</span
-          ><span class="amount">{{ r.today.charges_minor | money }}</span>
-          <span>Mensualité maximale</span
-          ><strong class="amount">{{ r.today.max_payment_minor | money }}</strong>
-          <span>Capital empruntable</span
-          ><strong class="amount">{{ r.today.capital_minor | money }}</strong>
-          <span>Épargne mobilisable</span
-          ><span class="amount">{{ r.today.savings_minor | money }}</span>
-          <span>Réserve gardée</span
-          ><span class="amount">− {{ r.today.reserve_minor | money }}</span>
-          <span>Apport possible</span
-          ><strong class="amount">{{ r.today.down_payment_minor | money }}</strong>
-          <span>Budget, frais de dossier déduits</span
-          ><strong class="amount">{{ r.today.budget_minor | money }}</strong>
-        </div>
-        @if (r.today.max_payment_minor <= 0) {
-          <p class="hint">
-            <mat-icon>info</mat-icon>Vos charges atteignent déjà l'endettement visé : aucun crédit
-            n'est possible sans exclure un prêt remboursé par ce crédit ou réduire les charges.
-          </p>
-        }
-        @if (r.loan; as loan) {
-          <h3>Le crédit au capital empruntable</h3>
-          <app-loan-figures [loan]="loan" main="NONE" />
-        }
-        <h3>Effet de l'achat</h3>
-        <div class="figures">
-          <div>
-            <span class="muted">Épargne restante</span>
-            <strong>{{ r.savings_after_minor | money }}</strong>
-            @if (
-              r.savings_after_tenths_of_months !== null &&
-              r.savings_after_tenths_of_months !== undefined
-            ) {
-              <span class="small muted"
-                >{{ months(r.savings_after_tenths_of_months) }} de dépenses</span
-              >
-            }
-          </div>
-        </div>
-        <app-affordability [value]="r.affordability" />
-      }
-
-      @if (financing(); as f) {
-        <div class="cascade">
-          <span>Prix</span><span class="amount">{{ f.price_minor | money }}</span>
-          @if (f.notary_fees_minor > 0) {
-            <span>Frais de notaire</span
-            ><span class="amount">+ {{ f.notary_fees_minor | money }}</span>
-          }
-          @if (f.other_costs_minor > 0) {
-            <span>Frais de dossier et de garantie</span
-            ><span class="amount">+ {{ f.other_costs_minor | money }}</span>
-          }
-          <span>Apport</span><span class="amount">− {{ f.down_payment_minor | money }}</span>
-          <strong>À emprunter</strong
-          ><strong class="amount headline-small">{{ f.to_borrow_minor | money }}</strong>
-        </div>
-        @if (f.down_payment_exceeds_possible) {
-          <p class="warning">
-            <mat-icon>warning</mat-icon>L'apport dépasse l'apport possible ({{
-              f.possible_down_payment_minor | money
-            }}) : il entame la réserve de sécurité.
-          </p>
-        }
-        @if (f.loan; as loan) {
-          <h3>Le crédit</h3>
-          <app-loan-figures [loan]="loan" />
-        } @else {
-          <p class="hint"><mat-icon>info</mat-icon>L'apport couvre l'achat : rien à emprunter.</p>
-        }
-        <h3>Effet de l'achat</h3>
-        <div class="figures">
-          <div>
-            <span class="muted">Épargne restante</span>
-            <strong [class.negative]="f.savings_after_minor < 0">{{
-              f.savings_after_minor | money
-            }}</strong>
-            @if (
-              f.savings_after_tenths_of_months !== null &&
-              f.savings_after_tenths_of_months !== undefined
-            ) {
-              <span class="small muted"
-                >{{ months(f.savings_after_tenths_of_months) }} de dépenses</span
-              >
-            }
-          </div>
-        </div>
-        <app-affordability [value]="f.affordability" />
-      }
-
-      @if (capacity() || financing()) {
-        <div class="actions">
-          <button mat-stroked-button [disabled]="!canSave()" (click)="save()">
-            <mat-icon>bookmark_add</mat-icon>Enregistrer
-          </button>
-          <button mat-flat-button [disabled]="!canSave()" (click)="prepare()">
-            <mat-icon>assignment</mat-icon>Préparer une demande
-          </button>
-          @if (loan()) {
-            <button mat-button (click)="schedule()">
-              <mat-icon>table_chart</mat-icon>Tableau d'amortissement
-            </button>
-          }
-        </div>
-      }
-    </section>
-  </div>
-
-  @if (capacity(); as r) {
-    @if (conditions(); as c) {
-      <app-capacity-details [result]="r" [conditions]="c" />
     }
-  }
 
-  @if (headline(); as h) {
-    <div class="sticky-summary" aria-hidden="true">{{ h }}</div>
+    @if (headline(); as h) {
+      <div class="sticky-summary" aria-hidden="true">{{ h }}</div>
+    }
+
+    <app-simulations [project]="project()" (open)="open($event)" />
+  } @else {
+    <mat-progress-bar mode="indeterminate" />
   }
-  <app-simulations [project]="project()" (open)="open($event)" />
 </div>

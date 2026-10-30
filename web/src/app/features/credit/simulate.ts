@@ -111,7 +111,7 @@ export class SimulatePage {
 
   protected readonly situation = signal<SituationView | null>(null);
   private readonly defaults = signal<ProjectDefaults[]>([]);
-  private readonly loaded = signal(false);
+  protected readonly loaded = signal(false);
 
   // Le dernier état de l'onglet, gardé d'une visite à l'autre (R-CRE-39).
   protected readonly project = signal<ProjectKind>('EXISTING_HOME');
