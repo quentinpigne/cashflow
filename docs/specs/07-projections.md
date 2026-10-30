@@ -26,12 +26,14 @@ Répondre à trois questions :
 
 - **R-PRJ-10** — Solde projeté jour par jour = solde calculé aujourd'hui + transactions `PENDING`
   datées dans le futur + échéances prévues des récurrences (R-TRX-40) non encore honorées + échéances
-  futures des prêts avec tableau dont c'est le compte payeur (R-PRE-3), non encore payées. Une récurrence du compte
+  futures des prêts avec tableau dont c'est le compte payeur (R-PRE-3), non encore payées + dépenses de
+  projets projetées (R-PRJ-48) si c'est le compte de versement (R-PRJ-45). Une récurrence du compte
   payeur dont le montant égale une échéance (à ±1 €) est alors ignorée : la mensualité ne compte qu'une
   fois. Les mensualités déjà ventilées (R-PRE-6) n'entrent pas dans la dépense variable moyenne
   (R-PRJ-11).
 - **R-PRJ-11** — Une dépense variable moyenne est **incluse par défaut**, et désactivable : moyenne
-  des dépenses **non récurrentes** des 3 derniers mois complets, répartie uniformément sur les jours.
+  des dépenses **non récurrentes** des 3 derniers mois complets, hors ventilations rattachées à un projet
+  (projetées à part, R-PRJ-48), répartie uniformément sur les jours.
   Elle est affichée séparément des échéances connues.
 - **R-PRJ-12** — Le solde minimum projeté et sa date sont mis en évidence ; un passage sous 0 (ou sous
   un seuil réglable par compte) déclenche un avertissement.
@@ -81,7 +83,8 @@ Répondre à trois questions :
 ## Capacité d'épargne (ADR-0022)
 
 - **R-PRJ-42** — **Capacité d'épargne** du mois m = revenus projetés (R-PRJ-43) − dépenses projetées
-  (R-PRJ-44) − échéances des prêts avec tableau datées en m (mensualité et assurance, R-PRE-3). Elle est
+  (R-PRJ-44) − dépenses de projets projetées en m (R-PRJ-48) − échéances des prêts avec tableau datées en
+  m (mensualité et assurance, R-PRE-3). Elle est
   calculée pour chaque mois de l'horizon à partir du mois suivant, et peut être négative.
 - **R-PRJ-43** — **Revenus projetés** = salaires projetés des emplois (R-SAL-10, R-SAL-11) + **autres
   revenus moyens** : moyenne mensuelle, sur les 12 derniers mois complets (moins si l'historique suivi est plus
@@ -90,7 +93,9 @@ Répondre à trois questions :
   des comptes d'épargne n'y entrent pas : leur projection les compte déjà (R-PRJ-20). Les autres revenus
   restent constants. Sans emploi déclaré, les revenus projetés sont donc la moyenne des revenus passés.
 - **R-PRJ-44** — **Dépenses projetées** = dépenses mensuelles moyennes (R-TDB-8, sur les mêmes mois que
-  R-PRJ-43), hors intérêts et assurance des mensualités ventilées (R-PRE-6), augmentées chaque 1er janvier
+  R-PRJ-43), hors intérêts et assurance des mensualités ventilées (R-PRE-6) et hors ventilations
+  rattachées à un projet (un voyage passé ne revient pas chaque mois ; les projets sont projetés à part,
+  R-PRJ-48), augmentées chaque 1er janvier
   du **taux de hausse des dépenses** du scénario (2 % par défaut dans les trois scénarios). Les remboursements des prêts en suivi
   simple et les acquisitions ne sont pas projetés (le prêt garde son capital restant dû, R-PRE-9). Un prêt
   avec tableau dont des échéances des 12 derniers mois ne sont pas payées est signalé : sa mensualité,
@@ -107,6 +112,13 @@ Répondre à trois questions :
   programmés dépassent la capacité d'épargne à partir de … »).
 - **R-PRJ-47** — La capacité d'épargne est **activée par défaut** dans chaque scénario, et désactivable :
   les comptes `CASH` gardent alors leur solde actuel, diminué des seuls versements programmés.
+- **R-PRJ-48** — **Dépenses de projets projetées** du mois m = Σ des restants prévus en m (R-BUD-71) des
+  projets en cours et, si le scénario les inclut (`planned_projects`, activé par défaut, R-BUD-72), des
+  projets en projet ; qu'ils soient exclus des budgets du mois ou non (R-BUD-21). Ce sont des montants
+  prévus : la hausse des dépenses ne s'y applique pas. Une mise de côté (R-BUD-73) n'y change rien :
+  l'argent sort du compte au mois de la dépense. Dans la trésorerie (R-PRJ-10), la dépense d'un mois est
+  datée du 1er, ou de la date de début du projet si elle tombe plus tard dans ce mois ; une case « Projets
+  en projet », cochée par défaut, y joue le rôle de l'interrupteur.
 
 ## Features
 
@@ -122,6 +134,7 @@ Répondre à trois questions :
 | PRJ-08 | V2 | Compte de débordement en cas de plafond atteint |
 | PRJ-09 | V2 | Affichage en euros constants |
 | PRJ-10 | V1 | Capacité d'épargne dans la projection du patrimoine (ADR-0022) |
+| PRJ-11 | V1 | Projets dans les projections : trésorerie et capacité d'épargne (BUD-14) |
 
 ### PRJ-04 — Critère d'acceptation
 
@@ -140,3 +153,13 @@ Répondre à trois questions :
   augmente de 1 159,20 € (avant hausse des dépenses) le mois suivant la dernière échéance.
 - Capacité d'épargne désactivée : le compte courant reste à son solde du jour, diminué des versements
   programmés.
+
+### PRJ-11 — Critère d'acceptation
+
+- Étant donné l'exemple de PRJ-10 sans prêt, des dépenses moyennes de 1 900 € dont 100 € par mois
+  rattachés en moyenne au projet passé « Week-end à Lyon », et le projet « Italie 2027 » de BUD-14 (en
+  projet, 500 € en février et 500 € en juillet 2027) : les dépenses projetées valent 1 800 € avant hausse ;
+  la capacité d'épargne de février 2027 baisse de 500 €, celle de juillet 2027 aussi. Le scénario sans
+  « Projets en projet » ne compte pas l'Italie.
+- La trésorerie du compte de versement affiche « Italie 2027 · Train » −500 € au 1er février 2027 parmi les
+  mouvements connus, sauf si la case « Projets en projet » est décochée.

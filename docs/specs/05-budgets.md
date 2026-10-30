@@ -42,10 +42,12 @@ DÉPENSES ANNUELLES (quote-part du mois)
 ÉPARGNE
   → Livret A                               200,00    200,00      0,00 ✔
   → Assurance vie                          400,00      0,00    400,00
+PROJETS (R-BUD-74)
+  Ski 2028 · mise de côté                  150,00      0,00
 HORS BUDGET (dépenses sans ligne)                    37,80
 NON CATÉGORISÉ                                       12,00
 ─────────────────────────────────────────────────────────────────────
-Reste à budgéter (prévu) : 3 200 − 870 − 75 − 600 = 1 655,00 €
+Reste à budgéter (prévu) : 3 200 − 870 − 75 − 600 − 150 = 1 505,00 €
 Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 ```
 
@@ -156,6 +158,52 @@ Projet « Italie 2027 » — 1 000 € prévus (Σ des postes)
 - **R-BUD-29** — Un poste n'a pas d'alerte propre : sa jauge se colore selon les seuils du projet
   (R-BUD-60, R-BUD-61), sans notification. Seul le projet notifie, sur son prévu total.
 
+### Anticiper un projet
+
+On estime un projet avant de s'y engager : son prévu entre dans le budget des mois à venir, dans les
+projections et dans les analyses, aux mois où il sera dépensé, ou mis de côté avant.
+
+```
+Projet « Italie 2027 » (en projet) — du 1er au 31 juillet 2027, 1 000 € prévus
+ ├─ Train        500 €   mois prévu : février 2027 (billet pris tôt)
+ ├─ Logement     300 €  ┐
+ ├─ Restaurants  100 €  ├ sans mois prévu : étalés sur la période du projet (juillet 2027)
+ └─ Loisirs      100 €  ┘
+Calendrier prévu : février 2027 → 500 € ; juillet 2027 → 500 €
+Mise de côté à partir de novembre 2026 : 1 000 € sur novembre, décembre et janvier (avant février)
+                                         → 333,33 + 333,33 + 333,34 €
+```
+
+- **R-BUD-70** — Un poste peut porter un **mois prévu** (`planned_month`), quel qu'il soit, même avant
+  le début du projet (R-BUD-23). Le **calendrier prévu** du projet répartit son prévu par mois : un poste
+  avec un mois prévu y tombe entièrement ; le reste du prévu (postes sans mois prévu, ou montant global
+  d'un projet sans poste) est étalé sur les mois de la période du projet, du mois de début au mois de fin
+  (le seul mois de début sans date de fin). L'étalement est exact en centimes, comme R-BUD-16 : parts
+  arrondies à l'inférieur, le dernier mois absorbe le reste.
+- **R-BUD-71** — **Restant prévu** d'un projet, pour le mois en cours C et les suivants : rien pour un
+  projet terminé ; sinon, pour chaque poste, max(prévu du poste − réel du poste, 0) (sans poste : prévu
+  − réel du projet). Le restant d'un poste avec mois prévu tombe dans ce mois, ou en C si ce mois est
+  passé ; celui d'un poste sans mois prévu est étalé (R-BUD-70) sur les mois de la période à partir de
+  C, ou tombe en C si la période est passée. Le réel hors postes ne réduit aucun restant : c'est une
+  dépense qui n'était pas prévue. Le restant sert aux projections (R-PRJ-48) et à l'estimation de fin
+  d'année (R-TDB-14), qui ne doivent pas compter deux fois une dépense déjà faite.
+- **R-BUD-72** — **Projets pris en compte** : les projets en cours, toujours ; les projets **en
+  projet**, selon un interrupteur « Projets en projet », activé par défaut, du budget du mois, de
+  l'évolution (R-TDB-14) et de chaque scénario de projection (R-PRJ-48) : on mesure l'effet d'un projet
+  avant de s'y engager. Les projets terminés, jamais.
+- **R-BUD-73** — **Mise de côté** (`provision_from`, un mois, facultatif) : le prévu du projet est
+  réparti en quotes-parts mensuelles, exactes comme R-BUD-16, du mois `provision_from` au mois qui
+  précède le premier mois de son calendrier prévu (R-BUD-70) ; il faut au moins un mois. C'est une
+  réservation dans le budget, comme la quote-part d'une ligne annuelle : elle ne déplace pas d'argent et
+  n'a pas de réel. Changer le prévu ou le calendrier recalcule les quotes-parts, mois passés compris.
+  Seul un projet exclu des budgets du mois (R-BUD-21) peut avoir une mise de côté.
+- **R-BUD-74** — **Projets dans le budget du mois M** : chaque projet exclu des budgets du mois
+  (R-BUD-21) et pris en compte (R-BUD-72) a un prévu en M : sa quote-part de mise de côté en M s'il en a
+  une (les mois de la dépense n'ont alors pas de prévu : elle est déjà réservée), sinon sa part du
+  calendrier prévu en M. Son réel en M est celui des ventilations rattachées datées en M (R-BUD-22). Un
+  projet non exclu n'a pas de prévu propre : ses dépenses sont prévues par les lignes de leurs
+  catégories. Pas d'alerte mensuelle : seul le projet notifie, sur son total (R-BUD-62).
+
 ### Objectifs d'épargne
 
 - **R-BUD-30** — Un objectif d'épargne est une ligne de nature `SAVINGS`, mensuelle, qui vise un compte
@@ -170,11 +218,11 @@ Projet « Italie 2027 » — 1 000 € prévus (Σ des postes)
 ### Synthèse du mois
 
 - **R-BUD-40** — **Reste à budgéter** (prévu) = revenus prévus − Σ dépenses mensuelles prévues
-  − Σ quotes-parts annuelles − Σ objectifs d'épargne. Il peut être positif ou négatif ; aucune
+  − Σ quotes-parts annuelles − Σ objectifs d'épargne − Σ prévus des projets du mois (R-BUD-74). Il peut être positif ou négatif ; aucune
   obligation d'arriver à zéro.
 - **R-BUD-41** — **Solde du mois** (réel) = revenus réels − dépenses réelles (lignes, hors budget et
   non catégorisées) − épargne réelle des objectifs. Les dépenses de projets exclus (R-BUD-21) y sont
-  incluses, sur une ligne « projets » distincte.
+  incluses, dans la section « Projets » (R-BUD-74).
 
 ### Modèle et surcharges
 
@@ -226,6 +274,7 @@ Projet « Italie 2027 » — 1 000 € prévus (Σ des postes)
 | BUD-11 | V1 | Postes d'un projet : prévu détaillé (train, logement…), catégories facultatives, réel par poste et hors postes |
 | BUD-12 | V2 | Alerte prévisionnelle : le rythme de dépense projette un dépassement en fin de période |
 | BUD-13 | V2 | Historique : prévu vs réel sur 12 mois par ligne |
+| BUD-14 | V1 | Anticiper un projet : mois prévu des postes, mise de côté, projets dans le budget des mois à venir (projections : PRJ-11, évolution : TDB-09) |
 
 ### Critères d'acceptation
 
@@ -267,6 +316,20 @@ Projet « Italie 2027 » — 1 000 € prévus (Σ des postes)
 - Étant donné ce projet, quand j'ajoute à Logement la catégorie Restaurants, alors l'enregistrement est
   refusé (R-BUD-27).
 - Quand je supprime le poste Train, alors le billet repasse hors postes et le prévu du projet vaut 500 €.
+
+**BUD-14 / R-BUD-70 à R-BUD-74 — anticiper un projet**
+- Étant donné le projet « Italie 2027 » ci-dessus, en projet, du 1er au 31 juillet 2027, sans mise de
+  côté, alors son calendrier prévu vaut 500 € en février 2027 et 500 € en juillet 2027 ; avec une fin au
+  31 août 2027, 500 € en février, 250 € en juillet et 250 € en août.
+- Le budget de juillet 2027 affiche le projet avec 500 € de prévu, et son reste à budgéter baisse de
+  500 € ; l'interrupteur « Projets en projet » désactivé, le projet disparaît et le reste à budgéter
+  remonte de 500 €. Passé en cours, le projet compte quel que soit l'interrupteur.
+- Avec une mise de côté à partir de novembre 2026, le budget affiche 333,33 € en novembre et en décembre,
+  333,34 € en janvier 2027, et rien en février ni en juillet. Une mise de côté à partir de février 2027
+  est refusée : aucun mois ne précède la dépense.
+- Le 20 décembre 2026, après un billet de 520 € rangé dans Train, le restant prévu (R-BUD-71) vaut 0 €
+  pour Train et 500 € en juillet 2027 ; le calendrier prévu, lui, ne change pas.
+- Le projet terminé, il n'a plus de restant ni de prévu dans le budget ; son réel y reste.
 
 **BUD-07 / R-BUD-31 — objectif d'épargne**
 - Étant donné un objectif de 200 €/mois vers le Livret A, un virement de 300 € du compte courant vers le

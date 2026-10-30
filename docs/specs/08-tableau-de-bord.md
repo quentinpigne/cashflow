@@ -32,6 +32,14 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
 - **R-TDB-13** — Un indicateur calculé sur un mois en cours est marqué « mois en cours ». Les
   comparaisons se font avec le mois précédent **à la même date** (M−1 du 1er au jour J), pas avec le
   mois précédent complet.
+- **R-TDB-14** — **Mois à venir de l'évolution** (TDB-03) : les mois qui suivent le mois en cours, jusqu'à
+  décembre, affichent des revenus et des dépenses **prévus**, distingués du réel. Revenus prévus = Σ des
+  lignes de revenu du budget du mois (R-BUD-50). Dépenses prévues = Σ des lignes de dépense mensuelles et
+  des quotes-parts annuelles du mois + Σ des restants prévus du mois (R-BUD-71) des projets exclus des
+  budgets du mois et pris en compte (R-BUD-72, interrupteur « Projets en projet » de l'écran) ; une mise de
+  côté n'est pas une dépense et n'y entre pas. **Estimation de fin d'année** = réel du 1er janvier à la fin
+  du mois en cours + Σ des prévus des mois suivants, pour les revenus, les dépenses et l'épargne. Sans
+  ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale.
 
 ## Écrans
 
@@ -45,6 +53,7 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
 | TDB-06 | V1 | **Budgets sur l'accueil** : jauges des lignes en alerte, reste à budgéter, objectifs d'épargne du mois, projets actifs (cf. spec 05, BUD-03) |
 | TDB-08 | V1 | **Biens et prêts sur l'accueil** : un encadré Biens (valeur de chaque bien) et un encadré Prêts (capital restant dû, prochaine échéance), masqués si la rubrique est désactivée (spec 09) |
 | TDB-07 | V1 | **Filtre projets** dans l'analyse par catégorie (TDB-02) : inclure ou exclure les dépenses rattachées à des projets |
+| TDB-09 | V1 | **Mois à venir et estimation de fin d'année** dans l'évolution (TDB-03), budget et projets compris (R-TDB-14, BUD-14) |
 
 ### TDB-01 — Critères d'acceptation
 

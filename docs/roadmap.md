@@ -145,6 +145,13 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       (spec 05, R-BUD-26 à R-BUD-29)
 - [x] Statut « en projet » d'un projet (R-BUD-20) ; projet et poste dans la saisie rapide (E5)
 
+## Compléments V1 — anticiper les projets (2026-10-30, à faire)
+
+- [ ] BUD-14 — mois prévu des postes, calendrier prévu, mise de côté, projets dans le budget du mois et
+      interrupteur « Projets en projet » (spec 05, R-BUD-70 à R-BUD-74)
+- [ ] PRJ-11 — projets dans la trésorerie et la capacité d'épargne (spec 07, R-PRJ-48)
+- [ ] TDB-09 — mois à venir et estimation de fin d'année dans l'évolution (spec 08, R-TDB-14)
+
 ## Mise en service (prochaine étape)
 
 - [ ] Exposition sur Internet derrière un proxy, en HTTPS : passe d'exploitation et de sécurité (Q15, à

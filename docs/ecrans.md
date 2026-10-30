@@ -451,7 +451,9 @@ Deux onglets :
   pour le mois en cours, R-TDB-13), moyenne 12 mois ; une catégorie se déplie en sous-catégories ; un
   clic ouvre E14 filtré sur la catégorie et le mois.
 - **Évolution** : 12 ou 24 mois ; barres revenus / dépenses et courbe d'épargne ; taux d'épargne du mois
-  et glissant sur 12 mois.
+  et glissant sur 12 mois. Les mois à venir jusqu'à décembre affichent le prévu (barres hachurées, R-TDB-14),
+  avec l'**estimation de fin d'année** (revenus, dépenses, épargne) et l'interrupteur **Projets en projet**
+  (TDB-09).
 
 Graphiques : ECharts (ADR-0009).
 
@@ -501,8 +503,12 @@ Ce qui change dans les écrans existants :
 - Sections **Revenus**, **Dépenses mensuelles**, **Dépenses annuelles** (quote-part du mois et
   consommé sur l'année), **Épargne** : prévu, réel, reste, jauge colorée selon les seuils (R-BUD-61),
   pastille du report, icône d'une période surchargée.
-- **Hors lignes** : dépenses hors budget par catégorie, non catégorisé, projets exclus ; un clic ouvre
-  E14 filtré sur le mois.
+- **Projets** (BUD-14, R-BUD-74) : une ligne par projet exclu des lignes du mois et pris en compte, avec
+  son prévu du mois (« mise de côté » ou part du calendrier) et son réel du mois ; pastille « en projet » ;
+  un clic ouvre le projet (E20). Un interrupteur **Projets en projet** (activé par défaut, mémorisé sur
+  l'appareil) les retire du budget pour voir l'effet d'un projet envisagé (R-BUD-72).
+- **Hors lignes** : dépenses hors budget par catégorie, non catégorisé ; un clic ouvre E14 filtré sur le
+  mois.
 - Un clic sur une ligne ouvre sa modification : montant **à partir de ce mois** ou **pour ce mois
   seulement** (pour cette année budgétaire, ligne annuelle), avec un avertissement sur un mois passé
   (R-BUD-52) ; report ; alertes aux seuils habituels, à des seuils propres ou **pas d'alerte** (budget
@@ -530,12 +536,16 @@ cochées à partir du mois en cours.
   R-BUD-20), dates, **Postes** (BUD-11) : une ligne par poste (nom, montant,
   catégories facultatives), « Ajouter un poste », total des postes. Sans poste, un champ **Montant
   prévu** global ; il disparaît dès le premier poste (R-BUD-26) : le premier poste reprend ce montant,
-  et retirer le dernier poste le rend au montant global.
+  et retirer le dernier poste le rend au montant global. Chaque poste a un **mois prévu** facultatif
+  (R-BUD-70). Case **Mettre de côté chaque mois**, à partir d'un mois (le mois en cours par défaut),
+  seulement si le projet est exclu des lignes du mois : le dialogue affiche la quote-part et ses mois
+  (« 333,33 € par mois de novembre 2026 à janvier 2027 », R-BUD-73), ou pourquoi c'est impossible.
 - **Détail** : réel et jauge, dates, exclusion des lignes du mois ; **postes** (s'il y en a) : réel sur
   prévu et jauge de chacun, puis « Hors postes » s'il n'est pas nul (R-BUD-28) ; réel **par catégorie** ;
   transactions rattachées, avec leur poste, celles hors des dates signalées (R-BUD-23). Pastille du statut
   s'il n'est pas « en cours ». « Modifier » (y compris le statut) ; « Supprimer » seulement sans
-  transaction rattachée.
+  transaction rattachée. **Calendrier** (BUD-14) : les mois du calendrier prévu avec leur prévu et leur réel,
+  le mois prévu de chaque poste, et la mise de côté s'il y en a une.
 
 ## E21 — Notifications (BUD-08)
 
@@ -615,8 +625,9 @@ prévisions (R-PRJ-3, R-PRJ-31). Dans l'en-tête, un lien **Scénarios** ouvre l
   scénario ; horizon 5, 10, 20 ou 30 ans ; valeur finale par scénario (et en euros constants si le
   scénario a une inflation) ; comptes partis d'une valorisation ancienne signalés.
 - **Trésorerie** : compte de liquidités, 30, 90 ou 180 jours, case « Dépenses courantes moyennes »
-  (R-PRJ-11) ; solde du jour, solde le plus bas et sa date (avertissement sous zéro, R-PRJ-12), courbe
-  en escalier, liste des mouvements connus (échéances prévues et transactions en attente).
+  (R-PRJ-11), case « Projets en projet » (R-PRJ-48) ; solde du jour, solde le plus bas et sa date (avertissement sous zéro, R-PRJ-12), courbe
+  en escalier, liste des mouvements connus (échéances prévues, transactions en attente et dépenses de
+  projets du compte de versement, « Italie 2027 · Train »).
 - **Épargne** : compte d'épargne, scénario, horizon ; valeur du jour et à l'horizon, courbe, hypothèses
   (taux et plafond pour un livret, rendement et frais pour l'épargne variable, versement mensuel).
 
@@ -625,7 +636,7 @@ prévisions (R-PRJ-3, R-PRJ-31). Dans l'en-tête, un lien **Scénarios** ouvre l
 Dans les réglages, comme les barèmes de taux (E22) : les scénarios sont des hypothèses qu'on règle de
 temps en temps, pas un résultat qu'on consulte. Un bloc par scénario (horizon, inflation, rendements par
 nature) ; « Modifier » ouvre les hypothèses : rendement et frais par nature, réglages par compte (dont le
-versement mensuel), taux futurs des barèmes (R-PRJ-21) ; scénario par défaut ; suppression sauf pour le
+versement mensuel), taux futurs des barèmes (R-PRJ-21), interrupteur **Projets en projet** (R-PRJ-48) ; scénario par défaut ; suppression sauf pour le
 scénario par défaut. Action « Nouveau » dans l'en-tête.
 
 # Écrans — biens et prêts (spec 09)

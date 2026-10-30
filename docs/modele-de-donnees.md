@@ -660,7 +660,7 @@ contraintes `STRICT` (une table virtuelle ne l'est pas), reconstruite par `cashf
 | `name` | texte | requis, unique (ex. « Prudent », « Médian », « Optimiste ») |
 | `horizon_months` | entier | 1–600 |
 | `inflation_rate` | `Rate` | optionnel (affichage en euros constants) |
-| `assumptions` | `Json` | par compte ou par famille : rendement annuel, frais annuels, versement mensuel, évolution des taux… ; capacité d'épargne (R-PRJ-42 à R-PRJ-47) : `savings_capacity` (booléen, défaut `true`), `salary_growth_rate`, `expense_growth_rate` (`Rate`), `surplus_account_id` (compte d'affectation du reste, optionnel) |
+| `assumptions` | `Json` | par compte ou par famille : rendement annuel, frais annuels, versement mensuel, évolution des taux… ; capacité d'épargne (R-PRJ-42 à R-PRJ-47) : `savings_capacity` (booléen, défaut `true`), `salary_growth_rate`, `expense_growth_rate` (`Rate`), `surplus_account_id` (compte d'affectation du reste, optionnel) ; projets : `planned_projects` (booléen, défaut `true`, R-PRJ-48) |
 | `is_default` | booléen | un seul scénario par défaut |
 
 ## Budgets — [spec 05](specs/05-budgets.md)
@@ -715,6 +715,7 @@ Catégories d'une version de ligne (R-BUD-10). Une nouvelle version reçoit les 
 | `amount` | `Money` | montant global : requis, > 0 sans poste ; `null` quand le projet a des postes (R-BUD-26) |
 | `exclude_from_period_budgets` | booléen | défaut `true` (R-BUD-21) |
 | `status` | enum | `PLANNED` (en projet) \| `ACTIVE` (en cours, défaut) \| `CLOSED` (terminé) (R-BUD-20) |
+| `provision_from` | mois `YYYY-MM` | optionnel : début de la mise de côté (R-BUD-73) ; antérieur au premier mois du calendrier prévu ; `null` si `exclude_from_period_budgets` vaut `false` |
 | `alert_thresholds` | `Json` | optionnel, comme pour `BudgetLine` |
 | `note` | texte | optionnel |
 
@@ -729,6 +730,7 @@ Poste d'un projet (R-BUD-26).
 | `project_id` | `Id` → Project | requis, suppression en cascade |
 | `name` | texte ≤ 80 | requis, unique dans le projet (sans tenir compte de la casse) |
 | `amount` | `Money` | requis, > 0 |
+| `planned_month` | mois `YYYY-MM` | optionnel : mois prévu de la dépense (R-BUD-70) ; sans lui, le poste est étalé sur la période du projet |
 | `position` | entier | ordre d'affichage |
 | catégories | `ProjectLineCategory` | zéro, une ou plusieurs catégories de dépense |
 
