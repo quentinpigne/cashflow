@@ -187,6 +187,21 @@ input.amount {
 }
 
 // Panneau latéral (ordinateur) et feuille du bas (mobile) ouverts en dialogue (E36, « Ajuster »).
+// Le contenu prend toute la hauteur du panneau (Material le limite à 65vh) ; les boutons restent en bas.
+.cdk-overlay-pane.side-panel,
+.cdk-overlay-pane.bottom-panel {
+  .mat-mdc-dialog-container,
+  .mat-mdc-dialog-inner-container,
+  .mat-mdc-dialog-surface {
+    height: 100%;
+  }
+
+  .mat-mdc-dialog-content {
+    flex: 1 1 auto;
+    max-height: none;
+  }
+}
+
 .side-panel {
   height: 100dvh;
 
@@ -196,7 +211,7 @@ input.amount {
 }
 
 .bottom-panel {
-  max-height: 85dvh;
+  height: 85dvh;
 
   .mat-mdc-dialog-surface {
     border-radius: var(--mat-sys-corner-extra-large) var(--mat-sys-corner-extra-large) 0 0 !important;

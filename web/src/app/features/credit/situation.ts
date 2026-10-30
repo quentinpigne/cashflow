@@ -210,7 +210,7 @@ interface SituationPanelData {
       <h3>Co-emprunteur</h3>
       <div class="fields">
         <mat-form-field>
-          <mat-label>Revenus du co-emprunteur</mat-label>
+          <mat-label>Ses revenus</mat-label>
           <input
             matInput
             inputmode="decimal"
@@ -220,7 +220,7 @@ interface SituationPanelData {
           <span matTextSuffix>€</span>
         </mat-form-field>
         <mat-form-field>
-          <mat-label>Charges du co-emprunteur</mat-label>
+          <mat-label>Ses charges</mat-label>
           <input
             matInput
             inputmode="decimal"
