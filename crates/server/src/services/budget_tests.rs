@@ -2,7 +2,7 @@
 
 use cashflow_domain::DomainError;
 use cashflow_domain::accounts::AccountKind;
-use cashflow_domain::budgeting::{BudgetKind, Periodicity};
+use cashflow_domain::budgeting::{BudgetKind, Periodicity, ProjectStatus};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{CategoryId, ProjectLineId, TransactionId};
 
@@ -166,7 +166,7 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
         amount_minor: Some(250_000),
         lines: Vec::new(),
         exclude_from_period_budgets: true,
-        active: true,
+        status: ProjectStatus::Active,
         alert_thresholds: None,
         note: None,
     };
@@ -185,10 +185,24 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
     assert!(project.splits[0].out_of_range);
 
     // Clôturé : plus de nouveau rattachement, mais les ventilations existantes restent modifiables.
-    budgets::save_project(&db, Some(project.id), &ProjectInput { active: false, ..input }).await.unwrap();
+    budgets::save_project(&db, Some(project.id), &ProjectInput { status: ProjectStatus::Closed, ..input.clone() })
+        .await
+        .unwrap();
     let other = transactions::create(&db, &tx(checking, "2026-03-11", -1_000, None)).await.unwrap();
     let refused =
         budgets::attach(&db, &AttachInput { transaction_ids: vec![other], project_id: Some(project.id) }).await;
+    assert_eq!(domain_error(refused), DomainError::ProjectClosed);
+    // En projet : pas encore de rattachement non plus (R-BUD-20, R-BUD-24).
+    let planned = budgets::save_project(
+        &db,
+        None,
+        &ProjectInput { name: "Ski".into(), status: ProjectStatus::Planned, ..input.clone() },
+    )
+    .await
+    .unwrap();
+    assert_eq!(planned.status, ProjectStatus::Planned);
+    let refused =
+        budgets::attach(&db, &AttachInput { transaction_ids: vec![other], project_id: Some(planned.id) }).await;
     assert_eq!(domain_error(refused), DomainError::ProjectClosed);
     let mut with_project = split(-1_000, None);
     with_project.project_id = Some(project.id);
@@ -261,7 +275,7 @@ async fn bud_11_project_lines_r_bud_26_to_28() {
             post(None, "Loisirs", 10_000, &[leisure]),
         ],
         exclude_from_period_budgets: true,
-        active: true,
+        status: ProjectStatus::Active,
         alert_thresholds: None,
         note: None,
     };

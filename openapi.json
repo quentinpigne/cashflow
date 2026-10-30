@@ -17206,9 +17206,6 @@
           "start_date"
         ],
         "properties": {
-          "active": {
-            "type": "boolean"
-          },
           "alert_thresholds": {
             "type": [
               "array",
@@ -17257,6 +17254,10 @@
           "start_date": {
             "type": "string",
             "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus",
+            "description": "En cours par défaut (R-BUD-20)."
           }
         }
       },
@@ -17403,6 +17404,15 @@
           }
         }
       },
+      "ProjectStatus": {
+        "type": "string",
+        "description": "Statut d'un projet (R-BUD-20) ; seul un projet en cours reçoit de nouvelles ventilations (R-BUD-24).",
+        "enum": [
+          "PLANNED",
+          "ACTIVE",
+          "CLOSED"
+        ]
+      },
       "ProjectView": {
         "type": "object",
         "required": [
@@ -17411,7 +17421,7 @@
           "start_date",
           "amount_minor",
           "exclude_from_period_budgets",
-          "active",
+          "status",
           "actual_minor",
           "alert",
           "lines",
@@ -17420,9 +17430,6 @@
           "splits"
         ],
         "properties": {
-          "active": {
-            "type": "boolean"
-          },
           "actual_minor": {
             "type": "integer",
             "format": "int64",
@@ -17491,6 +17498,9 @@
           "start_date": {
             "type": "string",
             "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
           },
           "unassigned_minor": {
             "type": "integer",

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\", amount,\n                  exclude_from_period_budgets AS \"exclude: bool\", status, alert_thresholds, note\n           FROM project ORDER BY status, start_date DESC, name COLLATE NOCASE",
+  "query": "SELECT id, name, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\", amount,\n                  exclude_from_period_budgets AS \"exclude: bool\", status, alert_thresholds, note\n           FROM project\n           ORDER BY CASE status WHEN 'ACTIVE' THEN 0 WHEN 'PLANNED' THEN 1 ELSE 2 END, start_date DESC,\n                    name COLLATE NOCASE",
   "describe": {
     "columns": [
       {
@@ -118,5 +118,5 @@
       true
     ]
   },
-  "hash": "43b397cc710cb47315fe946ec16be1c446c65476ddc6e4fff190c9889cc84cf1"
+  "hash": "2cb98daaaab191acea41eabb4d8f4dab5023331b293728e6b19884026e6864b8"
 }

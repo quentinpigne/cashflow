@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use anyhow::{Context, bail};
 use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::assets::AssetKind;
+use cashflow_domain::budgeting::ProjectStatus;
 use cashflow_domain::documents::{DocumentKind, LinkKind, LinkTarget};
 use cashflow_domain::loans::{Insurance, LoanKind, LoanTerms};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, LoanId, PayeeId, TransactionId};
@@ -1101,11 +1102,31 @@ async fn budget(
             post("Restaurants", 15_000, restaurants),
         ],
         exclude_from_period_budgets: true,
-        active: true,
+        status: ProjectStatus::Active,
         alert_thresholds: None,
         note: None,
     };
     let project = budgets::save_project(db, None, &project).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    // Un voyage envisagé, en projet : rien n'y est encore rattaché (R-BUD-20, R-BUD-24).
+    if let Some(summer) = today.checked_add_days(Days::new(240)) {
+        let planned = budgets::ProjectInput {
+            name: "Italie 2027".into(),
+            start_date: summer,
+            end_date: summer.checked_add_days(Days::new(14)),
+            amount_minor: None,
+            lines: vec![
+                post("Train", 50_000, train),
+                post("Logement", 30_000, None),
+                post("Restaurants", 10_000, restaurants),
+                post("Loisirs", 10_000, None),
+            ],
+            exclude_from_period_budgets: true,
+            status: ProjectStatus::Planned,
+            alert_thresholds: None,
+            note: None,
+        };
+        budgets::save_project(db, None, &planned).await.map_err(|e| anyhow::anyhow!("{e}"))?;
+    }
     let line = |name: &str| project.lines.iter().find(|l| l.name == name).map(|l| l.id);
     for (date, amount, label, category, post) in [
         (departure, -9_800, "SNCF CONNECT", train, line("Train")),

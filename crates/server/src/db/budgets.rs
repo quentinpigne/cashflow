@@ -1,6 +1,6 @@
 //! Budgets (spec 05) : lignes, surcharges, projets, faits budgétaires et notifications.
 
-use cashflow_domain::budgeting::{BudgetKind, Month, Periodicity};
+use cashflow_domain::budgeting::{BudgetKind, Month, Periodicity, ProjectStatus};
 use cashflow_domain::shared::ids::{
     AccountId, BudgetLineId, CategoryId, NotificationId, ProjectId, ProjectLineId, SplitId,
 };
@@ -233,7 +233,7 @@ pub struct ProjectRow {
     /// Montant global ; absent quand le projet a des postes (R-BUD-26).
     pub amount: Option<Money>,
     pub exclude_from_period_budgets: bool,
-    pub active: bool,
+    pub status: ProjectStatus,
     pub alert_thresholds: Option<Vec<u32>>,
     pub note: Option<String>,
 }
@@ -242,7 +242,9 @@ pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Project
     let rows = sqlx::query!(
         r#"SELECT id, name, start_date AS "start_date: Date", end_date AS "end_date: Date", amount,
                   exclude_from_period_budgets AS "exclude: bool", status, alert_thresholds, note
-           FROM project ORDER BY status, start_date DESC, name COLLATE NOCASE"#
+           FROM project
+           ORDER BY CASE status WHEN 'ACTIVE' THEN 0 WHEN 'PLANNED' THEN 1 ELSE 2 END, start_date DESC,
+                    name COLLATE NOCASE"#
     )
     .fetch_all(db)
     .await?;
@@ -255,7 +257,7 @@ pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Project
                 end_date: r.end_date,
                 amount: r.amount.map(Money::from_minor),
                 exclude_from_period_budgets: r.exclude,
-                active: r.status == "ACTIVE",
+                status: enum_from_db(&r.status)?,
                 alert_thresholds: thresholds_from_db(r.alert_thresholds.as_deref())?,
                 note: r.note,
             })
@@ -266,7 +268,7 @@ pub async fn projects(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Project
 pub async fn upsert_project(db: impl SqliteExecutor<'_>, p: &ProjectRow) -> anyhow::Result<()> {
     let id = p.id.to_string();
     let amount = p.amount.map(Money::minor);
-    let status = if p.active { "ACTIVE" } else { "CLOSED" };
+    let status = enum_to_db(&p.status);
     let thresholds = thresholds_to_db(p.alert_thresholds.as_ref())?;
     let now = timestamp();
     sqlx::query!(

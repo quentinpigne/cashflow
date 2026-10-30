@@ -83,6 +83,20 @@ impl FromStr for Month {
     }
 }
 
+/// Statut d'un projet (R-BUD-20) ; seul un projet en cours reçoit de nouvelles ventilations (R-BUD-24).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ProjectStatus {
+    /// En projet : envisagé, rien n'est encore dépensé.
+    Planned,
+    /// En cours.
+    #[default]
+    Active,
+    /// Terminé : bilan figé.
+    Closed,
+}
+
 /// Nature d'une ligne de budget.
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

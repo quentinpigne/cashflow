@@ -6,6 +6,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
+use cashflow_domain::budgeting::ProjectStatus;
 use cashflow_domain::import::fingerprint::{self, LineKey, normalize_label};
 use cashflow_domain::import::learning::learning_key;
 use cashflow_domain::import::matcher::{self, AUTO_MATCH_SCORE, Candidate, LineToMatch};
@@ -1124,8 +1125,12 @@ pub async fn commit(
     };
     let mut touched = Vec::new();
     // Un projet proposé par une règle n'est rattaché que s'il est encore en cours (R-BUD-24).
-    let active_projects: HashSet<ProjectId> =
-        db::budgets::projects(&mut *tx).await?.into_iter().filter(|p| p.active).map(|p| p.id).collect();
+    let active_projects: HashSet<ProjectId> = db::budgets::projects(&mut *tx)
+        .await?
+        .into_iter()
+        .filter(|p| p.status == ProjectStatus::Active)
+        .map(|p| p.id)
+        .collect();
 
     for line in lines.iter() {
         let (Some(date), Some(amount), Some(bank_label)) = (line.date, line.amount, line.bank_label.as_deref()) else {

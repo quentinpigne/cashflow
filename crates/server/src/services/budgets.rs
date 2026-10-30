@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountFamily;
 use cashflow_domain::budgeting::{
-    self, BudgetData, BudgetKind, BudgetSplit, LineVersion, Month, Override, Periodicity, SavingsMove,
+    self, BudgetData, BudgetKind, BudgetSplit, LineVersion, Month, Override, Periodicity, ProjectStatus, SavingsMove,
 };
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{AccountId, BudgetLineId, CategoryId, ProjectId, ProjectLineId, TransactionId};
@@ -900,7 +900,7 @@ pub struct ProjectView {
     /// Prévu : le montant global, ou la somme des postes (R-BUD-26).
     pub amount_minor: i64,
     pub exclude_from_period_budgets: bool,
-    pub active: bool,
+    pub status: ProjectStatus,
     pub alert_thresholds: Option<Vec<u32>>,
     pub note: Option<String>,
     /// Réel, remboursements déduits (R-BUD-22).
@@ -927,8 +927,9 @@ pub struct ProjectInput {
     pub lines: Vec<ProjectLineInput>,
     #[serde(default = "yes")]
     pub exclude_from_period_budgets: bool,
-    #[serde(default = "yes")]
-    pub active: bool,
+    /// En cours par défaut (R-BUD-20).
+    #[serde(default)]
+    pub status: ProjectStatus,
     #[serde(default)]
     pub alert_thresholds: Option<Vec<u32>>,
     #[serde(default)]
@@ -1055,7 +1056,7 @@ pub async fn projects(db: &Db) -> AppResult<Vec<ProjectView>> {
                 end_date: p.end_date,
                 amount_minor: planned.minor(),
                 exclude_from_period_budgets: p.exclude_from_period_budgets,
-                active: p.active,
+                status: p.status,
                 alert_thresholds: p.alert_thresholds,
                 note: p.note,
             }
@@ -1120,7 +1121,7 @@ pub async fn save_project(db: &Db, id: Option<ProjectId>, input: &ProjectInput) 
         end_date: input.end_date,
         amount,
         exclude_from_period_budgets: input.exclude_from_period_budgets,
-        active: input.active,
+        status: input.status,
         alert_thresholds: check_thresholds(input.alert_thresholds.as_ref())?,
         note: clean(input.note.as_deref()),
     };
@@ -1207,7 +1208,7 @@ pub async fn check_active(conn: &mut sqlx::SqliteConnection, id: ProjectId) -> A
         .into_iter()
         .find(|p| p.id == id)
         .ok_or(AppError::NotFound("projet"))?;
-    if !project.active {
+    if project.status != ProjectStatus::Active {
         return Err(DomainError::ProjectClosed.into());
     }
     Ok(())
@@ -1363,7 +1364,7 @@ pub async fn evaluate_alerts(db: &Db, today: Date) -> AppResult<usize> {
     }
 
     let thresholds = view.thresholds.clone();
-    for project in projects(db).await?.into_iter().filter(|p| p.active) {
+    for project in projects(db).await?.into_iter().filter(|p| p.status == ProjectStatus::Active) {
         let line_thresholds = project.alert_thresholds.clone().unwrap_or_else(|| thresholds.clone());
         for t in budgeting::crossed(
             Money::from_minor(project.actual_minor),
