@@ -309,7 +309,7 @@ async fn r_prj_10_payer_cash_projection_counts_each_installment_once() {
         payee_id: None,
     };
     recurring::save(&db, None, &duplicate, d("2026-01-31")).await.unwrap();
-    let query = CashQuery { days: Some(60), variable: Some(false), threshold_minor: None };
+    let query = CashQuery { days: Some(60), variable: Some(false), threshold_minor: None, planned_projects: None };
     let view = projections::cash(&db, f.checking, &query, d("2026-01-31")).await.unwrap();
     let installments: Vec<(cashflow_domain::Date, i64)> =
         view.events.iter().filter(|e| e.amount_minor == -115_920).map(|e| (e.date, e.amount_minor)).collect();

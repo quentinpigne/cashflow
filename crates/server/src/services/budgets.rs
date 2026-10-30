@@ -429,6 +429,41 @@ pub fn plan_of(lines: &[ProjectLineRow], project: ProjectId) -> Vec<budgeting::P
     lines.iter().filter(|l| l.project_id == project).map(plan_line).collect()
 }
 
+/// Ce qui reste à dépenser d'un projet, en parts datées par mois (R-BUD-71).
+pub struct ProjectRemaining {
+    pub name: String,
+    pub status: ProjectStatus,
+    pub start: Date,
+    /// Nom du poste daté, ou `None` pour ce qui est étalé ; mois ; montant positif.
+    pub parts: Vec<(Option<String>, Month, Money)>,
+}
+
+/// Restant prévu de chaque projet non terminé, à partir du mois de `today` (R-BUD-71).
+pub async fn remaining(db: &Db, today: Date) -> AppResult<Vec<ProjectRemaining>> {
+    let rows = db::budgets::projects(&db.read).await?;
+    let lines = db::budgets::project_lines(&mut *db.read.acquire().await?).await?;
+    let splits = db::budgets::project_splits(&db.read).await?;
+    Ok(rows
+        .iter()
+        .filter(|p| p.status != ProjectStatus::Closed)
+        .map(|p| {
+            let own: Vec<(Money, Option<ProjectLineId>)> =
+                splits.iter().filter(|s| s.project_id == p.id).map(|s| (s.amount, s.project_line_id)).collect();
+            let actual: Money = own.iter().map(|(amount, _)| -*amount).sum();
+            let (by_line, _) = budgeting::project_line_actuals(&own);
+            let plan = plan_of(&lines, p.id);
+            let parts = budgeting::remaining_parts(&timing(p), &plan, actual, &by_line, Month::of(today))
+                .into_iter()
+                .map(|part| {
+                    let name = part.line.and_then(|id| plan.iter().find(|l| l.id == id)).map(|l| l.name.clone());
+                    (name, part.month, part.amount)
+                })
+                .collect();
+            ProjectRemaining { name: p.name.clone(), status: p.status, start: p.start_date, parts }
+        })
+        .collect())
+}
+
 async fn compute(db: &Db, month: Month, today: Date, planned_projects: bool) -> AppResult<MonthBudgetView> {
     let loaded = Loaded::load(db, month).await?;
     let project_rows = db::budgets::projects(&db.read).await?;

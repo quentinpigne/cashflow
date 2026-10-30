@@ -1,9 +1,10 @@
 //! Capacité d'épargne dans la projection du patrimoine (R-PRJ-42 à R-PRJ-47) et projection du salaire (SAL-04),
 //! ADR-0022.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use cashflow_domain::accounts::{AccountFamily, AccountKind};
+use cashflow_domain::budgeting::{self, Month};
 use cashflow_domain::projection::{self, Baseline, CapacityFact, CapacityInput, CapacityMonth};
 use cashflow_domain::reporting;
 use cashflow_domain::savings::Movement;
@@ -17,6 +18,7 @@ use super::{Context, ScenarioView, fixed_parts, recurring};
 use crate::db::accounts::AccountRow;
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
+use crate::services::budgets::{self, ProjectRemaining};
 use crate::services::loans::LoanBook;
 use crate::services::salaries::SalaryBook;
 
@@ -48,6 +50,9 @@ pub struct CapacityAssumptions {
     /// Compte d'épargne qui reçoit le reste de la capacité d'épargne (R-PRJ-45).
     #[serde(default)]
     pub surplus_account_id: Option<AccountId>,
+    /// Compter les projets en projet, en plus des projets en cours (R-PRJ-48) ; oui par défaut.
+    #[serde(default = "yes")]
+    pub planned_projects: bool,
 }
 
 impl Default for CapacityAssumptions {
@@ -57,6 +62,7 @@ impl Default for CapacityAssumptions {
             salary_growth_ppm: DEFAULT_GROWTH_PPM,
             expense_growth_ppm: DEFAULT_GROWTH_PPM,
             surplus_account_id: None,
+            planned_projects: true,
         }
     }
 }
@@ -102,6 +108,8 @@ pub(super) struct CapacityBase {
     names: HashMap<AccountId, String>,
     /// Prêts avec tableau dont des échéances récentes ne sont pas payées (R-PRJ-44).
     pub unpaid_loans: Vec<String>,
+    /// Restant prévu des projets non terminés (R-BUD-71, R-PRJ-48).
+    pub projects: Vec<ProjectRemaining>,
 }
 
 impl CapacityBase {
@@ -139,6 +147,7 @@ impl CapacityBase {
                     is_interest: r.is_interest,
                     is_installment: r.is_installment,
                     is_salary,
+                    in_project: r.in_project,
                 }
             })
             .collect();
@@ -188,11 +197,23 @@ impl CapacityBase {
             families: accounts.iter().map(|a| (a.id, a.kind.family())).collect(),
             names: accounts.iter().map(|a| (a.id, a.name.clone())).collect(),
             unpaid_loans,
+            projects: budgets::remaining(db, today).await?,
         })
     }
 
     pub fn name(&self, id: AccountId) -> Option<String> {
         self.names.get(&id).cloned()
+    }
+
+    /// Dépenses de projets projetées par mois : projets en cours, et en projet selon `planned_projects` (R-PRJ-48).
+    pub fn projects_by_month(&self, planned_projects: bool) -> BTreeMap<Month, Money> {
+        let mut result: BTreeMap<Month, Money> = BTreeMap::new();
+        for project in self.projects.iter().filter(|p| budgeting::counted(p.status, planned_projects)) {
+            for (_, month, amount) in &project.parts {
+                *result.entry(*month).or_insert(Money::ZERO) += *amount;
+            }
+        }
+        result
     }
 }
 
@@ -245,6 +266,7 @@ pub(super) async fn plan(
     }
     let base = &ctx.capacity;
     let salaries = base.salaries.projected(Rate::from_ppm(assumptions.salary_growth_ppm), today, months);
+    let projects = base.projects_by_month(assumptions.planned_projects);
     let list = projection::capacity(
         today,
         months,
@@ -253,6 +275,7 @@ pub(super) async fn plan(
             baseline: base.baseline,
             expense_growth: Rate::from_ppm(assumptions.expense_growth_ppm),
             installments: &base.installments,
+            projects: &projects,
         },
     );
     let ends: Vec<Date> = list.iter().map(|m| m.end).collect();
@@ -322,6 +345,8 @@ pub struct CapacityPoint {
     pub other_income_minor: i64,
     pub expenses_minor: i64,
     pub loans_minor: i64,
+    /// Dépenses de projets du mois (R-PRJ-48).
+    pub projects_minor: i64,
     pub total_minor: i64,
     /// Reste viré vers le compte d'affectation.
     pub moved_minor: i64,
@@ -330,6 +355,8 @@ pub struct CapacityPoint {
 /// Capacité d'épargne d'un scénario.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CapacitySeries {
+    /// Les projets en projet sont comptés (R-PRJ-48).
+    pub planned_projects: bool,
     pub salary_growth_ppm: i64,
     pub expense_growth_ppm: i64,
     pub surplus_account_name: Option<String>,
@@ -386,6 +413,7 @@ pub(super) fn base_view(base: &CapacityBase, today: Date) -> CapacityBaseView {
 
 pub(super) fn series(plan: &CapacityPlan, base: &CapacityBase, shortfall_date: Option<Date>) -> CapacitySeries {
     CapacitySeries {
+        planned_projects: plan.assumptions.planned_projects,
         salary_growth_ppm: plan.assumptions.salary_growth_ppm,
         expense_growth_ppm: plan.assumptions.expense_growth_ppm,
         surplus_account_name: plan.surplus.and_then(|id| base.name(id)),
@@ -399,6 +427,7 @@ pub(super) fn series(plan: &CapacityPlan, base: &CapacityBase, shortfall_date: O
                 other_income_minor: m.other_income.minor(),
                 expenses_minor: m.expenses.minor(),
                 loans_minor: m.loans.minor(),
+                projects_minor: m.projects.minor(),
                 total_minor: m.total.minor(),
                 moved_minor: moved.minor(),
             })

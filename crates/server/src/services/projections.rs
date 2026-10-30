@@ -7,6 +7,7 @@ mod capacity;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountFamily;
+use cashflow_domain::budgeting;
 use cashflow_domain::ledger::TransactionOrigin;
 use cashflow_domain::projection::{self, Assumption, CashEvent, FixedInput};
 use cashflow_domain::recurrence::{self, Occurrence};
@@ -213,6 +214,8 @@ pub struct CashQuery {
     pub variable: Option<bool>,
     /// Seuil d'avertissement, en centimes (0 par défaut, R-PRJ-12).
     pub threshold_minor: Option<i64>,
+    /// Compter les projets en projet (oui par défaut, R-PRJ-48).
+    pub planned_projects: Option<bool>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
@@ -222,6 +225,8 @@ pub enum CashEventKind {
     Pending,
     /// Échéance d'une récurrence, non encore honorée.
     Scheduled,
+    /// Dépense prévue d'un projet, sur le compte de versement (R-PRJ-48).
+    Project,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -344,9 +349,30 @@ pub async fn cash(db: &Db, account: AccountId, query: &CashQuery, today: Date) -
             kind: CashEventKind::Scheduled,
         },
     ));
+    // Dépenses prévues des projets, sur le compte de versement (R-PRJ-48).
+    let base = CapacityBase::load(db, today).await?;
+    if base.payroll == Some(account) {
+        let tomorrow = today.checked_add_days(Days::new(1)).unwrap_or(today);
+        let planned = query.planned_projects.unwrap_or(true);
+        for project in base.projects.iter().filter(|p| budgeting::counted(p.status, planned)) {
+            for (line, month, amount) in &project.parts {
+                let date = budgeting::remaining_date(*month, project.start, tomorrow);
+                if date <= horizon {
+                    events.push(CashEventView {
+                        date,
+                        label: line
+                            .as_ref()
+                            .map_or_else(|| project.name.clone(), |l| format!("{} · {l}", project.name)),
+                        amount_minor: -amount.minor(),
+                        kind: CashEventKind::Project,
+                    });
+                }
+            }
+        }
+    }
     events.sort_by_key(|e| e.date);
 
-    // Dépense variable : dépenses non récurrentes des 3 derniers mois complets (R-PRJ-11).
+    // Dépense variable : dépenses non récurrentes des 3 derniers mois complets, hors projets (R-PRJ-11).
     let variable = if query.variable.unwrap_or(true) {
         let last = reporting::first_of_month(today).pred_opt().unwrap_or(today);
         let months = reporting::months_until(last, VARIABLE_MONTHS);

@@ -149,7 +149,7 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 
 - [x] BUD-14 — mois prévu des postes, calendrier prévu, mise de côté, projets dans le budget du mois et
       interrupteur « Projets en projet » (spec 05, R-BUD-70 à R-BUD-74)
-- [ ] PRJ-11 — projets dans la trésorerie et la capacité d'épargne (spec 07, R-PRJ-48)
+- [x] PRJ-11 — projets dans la trésorerie et la capacité d'épargne (spec 07, R-PRJ-48)
 - [ ] TDB-09 — mois à venir et estimation de fin d'année dans l'évolution (spec 08, R-TDB-14)
 
 ## Mise en service (prochaine étape)

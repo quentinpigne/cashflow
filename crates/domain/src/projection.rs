@@ -5,6 +5,9 @@ use chrono::{Datelike, Days, Months, NaiveDate};
 use rust_decimal::prelude::{MathematicalOps, ToPrimitive};
 use rust_decimal::{Decimal, RoundingStrategy};
 
+use std::collections::BTreeMap;
+
+use crate::budgeting::Month;
 use crate::ledger::category::CategoryKind;
 use crate::recurrence::end_of_month;
 use crate::savings::{self, FortnightlyTerms, Movement, RatePoint};
@@ -218,6 +221,8 @@ pub struct CapacityFact {
     pub is_installment: bool,
     /// Catégorie (ou parent) reliée à un emploi.
     pub is_salary: bool,
+    /// Rattachée à un projet : les projets sont projetés à part (R-PRJ-44, R-PRJ-48).
+    pub in_project: bool,
 }
 
 /// Moyennes mensuelles de départ (R-PRJ-43, R-PRJ-44), positives.
@@ -228,7 +233,7 @@ pub struct Baseline {
 }
 
 /// Moyennes sur `months` mois complets : autres revenus des comptes de liquidités hors salaires et intérêts,
-/// dépenses hors intérêts et assurance des mensualités ventilées.
+/// dépenses hors intérêts et assurance des mensualités ventilées, et hors projets (R-PRJ-44).
 pub fn baseline(facts: &[CapacityFact], months: u32) -> Baseline {
     let counted = facts.iter().filter(|f| f.is_eur && !f.is_movement);
     let income: Money = counted
@@ -237,7 +242,7 @@ pub fn baseline(facts: &[CapacityFact], months: u32) -> Baseline {
         .map(|f| f.amount)
         .sum();
     let expenses: Money = counted
-        .filter(|f| f.category_kind == Some(CategoryKind::Expense) && !f.is_installment)
+        .filter(|f| f.category_kind == Some(CategoryKind::Expense) && !f.is_installment && !f.in_project)
         .map(|f| -f.amount)
         .sum();
     let per_month = |total: Money| {
@@ -254,6 +259,8 @@ pub struct CapacityInput<'a> {
     pub expense_growth: Rate,
     /// Échéances futures des prêts avec tableau : date et montant prélevé, positif.
     pub installments: &'a [(Date, Money)],
+    /// Dépenses de projets projetées, par mois, positives (R-PRJ-48).
+    pub projects: &'a BTreeMap<Month, Money>,
 }
 
 /// Capacité d'épargne d'un mois et ses composantes (R-PRJ-42, R-PRJ-46).
@@ -264,11 +271,14 @@ pub struct CapacityMonth {
     pub other_income: Money,
     pub expenses: Money,
     pub loans: Money,
+    /// Dépenses de projets du mois (R-PRJ-48).
+    pub projects: Money,
     pub total: Money,
 }
 
 /// Capacité d'épargne de chaque mois qui suit le mois en cours : revenus projetés − dépenses projetées −
-/// échéances de prêts (R-PRJ-42 à R-PRJ-44).
+/// dépenses de projets − échéances de prêts (R-PRJ-42 à R-PRJ-44, R-PRJ-48). Les projets ne suivent pas la hausse
+/// des dépenses : ce sont des montants prévus.
 pub fn capacity(today: Date, months: u32, input: &CapacityInput<'_>) -> Vec<CapacityMonth> {
     let factor = Decimal::ONE + input.expense_growth.to_fraction();
     month_ends(today, months)
@@ -285,13 +295,15 @@ pub fn capacity(today: Date, months: u32, input: &CapacityInput<'_>) -> Vec<Capa
                 .sum();
             let salaries = input.salaries.get(i).copied().unwrap_or(Money::ZERO);
             let other_income = input.baseline.other_income;
+            let projects = input.projects.get(&Month::of(end)).copied().unwrap_or(Money::ZERO);
             CapacityMonth {
                 end,
                 salaries,
                 other_income,
                 expenses,
                 loans,
-                total: salaries + other_income - expenses - loans,
+                projects,
+                total: salaries + other_income - expenses - loans - projects,
             }
         })
         .collect()
@@ -340,8 +352,14 @@ mod tests {
         let today = d("2026-10-22");
         let salaries = [eur(2_700), eur(5_300), eur(2_754)];
         let baseline = Baseline { other_income: eur(50), expenses: eur(1_900) };
-        let input =
-            CapacityInput { salaries: &salaries, baseline, expense_growth: Rate::from_ppm(20_000), installments: &[] };
+        let none = BTreeMap::new();
+        let input = CapacityInput {
+            salaries: &salaries,
+            baseline,
+            expense_growth: Rate::from_ppm(20_000),
+            installments: &[],
+            projects: &none,
+        };
         let months = capacity(today, 3, &input);
         assert_eq!(months.iter().map(|m| m.total).collect::<Vec<_>>(), [eur(850), eur(3_450), eur(866)]);
         assert_eq!(months[2].expenses, eur(1_938));
@@ -355,6 +373,30 @@ mod tests {
         assert_eq!(capacity(today, 1, &with_loan)[0].total, Money::from_minor(24_080));
     }
 
+    /// Critère d'acceptation de PRJ-11 / R-PRJ-48 : un projet retire ses dépenses prévues de la capacité du mois, sans
+    /// hausse des dépenses.
+    #[test]
+    fn prj_11_r_prj_48_projects_in_capacity() {
+        let today = d("2026-10-20");
+        let salaries = [eur(2_700); 9];
+        let projects = BTreeMap::from([
+            ("2027-02".parse::<Month>().unwrap(), eur(500)),
+            ("2027-07".parse::<Month>().unwrap(), eur(500)),
+        ]);
+        let input = CapacityInput {
+            salaries: &salaries,
+            baseline: Baseline { other_income: eur(50), expenses: eur(1_800) },
+            expense_growth: Rate::ZERO,
+            installments: &[],
+            projects: &projects,
+        };
+        let months = capacity(today, 9, &input);
+        assert_eq!(months[0].total, eur(950));
+        assert_eq!(months[3].end, d("2027-02-28"));
+        assert_eq!((months[3].projects, months[3].total), (eur(500), eur(450)));
+        assert_eq!(months[8].total, eur(450));
+    }
+
     #[test]
     fn r_prj_43_r_prj_44_baseline_excludes_salaries_interest_movements_and_installments() {
         let fact = |amount: i64, kind| CapacityFact {
@@ -366,6 +408,7 @@ mod tests {
             is_interest: false,
             is_installment: false,
             is_salary: false,
+            in_project: false,
         };
         let facts = [
             fact(600, CategoryKind::Income),
@@ -376,6 +419,7 @@ mod tests {
             CapacityFact { is_installment: true, ..fact(-6_600, CategoryKind::Expense) },
             CapacityFact { is_movement: true, ..fact(-5_000, CategoryKind::Expense) },
             CapacityFact { is_eur: false, ..fact(-5_000, CategoryKind::Expense) },
+            CapacityFact { in_project: true, ..fact(-12_000, CategoryKind::Expense) },
         ];
         assert_eq!(baseline(&facts, 12), Baseline { other_income: eur(50), expenses: eur(2_000) });
         assert_eq!(baseline(&facts, 0), Baseline::default());

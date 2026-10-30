@@ -1,11 +1,13 @@
 //! Tests d'intégration des récurrences (TRX-07) et des projections (spec 07), sur une vraie base SQLite.
 
 use cashflow_domain::accounts::AccountKind;
+use cashflow_domain::budgeting::ProjectStatus;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::recurrence::Frequency;
 use cashflow_domain::shared::ids::AccountId;
 
-use super::projections::{self, CashQuery, HistoryQuery, NetWorthQuery, ProjectionQuery};
+use super::budgets::{self, AttachInput, ProjectInput, ProjectLineInput};
+use super::projections::{self, CashEventKind, CashQuery, HistoryQuery, NetWorthQuery, ProjectionQuery};
 use super::recurring::{self, MaterializeInput, OccurrenceStatus, RecurringRuleInput, ScheduleQuery};
 use super::tests::{TODAY, account, category, d, setup, tx};
 use super::transactions;
@@ -70,7 +72,7 @@ async fn prj_01_cash_projection_with_schedule_and_variable_spending() {
     transactions::create(&db, &tx(checking, "2026-04-10", -5_000, None)).await.unwrap();
 
     let start = 100_000 - 60_000;
-    let without = CashQuery { days: Some(30), variable: Some(false), threshold_minor: Some(0) };
+    let without = CashQuery { days: Some(30), variable: Some(false), threshold_minor: Some(0), planned_projects: None };
     let p = projections::cash(&db, checking, &without, d(TODAY)).await.unwrap();
     assert_eq!(p.start_minor, start);
     assert_eq!(p.events.len(), 2);
@@ -155,4 +157,68 @@ async fn prj_02_04_05_projections_and_history() {
     assert_eq!(last.date, d(TODAY));
     assert_eq!(last.total_minor, 1_600_000);
     assert_eq!(last.variable_savings_minor, 1_000_000);
+}
+
+/// Critère d'acceptation de PRJ-11 : les projets sortent du compte de versement aux mois prévus, et leurs dépenses
+/// passées ne gonflent pas la dépense variable moyenne (R-PRJ-11, R-PRJ-48).
+#[tokio::test]
+async fn prj_11_r_prj_48_projects_in_cash_projection() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 100_000).await;
+    let food = category(&db, "Courses B", CategoryKind::Expense, None).await;
+    let travel = category(&db, "Voyages B", CategoryKind::Expense, None).await;
+    let post = |name: &str, amount_minor: i64, planned_month: Option<&str>| ProjectLineInput {
+        id: None,
+        name: name.into(),
+        amount_minor,
+        category_ids: Vec::new(),
+        planned_month: planned_month.map(Into::into),
+    };
+    let project = |name: &str, status, lines| ProjectInput {
+        name: name.into(),
+        start_date: d("2026-07-01"),
+        end_date: Some(d("2026-07-31")),
+        amount_minor: None,
+        lines,
+        exclude_from_period_budgets: true,
+        status,
+        alert_thresholds: None,
+        note: None,
+        provision_from: None,
+    };
+    budgets::save_project(
+        &db,
+        None,
+        &project(
+            "Italie",
+            ProjectStatus::Planned,
+            vec![post("Train", 50_000, Some("2026-04")), post("Hôtel", 30_000, None)],
+        ),
+    )
+    .await
+    .unwrap();
+    let past =
+        budgets::save_project(&db, None, &project("Lyon", ProjectStatus::Active, vec![post("Tout", 9_000, None)]))
+            .await
+            .unwrap();
+    transactions::create(&db, &tx(checking, "2026-01-15", -30_000, Some(food))).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-02-15", -30_000, Some(food))).await.unwrap();
+    let trip = transactions::create(&db, &tx(checking, "2026-02-20", -9_000, Some(travel))).await.unwrap();
+    budgets::attach(&db, &AttachInput { transaction_ids: vec![trip], project_id: Some(past.id) }).await.unwrap();
+
+    let query = CashQuery { days: Some(30), variable: Some(true), threshold_minor: Some(0), planned_projects: None };
+    let p = projections::cash(&db, checking, &query, d(TODAY)).await.unwrap();
+    // Le voyage passé, rattaché à un projet, n'entre pas dans la moyenne (R-PRJ-11).
+    assert_eq!(p.variable_monthly_minor, Some(20_000));
+    let train: Vec<_> = p.events.iter().filter(|e| e.kind == CashEventKind::Project).collect();
+    assert_eq!(train.len(), 1);
+    assert_eq!(
+        (train[0].date, train[0].label.as_str(), train[0].amount_minor),
+        (d("2026-04-01"), "Italie · Train", -50_000)
+    );
+
+    // Sans les projets en projet, l'Italie disparaît (R-BUD-72).
+    let without = CashQuery { planned_projects: Some(false), ..query };
+    let p = projections::cash(&db, checking, &without, d(TODAY)).await.unwrap();
+    assert!(p.events.iter().all(|e| e.kind != CashEventKind::Project));
 }

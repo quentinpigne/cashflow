@@ -673,6 +673,15 @@
               "type": "integer",
               "format": "int64"
             }
+          },
+          {
+            "name": "planned_projects",
+            "in": "query",
+            "description": "Compter les projets en projet (oui par défaut, R-PRJ-48).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -11281,6 +11290,10 @@
             "format": "int64",
             "description": "Taux de hausse des dépenses, appliqué chaque 1er janvier (R-PRJ-44)."
           },
+          "planned_projects": {
+            "type": "boolean",
+            "description": "Compter les projets en projet, en plus des projets en cours (R-PRJ-48) ; oui par défaut."
+          },
           "salary_growth_ppm": {
             "type": "integer",
             "format": "int64",
@@ -11371,6 +11384,7 @@
           "other_income_minor",
           "expenses_minor",
           "loans_minor",
+          "projects_minor",
           "total_minor",
           "moved_minor"
         ],
@@ -11395,6 +11409,11 @@
           "other_income_minor": {
             "type": "integer",
             "format": "int64"
+          },
+          "projects_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Dépenses de projets du mois (R-PRJ-48)."
           },
           "salaries_minor": {
             "type": "integer",
@@ -11426,6 +11445,7 @@
         "type": "object",
         "description": "Capacité d'épargne d'un scénario.",
         "required": [
+          "planned_projects",
           "salary_growth_ppm",
           "expense_growth_ppm",
           "points"
@@ -11434,6 +11454,10 @@
           "expense_growth_ppm": {
             "type": "integer",
             "format": "int64"
+          },
+          "planned_projects": {
+            "type": "boolean",
+            "description": "Les projets en projet sont comptés (R-PRJ-48)."
           },
           "points": {
             "type": "array",
@@ -11589,7 +11613,8 @@
         "type": "string",
         "enum": [
           "PENDING",
-          "SCHEDULED"
+          "SCHEDULED",
+          "PROJECT"
         ]
       },
       "CashEventView": {

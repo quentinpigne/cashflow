@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.account_id, s.amount, s.category_id, c.parent_id, c.kind AS \"category_kind?\", a.kind AS account_kind, a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\",\n                  t.origin = 'INTEREST' AS \"is_interest!: bool\",\n                  EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id) AS \"is_installment!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
+  "query": "SELECT t.account_id, s.amount, s.category_id, c.parent_id, c.kind AS \"category_kind?\", a.kind AS account_kind, a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\",\n                  t.origin = 'INTEREST' AS \"is_interest!: bool\",\n                  EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id) AS \"is_installment!: bool\",\n                  s.project_id IS NOT NULL AS \"in_project!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -97,6 +97,12 @@
         "ordinal": 9,
         "type_info": "Integer",
         "origin": "Expression"
+      },
+      {
+        "name": "in_project!: bool",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -112,8 +118,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "675216e19e2c2ac4fe5d2c7c7c214048a5440836ddb1af4bcad8ce5f6f325538"
+  "hash": "8def2606bfc8b07fefc23341929c1ff781c76f6cf0515ff2bd94cf56e40aa3ca"
 }

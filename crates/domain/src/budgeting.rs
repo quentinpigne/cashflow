@@ -693,10 +693,54 @@ pub fn planned_schedule<L, C>(timing: &ProjectTiming, lines: &[ProjectLine<L, C>
     schedule
 }
 
-/// Restant prévu d'un projet à partir du mois en cours `current` (R-BUD-71) : par poste, ce qui reste à dépenser,
-/// dans son mois prévu ou étalé sur ce qui reste de la période, jamais avant `current`. `actual` est le réel du
-/// projet, `line_actuals` celui de chaque poste ; le réel hors postes ne réduit aucun restant.
-pub fn remaining_schedule<L: Eq + Hash, C>(
+/// Une part du restant prévu d'un projet (R-BUD-71) : celle d'un poste daté (`line`), ou de ce qui est étalé.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RemainingPart<L> {
+    pub line: Option<L>,
+    pub month: Month,
+    pub amount: Money,
+}
+
+/// Restant prévu d'un projet à partir du mois en cours `current`, en parts (R-BUD-71) : par poste, ce qui reste à
+/// dépenser, dans son mois prévu ou étalé sur ce qui reste de la période, jamais avant `current`. `actual` est le
+/// réel du projet, `line_actuals` celui de chaque poste ; le réel hors postes ne réduit aucun restant.
+pub fn remaining_parts<L: Copy + Eq + Hash, C>(
+    timing: &ProjectTiming,
+    lines: &[ProjectLine<L, C>],
+    actual: Money,
+    line_actuals: &HashMap<L, Money>,
+    current: Month,
+) -> Vec<RemainingPart<L>> {
+    if timing.status == ProjectStatus::Closed {
+        return Vec::new();
+    }
+    let left = |planned: Money, spent: Money| if planned > spent { planned - spent } else { Money::ZERO };
+    let ahead: Vec<Month> = timing.months().into_iter().filter(|m| *m >= current).collect();
+    let ahead = if ahead.is_empty() { vec![current] } else { ahead };
+    let mut parts = Vec::new();
+    let mut spread_total =
+        if lines.is_empty() { left(timing.amount.unwrap_or(Money::ZERO), actual) } else { Money::ZERO };
+    for line in lines {
+        let rest = left(line.amount, line_actuals.get(&line.id).copied().unwrap_or(Money::ZERO));
+        match line.planned_month {
+            Some(month) if !rest.is_zero() => {
+                parts.push(RemainingPart { line: Some(line.id), month: month.max(current), amount: rest });
+            }
+            Some(_) => {}
+            None => spread_total += rest,
+        }
+    }
+    parts.extend(spread(spread_total, &ahead).into_iter().map(|(month, amount)| RemainingPart {
+        line: None,
+        month,
+        amount,
+    }));
+    parts.sort_by_key(|p| p.month);
+    parts
+}
+
+/// Restant prévu d'un projet, mois par mois (R-BUD-71) : la somme de ses parts.
+pub fn remaining_schedule<L: Copy + Eq + Hash, C>(
     timing: &ProjectTiming,
     lines: &[ProjectLine<L, C>],
     actual: Money,
@@ -704,26 +748,17 @@ pub fn remaining_schedule<L: Eq + Hash, C>(
     current: Month,
 ) -> BTreeMap<Month, Money> {
     let mut schedule = BTreeMap::new();
-    if timing.status == ProjectStatus::Closed {
-        return schedule;
+    for part in remaining_parts(timing, lines, actual, line_actuals, current) {
+        add_all(&mut schedule, BTreeMap::from([(part.month, part.amount)]));
     }
-    let left = |planned: Money, spent: Money| if planned > spent { planned - spent } else { Money::ZERO };
-    let ahead: Vec<Month> = timing.months().into_iter().filter(|m| *m >= current).collect();
-    let ahead = if ahead.is_empty() { vec![current] } else { ahead };
-    if lines.is_empty() {
-        add_all(&mut schedule, spread(left(timing.amount.unwrap_or(Money::ZERO), actual), &ahead));
-        return schedule;
-    }
-    let mut spread_total = Money::ZERO;
-    for line in lines {
-        let rest = left(line.amount, line_actuals.get(&line.id).copied().unwrap_or(Money::ZERO));
-        match line.planned_month {
-            Some(month) => add_all(&mut schedule, BTreeMap::from([(month.max(current), rest)])),
-            None => spread_total += rest,
-        }
-    }
-    add_all(&mut schedule, spread(spread_total, &ahead));
     schedule
+}
+
+/// Date d'une part du restant dans la trésorerie (R-PRJ-48) : le 1er du mois, ou la date de début du projet si elle
+/// tombe plus tard dans ce mois ; jamais avant `tomorrow`, le restant du mois en cours étant encore à dépenser.
+pub fn remaining_date(month: Month, start: Date, tomorrow: Date) -> Date {
+    let date = if month.contains(start) { start } else { month.first_day() };
+    date.max(tomorrow)
 }
 
 /// Mise de côté d'un projet (R-BUD-73) : son prévu en quotes-parts exactes, de `provision_from` au mois qui précède
@@ -1308,5 +1343,24 @@ mod tests {
         // Un projet non exclu des lignes du mois n'a pas de prévu propre.
         let kept = ProjectTiming { exclude_from_period_budgets: false, ..july };
         assert!(budget_forecast(&kept, &italy_dated(), true).is_empty());
+    }
+
+    /// R-BUD-71, R-PRJ-48 : le restant d'un poste daté reste distinct dans la trésorerie, daté du 1er du mois, de la
+    /// date de début du projet si elle tombe dans ce mois, et jamais avant demain.
+    #[test]
+    fn r_prj_48_remaining_parts_and_dates() {
+        let july = timing(ProjectStatus::Planned, Some("2027-07-31"), None);
+        let parts = remaining_parts(&july, &italy_dated(), Money::ZERO, &HashMap::new(), m("2026-10"));
+        assert_eq!(
+            parts,
+            vec![
+                RemainingPart { line: Some(1), month: m("2027-02"), amount: eur(50_000) },
+                RemainingPart { line: None, month: m("2027-07"), amount: eur(50_000) },
+            ]
+        );
+        let tomorrow = d("2026-10-21");
+        assert_eq!(remaining_date(m("2027-02"), d("2027-07-01"), tomorrow), d("2027-02-01"));
+        assert_eq!(remaining_date(m("2027-07"), d("2027-07-14"), tomorrow), d("2027-07-14"));
+        assert_eq!(remaining_date(m("2026-10"), d("2026-07-01"), tomorrow), tomorrow);
     }
 }

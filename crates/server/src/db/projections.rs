@@ -100,7 +100,8 @@ pub async fn future(db: impl SqliteExecutor<'_>, account: AccountId, after: Date
         .collect()
 }
 
-/// Ventilations de dépense d'un compte (hors virements et catégories hors analyses), par transaction (R-PRJ-11).
+/// Ventilations de dépense d'un compte (hors virements, catégories hors analyses et projets), par transaction
+/// (R-PRJ-11).
 pub async fn expenses(
     db: impl SqliteExecutor<'_>,
     account: AccountId,
@@ -115,7 +116,8 @@ pub async fn expenses(
            JOIN category c ON c.id = s.category_id
            WHERE t.account_id = ? AND t.balance_date BETWEEN ? AND ? AND c.kind = 'EXPENSE'
              AND NOT EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
-             AND NOT EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id)"#,
+             AND NOT EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id)
+             AND s.project_id IS NULL"#,
         account,
         from,
         to
@@ -141,6 +143,7 @@ pub struct CapacityFactRow {
     pub is_movement: bool,
     pub is_interest: bool,
     pub is_installment: bool,
+    pub in_project: bool,
 }
 
 pub async fn capacity_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<CapacityFactRow>> {
@@ -151,7 +154,8 @@ pub async fn capacity_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -
                    OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
                       AS "is_movement!: bool",
                   t.origin = 'INTEREST' AS "is_interest!: bool",
-                  EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id) AS "is_installment!: bool"
+                  EXISTS (SELECT 1 FROM loan_payment lp WHERE lp.transaction_id = t.id) AS "is_installment!: bool",
+                  s.project_id IS NOT NULL AS "in_project!: bool"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
@@ -175,6 +179,7 @@ pub async fn capacity_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -
                 is_movement: r.is_movement,
                 is_interest: r.is_interest,
                 is_installment: r.is_installment,
+                in_project: r.in_project,
             })
         })
         .collect()

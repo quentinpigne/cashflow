@@ -117,7 +117,8 @@ Répondre à trois questions :
   projets en projet ; qu'ils soient exclus des budgets du mois ou non (R-BUD-21). Ce sont des montants
   prévus : la hausse des dépenses ne s'y applique pas. Une mise de côté (R-BUD-73) n'y change rien :
   l'argent sort du compte au mois de la dépense. Dans la trésorerie (R-PRJ-10), la dépense d'un mois est
-  datée du 1er, ou de la date de début du projet si elle tombe plus tard dans ce mois ; une case « Projets
+  datée du 1er, ou de la date de début du projet si elle tombe plus tard dans ce mois, et au plus tôt de
+  demain (le restant du mois en cours est encore à dépenser) ; une case « Projets
   en projet », cochée par défaut, y joue le rôle de l'interrupteur.
 
 ## Features
