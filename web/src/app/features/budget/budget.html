@@ -147,11 +147,49 @@
         </section>
       }
 
+      <section class="card section projects">
+        <h2>
+          Projets
+          <mat-icon class="info" [matTooltip]="definitions.projects">info</mat-icon>
+          <span class="spacer"></span>
+          <mat-slide-toggle
+            [checked]="plannedProjects.value()"
+            (change)="plannedProjects.set($event.checked)"
+            >Projets en projet</mat-slide-toggle
+          >
+        </h2>
+        @if (b.projects.length > 0) {
+          <div class="head muted small" aria-hidden="true">
+            <span></span>
+            <span class="right">Prévu</span>
+            <span class="right">Réel</span>
+            <span></span>
+          </div>
+          @for (p of b.projects; track p.project_id) {
+            <a class="line" [routerLink]="['/budget/projets', p.project_id]">
+              <span class="name">
+                {{ p.name }}
+                @if (p.status === 'PLANNED') {
+                  <span class="tag">en projet</span>
+                }
+                @if (p.provision) {
+                  <span class="muted small">mise de côté</span>
+                }
+              </span>
+              <span class="amount planned">{{ p.planned_minor | money }}</span>
+              <span class="amount actual">{{ p.actual_minor | money }}</span>
+              <span></span>
+            </a>
+          }
+        } @else {
+          <p class="muted small">Aucun projet prévu ou dépensé ce mois-ci.</p>
+        }
+      </section>
+
       @if (
         b.off_budget.length > 0 ||
         b.uncategorized_out_minor > 0 ||
         b.uncategorized_in_minor > 0 ||
-        b.excluded_projects_minor !== 0 ||
         b.off_budget_income_minor !== 0
       ) {
         <section class="card section others">
@@ -185,12 +223,6 @@
                 }
               </span>
             </button>
-          }
-          @if (b.excluded_projects_minor !== 0) {
-            <a class="other" routerLink="/budget/projets">
-              <span>Projets</span>
-              <span class="amount">{{ b.excluded_projects_minor | money }}</span>
-            </a>
           }
         </section>
       }

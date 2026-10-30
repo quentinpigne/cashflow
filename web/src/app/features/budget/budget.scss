@@ -194,3 +194,26 @@ a.other {
     }
   }
 }
+
+.projects {
+  h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+
+    .spacer {
+      flex: 1;
+    }
+
+    mat-slide-toggle {
+      font: var(--mat-sys-body-medium);
+    }
+  }
+
+  a.line {
+    display: grid;
+    box-sizing: border-box;
+    text-decoration: none;
+  }
+}

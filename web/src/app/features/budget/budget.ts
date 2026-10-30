@@ -5,12 +5,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 
 import { BudgetLineMonth } from '../../api/models/budget-line-month';
 import { BudgetsService } from '../../api/services/budgets.service';
 import { DataVersion } from '../../core/data-version';
+import { PlannedProjects } from '../../core/planned-projects';
 import { currentMonth, formatMonthKey, shiftMonth } from '../../core/dates';
 import { MoneyPipe } from '../../shared/money.pipe';
 import {
@@ -36,6 +38,7 @@ interface Section {
     MatIconModule,
     MatMenuModule,
     MatProgressBarModule,
+    MatSlideToggleModule,
     MatTooltipModule,
     MoneyPipe,
     BudgetGauge,
@@ -49,6 +52,7 @@ export class BudgetPage {
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  protected readonly plannedProjects = inject(PlannedProjects);
 
   /** Mois demandé dans l'adresse (`?mois=AAAA-MM`). */
   readonly mois = input<string | undefined>();
@@ -58,8 +62,13 @@ export class BudgetPage {
   protected readonly monthLabel = computed(() => formatMonthKey(this.month()));
 
   protected readonly budget = rxResource({
-    params: () => ({ month: this.month(), version: this.version.value() }),
-    stream: ({ params }) => this.api.monthBudget({ month: params.month }),
+    params: () => ({
+      month: this.month(),
+      planned: this.plannedProjects.value(),
+      version: this.version.value(),
+    }),
+    stream: ({ params }) =>
+      this.api.monthBudget({ month: params.month, planned_projects: params.planned }),
   });
 
   protected readonly sections = computed<Section[]>(() => {
@@ -82,7 +91,9 @@ export class BudgetPage {
 
   protected readonly definitions = {
     toBudget:
-      'Revenus prévus − dépenses mensuelles prévues − quotes-parts annuelles − objectifs d’épargne (R-BUD-40).',
+      'Revenus prévus − dépenses mensuelles prévues − quotes-parts annuelles − objectifs d’épargne − projets du mois (R-BUD-40).',
+    projects:
+      'Projets dont les dépenses sont retirées des lignes du mois : leur mise de côté, ou leur part du calendrier prévu, et leur réel du mois (R-BUD-74).',
     balance:
       'Revenus réels − dépenses réelles (lignes, hors budget, non catégorisées, projets) − épargne versée (R-BUD-41).',
   };

@@ -159,6 +159,38 @@ test('E5 : projet et poste à la saisie rapide, projet en projet écarté (R-BUD
   await expect(page.getByText(/94,00\s€\s\/\s150,00/)).toBeVisible();
 });
 
+test('E18, E20 : un projet envisagé dans le budget du mois, mise de côté et calendrier (BUD-14)', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto('/budget?mois=2026-10');
+  const projects = page.locator('section.projects');
+  const italy = projects.getByRole('link', { name: /Italie 2027/ });
+  // La démo met l'Italie de côté dès ce mois-ci, avant le train de février (R-BUD-73, R-BUD-74).
+  await expect(italy).toContainText('mise de côté');
+  await expect(italy).toContainText('250,00');
+  // Interrupteur « Projets en projet » : le projet envisagé sort du budget (R-BUD-72).
+  await projects.getByRole('switch', { name: 'Projets en projet' }).click();
+  await expect(italy).toHaveCount(0);
+  await projects.getByRole('switch', { name: 'Projets en projet' }).click();
+  await expect(italy).toBeVisible();
+
+  // Le calendrier du projet : le train en février, le reste sur la période du voyage (R-BUD-70).
+  await italy.click();
+  const schedule = page.getByRole('region', { name: 'Calendrier' });
+  await expect(schedule.locator('.row', { hasText: 'Février 2027' })).toContainText('500,00');
+  await expect(schedule).toContainText(
+    /Mise de côté : 250,00\s€ par mois de octobre 2026 à janvier 2027/,
+  );
+
+  // Le dialogue garde la mise de côté et la résume.
+  await page.getByRole('button', { name: /Modifier/ }).click();
+  const dialog = await openedDialog(page);
+  await expect(dialog.getByRole('checkbox', { name: 'Mettre de côté chaque mois' })).toBeChecked();
+  await expect(dialog.getByRole('status')).toContainText('par mois de octobre 2026 à janvier 2027');
+  await dialog.getByRole('button', { name: 'Annuler' }).click();
+});
+
 test('E21 : centre de notifications (BUD-08)', async ({ page }) => {
   await login(page);
   const bell = page.getByRole('button', { name: /^Notifications/ });

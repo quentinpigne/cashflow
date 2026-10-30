@@ -15,15 +15,24 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { ProjectView } from '../../api/models/project-view';
 import { BudgetsService } from '../../api/services/budgets.service';
 import { DataVersion } from '../../core/data-version';
-import { fromIsoDate, toIsoDate, todayIso } from '../../core/dates';
+import {
+  currentMonth,
+  formatMonthKey,
+  fromIsoDate,
+  monthsBetween,
+  shiftMonth,
+  toIsoDate,
+  todayIso,
+} from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
-import { parseMoney, sum, toEditable } from '../../core/money';
+import { formatMoney, monthlyShare, parseMoney, sum, toEditable } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { openAndRefresh } from './budget-dialogs';
@@ -43,6 +52,8 @@ interface LineDraft {
   name: string;
   amount: string;
   categories: string[];
+  /** Mois prévu `AAAA-MM`, ou `null` : étalé sur la période du projet (R-BUD-70). */
+  plannedMonth: string | null;
 }
 
 /** Création ou modification d'un projet (BUD-06, R-BUD-20, R-BUD-21), et de ses postes (BUD-11, R-BUD-26). */
@@ -60,6 +71,7 @@ interface LineDraft {
     MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -160,6 +172,18 @@ interface LineDraft {
                 />
                 <span matTextSuffix>€</span>
               </mat-form-field>
+              <mat-form-field class="line-month" subscriptSizing="dynamic">
+                <mat-label>Mois prévu</mat-label>
+                <mat-select
+                  [ngModel]="line.plannedMonth"
+                  (ngModelChange)="patch(i, { plannedMonth: $event })"
+                >
+                  <mat-option [value]="null">Sur la période</mat-option>
+                  @for (m of monthChoices(line.plannedMonth); track m) {
+                    <mat-option [value]="m">{{ monthLabel(m) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
               <button
                 mat-icon-button
                 type="button"
@@ -192,6 +216,24 @@ interface LineDraft {
       <p class="muted small">
         Elles restent comptées dans les analyses par catégorie et dans le solde du mois.
       </p>
+      @if (exclude()) {
+        <mat-checkbox [ngModel]="provision()" (ngModelChange)="provision.set($event)">
+          Mettre de côté chaque mois
+        </mat-checkbox>
+        @if (provision()) {
+          @if (provisionChoices().length > 0) {
+            <mat-form-field>
+              <mat-label>À partir de</mat-label>
+              <mat-select [ngModel]="provisionFrom()" (ngModelChange)="provisionFrom.set($event)">
+                @for (m of provisionChoices(); track m) {
+                  <mat-option [value]="m">{{ monthLabel(m) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <p class="muted small" role="status">{{ provisionSummary() }}</p>
+        }
+      }
       <mat-form-field>
         <mat-label>Note</mat-label>
         <textarea
@@ -245,16 +287,21 @@ interface LineDraft {
     }
     .line-fields {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 0.5rem;
     }
     .line-name {
-      flex: 2;
+      flex: 2 1 10rem;
       min-width: 0;
     }
     .line-amount {
-      flex: 1;
+      flex: 1 1 6rem;
       min-width: 6rem;
+    }
+    .line-month {
+      flex: 1.5 1 9rem;
+      min-width: 9rem;
     }
     .add {
       align-self: flex-start;
@@ -290,6 +337,7 @@ export class ProjectDialog {
       name: l.name,
       amount: toEditable(l.amount_minor),
       categories: l.category_ids,
+      plannedMonth: l.planned_month ?? null,
     })),
   );
   /** Prévu du projet détaillé : somme des postes, `null` tant qu'un montant est illisible (R-BUD-26). */
@@ -304,6 +352,53 @@ export class ProjectDialog {
   protected readonly note = signal(this.project?.note ?? '');
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
+  protected readonly provision = signal(!!this.project?.provision_from);
+  protected readonly provisionFrom = signal(this.project?.provision_from ?? currentMonth());
+  protected readonly monthLabel = formatMonthKey;
+
+  private readonly startMonth = computed(() => {
+    const start = this.start();
+    return start ? toIsoDate(start).slice(0, 7) : currentMonth();
+  });
+
+  /** Mois prévus proposés : un an avant le début, jusqu'à la fin du projet (R-BUD-70). */
+  protected monthChoices(chosen: string | null): string[] {
+    const end = this.end();
+    const last = end ? toIsoDate(end).slice(0, 7) : this.startMonth();
+    const months = monthsBetween(shiftMonth(this.startMonth(), -12), last);
+    return chosen && !months.includes(chosen) ? [chosen, ...months].sort() : months;
+  }
+
+  /** Premier mois du calendrier prévu : le début, ou un mois prévu plus tôt (R-BUD-70). */
+  private readonly firstMonth = computed(() =>
+    this.lines()
+      .map((l) => l.plannedMonth)
+      .reduce<string>((first, m) => (m && m < first ? m : first), this.startMonth()),
+  );
+
+  /** Débuts possibles de la mise de côté : jusqu'au mois qui précède la dépense (R-BUD-73). */
+  protected readonly provisionChoices = computed(() => {
+    const from = this.project?.provision_from;
+    const first = from && from < currentMonth() ? from : currentMonth();
+    return monthsBetween(first, shiftMonth(this.firstMonth(), -1));
+  });
+
+  private readonly provisionMonths = computed(() =>
+    monthsBetween(this.provisionFrom(), shiftMonth(this.firstMonth(), -1)),
+  );
+
+  protected readonly provisionSummary = computed(() => {
+    const months = this.provisionMonths();
+    if (months.length === 0) {
+      return 'Aucun mois ne précède la dépense : la mise de côté est impossible.';
+    }
+    const total = this.lines().length === 0 ? parseMoney(this.amount()) : this.linesTotal();
+    const share = total === null ? null : monthlyShare(total, months.length);
+    const amount = share === null ? '—' : formatMoney(share);
+    return months.length === 1
+      ? `${amount} en ${formatMonthKey(months[0]).toLowerCase()}, avant la dépense.`
+      : `${amount} par mois de ${formatMonthKey(months[0]).toLowerCase()} à ${formatMonthKey(months[months.length - 1]).toLowerCase()}, avant la dépense.`;
+  });
 
   protected readonly valid = computed(() => {
     if (!this.name().trim() || !this.start()) return false;
@@ -312,6 +407,7 @@ export class ProjectDialog {
       const amount = parseMoney(this.amount());
       return amount !== null && amount > 0;
     }
+    if (this.exclude() && this.provision() && this.provisionMonths().length === 0) return false;
     return lines.every((l) => {
       const amount = parseMoney(l.amount);
       return !!l.name.trim() && amount !== null && amount > 0;
@@ -329,6 +425,7 @@ export class ProjectDialog {
         name: '',
         amount: first ? this.amount() : '',
         categories: [],
+        plannedMonth: null,
       },
     ]);
   }
@@ -357,8 +454,10 @@ export class ProjectDialog {
         name: l.name,
         amount_minor: parseMoney(l.amount) ?? 0,
         category_ids: l.categories,
+        planned_month: l.plannedMonth,
       })),
       exclude_from_period_budgets: this.exclude(),
+      provision_from: this.exclude() && this.provision() ? this.provisionFrom() : null,
       status: this.status(),
       note: this.note() || null,
       alert_thresholds: this.project?.alert_thresholds ?? null,
@@ -556,7 +655,14 @@ export class ProjectsPage {
             @for (l of p.lines; track l.id) {
               <div class="post">
                 <div class="post-head">
-                  <span>{{ l.name }}</span>
+                  <span>
+                    {{ l.name }}
+                    @if (l.planned_month) {
+                      <span class="muted small"
+                        >· {{ monthLabel(l.planned_month).toLowerCase() }}</span
+                      >
+                    }
+                  </span>
                   <span class="amount"
                     >{{ l.actual_minor | money }} / {{ l.amount_minor | money }}</span
                   >
@@ -577,6 +683,37 @@ export class ProjectsPage {
                 <span>Hors postes</span>
                 <span class="amount">{{ p.unassigned_minor | money }}</span>
               </div>
+            }
+          </section>
+        }
+
+        @if (p.schedule.length > 0) {
+          <section class="card" aria-label="Calendrier">
+            <h2>Calendrier</h2>
+            <div class="row muted small" aria-hidden="true">
+              <span>Mois</span>
+              <span class="cols"><span>Prévu</span><span>Réel</span></span>
+            </div>
+            @for (m of p.schedule; track m.month) {
+              <div class="row">
+                <span>{{ monthLabel(m.month) }}</span>
+                <span class="cols">
+                  <span class="amount">{{ m.planned_minor | money }}</span>
+                  <span class="amount">{{ m.actual_minor | money }}</span>
+                </span>
+              </div>
+            }
+            @if (p.provision.length > 0) {
+              <p class="muted small">
+                Mise de côté : {{ p.provision[0].amount_minor | money }} par mois de
+                {{ monthLabel(p.provision[0].month).toLowerCase() }} à
+                {{ monthLabel(p.provision[p.provision.length - 1].month).toLowerCase() }}, réservée
+                dans le budget avant la dépense.
+              </p>
+            } @else if (p.provision_from) {
+              <p class="muted small">
+                La mise de côté n'est plus possible avec ces dates : le budget suit le calendrier.
+              </p>
             }
           </section>
         }
@@ -663,6 +800,12 @@ export class ProjectsPage {
       justify-content: space-between;
       gap: 1rem;
     }
+    .cols {
+      display: grid;
+      grid-template-columns: 7rem 7rem;
+      gap: 1rem;
+      text-align: right;
+    }
     .link:hover {
       background: var(--mat-sys-surface-container);
     }
@@ -695,6 +838,7 @@ export class ProjectPage {
   private readonly router = inject(Router);
   private readonly categories = inject(CategoriesStore);
   protected readonly statusLabels = PROJECT_STATUS_LABELS;
+  protected readonly monthLabel = formatMonthKey;
 
   readonly id = input.required<string>();
 

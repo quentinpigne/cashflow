@@ -5,8 +5,10 @@ import { AlertLevel } from '../models/alert-level';
 import { ProjectCategory } from '../models/project-category';
 import { ProjectId } from '../models/project-id';
 import { ProjectLineView } from '../models/project-line-view';
+import { ProjectScheduleMonth } from '../models/project-schedule-month';
 import { ProjectSplit } from '../models/project-split';
 import { ProjectStatus } from '../models/project-status';
+import { ProvisionMonth } from '../models/provision-month';
 export interface ProjectView {
 
   /**
@@ -31,6 +33,21 @@ export interface ProjectView {
   lines: Array<ProjectLineView>;
   name: string;
   note?: (string | null);
+
+  /**
+   * Quotes-parts de la mise de côté ; vide sans mise de côté, ou si elle n'est plus possible.
+   */
+  provision: Array<ProvisionMonth>;
+
+  /**
+   * Début de la mise de côté, `AAAA-MM` (R-BUD-73).
+   */
+  provision_from?: (string | null);
+
+  /**
+   * Calendrier : les mois du prévu et ceux qui ont du réel, dans l'ordre.
+   */
+  schedule: Array<ProjectScheduleMonth>;
   splits: Array<ProjectSplit>;
   start_date: string;
   status: ProjectStatus;

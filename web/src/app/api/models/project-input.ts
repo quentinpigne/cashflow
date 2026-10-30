@@ -19,6 +19,11 @@ export interface ProjectInput {
   lines?: Array<ProjectLineInput>;
   name: string;
   note?: (string | null);
+
+  /**
+   * Début de la mise de côté, `AAAA-MM` (R-BUD-73).
+   */
+  provision_from?: (string | null);
   start_date: string;
 
   /**

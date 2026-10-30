@@ -15,12 +15,18 @@ export interface MonthBudget$Params {
  * Mois, `AAAA-MM` ; le mois en cours par défaut.
  */
   month?: string;
+
+/**
+ * Compter les projets en projet (R-BUD-72) ; oui par défaut.
+ */
+  planned_projects?: boolean;
 }
 
 export function monthBudget(http: HttpClient, rootUrl: string, params?: MonthBudget$Params, context?: HttpContext): Observable<StrictHttpResponse<MonthBudgetView>> {
   const rb = new RequestBuilder(rootUrl, monthBudget.PATH, 'get');
   if (params) {
     rb.query('month', params.month, {});
+    rb.query('planned_projects', params.planned_projects, {});
   }
 
   return http.request(

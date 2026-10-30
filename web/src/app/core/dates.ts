@@ -65,3 +65,10 @@ export function shiftMonth(value: string, delta: number): string {
 export function formatMonthKey(value: string): string {
   return formatMonth(`${value}-01`);
 }
+
+/** Mois `AAAA-MM` de `from` à `to`, inclus ; vide si `to` précède `from`. */
+export function monthsBetween(from: string, to: string): string[] {
+  const months: string[] = [];
+  for (let month = from; month <= to; month = shiftMonth(month, 1)) months.push(month);
+  return months;
+}

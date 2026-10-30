@@ -23,4 +23,9 @@ export interface ProjectLineView {
   category_ids: Array<CategoryId>;
   id: ProjectLineId;
   name: string;
+
+  /**
+   * Mois prévu de la dépense, `AAAA-MM` (R-BUD-70).
+   */
+  planned_month?: (string | null);
 }

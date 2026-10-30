@@ -3,6 +3,7 @@
 
 import { BudgetLineMonth } from '../models/budget-line-month';
 import { OffBudgetLine } from '../models/off-budget-line';
+import { ProjectMonthView } from '../models/project-month-view';
 
 /**
  * Le budget d'un mois (BUD-03).
@@ -30,6 +31,16 @@ export interface MonthBudgetView {
   month: string;
   off_budget: Array<OffBudgetLine>;
   off_budget_income_minor: number;
+
+  /**
+   * Compte des projets en projet (R-BUD-72).
+   */
+  planned_projects: boolean;
+
+  /**
+   * Projets exclus des lignes du mois : prévu et réel (R-BUD-74).
+   */
+  projects: Array<ProjectMonthView>;
   savings_minor: number;
   thresholds: Array<number>;
 
