@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -50,7 +50,7 @@ test('E34, E35 : envoi, classement et rattachement (R-DOC-3, R-DOC-9, R-DOC-14)'
     buffer: Buffer.from('PK\u0003\u0004word/document.xml'),
   };
   await page.getByLabel('Fichiers à envoyer').setInputFiles([contract, word]);
-  const refusals = page.getByRole('dialog');
+  const refusals = await openedDialog(page);
   await expect(refusals.getByRole('heading')).toHaveText('Un fichier refusé');
   await expect(refusals).toContainText('lettre.pdf');
   await refusals.getByRole('button', { name: 'Fermer' }).click();
@@ -69,7 +69,7 @@ test('E34, E35 : envoi, classement et rattachement (R-DOC-3, R-DOC-9, R-DOC-14)'
   await expect(page.getByText('Document enregistré')).toBeVisible();
 
   await page.getByRole('button', { name: 'Rattacher à…' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Compte', { exact: true }).fill('Compte courant');
   await page
     .getByRole('option', { name: /^Compte courant/ })

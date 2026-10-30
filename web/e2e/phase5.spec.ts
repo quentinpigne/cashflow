@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login, openAccount } from './helpers';
+import { isMobile, login, openAccount, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -36,7 +36,7 @@ test('E3 : performance d’une assurance vie et nouvelle valorisation (EPA-05, C
   await expect(page.getByText('TRI depuis l’ouverture'.replace('’', "'"))).toBeVisible();
   test.skip(isMobile(page), 'données partagées : valorisation saisie sur ordinateur');
   await page.locator('app-valuation-panel').getByRole('button', { name: 'Ajouter' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Valeur du compte').fill('15000');
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByText('20 octobre 2026')).toBeVisible();

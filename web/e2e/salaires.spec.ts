@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -43,7 +43,7 @@ test('E30 : une augmentation prévue, préremplie avec la dernière rémunérati
   await openSalaries(page);
   await page.getByRole('link', { name: /Acme Industries/ }).click();
   await page.getByRole('button', { name: 'Ajouter' }).first().click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await expect(dialog.getByLabel('Net mensuel versé')).toHaveValue('3400,00');
   await dialog.getByLabel('Année').fill('2027');
   await dialog.getByLabel("Mois d'effet").click();
@@ -107,7 +107,7 @@ test('E30 : fiches de paie archivées et mois sans fiche (SAL-09, R-SAL-16, R-SA
     buffer: Buffer.from('%PDF-1.4 août e2e'),
   };
   await section.getByRole('button', { name: 'Ajouter' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await expect(dialog.getByLabel('Mois de paie')).toHaveText('Septembre');
   await dialog.getByLabel('Fichier', { exact: true }).setInputFiles(pdf);
   await dialog.getByLabel('Mois de paie').click();

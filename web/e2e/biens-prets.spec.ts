@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -65,7 +65,7 @@ test('E28 : la mensualité se recalcule pendant la saisie des conditions (R-PRE-
   await page.getByRole('link', { name: /^Prêt immobilier/ }).click();
   await page.getByRole('button', { name: 'Actions sur le prêt' }).click();
   await page.getByRole('menuitem', { name: 'Modifier' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await expect(dialog.locator('.preview')).toContainText('1 109,20 €');
   await dialog.getByLabel('Durée').fill('180');
   await expect(dialog.locator('.preview')).toContainText('1 381,16 €');

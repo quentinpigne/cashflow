@@ -8,6 +8,7 @@ import {
   openQuickEntry,
   pickCategory,
   transactionRow,
+  openedDialog,
 } from './helpers';
 
 const unique = () => Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -49,6 +50,7 @@ test('E6 : ventiler 50/30/20 en pourcentages (TRX-03)', async ({ page }) => {
   await page.getByLabel('Montant').fill('120');
   await page.getByLabel('Libellé').fill(label);
   await page.getByRole('button', { name: 'Ventiler' }).click();
+  await openedDialog(page);
   const editor = page.locator('app-split-editor');
   await editor.getByRole('radio', { name: '%' }).click();
   await editor.getByRole('button', { name: 'Ajouter une ligne' }).click();
@@ -138,6 +140,7 @@ test('E4 : créer, clôturer puis supprimer un compte (CPT-01, CPT-04, R-CPT-7)'
   const name = `Livret test ${unique()}`;
   await page.goto('/comptes');
   await page.getByRole('button', { name: /Nouveau compte/ }).click();
+  await openedDialog(page);
   await page.getByRole('combobox', { name: 'Nature' }).click();
   await page.getByRole('option', { name: 'Livret A' }).click();
   await page.getByLabel('Nom', { exact: true }).fill(name);
@@ -163,6 +166,7 @@ test('E2, E4 : colorer un compte et le remonter en tête de sa famille (CPT-07)'
   const name = `Zz coffre ${unique()}`;
   await page.goto('/comptes');
   await page.getByRole('button', { name: /Nouveau compte/ }).click();
+  await openedDialog(page);
   await page.getByRole('combobox', { name: 'Nature' }).click();
   await page.getByRole('option', { name: 'Espèces' }).click();
   await page.getByLabel('Nom', { exact: true }).fill(name);
@@ -204,13 +208,13 @@ test('E8 : créer, renommer et supprimer une catégorie (TRX-04)', async ({ page
   const name = `Catégorie ${unique()}`;
   await page.goto('/reglages/categories');
   await page.getByRole('button', { name: /Ajouter/ }).click();
-  await page.getByRole('dialog').getByLabel('Nom').fill(name);
+  await (await openedDialog(page)).getByLabel('Nom').fill(name);
   await page.getByRole('button', { name: 'Créer' }).click();
   await expect(page.getByText(name, { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: `Actions sur ${name}` }).click();
   await page.getByRole('menuitem', { name: /Renommer/ }).click();
-  await page.getByRole('dialog').getByLabel('Nom').fill(`${name} bis`);
+  await (await openedDialog(page)).getByLabel('Nom').fill(`${name} bis`);
   await page.getByRole('button', { name: 'Renommer' }).click();
   await expect(page.getByText(`${name} bis`, { exact: true })).toBeVisible();
 

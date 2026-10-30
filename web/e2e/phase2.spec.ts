@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import path from 'node:path';
 
-import { isMobile, login, openAccount, pickCategory } from './helpers';
+import { isMobile, login, openAccount, pickCategory, openedDialog } from './helpers';
 
 const FIXTURE = path.resolve(__dirname, '../../fixtures/demo/releve-courant.csv');
 
@@ -48,7 +48,7 @@ test('E13 : saisir un point de contrôle à écart nul et rapprocher (RAP-01, RA
   const balance = await page.locator('.balance strong.amount').textContent();
   const panel = page.locator('app-reconciliation-panel');
   await panel.getByRole('button', { name: /Point de contrôle/ }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Solde').fill((balance ?? '').replace(/[^\d,]/g, ''));
   await dialog.getByRole('button', { name: /Ajouter|Remplacer/ }).click();
   await expect(panel.getByText('écart nul').first()).toBeVisible();

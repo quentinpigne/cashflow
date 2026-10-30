@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -27,7 +27,7 @@ test('E36 : situation, projet, deux questions et demande préparée (CRE-07, CRE
   const before = (await price.textContent()) ?? '';
   const situation = page.locator('app-situation-bar');
   await situation.getByRole('button', { name: 'Ajuster' }).click();
-  const panel = page.getByRole('dialog');
+  const panel = await openedDialog(page);
   await panel.getByLabel('Réserve de sécurité').fill('12');
   await expect(price).not.toHaveText(before);
   await page.reload();
@@ -71,7 +71,7 @@ test('E36 : situation, projet, deux questions et demande préparée (CRE-07, CRE
   await expect(result).toContainText('Le crédit au capital empruntable');
   await expect(result).toContainText('Coût total du crédit');
   await result.getByRole('button', { name: "Tableau d'amortissement" }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await expect(dialog).toContainText("Tableau d'amortissement");
   await dialog.getByRole('button', { name: 'Fermer' }).click();
   await expect(dialog).toBeHidden();
@@ -169,7 +169,7 @@ test('E39 : relance, offre et acceptation en bien et prêt (CRE-04 à CRE-06, CR
   if (isMobile(page)) return;
 
   await request.getByRole('button', { name: 'Relancer', exact: true }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Comment').fill('Mail au courtier');
   await dialog.getByRole('button', { name: 'Relancer' }).click();
   await expect(dialog).toBeHidden();
@@ -192,13 +192,13 @@ test('E39 : relance, offre et acceptation en bien et prêt (CRE-04 à CRE-06, CR
     .click();
   await page.getByRole('menuitem', { name: "Accepter l'offre" }).click();
   await page.getByRole('button', { name: 'Accepter' }).click();
-  const assistant = page.getByRole('dialog', { name: /Offre acceptée/ });
+  const assistant = await openedDialog(page, /Offre acceptée/);
   await assistant.getByLabel("Date d'achat").fill('15/01/2027');
   await assistant.getByRole('button', { name: 'Créer le bien' }).click();
   await expect(assistant).toContainText('Bien créé');
   await assistant.getByRole('button', { name: 'Suivant' }).first().click();
   await assistant.getByRole('button', { name: 'Créer le prêt' }).click();
-  const loan = page.getByRole('dialog').last();
+  const loan = await openedDialog(page);
   await expect(loan.getByLabel('Nom', { exact: true })).toHaveValue('Offre Courtier Alpes Crédit');
   await loan.getByLabel('Première échéance').fill('05/02/2027');
   await loan.getByRole('button', { name: 'Créer le prêt' }).click();

@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 
 export const PASSWORD = 'demo-cashflow';
 /** Date du jour du serveur de test (e2e/serve.sh) : le navigateur vit à la même date. */
@@ -35,10 +35,26 @@ export async function pickCategory(
   }
 }
 
+/**
+ * Le dernier dialogue ouvert, une fois son ouverture terminée.
+ *
+ * Material ne place le focus initial qu'à la fin de l'animation d'ouverture : sur une machine lente,
+ * ce focus arrivant pendant la saisie d'un champ y détournerait le texte tapé vers un autre.
+ */
+export async function openedDialog(page: Page, name?: string | RegExp): Promise<Locator> {
+  const dialog = page.getByRole('dialog', name ? { name } : {}).last();
+  await expect(dialog).toBeVisible();
+  await expect
+    .poll(() => dialog.evaluate((element) => element.contains(document.activeElement)))
+    .toBe(true);
+  return dialog;
+}
+
 /** Ouvre la saisie rapide depuis le bouton « + » ou « Nouvelle transaction ». */
 export async function openQuickEntry(page: Page): Promise<void> {
   await page.getByRole('button', { name: /Nouvelle transaction/ }).click();
   await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeVisible();
+  await openedDialog(page);
 }
 
 /** Ouvre la fiche d'un compte depuis la liste des comptes. */

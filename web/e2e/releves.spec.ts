@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login, openAccount } from './helpers';
+import { isMobile, login, openAccount, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -29,7 +29,7 @@ test('E3 : relevés archivés et mois sans relevé (CPT-11, R-CPT-19, R-CPT-21)'
     buffer: Buffer.from('%PDF-1.4 relevé août e2e'),
   };
   await section.getByRole('button', { name: 'Ajouter' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await expect(dialog.getByLabel('Mois du relevé')).toHaveText('Septembre');
   await dialog.getByLabel('Fichier', { exact: true }).setInputFiles(pdf);
   await dialog.getByLabel('Mois du relevé').click();

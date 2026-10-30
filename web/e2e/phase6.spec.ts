@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -15,7 +15,7 @@ test('E23 : échéancier des récurrences et nouvelle récurrence (TRX-07)', asy
     .locator('.page-header')
     .getByRole('button', { name: /Nouvelle/ })
     .click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Libellé').fill('Abonnement salle de sport');
   await dialog.getByLabel('Compte', { exact: true }).click();
   await page.getByRole('option', { name: 'Compte courant' }).click();

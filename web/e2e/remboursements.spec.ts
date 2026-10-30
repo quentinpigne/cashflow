@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -35,7 +35,7 @@ test('E1, E7 : remboursement attendu, puis lié depuis l’entrée (TRX-12, R-TR
   const { id } = await created.json();
   await page.goto(`/transactions/${id}`);
   await page.getByRole('button', { name: 'Lier une dépense' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await expect(dialog.locator('.row').first()).toContainText('CABINET DENTAIRE');
   await expect(dialog.locator('.row').first()).toContainText('63,00 € attendus');
   await dialog.getByRole('checkbox', { name: 'Rembourse CABINET DENTAIRE' }).check();

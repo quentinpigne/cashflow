@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login, openQuickEntry, pickCategory } from './helpers';
+import { isMobile, login, openQuickEntry, pickCategory, openedDialog } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -22,7 +22,7 @@ test('E18 : modifier une ligne pour ce mois seulement (R-BUD-51)', async ({ page
   await login(page);
   await page.goto('/budget?mois=2026-12');
   await page.getByRole('button', { name: 'Modifier Restaurants' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Montant').fill('250');
   await dialog.getByRole('radio', { name: /décembre 2026 seulement/ }).check();
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
@@ -41,7 +41,7 @@ test('E18 : ligne sur plusieurs catégories, changées à partir d’un mois (R-
   await login(page);
   await page.goto('/budget?mois=2026-12');
   await page.getByRole('button', { name: 'Modifier Voiture' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   const chips = dialog.locator('mat-chip');
   await expect(chips).toHaveText([/Carburant/, /Péage/]);
   await pickCategory(page, dialog, 'Stationnement', 'Stationnement', false);
@@ -64,7 +64,7 @@ test('E20 : créer un projet et y rattacher une transaction (BUD-06)', async ({ 
   await page.goto('/budget/projets');
   await expect(page.getByText('Week-end à Lyon')).toBeVisible();
   await page.getByRole('button', { name: /Nouveau projet/ }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByLabel('Nom').fill('Ski 2027');
   await dialog.getByLabel('Montant prévu').fill('1500');
   await dialog.getByRole('button', { name: 'Créer' }).click();
@@ -101,7 +101,7 @@ test('E20 : postes d’un projet, hors postes et poste d’une transaction (BUD-
   await page.goto('/budget/projets');
   await page.getByRole('link', { name: /Ski 2027/ }).click();
   await page.getByRole('button', { name: /Modifier/ }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = await openedDialog(page);
   await dialog.getByRole('button', { name: /Ajouter un poste/ }).click();
   await expect(dialog.getByLabel('Montant prévu')).toHaveCount(0);
   await dialog.getByRole('textbox', { name: 'Poste', exact: true }).fill('Logement');
