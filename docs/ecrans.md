@@ -265,6 +265,10 @@ Dépense ou revenu :
 - **compte** (le dernier utilisé, ou celui de l'écran courant) ;
 - **catégorie** `[mat-autocomplete]` : recherche dans « parent › sous-catégorie », catégories de la
   nature du mode d'abord (dépenses pour une dépense) ;
+- **projet** et **poste** (BUD-06, BUD-11), seulement en dépense ou en revenu et s'il existe au moins un
+  projet en cours : projet parmi ceux en cours, « Aucun » par défaut ; poste du projet s'il en a,
+  présélectionné d'après la catégorie (R-BUD-27) et qui la suit tant qu'on ne l'a pas changé. Le projet et
+  le poste s'appliquent à toutes les ventilations ;
 - **libellé**, **date** (aujourd'hui par défaut), **note** (repliée) ;
 - lien **« Ventiler »** : ouvre l'éditeur de ventilation ([E6](#e6--ventilation-trx-03)) ;
 - bouton « Enregistrer ». La transaction est créée `PENDING`, origine `MANUAL` (TRX-01). Une snack-bar
@@ -479,7 +483,7 @@ Ce qui change dans les écrans existants :
 - **E1 Accueil** : bloc **Budget du mois** (TDB-06) dans la colonne de droite : reste à budgéter, lignes
   en alerte avec leur jauge, objectifs d'épargne du mois, projets en cours. Absent tant qu'aucun budget
   ni projet n'existe.
-- **E7 Détail d'une transaction** : champ **Projet** (en cours, ou le projet actuel même terminé). Le
+- **E7 Détail d'une transaction** : champ **Projet** (en cours, ou le projet actuel même s'il ne l'est plus). Le
   projet s'applique à toutes les ventilations de la transaction. Si le projet a des postes, champ
   **Poste** à côté : « Hors postes » ou l'un des postes, présélectionné d'après la catégorie (R-BUD-27) ;
   il s'applique à toutes les ventilations. Si elles sont rangées dans des postes différents, le champ
@@ -521,15 +525,17 @@ cochées à partir du mois en cours.
 
 ## E20 — Projets (BUD-06)
 
-- **Liste** : en cours, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
-- **Dialogue de projet** : nom, dates, **Postes** (BUD-11) : une ligne par poste (nom, montant,
+- **Liste** : en cours, en projet, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
+- **Dialogue de projet** : nom, **statut** (En projet, En cours, Terminé ; « En cours » par défaut,
+  R-BUD-20), dates, **Postes** (BUD-11) : une ligne par poste (nom, montant,
   catégories facultatives), « Ajouter un poste », total des postes. Sans poste, un champ **Montant
   prévu** global ; il disparaît dès le premier poste (R-BUD-26) : le premier poste reprend ce montant,
   et retirer le dernier poste le rend au montant global.
 - **Détail** : réel et jauge, dates, exclusion des lignes du mois ; **postes** (s'il y en a) : réel sur
   prévu et jauge de chacun, puis « Hors postes » s'il n'est pas nul (R-BUD-28) ; réel **par catégorie** ;
-  transactions rattachées, avec leur poste, celles hors des dates signalées (R-BUD-23). « Modifier » (y
-  compris clôturer) ; « Supprimer » seulement sans transaction rattachée.
+  transactions rattachées, avec leur poste, celles hors des dates signalées (R-BUD-23). Pastille du statut
+  s'il n'est pas « en cours ». « Modifier » (y compris le statut) ; « Supprimer » seulement sans
+  transaction rattachée.
 
 ## E21 — Notifications (BUD-08)
 

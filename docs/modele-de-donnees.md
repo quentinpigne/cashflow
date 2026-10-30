@@ -714,7 +714,7 @@ Catégories d'une version de ligne (R-BUD-10). Une nouvelle version reçoit les 
 | `end_date` | `Date` | optionnel, ≥ `start_date` |
 | `amount` | `Money` | montant global : requis, > 0 sans poste ; `null` quand le projet a des postes (R-BUD-26) |
 | `exclude_from_period_budgets` | booléen | défaut `true` (R-BUD-21) |
-| `status` | enum | `ACTIVE` \| `CLOSED` |
+| `status` | enum | `PLANNED` (en projet) \| `ACTIVE` (en cours, défaut) \| `CLOSED` (terminé) (R-BUD-20) |
 | `alert_thresholds` | `Json` | optionnel, comme pour `BudgetLine` |
 | `note` | texte | optionnel |
 

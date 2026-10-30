@@ -171,6 +171,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Objectif d'épargne | `BudgetLine` `SAVINGS` | Montant mensuel de virements internes visé vers un compte d'épargne. |
 | Surcharge | `BudgetOverride` | Montant spécifique d'une ligne pour un mois (ou une année) donné. |
 | Projet | `Project` | Budget ponctuel multi-catégories (vacances, travaux), auquel on rattache explicitement des ventilations. |
+| Statut d'un projet | `ProjectStatus` | `PLANNED` « en projet » (envisagé), `ACTIVE` « en cours » (seul à recevoir des ventilations, R-BUD-24), `CLOSED` « terminé ». |
 | Poste (d'un projet) | `ProjectLine` | Partie nommée du prévu d'un projet (« Train » 500 €), avec des catégories facultatives qui proposent le poste d'une ventilation (R-BUD-26, R-BUD-27). À ne pas confondre avec une ligne de budget. |
 | Hors postes | — | Ventilations d'un projet détaillé qui ne sont rangées dans aucun de ses postes (R-BUD-28). |
 | Report | `rollover` | Reliquat (positif ou négatif) d'une ligne ajouté au disponible de la période suivante. |

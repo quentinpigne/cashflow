@@ -109,8 +109,10 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 ### Projets
 
 - **R-BUD-20** — Un projet a un nom, une date de début, une date de fin optionnelle, un prévu (un montant
-  global, ou la somme de ses postes, R-BUD-26) et un statut (`ACTIVE`, `CLOSED`). Une ventilation porte
-  **au plus un** projet.
+  global, ou la somme de ses postes, R-BUD-26) et un statut : **en projet** (`PLANNED`, envisagé, rien
+  n'est encore dépensé), **en cours** (`ACTIVE`) ou **terminé** (`CLOSED`). Le statut se choisit à la
+  main, dans n'importe quel ordre ; un projet est créé en cours par défaut. Une ventilation porte **au
+  plus un** projet.
 - **R-BUD-21** — Le drapeau `exclude_from_period_budgets` du projet (par défaut `true`) détermine si ses
   ventilations sont **retirées** des lignes mensuelles et annuelles. Dans les deux cas, elles restent
   comptées dans les analyses par catégorie (spec 08).
@@ -118,8 +120,10 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
   remboursements déduits. La vue projet ventile ce réel par catégorie.
 - **R-BUD-23** — Une ventilation peut être rattachée à un projet quelle que soit sa date : un billet
   d'avion acheté 4 mois avant le départ est permis. Une date hors de [début, fin] est seulement signalée.
-- **R-BUD-24** — On ne peut rattacher de nouvelles ventilations qu'à un projet `ACTIVE`. Clôturer un
-  projet fige son bilan, sans rien verrouiller : les ventilations restent modifiables.
+- **R-BUD-24** — On ne peut rattacher de nouvelles ventilations qu'à un projet `ACTIVE` : un projet en
+  projet passe en cours à sa première dépense, même avant sa date de début (R-BUD-23). Clôturer un
+  projet fige son bilan, sans rien verrouiller : les ventilations restent modifiables. Seuls les projets
+  en cours émettent des alertes (R-BUD-62).
 - **R-BUD-25** — Les ventilations des comptes hors budget (R-BUD-1) peuvent aussi être rattachées à un
   projet : un projet suit une dépense, quel que soit le compte qui l'a payée.
 
