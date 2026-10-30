@@ -99,6 +99,9 @@ export class SituationBar {
     this.dialog.open(SituationPanel, {
       data,
       autoFocus: false,
+      // Durées du glissement (styles.scss) : la fermeture attend la fin de l'animation.
+      enterAnimationDuration: 250,
+      exitAnimationDuration: 200,
       ...(mobile
         ? {
             width: '100vw',

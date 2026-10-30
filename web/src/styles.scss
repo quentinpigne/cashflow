@@ -200,6 +200,70 @@ input.amount {
     flex: 1 1 auto;
     max-height: none;
   }
+
+  // Glissement depuis le bord, à l'ouverture comme à la fermeture, au lieu du zoom et du fondu des dialogues.
+  .mat-mdc-dialog-inner-container {
+    opacity: 1;
+    transition: none;
+  }
+
+  .mat-mdc-dialog-surface {
+    transform: none;
+    transition: none;
+  }
+}
+
+.cdk-overlay-pane.side-panel {
+  // Le glissement d'entrée part dès l'insertion du panneau : aucune image en place avant lui.
+  .mat-mdc-dialog-surface {
+    animation: panel-in-right 250ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  .mdc-dialog--closing .mat-mdc-dialog-surface {
+    animation: panel-out-right 200ms cubic-bezier(0.3, 0, 1, 1) both;
+  }
+}
+
+.cdk-overlay-pane.bottom-panel {
+  // Le glissement d'entrée part dès l'insertion du panneau : aucune image en place avant lui.
+  .mat-mdc-dialog-surface {
+    animation: panel-in-bottom 250ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  .mdc-dialog--closing .mat-mdc-dialog-surface {
+    animation: panel-out-bottom 200ms cubic-bezier(0.3, 0, 1, 1) both;
+  }
+}
+
+@keyframes panel-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes panel-out-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes panel-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes panel-out-bottom {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cdk-overlay-pane.side-panel .mat-mdc-dialog-surface,
+  .cdk-overlay-pane.bottom-panel .mat-mdc-dialog-surface {
+    animation: none !important;
+  }
 }
 
 .side-panel {
