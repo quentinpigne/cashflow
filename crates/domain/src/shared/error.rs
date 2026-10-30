@@ -194,6 +194,12 @@ pub enum DomainError {
     BudgetLineOverlap,
     #[error("on ne rattache de nouvelles ventilations qu'à un projet en cours")]
     ProjectClosed,
+    #[error("un projet a soit un montant global, soit des postes, chacun nommé une seule fois et de montant positif")]
+    InvalidProjectPlan,
+    #[error("une catégorie ne propose qu'un seul poste du projet")]
+    ProjectLineCategoryTaken,
+    #[error("ce poste n'appartient pas au projet de la ventilation")]
+    ProjectLineMismatch,
 
     // ----- Import (spec 03)
     #[error("une règle doit avoir au moins une condition")]
@@ -284,6 +290,9 @@ impl DomainError {
             IncomeRollover => "INCOME_ROLLOVER",
             BudgetLineOverlap => "BUDGET_LINE_OVERLAP",
             ProjectClosed => "PROJECT_CLOSED",
+            InvalidProjectPlan => "INVALID_PROJECT_PLAN",
+            ProjectLineCategoryTaken => "PROJECT_LINE_CATEGORY_TAKEN",
+            ProjectLineMismatch => "PROJECT_LINE_MISMATCH",
             RuleWithoutCondition => "RULE_WITHOUT_CONDITION",
         }
     }
@@ -352,6 +361,8 @@ impl DomainError {
             IncomeRollover => "R-BUD-19",
             BudgetLineOverlap => "R-BUD-11",
             ProjectClosed => "R-BUD-24",
+            InvalidProjectPlan => "R-BUD-26",
+            ProjectLineCategoryTaken | ProjectLineMismatch => "R-BUD-27",
             RuleWithoutCondition => "R-IMP-12",
         })
     }

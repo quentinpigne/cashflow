@@ -516,6 +516,69 @@ pub fn project_actual<C: Copy + Eq + Hash + Ord, P: Copy + Eq>(
     result
 }
 
+/// Poste d'un projet (R-BUD-26) : `categories` proposent le poste d'une ventilation (R-BUD-27).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectLine<L, C> {
+    pub id: L,
+    pub name: String,
+    pub amount: Money,
+    pub categories: Vec<C>,
+}
+
+/// Valide le prévu d'un projet : un montant global positif sans poste, aucun avec des postes ; des postes de
+/// montant positif, de noms distincts sans tenir compte de la casse (R-BUD-26) ; une catégorie dans au plus un
+/// poste (R-BUD-27).
+pub fn check_project_plan<L, C: Eq + Hash>(
+    amount: Option<Money>,
+    lines: &[ProjectLine<L, C>],
+) -> Result<(), DomainError> {
+    match amount {
+        Some(amount) if !lines.is_empty() || !amount.is_positive() => return Err(DomainError::InvalidProjectPlan),
+        None if lines.is_empty() => return Err(DomainError::InvalidProjectPlan),
+        _ => {}
+    }
+    let mut names = std::collections::HashSet::new();
+    let mut categories = std::collections::HashSet::new();
+    for line in lines {
+        if !line.amount.is_positive() || line.name.trim().is_empty() || !names.insert(line.name.trim().to_lowercase()) {
+            return Err(DomainError::InvalidProjectPlan);
+        }
+        if !line.categories.iter().all(|c| categories.insert(c)) {
+            return Err(DomainError::ProjectLineCategoryTaken);
+        }
+    }
+    Ok(())
+}
+
+/// Prévu d'un projet : son montant global, ou la somme de ses postes (R-BUD-26).
+pub fn project_planned<L, C>(amount: Option<Money>, lines: &[ProjectLine<L, C>]) -> Money {
+    if lines.is_empty() { amount.unwrap_or(Money::ZERO) } else { lines.iter().map(|l| l.amount).sum() }
+}
+
+/// Poste proposé pour une ventilation : celui qui porte sa catégorie, sinon sa catégorie parente (R-BUD-27).
+pub fn proposed_line<L: Copy, C: Copy + Eq>(
+    lines: &[ProjectLine<L, C>],
+    category: Option<C>,
+    parent: Option<C>,
+) -> Option<L> {
+    let find = |c: C| lines.iter().find(|l| l.categories.contains(&c)).map(|l| l.id);
+    category.and_then(find).or_else(|| parent.and_then(find))
+}
+
+/// Réel de chaque poste et réel hors postes, à partir des ventilations du projet et de leur poste ; remboursements
+/// déduits (R-BUD-28).
+pub fn project_line_actuals<L: Copy + Eq + Hash>(splits: &[(Money, Option<L>)]) -> (HashMap<L, Money>, Money) {
+    let mut by_line: HashMap<L, Money> = HashMap::new();
+    let mut unassigned = Money::ZERO;
+    for (amount, line) in splits {
+        match line {
+            Some(line) => *by_line.entry(*line).or_insert(Money::ZERO) += -*amount,
+            None => unassigned += -*amount,
+        }
+    }
+    (by_line, unassigned)
+}
+
 /// Seuils d'alerte par défaut, en pour cent du disponible (R-BUD-60).
 pub const DEFAULT_THRESHOLDS: [u32; 2] = [80, 100];
 
@@ -733,6 +796,77 @@ mod tests {
         assert_eq!(month.lines[0].actual, Money::ZERO);
         assert_eq!(month.excluded_projects, eur(8_000));
         assert_eq!(project_actual(&splits, 99), vec![(Some(2), eur(8_000))]);
+    }
+
+    fn post(id: u32, name: &str, amount: i64, categories: &[u32]) -> ProjectLine<u32, u32> {
+        ProjectLine { id, name: name.into(), amount: eur(amount), categories: categories.to_vec() }
+    }
+
+    /// Italie 2027 : Train (sans catégorie), Logement, Restaurants (catégorie 2), Loisirs (catégorie 7).
+    fn italy() -> Vec<ProjectLine<u32, u32>> {
+        vec![
+            post(1, "Train", 50_000, &[]),
+            post(2, "Logement", 30_000, &[]),
+            post(3, "Restaurants", 10_000, &[2]),
+            post(4, "Loisirs", 10_000, &[7]),
+        ]
+    }
+
+    /// Critère d'acceptation de BUD-11 / R-BUD-26 : le prévu d'un projet détaillé est la somme de ses postes.
+    #[test]
+    fn r_bud_26_planned_is_sum_of_lines() {
+        let lines = italy();
+        assert_eq!(check_project_plan(None, &lines), Ok(()));
+        assert_eq!(project_planned(None, &lines), eur(100_000));
+        assert_eq!(project_planned::<u32, u32>(Some(eur(250_000)), &[]), eur(250_000));
+        assert_eq!(project_planned(None, &lines[2..]), eur(20_000));
+    }
+
+    /// R-BUD-26 : un montant global ou des postes, jamais les deux ni aucun ; des postes nommés une fois.
+    #[test]
+    fn r_bud_26_plan_is_either_amount_or_lines() {
+        let lines = italy();
+        assert_eq!(check_project_plan::<u32, u32>(Some(eur(1)), &[]), Ok(()));
+        assert_eq!(check_project_plan(Some(eur(1)), &lines), Err(DomainError::InvalidProjectPlan));
+        assert_eq!(check_project_plan::<u32, u32>(None, &[]), Err(DomainError::InvalidProjectPlan));
+        assert_eq!(check_project_plan::<u32, u32>(Some(Money::ZERO), &[]), Err(DomainError::InvalidProjectPlan));
+        let twice = [post(1, "Train", 100, &[]), post(2, " train ", 100, &[])];
+        assert_eq!(check_project_plan(None, &twice), Err(DomainError::InvalidProjectPlan));
+        assert_eq!(check_project_plan(None, &[post(1, "Train", 0, &[])]), Err(DomainError::InvalidProjectPlan));
+    }
+
+    /// Critère d'acceptation de BUD-11 / R-BUD-27 : une catégorie ne propose qu'un poste.
+    #[test]
+    fn r_bud_27_category_in_one_line_only() {
+        let mut lines = italy();
+        lines[1].categories.push(2);
+        assert_eq!(check_project_plan(None, &lines), Err(DomainError::ProjectLineCategoryTaken));
+    }
+
+    /// Critère d'acceptation de BUD-11 / R-BUD-27 : poste de la catégorie, sinon de la parente, sinon aucun.
+    #[test]
+    fn r_bud_27_proposed_line_most_specific() {
+        let lines = italy();
+        assert_eq!(proposed_line(&lines, Some(2), Some(1)), Some(3));
+        // « Culture » (8), sous-catégorie de Loisirs (7).
+        assert_eq!(proposed_line(&lines, Some(8), Some(7)), Some(4));
+        // « Voyages » (9) : aucun poste ne la porte, hors postes.
+        assert_eq!(proposed_line(&lines, Some(9), None), None);
+        assert_eq!(proposed_line(&lines, None, None), None);
+    }
+
+    /// Critère d'acceptation de BUD-11 / R-BUD-28 : réel par poste et hors postes, remboursements déduits.
+    #[test]
+    fn r_bud_28_actual_by_line_and_unassigned() {
+        let splits = [(eur(-4_500), Some(3)), (eur(-1_200), Some(4)), (eur(-18_000), None), (eur(500), Some(3))];
+        let (by_line, unassigned) = project_line_actuals(&splits);
+        assert_eq!(by_line[&3], eur(4_000));
+        assert_eq!(by_line[&4], eur(1_200));
+        assert_eq!(unassigned, eur(18_000));
+        let moved = [(eur(-18_000), Some(1))];
+        let (by_line, unassigned) = project_line_actuals(&moved);
+        assert_eq!(by_line[&1], eur(18_000));
+        assert_eq!(unassigned, Money::ZERO);
     }
 
     /// Critère d'acceptation de BUD-07 / R-BUD-31.

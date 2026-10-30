@@ -78,6 +78,7 @@ define_id!(
     BudgetLineId,
     BudgetOverrideId,
     ProjectId,
+    ProjectLineId,
     UserId,
     SessionId,
     AccessTokenId,
