@@ -78,3 +78,27 @@
   cursor: pointer;
   text-align: left;
 }
+
+.year-end {
+  margin-bottom: 1rem;
+
+  h2 {
+    font: var(--mat-sys-title-medium);
+    margin: 0 0 0.5rem;
+  }
+
+  .figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+}
+
+tr.planned td {
+  font-style: italic;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}

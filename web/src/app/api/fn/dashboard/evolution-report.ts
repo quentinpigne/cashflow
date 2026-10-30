@@ -15,12 +15,18 @@ export interface EvolutionReport$Params {
  * 12 ou 24 (12 par défaut).
  */
   months?: number;
+
+/**
+ * Compter les projets en projet dans les mois à venir (oui par défaut, R-BUD-72).
+ */
+  planned_projects?: boolean;
 }
 
 export function evolutionReport(http: HttpClient, rootUrl: string, params?: EvolutionReport$Params, context?: HttpContext): Observable<StrictHttpResponse<Evolution>> {
   const rb = new RequestBuilder(rootUrl, evolutionReport.PATH, 'get');
   if (params) {
     rb.query('months', params.months, {});
+    rb.query('planned_projects', params.planned_projects, {});
   }
 
   return http.request(

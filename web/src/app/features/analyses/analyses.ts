@@ -6,6 +6,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
 import { Router } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -15,6 +16,7 @@ import { CategoryKind } from '../../api/models/category-kind';
 import { CategoryLine } from '../../api/models/category-line';
 import { DashboardService } from '../../api/services/dashboard.service';
 import { DataVersion } from '../../core/data-version';
+import { PlannedProjects } from '../../core/planned-projects';
 import { formatMonth, shiftMonth, toIsoDate } from '../../core/dates';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
@@ -31,6 +33,7 @@ import { PayeeAnalysis } from '../payees/payee-analysis';
     MatCheckboxModule,
     MatIconModule,
     MatProgressBarModule,
+    MatSlideToggleModule,
     MatTabsModule,
     NgxEchartsDirective,
     MoneyPipe,
@@ -45,6 +48,8 @@ export class AnalysesPage {
   private readonly api = inject(DashboardService);
   private readonly version = inject(DataVersion);
   private readonly router = inject(Router);
+  /** Interrupteur « Projets en projet » des mois à venir, partagé avec le budget (R-BUD-72). */
+  protected readonly plannedProjects = inject(PlannedProjects);
 
   protected readonly month = signal(toIsoDate(new Date()).slice(0, 7));
   protected readonly kind = signal<CategoryKind>('EXPENSE');
@@ -69,8 +74,13 @@ export class AnalysesPage {
   });
 
   protected readonly evolution = rxResource({
-    params: () => ({ months: this.months(), version: this.version.value() }),
-    stream: ({ params }) => this.api.evolutionReport({ months: params.months }),
+    params: () => ({
+      months: this.months(),
+      planned: this.plannedProjects.value(),
+      version: this.version.value(),
+    }),
+    stream: ({ params }) =>
+      this.api.evolutionReport({ months: params.months, planned_projects: params.planned }),
   });
 
   protected readonly chartHeight = computed(() =>
@@ -117,16 +127,30 @@ export class AnalysesPage {
 
   protected readonly evolutionChart = computed<EChartsCoreOption | null>(() => {
     const months = this.evolution.value()?.months ?? [];
+    const upcoming = this.evolution.value()?.upcoming ?? [];
     if (months.length === 0) {
       return null;
     }
+    // Les mois à venir sont prévus : même série, barres estompées et hachurées (R-TDB-14).
+    const planned = {
+      opacity: 0.45,
+      decal: { symbol: 'rect', dashArrayX: [1, 0], dashArrayY: [2, 4], rotation: -0.8 },
+    };
+    const values = (
+      actual: (m: (typeof months)[number]) => number,
+      prevu: (m: (typeof upcoming)[number]) => number,
+    ) => [
+      ...months.map((m) => toChartValue(actual(m))),
+      ...upcoming.map((m) => ({ value: toChartValue(prevu(m)), itemStyle: planned })),
+    ];
+    const labels = [...months.map((m) => m.month), ...upcoming.map((m) => m.month)];
     return {
       grid: { left: 8, right: 8, top: 32, bottom: 8, containLabel: true },
       legend: { top: 0 },
       tooltip: { trigger: 'axis', valueFormatter: (v: number) => formatChartValue(v) },
       xAxis: {
         type: 'category',
-        data: months.map((m) => formatMonth(`${m.month}-01`).replace(/ \d{2}(\d{2})$/, ' $1')),
+        data: labels.map((m) => formatMonth(`${m}-01`).replace(/ \d{2}(\d{2})$/, ' $1')),
       },
       yAxis: {
         type: 'value',
@@ -135,12 +159,29 @@ export class AnalysesPage {
         },
       },
       series: [
-        { name: 'Revenus', type: 'bar', data: months.map((m) => toChartValue(m.income_minor)) },
-        { name: 'Dépenses', type: 'bar', data: months.map((m) => toChartValue(m.expenses_minor)) },
+        {
+          name: 'Revenus',
+          type: 'bar',
+          data: values(
+            (m) => m.income_minor,
+            (m) => m.income_minor,
+          ),
+        },
+        {
+          name: 'Dépenses',
+          type: 'bar',
+          data: values(
+            (m) => m.expenses_minor,
+            (m) => m.expenses_minor,
+          ),
+        },
         {
           name: 'Épargne',
           type: 'line',
-          data: months.map((m) => toChartValue(m.savings_minor)),
+          data: values(
+            (m) => m.savings_minor,
+            (m) => m.savings_minor,
+          ),
           smooth: true,
         },
       ],

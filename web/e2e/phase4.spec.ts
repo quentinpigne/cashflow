@@ -191,6 +191,20 @@ test('E18, E20 : un projet envisagé dans le budget du mois, mise de côté et c
   await dialog.getByRole('button', { name: 'Annuler' }).click();
 });
 
+test('E15 : mois à venir et estimation de fin d’année dans l’évolution (TDB-09, R-TDB-14)', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto('/analyses');
+  await page.getByRole('tab', { name: 'Évolution' }).click();
+  const estimate = page.getByRole('region', { name: "Estimation de fin d'année" });
+  await expect(estimate).toContainText('Estimation fin 2026');
+  // Novembre et décembre, prévus d'après le budget ; l'interrupteur est celui du budget du mois (R-BUD-72).
+  await expect(page.locator('tr.planned')).toHaveCount(2);
+  await expect(page.locator('tr.planned', { hasText: '2026-12' })).toContainText('prévu');
+  await expect(page.getByRole('switch', { name: 'Projets en projet' })).toBeChecked();
+});
+
 test('E21 : centre de notifications (BUD-08)', async ({ page }) => {
   await login(page);
   const bell = page.getByRole('button', { name: /^Notifications/ });
