@@ -483,8 +483,8 @@ Ce qui change dans les écrans existants :
 - **E1 Accueil** : bloc **Budget du mois** (TDB-06) dans la colonne de droite : reste à budgéter, lignes
   en alerte avec leur jauge, objectifs d'épargne du mois, projets en cours. Absent tant qu'aucun budget
   ni projet n'existe.
-- **E7 Détail d'une transaction** : champ **Projet** (en cours, ou le projet actuel même s'il ne l'est plus). Le
-  projet s'applique à toutes les ventilations de la transaction. Si le projet a des postes, champ
+- **E7 Détail d'une transaction** : champ **Projet** (en cours, ou le projet actuel même s'il ne l'est
+  plus). Le projet s'applique à toutes les ventilations de la transaction. Si le projet a des postes, champ
   **Poste** à côté : « Hors postes » ou l'un des postes, présélectionné d'après la catégorie (R-BUD-27) ;
   il s'applique à toutes les ventilations. Si elles sont rangées dans des postes différents, le champ
   affiche « Plusieurs postes » et ne les change pas tant qu'on n'en choisit pas un.
