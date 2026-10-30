@@ -19,6 +19,11 @@ export interface CapacityAssumptions {
   expense_growth_ppm?: number;
 
   /**
+   * Compter les projets en projet, en plus des projets en cours (R-PRJ-48) ; oui par défaut.
+   */
+  planned_projects?: boolean;
+
+  /**
    * Taux de hausse des salaires (R-SAL-12).
    */
   salary_growth_ppm?: number;

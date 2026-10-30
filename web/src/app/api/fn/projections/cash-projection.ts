@@ -27,6 +27,11 @@ export interface CashProjection$Params {
  * Seuil d'avertissement, en centimes (0 par défaut, R-PRJ-12).
  */
   threshold_minor?: number;
+
+/**
+ * Compter les projets en projet (oui par défaut, R-PRJ-48).
+ */
+  planned_projects?: boolean;
 }
 
 export function cashProjection(http: HttpClient, rootUrl: string, params: CashProjection$Params, context?: HttpContext): Observable<StrictHttpResponse<CashProjectionView>> {
@@ -36,6 +41,7 @@ export function cashProjection(http: HttpClient, rootUrl: string, params: CashPr
     rb.query('days', params.days, {});
     rb.query('variable', params.variable, {});
     rb.query('threshold_minor', params.threshold_minor, {});
+    rb.query('planned_projects', params.planned_projects, {});
   }
 
   return http.request(

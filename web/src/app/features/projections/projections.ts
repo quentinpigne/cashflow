@@ -21,6 +21,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { of } from 'rxjs';
 
+import { CashEventKind } from '../../api/models/cash-event-kind';
 import { DashboardService } from '../../api/services/dashboard.service';
 import { ProjectionsService } from '../../api/services/projections.service';
 import { DataVersion } from '../../core/data-version';
@@ -163,6 +164,10 @@ export class ProjectionsPage {
             'Échéances de prêts',
             c.points.map((p) => -toChartValue(p.loans_minor)),
           ),
+          bar(
+            'Projets',
+            c.points.map((p) => -toChartValue(p.projects_minor)),
+          ),
         ]
       : [
           {
@@ -244,17 +249,30 @@ export class ProjectionsPage {
   );
   protected readonly cashAccount = linkedSignal(() => this.cashAccounts()[0]?.id ?? null);
   protected readonly days = signal(90);
+  protected readonly eventKinds: Record<CashEventKind, string> = {
+    PENDING: 'en attente',
+    SCHEDULED: 'échéance prévue',
+    PROJECT: 'projet',
+  };
   protected readonly withVariable = signal(true);
+  /** Projets en projet comptés dans la trésorerie (R-PRJ-48). */
+  protected readonly withPlanned = signal(true);
   protected readonly cash = rxResource({
     params: () => ({
       id: this.cashAccount(),
       days: this.days(),
       variable: this.withVariable(),
+      planned: this.withPlanned(),
       version: this.version.value(),
     }),
     stream: ({ params }) =>
       params.id
-        ? this.api.cashProjection({ id: params.id, days: params.days, variable: params.variable })
+        ? this.api.cashProjection({
+            id: params.id,
+            days: params.days,
+            variable: params.variable,
+            planned_projects: params.planned,
+          })
         : of(null),
   });
 

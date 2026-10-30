@@ -8,5 +8,6 @@ import { CashEventKind } from './cash-event-kind';
  */
 export const CASH_EVENT_KIND: CashEventKind[] = [
   'PENDING',
-  'SCHEDULED'
+  'SCHEDULED',
+  'PROJECT'
 ];

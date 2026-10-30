@@ -114,8 +114,8 @@ interface PathRow {
 
       <h3>Capacité d'épargne</h3>
       <mat-checkbox [ngModel]="capacity()" (ngModelChange)="capacity.set($event)">
-        Ajouter chaque mois aux liquidités les revenus projetés moins les dépenses et les échéances
-        de prêts
+        Ajouter chaque mois aux liquidités les revenus projetés moins les dépenses, les projets et
+        les échéances de prêts
       </mat-checkbox>
       @if (capacity()) {
         <div class="line">
@@ -150,6 +150,9 @@ interface PathRow {
           </mat-select>
           <mat-hint>Après les versements programmés, dans la limite du plafond.</mat-hint>
         </mat-form-field>
+        <mat-checkbox [ngModel]="plannedProjects()" (ngModelChange)="plannedProjects.set($event)">
+          Compter les projets en projet, en plus des projets en cours
+        </mat-checkbox>
       }
 
       <h3>Rendement et frais annuels par nature</h3>
@@ -351,6 +354,7 @@ export class ScenarioDialog {
   protected readonly salaryGrowth = signal(percent(this.cap?.salary_growth_ppm ?? 20_000));
   protected readonly expenseGrowth = signal(percent(this.cap?.expense_growth_ppm ?? 20_000));
   protected readonly surplus = signal<string | null>(this.cap?.surplus_account_id ?? null);
+  protected readonly plannedProjects = signal(this.cap?.planned_projects ?? true);
   protected readonly savingsAccounts = computed(() =>
     this.accounts.open().filter((a) => a.family !== 'CASH'),
   );
@@ -455,6 +459,7 @@ export class ScenarioDialog {
         salary_growth_ppm: rate(this.salaryGrowth()) ?? this.cap?.salary_growth_ppm ?? 20_000,
         expense_growth_ppm: rate(this.expenseGrowth()) ?? this.cap?.expense_growth_ppm ?? 20_000,
         surplus_account_id: this.surplus(),
+        planned_projects: this.plannedProjects(),
       },
     };
     for (const row of this.kinds()) {

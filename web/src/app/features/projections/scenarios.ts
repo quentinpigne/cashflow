@@ -136,7 +136,8 @@ export class ScenariosPage {
       : '';
     return (
       `Salaires +${formatRate(c?.salary_growth_ppm ?? 20_000)}/an · ` +
-      `dépenses +${formatRate(c?.expense_growth_ppm ?? 20_000)}/an${surplus}`
+      `dépenses +${formatRate(c?.expense_growth_ppm ?? 20_000)}/an${surplus}` +
+      (c?.planned_projects === false ? ' · projets en cours seulement' : '')
     );
   }
 

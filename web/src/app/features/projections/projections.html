@@ -146,6 +146,9 @@
           <mat-checkbox [checked]="withVariable()" (change)="withVariable.set($event.checked)">
             Dépenses courantes moyennes
           </mat-checkbox>
+          <mat-checkbox [checked]="withPlanned()" (change)="withPlanned.set($event.checked)">
+            Projets en projet
+          </mat-checkbox>
         </div>
         @if (cash.value(); as p) {
           <div class="figures">
@@ -183,9 +186,7 @@
               <span>{{ e.date | frDate: 'short' }}</span>
               <span>
                 {{ e.label }}
-                <span class="muted small">{{
-                  e.kind === 'SCHEDULED' ? 'échéance prévue' : 'en attente'
-                }}</span>
+                <span class="muted small">{{ eventKinds[e.kind] }}</span>
               </span>
               <span class="amount" [class.negative]="e.amount_minor < 0">{{
                 e.amount_minor | money

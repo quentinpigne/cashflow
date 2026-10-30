@@ -33,6 +33,21 @@ test('E24 : trésorerie projetée du compte courant (PRJ-01)', async ({ page }) 
   await expect(page.locator('[echarts] canvas').first()).toBeVisible();
 });
 
+test('E24 : les projets dans la trésorerie du compte de versement (PRJ-11, R-PRJ-48)', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto('/projections');
+  await page.getByRole('tab', { name: 'Trésorerie' }).click();
+  await page.getByRole('radio', { name: '180 j' }).click();
+  // Le train de l'Italie, en projet, sort du compte courant en février (R-BUD-70).
+  const train = page.locator('.event', { hasText: 'Italie 2027 · Train' });
+  await expect(train).toContainText('projet');
+  await expect(train).toContainText('−500,00');
+  await page.getByRole('checkbox', { name: 'Projets en projet' }).uncheck();
+  await expect(train).toHaveCount(0);
+});
+
 test('E24 : patrimoine projeté par scénario (PRJ-05, TDB-04)', async ({ page }) => {
   await login(page);
   await page.goto('/projections');

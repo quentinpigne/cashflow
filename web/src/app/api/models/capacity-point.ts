@@ -11,6 +11,11 @@ export interface CapacityPoint {
    */
   moved_minor: number;
   other_income_minor: number;
+
+  /**
+   * Dépenses de projets du mois (R-PRJ-48).
+   */
+  projects_minor: number;
   salaries_minor: number;
   total_minor: number;
 }

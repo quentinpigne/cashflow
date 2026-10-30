@@ -8,6 +8,11 @@ import { CapacityPoint } from '../models/capacity-point';
  */
 export interface CapacitySeries {
   expense_growth_ppm: number;
+
+  /**
+   * Les projets en projet sont comptés (R-PRJ-48).
+   */
+  planned_projects: boolean;
   points: Array<CapacityPoint>;
   salary_growth_ppm: number;
 
