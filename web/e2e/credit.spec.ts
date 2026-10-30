@@ -1,14 +1,8 @@
-import { Page, expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { isMobile, login } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
-
-/** Déplie les conditions du crédit (repliées sur mobile). */
-async function openConditions(page: Page): Promise<void> {
-  const header = page.getByRole('button', { name: /Conditions du crédit/ });
-  if ((await header.getAttribute('aria-expanded')) === 'false') await header.click();
-}
 
 test('E36 : situation, projet, trois questions et demande préparée (CRE-07, CRE-08, CRE-11)', async ({
   page,
@@ -43,7 +37,6 @@ test('E36 : situation, projet, trois questions et demande préparée (CRE-07, CR
   await expect(price).toHaveText(before);
   await panel.getByRole('button', { name: 'Fermer' }).click();
   await expect(panel).toBeHidden();
-  await openConditions(page);
   await shot('acheter');
 
   // Puis-je financer cet achat ? Une voiture à 25 000 € avec 5 000 € d'apport, à 5 % sur 60 mois (R-CRE-40).
@@ -52,7 +45,7 @@ test('E36 : situation, projet, trois questions et demande préparée (CRE-07, CR
   await page.getByLabel('Prix', { exact: true }).fill('25 000');
   await page.getByLabel('Apport', { exact: true }).fill('5 000');
   await expect(page.getByLabel('Frais de notaire')).toHaveCount(0);
-  await expect(page.locator('mat-panel-description')).toContainText('sans assurance');
+  await expect(page.getByLabel('Assurance', { exact: true })).toContainText('Aucune');
   await expect(result).toContainText('20 000,00');
   await expect(result).toContainText('377,42');
   await expect(result).toContainText("Taux d'endettement");
@@ -61,7 +54,6 @@ test('E36 : situation, projet, trois questions et demande préparée (CRE-07, CR
   // Que coûte ce prêt ? 200 000 € sur 20 ans à 3 %, assurance 0,3 % (R-CRE-41).
   await page.getByRole('option', { name: 'Ancien' }).click();
   await page.getByRole('radio', { name: /Que coûte ce prêt|Coût/ }).click();
-  await openConditions(page);
   await page.getByLabel('Taux nominal').fill('3');
   await page.getByLabel('Durée', { exact: true }).fill('240');
   await page.getByRole('radio', { name: 'La mensualité' }).click();
@@ -122,7 +114,6 @@ test("E42 : conditions par défaut d'un type de projet (CRE-12, R-CRE-38)", asyn
   await page.goto('/prets/simuler');
   await page.getByRole('option', { name: 'Ancien' }).click();
   await page.getByRole('option', { name: 'Véhicule' }).click();
-  await openConditions(page);
   await expect(page.getByLabel('Taux nominal')).toHaveValue('4,50');
   await expect(page.getByLabel('Durée', { exact: true })).toHaveValue('48');
 

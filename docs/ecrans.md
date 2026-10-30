@@ -943,7 +943,8 @@ Projet  ‹ Ancien  Neuf  Travaux  Véhicule ›
 [Acheter ?] [Financer] [Coût]
 ┌ L'achat ────────────────┐
 │ Prix, apport            │
-│ ▸ Conditions : 5 % · 60 mois · sans assurance
+│ Conditions du crédit    │
+│ Taux, durée, assurance… │
 └─────────────────────────┘
 ┌ Résultat ───────────────┐
 │ …                       │
@@ -974,7 +975,7 @@ ses conditions par défaut.
 
 Puis **Conditions du crédit**, partagées par les trois questions : type de prêt, taux nominal, durée,
 assurance (aucune, montant mensuel, taux annuel), frais de dossier, frais de garantie, et le bouton
-**« Conditions par défaut »** (R-CRE-39). Sur mobile, elles sont repliées en une ligne résumée.
+**« Conditions par défaut »** (R-CRE-39). C'est une section de la zone de saisie, toujours dépliée.
 
 **Résultat** (`[mat-card]`, collé en haut à droite sur ordinateur) :
 

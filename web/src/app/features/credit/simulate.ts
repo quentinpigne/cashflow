@@ -13,7 +13,6 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
-import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -50,11 +49,10 @@ import { SituationView } from '../../api/models/situation-view';
 import { CreditService } from '../../api/services/credit.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
-import { Layout } from '../../core/layout';
 import { formatMoney, formatRate, parseMoney } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { editable } from './applications';
-import { ConditionsFields, PROJECT_SHORT_LABELS, conditionsSummary } from './conditions';
+import { ConditionsFields, PROJECT_SHORT_LABELS } from './conditions';
 import { LoansTabs, editSimulation, formatDuration, showSchedule } from './credit-shared';
 import { Affordability, CapacityDetails, LoanFigures, tenthsOfMonths } from './results';
 import { SimulationsPage } from './simulations';
@@ -85,7 +83,6 @@ interface Values {
     MatButtonToggleModule,
     MatCheckboxModule,
     MatChipsModule,
-    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -110,13 +107,11 @@ export class SimulatePage {
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
 
-  protected readonly mobile = inject(Layout).mobile;
   protected readonly projects = PROJECTS;
   protected readonly projectLabels = PROJECT_SHORT_LABELS;
   protected readonly rate = formatRate;
   protected readonly durationText = formatDuration;
   protected readonly months = tenthsOfMonths;
-  protected readonly summary = conditionsSummary;
 
   protected readonly situation = signal<SituationView | null>(null);
   private readonly defaults = signal<ProjectDefaults[]>([]);

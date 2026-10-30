@@ -151,25 +151,19 @@
       }
 
       @if (conditions(); as c) {
-        <mat-expansion-panel class="conditions" [expanded]="!mobile()">
-          <mat-expansion-panel-header>
-            <mat-panel-title>Conditions du crédit</mat-panel-title>
-            <mat-panel-description>{{ summary(c, !durationComputed()) }}</mat-panel-description>
-          </mat-expansion-panel-header>
+        <section class="conditions" aria-labelledby="conditions-title">
+          <header>
+            <h3 id="conditions-title">Conditions du crédit</h3>
+            <button mat-button [disabled]="conditionsAreDefaults()" (click)="resetConditions()">
+              <mat-icon>restart_alt</mat-icon>Conditions par défaut
+            </button>
+          </header>
           <app-conditions-fields
             [value]="c"
             [durationComputed]="durationComputed()"
             (changed)="conditions.set($event)"
           />
-          <button
-            mat-button
-            class="defaults"
-            [disabled]="conditionsAreDefaults()"
-            (click)="resetConditions()"
-          >
-            <mat-icon>restart_alt</mat-icon>Conditions par défaut
-          </button>
-        </mat-expansion-panel>
+        </section>
       }
     </section>
 

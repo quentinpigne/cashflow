@@ -18,7 +18,7 @@ import { Insurance } from '../../api/models/insurance';
 import { LoanKind } from '../../api/models/loan-kind';
 import { ProjectKind } from '../../api/models/project-kind';
 import { LOAN_KIND_LABELS } from '../../core/labels';
-import { formatMoney, formatRate, parseRatePpm } from '../../core/money';
+import { parseRatePpm } from '../../core/money';
 import { editable, moneyOrZero } from './applications';
 import { INSURANCE_LABELS, formatDuration, insuranceOf, rateEditable } from './credit-shared';
 
@@ -30,19 +30,6 @@ export const PROJECT_SHORT_LABELS: Record<ProjectKind, string> = {
   VEHICLE: 'Véhicule',
   OTHER: 'Autre',
 };
-
-/** « 5,00 % sur 5 ans, sans assurance, sans frais » : les conditions en une ligne. */
-export function conditionsSummary(c: CreditConditions, withDuration = true): string {
-  const insurance =
-    c.insurance.mode === 'NONE'
-      ? 'sans assurance'
-      : c.insurance.mode === 'FIXED'
-        ? `assurance ${formatMoney(c.insurance.amount_minor)}/mois`
-        : `assurance ${formatRate(c.insurance.rate_ppm)}`;
-  const fees = c.fees_minor + c.guarantee_fees_minor;
-  const duration = withDuration ? ` sur ${formatDuration(c.duration_months)}` : '';
-  return `${formatRate(c.annual_rate_ppm)}${duration}, ${insurance}, ${fees ? `${formatMoney(fees)} de frais` : 'sans frais'}`;
-}
 
 function same(a: CreditConditions, b: CreditConditions): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
