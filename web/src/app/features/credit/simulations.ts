@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +23,7 @@ import { Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, firstValueFrom, map, of, switchMap } from 'rxjs';
 
 import { ComputeInput } from '../../api/models/compute-input';
+import { PurchaseCapacity } from '../../api/models/purchase-capacity';
 import { Insurance } from '../../api/models/insurance';
 import { LoanKind } from '../../api/models/loan-kind';
 import { SimulationGoal } from '../../api/models/simulation-goal';
@@ -29,7 +38,6 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { LoanDialog } from '../loans/loans';
 import {
   INSURANCE_LABELS,
-  LoansTabs,
   compareSimulations,
   editSimulation,
   formatDuration,
@@ -44,7 +52,6 @@ import {
   imports: [
     FormsModule,
     RouterLink,
-    LoansTabs,
     MatButtonModule,
     MatButtonToggleModule,
     MatCheckboxModule,
@@ -57,16 +64,17 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="page">
-      <div class="page-header"><h1>Prêts</h1></div>
-      <app-loans-tabs />
-
+    <div class="part">
       <section class="card simulator">
         <header>
           <h2>{{ editing()?.name ?? 'Simulateur' }}</h2>
           @if (editing()) {
             <button mat-button (click)="reset()">
               <mat-icon>add</mat-icon>Nouvelle simulation
+            </button>
+          } @else if (start()) {
+            <button mat-button (click)="seed()">
+              <mat-icon>restart_alt</mat-icon>Repartir de la capacité
             </button>
           }
         </header>
@@ -278,6 +286,15 @@ import {
                 {{ s.result.total_cost_minor | money }}</span
               >
             </span>
+            @if (s.application_id) {
+              <a mat-button class="prepare" [routerLink]="['/prets/demandes', s.application_id]">
+                Voir la demande
+              </a>
+            } @else {
+              <button mat-stroked-button class="prepare" (click)="prepare(s)">
+                Préparer une demande
+              </button>
+            }
             <button
               mat-icon-button
               [matMenuTriggerFor]="menu"
@@ -286,6 +303,11 @@ import {
               <mat-icon>more_vert</mat-icon>
             </button>
             <mat-menu #menu>
+              @if (!s.application_id) {
+                <button mat-menu-item (click)="prepare(s)">
+                  <mat-icon>assignment</mat-icon>Préparer une demande
+                </button>
+              }
               <button mat-menu-item (click)="edit(s)"><mat-icon>edit</mat-icon>Modifier</button>
               <button mat-menu-item (click)="duplicate(s)">
                 <mat-icon>content_copy</mat-icon>Dupliquer
@@ -337,6 +359,7 @@ import {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
       gap: calc(var(--field-gap) * 1.5) var(--field-gap);
+      align-items: start;
     }
     .results {
       display: grid;
@@ -368,13 +391,16 @@ import {
     }
     .row {
       display: grid;
-      grid-template-columns: auto 1fr auto auto;
+      grid-template-columns: auto 1fr auto auto auto;
       align-items: center;
       gap: 0.5rem;
       border-top: 1px solid var(--mat-sys-outline-variant);
       padding: 0.25rem 0;
       @media (max-width: 599.98px) {
         grid-template-columns: auto 1fr auto;
+        .prepare {
+          display: none;
+        }
         .numbers {
           grid-column: 2;
           text-align: left;
@@ -487,6 +513,51 @@ export class SimulationsPage {
       ),
     ),
   );
+
+  /** Hypothèses et capital empruntable de la capacité d'achat, d'où part le simulateur (R-CRE-37). */
+  readonly start = input<PurchaseCapacity | null>(null);
+  private seeded = false;
+
+  constructor() {
+    effect(() => {
+      if (this.start() && !this.seeded && !this.editing()) this.seed();
+    });
+  }
+
+  /** Repart des hypothèses de la capacité : mensualité cherchée au capital empruntable (R-CRE-37). */
+  protected seed(): void {
+    const capacity = this.start();
+    if (!capacity) return;
+    this.seeded = true;
+    const h = capacity.hypotheses;
+    this.editing.set(null);
+    this.goal.set('PAYMENT');
+    this.kind.set('MORTGAGE');
+    if (capacity.today.capital_minor > 0)
+      this.principal.set(toEditable(capacity.today.capital_minor));
+    this.duration.set(String(h.duration_months));
+    this.rate.set(rateEditable(h.annual_rate_ppm));
+    this.insuranceMode.set(h.insurance.mode);
+    if (h.insurance.mode === 'FIXED')
+      this.insuranceAmount.set(toEditable(h.insurance.amount_minor));
+    if (h.insurance.mode === 'RATE_ON_PRINCIPAL')
+      this.insuranceRate.set(rateEditable(h.insurance.rate_ppm));
+    this.fees.set(toEditable(h.fees_minor));
+    this.guarantee.set(toEditable(h.guarantee_fees_minor));
+  }
+
+  /** Prépare une demande depuis une simulation (R-CRE-36). */
+  protected async prepare(s: SimulationView): Promise<void> {
+    try {
+      const view = await firstValueFrom(
+        this.api.applicationFromSimulation({ id: s.id, body: { name: s.name } }),
+      );
+      this.version.bump();
+      await this.router.navigate(['/prets/demandes', view.id]);
+    } catch (e) {
+      this.snack.open(errorMessage(e), undefined, { duration: 5000 });
+    }
+  }
 
   protected reset(): void {
     this.editing.set(null);

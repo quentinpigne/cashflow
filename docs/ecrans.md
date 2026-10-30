@@ -931,7 +931,8 @@ dans l'ordre :
 
 **2. Simulateur** (R-CRE-37)
 
-- **Simulateur** (`[mat-card]`), parti des hypothèses de la capacité et du capital empruntable : type de prêt ; **ce que je cherche** `[mat-button-toggle-group]` :
+- **Simulateur** (`[mat-card]`), parti des hypothèses de la capacité et du capital empruntable (« Repartir de
+  la capacité » y revient après des changements) : type de prêt ; **ce que je cherche** `[mat-button-toggle-group]` :
   « La mensualité » (capital et durée saisis), « Le capital » (mensualité visée et durée saisies), « La durée »
   (capital et mensualité visée saisis) ; taux nominal, assurance (aucune, montant mensuel, taux annuel),
   frais de dossier, frais de garantie. Le résultat se recalcule à la saisie : mensualité, assurance, échéance

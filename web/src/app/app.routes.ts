@@ -56,16 +56,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/loans/loans').then((m) => m.LoansPage),
       },
       {
-        path: 'prets/capacite',
-        title: "Capacité d'achat — Cashflow",
-        loadComponent: () =>
-          import('./features/credit/purchase-capacity').then((m) => m.PurchaseCapacityPage),
+        path: 'prets/simuler',
+        title: 'Simuler — Cashflow',
+        loadComponent: () => import('./features/credit/simulate').then((m) => m.SimulatePage),
       },
-      {
-        path: 'prets/simulations',
-        title: 'Simulations — Cashflow',
-        loadComponent: () => import('./features/credit/simulations').then((m) => m.SimulationsPage),
-      },
+      { path: 'prets/capacite', redirectTo: 'prets/simuler' },
+      { path: 'prets/simulations', redirectTo: 'prets/simuler' },
       {
         path: 'prets/demandes',
         title: 'Demandes de crédit — Cashflow',

@@ -26,6 +26,7 @@ import { ApplicationInput } from '../../api/models/application-input';
 import { ApplicationStatus } from '../../api/models/application-status';
 import { ApplicationView } from '../../api/models/application-view';
 import { DocumentKind } from '../../api/models/document-kind';
+import { LenderEventView } from '../../api/models/lender-event-view';
 import { LenderRequestView } from '../../api/models/lender-request-view';
 import { Piece } from '../../api/models/piece';
 import { PieceView } from '../../api/models/piece-view';
@@ -39,10 +40,15 @@ import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { pickDocuments } from '../documents/link-dialogs';
+import { acceptOffer } from './acceptance';
 import { uploadDocument } from '../documents/upload-dialog';
 import { LoanDialog } from '../loans/loans';
 import {
   ApplicationDialog,
+  EVENT_KIND_ICONS,
+  EVENT_KIND_LABELS,
+  LenderEventDialog,
+  LenderEventDialogData,
   LenderRequestDialog,
   LenderRequestDialogData,
   applicationInput,
@@ -539,47 +545,105 @@ const PIECE_ICONS: Record<PieceView['status'], string> = {
             </span>
           </header>
           @for (r of a.lender_requests; track r.id) {
-            <div class="row">
-              <span class="name">
-                <span
-                  >{{ r.name }} <span class="tag">{{ lenderLabels[r.status] }}</span></span
+            <div class="request">
+              <div class="row">
+                <button
+                  class="name open"
+                  (click)="toggleJournal(r.id)"
+                  [attr.aria-expanded]="opened().has(r.id)"
                 >
-                <span class="muted small">
-                  envoyée le {{ r.sent_on | frDate }}
-                  @if (r.answered_on) {
-                    · réponse le {{ r.answered_on | frDate }}
-                  }
-                  @if (offerOf(a, r); as o) {
-                    · offre : {{ o.name }}, {{ o.result.total_payment_minor | money }}/mois, TAEG
-                    {{ rate(o.result.apr_ppm) }}
-                  }
-                </span>
-              </span>
-              <span></span>
-              <button
-                mat-icon-button
-                [matMenuTriggerFor]="reqMenu"
-                [attr.aria-label]="'Actions sur ' + r.name"
-              >
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #reqMenu>
-                <button mat-menu-item (click)="request(a, r)">
-                  <mat-icon>edit</mat-icon>Modifier
+                  <span>
+                    {{ r.name }} <span class="tag">{{ lenderLabels[r.status] }}</span>
+                    @if (r.follow_up_due) {
+                      <span class="tag due">à relancer</span>
+                    }
+                  </span>
+                  <span class="muted small">
+                    envoyée le {{ r.sent_on | frDate }}
+                    @if (r.answered_on) {
+                      · réponse le {{ r.answered_on | frDate }}
+                    }
+                    @if (r.follow_up_on) {
+                      · relance le {{ r.follow_up_on | frDate }}
+                    }
+                    @if (offerOf(a, r); as o) {
+                      · offre : {{ o.name }}, {{ o.result.total_payment_minor | money }}/mois, TAEG
+                      {{ rate(o.result.apr_ppm) }}
+                    }
+                  </span>
                 </button>
-                <button mat-menu-item (click)="recordOffer(a, r)">
-                  <mat-icon>request_quote</mat-icon
-                  >{{ r.simulation_id ? "Remplacer l'offre" : "Enregistrer l'offre" }}
-                </button>
-                @if (r.status === 'OFFER' && r.simulation_id) {
-                  <button mat-menu-item (click)="accept(a, r)">
-                    <mat-icon>task_alt</mat-icon>Accepter l'offre
+                @if (r.status === 'SENT' || r.status === 'OFFER') {
+                  <button mat-stroked-button class="follow" (click)="followUp(a, r)">
+                    <mat-icon>notifications_active</mat-icon>Relancer
                   </button>
+                } @else {
+                  <span></span>
                 }
-                <button mat-menu-item (click)="removeRequest(a, r)">
-                  <mat-icon>delete</mat-icon>Supprimer
+                <button
+                  mat-icon-button
+                  [matMenuTriggerFor]="reqMenu"
+                  [attr.aria-label]="'Actions sur ' + r.name"
+                >
+                  <mat-icon>more_vert</mat-icon>
                 </button>
-              </mat-menu>
+                <mat-menu #reqMenu>
+                  <button mat-menu-item (click)="request(a, r)">
+                    <mat-icon>edit</mat-icon>Modifier
+                  </button>
+                  <button mat-menu-item (click)="event(a, r, null)">
+                    <mat-icon>add_comment</mat-icon>Ajouter un échange
+                  </button>
+                  <button mat-menu-item (click)="recordOffer(a, r)">
+                    <mat-icon>request_quote</mat-icon
+                    >{{ r.simulation_id ? "Remplacer l'offre" : "Enregistrer l'offre" }}
+                  </button>
+                  @if (r.status === 'OFFER' && r.simulation_id) {
+                    <button mat-menu-item (click)="accept(a, r)">
+                      <mat-icon>task_alt</mat-icon>Accepter l'offre
+                    </button>
+                  }
+                  <button mat-menu-item (click)="removeRequest(a, r)">
+                    <mat-icon>delete</mat-icon>Supprimer
+                  </button>
+                </mat-menu>
+              </div>
+              @if (opened().has(r.id)) {
+                <ol class="journal" aria-label="Journal">
+                  @for (e of r.events; track e.id) {
+                    <li>
+                      <mat-icon>{{ eventIcons[e.kind] }}</mat-icon>
+                      <span class="when">{{ e.date | frDate }}</span>
+                      <span>
+                        <strong>{{ eventLabels[e.kind] }}</strong>
+                        @if (e.note) {
+                          — {{ e.note }}
+                        }
+                      </span>
+                      <button
+                        mat-icon-button
+                        class="small-button"
+                        [matMenuTriggerFor]="eventMenu"
+                        [attr.aria-label]="'Actions sur l’échange du ' + e.date"
+                      >
+                        <mat-icon>more_vert</mat-icon>
+                      </button>
+                      <mat-menu #eventMenu>
+                        <button mat-menu-item (click)="event(a, r, e)">
+                          <mat-icon>edit</mat-icon>Modifier
+                        </button>
+                        <button mat-menu-item (click)="removeEvent(a, r, e)">
+                          <mat-icon>delete</mat-icon>Supprimer
+                        </button>
+                      </mat-menu>
+                    </li>
+                  }
+                  <li>
+                    <button mat-button (click)="event(a, r, null)">
+                      <mat-icon>add</mat-icon>Ajouter un échange
+                    </button>
+                  </li>
+                </ol>
+              }
             </div>
           } @empty {
             <p class="muted">Aucune démarche : ajoutez chaque banque ou courtier sollicité.</p>
@@ -741,6 +805,52 @@ const PIECE_ICONS: Record<PieceView['status'], string> = {
         font-size: 1rem;
         width: 1rem;
         height: 1rem;
+      }
+    }
+    .request + .request {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+    .request .row {
+      border-top: 0;
+    }
+    .open {
+      background: none;
+      border: 0;
+      padding: 0.25rem 0;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .journal {
+      list-style: none;
+      margin: 0 0 0.75rem;
+      padding: 0 0 0 1rem;
+      border-left: 2px solid var(--mat-sys-outline-variant);
+      li {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        align-items: center;
+        gap: 0.5rem;
+        font: var(--mat-sys-body-small);
+        mat-icon {
+          font-size: 1.125rem;
+          width: 1.125rem;
+          height: 1.125rem;
+          color: var(--mat-sys-on-surface-variant);
+        }
+      }
+      .when {
+        color: var(--mat-sys-on-surface-variant);
+      }
+    }
+    .tag.due {
+      background: var(--cf-warning, #b26a00);
+      color: white;
+    }
+    @media (max-width: 599.98px) {
+      .follow {
+        display: none;
       }
     }
     .tag {
@@ -1015,6 +1125,51 @@ export class ApplicationPage {
     );
   }
 
+  protected readonly eventLabels = EVENT_KIND_LABELS;
+  protected readonly eventIcons = EVENT_KIND_ICONS;
+  /** Démarches dont le journal est déplié. */
+  protected readonly opened = signal<ReadonlySet<string>>(new Set());
+
+  protected toggleJournal(id: string): void {
+    this.opened.update((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  private async eventDialog(data: LenderEventDialogData): Promise<void> {
+    const ref = this.dialog.open<LenderEventDialog, LenderEventDialogData, boolean>(
+      LenderEventDialog,
+      {
+        data,
+        maxWidth: '100vw',
+      },
+    );
+    if (await firstValueFrom(ref.afterClosed())) {
+      this.opened.update((set) => new Set(set).add(data.request.id));
+      this.version.bump();
+    }
+  }
+
+  /** Relance une démarche (R-CRE-25). */
+  protected followUp(a: ApplicationView, r: LenderRequestView): Promise<void> {
+    return this.eventDialog({ applicationId: a.id, request: r, event: null, followUp: true });
+  }
+
+  protected event(
+    a: ApplicationView,
+    r: LenderRequestView,
+    e: LenderEventView | null,
+  ): Promise<void> {
+    return this.eventDialog({ applicationId: a.id, request: r, event: e });
+  }
+
+  protected removeEvent(a: ApplicationView, r: LenderRequestView, e: LenderEventView): void {
+    void this.run(this.api.deleteLenderEvent({ id: a.id, request_id: r.id, event_id: e.id }));
+  }
+
   protected offers(a: ApplicationView): SimulationView[] {
     const ids = new Set(a.lender_requests.map((r) => r.simulation_id).filter(Boolean));
     return a.simulations.filter((s) => ids.has(s.id));
@@ -1069,14 +1224,12 @@ export class ApplicationPage {
     try {
       const view = await firstValueFrom(this.api.acceptOffer({ id: a.id, request_id: r.id }));
       this.version.bump();
+      // Assistant d'acceptation : le bien, le prêt, puis les documents (R-CRE-27).
       const offer = view.simulations.find((s) => s.id === r.simulation_id);
-      if (offer && !offer.loan_id) {
-        const create = await confirm(this.dialog, {
-          title: 'Créer le prêt ?',
-          message: 'Le prêt est prérempli avec les conditions de l’offre.',
-          action: 'Créer le prêt',
-        });
-        if (create) await this.convert(offer, view);
+      if (offer) {
+        const loan = await acceptOffer(this.dialog, { application: view, offer });
+        this.version.bump();
+        if (loan) await this.router.navigate(['/prets', loan]);
       }
     } catch (e) {
       this.snack.open(errorMessage(e), undefined, { duration: 5000 });

@@ -134,8 +134,7 @@ export function insuranceOf(
 export class LoansTabs {
   protected readonly tabs = [
     { path: '/prets', label: 'Prêts', exact: true },
-    { path: '/prets/capacite', label: 'Capacité', exact: false },
-    { path: '/prets/simulations', label: 'Simulations', exact: false },
+    { path: '/prets/simuler', label: 'Simuler', exact: false },
     { path: '/prets/demandes', label: 'Demandes', exact: false },
   ];
 }

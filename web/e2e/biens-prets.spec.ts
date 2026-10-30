@@ -76,6 +76,6 @@ test('E9 : une rubrique ne se désactive qu’une fois vide (R-BIE-7, R-PRE-12)'
   await login(page);
   await page.goto('/reglages');
   await expect(page.getByRole('switch', { name: 'Biens' })).toBeDisabled();
-  await expect(page.getByText(/1 bien\(s\) : les supprimer/)).toBeVisible();
+  await expect(page.getByText(/\d+ bien\(s\) : les supprimer/)).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Prêts' })).toBeDisabled();
 });

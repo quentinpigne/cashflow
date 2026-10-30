@@ -129,9 +129,9 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] CRE-06 — démarches auprès des banques et courtiers, offres comparées, acceptation
 - [x] CRE-07 — capacité d'achat : prix maximal aujourd'hui et dans les années à venir, effet sur l'épargne et le
       patrimoine projeté, création d'une demande
-- [ ] CRE-08 — onglet Simuler : capacité et simulateur réunis ; préparer une demande depuis une simulation
-- [ ] CRE-09 — journal des démarches, relances et rappels
-- [ ] CRE-10 — acceptation d'une offre : bien, prêt et documents en une fois
+- [x] CRE-08 — onglet Simuler : capacité et simulateur réunis ; préparer une demande depuis une simulation
+- [x] CRE-09 — journal des démarches, relances et rappels
+- [x] CRE-10 — acceptation d'une offre : bien, prêt et documents en une fois
 
 ## Mise en service (prochaine étape)
 

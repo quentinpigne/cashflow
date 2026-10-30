@@ -19,6 +19,8 @@ import { firstValueFrom } from 'rxjs';
 import { ApplicationInput } from '../../api/models/application-input';
 import { ApplicationView } from '../../api/models/application-view';
 import { LenderRequestInput } from '../../api/models/lender-request-input';
+import { LenderEventKind } from '../../api/models/lender-event-kind';
+import { LenderEventView } from '../../api/models/lender-event-view';
 import { LenderRequestView } from '../../api/models/lender-request-view';
 import { ProjectKind } from '../../api/models/project-kind';
 import { AssetsService } from '../../api/services/assets.service';
@@ -87,6 +89,13 @@ export function applicationInput(
                 @if (a.missing_pieces > 0) {
                   · {{ a.missing_pieces }} pièce{{ a.missing_pieces > 1 ? 's' : '' }} à fournir
                 }
+                @if (a.follow_ups_due > 0) {
+                  ·
+                  <span class="due"
+                    >{{ a.follow_ups_due }} démarche{{ a.follow_ups_due > 1 ? 's' : '' }} à
+                    relancer</span
+                  >
+                }
               </span>
             </span>
             <span class="status" [attr.data-status]="a.status">{{ statusLabels[a.status] }}</span>
@@ -120,6 +129,9 @@ export function applicationInput(
     }
     .small {
       font: var(--mat-sys-body-small);
+    }
+    .due {
+      color: var(--cf-warning, #b26a00);
     }
     .status {
       font: var(--mat-sys-label-medium);
@@ -403,6 +415,18 @@ export interface LenderRequestDialogData {
         </mat-form-field>
       </div>
       <mat-form-field>
+        <mat-label>Prochaine relance</mat-label>
+        <input
+          matInput
+          [matDatepicker]="followPicker"
+          [ngModel]="followUp()"
+          (ngModelChange)="followUp.set($event)"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="followPicker" />
+        <mat-datepicker #followPicker />
+        <mat-hint>{{ r ? '' : "Par défaut, 14 jours après l'envoi" }}</mat-hint>
+      </mat-form-field>
+      <mat-form-field>
         <mat-label>Note</mat-label>
         <input matInput [ngModel]="note()" (ngModelChange)="note.set($event)" />
       </mat-form-field>
@@ -450,6 +474,9 @@ export class LenderRequestDialog {
     this.r?.answered_on ? fromIsoDate(this.r.answered_on) : null,
   );
   protected readonly note = signal(this.r?.note ?? '');
+  protected readonly followUp = signal<Date | null>(
+    this.r?.follow_up_on ? fromIsoDate(this.r.follow_up_on) : null,
+  );
   protected readonly error = signal<string | null>(null);
 
   protected readonly body = computed<LenderRequestInput | null>(() => {
@@ -457,7 +484,9 @@ export class LenderRequestDialog {
     const lender = this.lender().trim();
     if (!sent || (!this.institution() && !lender)) return null;
     const answered = this.answered();
+    const followUp = this.followUp();
     return {
+      follow_up_on: followUp ? toIsoDate(followUp) : null,
       institution_id: this.institution(),
       lender_name: this.institution() ? null : lender,
       status: this.status(),
@@ -492,4 +521,187 @@ export function moneyOrZero(text: string): number | null {
 
 export function editable(minor: number): string {
   return minor ? toEditable(minor) : '';
+}
+
+export const EVENT_KIND_LABELS: Record<LenderEventKind, string> = {
+  SENT: 'Envoi',
+  FOLLOW_UP: 'Relance',
+  CALL: 'Appel',
+  MEETING: 'Rendez-vous',
+  ANSWER: 'Réponse',
+  NOTE: 'Note',
+};
+
+export const EVENT_KIND_ICONS: Record<LenderEventKind, string> = {
+  SENT: 'send',
+  FOLLOW_UP: 'notifications_active',
+  CALL: 'call',
+  MEETING: 'event',
+  ANSWER: 'reply',
+  NOTE: 'sticky_note_2',
+};
+
+export interface LenderEventDialogData {
+  applicationId: string;
+  request: LenderRequestView;
+  /** Échange modifié, ou nouvel échange. */
+  event: LenderEventView | null;
+  /** Relance : inscrit la relance et reporte la prochaine (R-CRE-25). */
+  followUp?: boolean;
+}
+
+/** Échange du journal d'une démarche (R-CRE-24), ou relance (R-CRE-25). */
+@Component({
+  selector: 'app-lender-event-dialog',
+  imports: [
+    FormsModule,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <h2 mat-dialog-title>
+      {{
+        data.followUp
+          ? 'Relancer ' + data.request.name
+          : e
+            ? "Modifier l'échange"
+            : 'Nouvel échange'
+      }}
+    </h2>
+    <mat-dialog-content class="form">
+      @if (!data.followUp) {
+        <div class="pair">
+          <mat-form-field>
+            <mat-label>Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="datePicker"
+              [ngModel]="date()"
+              (ngModelChange)="date.set($event)"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+            <mat-datepicker #datePicker />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Type</mat-label>
+            <mat-select [ngModel]="kind()" (ngModelChange)="kind.set($event)">
+              @for (k of kinds; track k) {
+                <mat-option [value]="k">{{ labels[k] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      }
+      <mat-form-field>
+        <mat-label>{{ data.followUp ? 'Comment' : 'Texte' }}</mat-label>
+        <textarea
+          matInput
+          rows="2"
+          [ngModel]="note()"
+          (ngModelChange)="note.set($event)"
+        ></textarea>
+        @if (data.followUp) {
+          <mat-hint>Mail au conseiller, appel…</mat-hint>
+        }
+      </mat-form-field>
+      @if (data.followUp) {
+        <mat-form-field>
+          <mat-label>Prochaine relance</mat-label>
+          <input
+            matInput
+            [matDatepicker]="nextPicker"
+            [ngModel]="next()"
+            (ngModelChange)="next.set($event)"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="nextPicker" />
+          <mat-datepicker #nextPicker />
+        </mat-form-field>
+      }
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Annuler</button>
+      <button mat-flat-button [disabled]="!date() || busy()" (click)="save()">
+        {{ data.followUp ? 'Relancer' : 'Enregistrer' }}
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--field-gap);
+      min-width: min(26rem, 80vw);
+    }
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--field-gap);
+    }
+    .error {
+      color: var(--mat-sys-error);
+      margin: 0;
+    }
+  `,
+})
+export class LenderEventDialog {
+  protected readonly data = inject<LenderEventDialogData>(MAT_DIALOG_DATA);
+  private readonly api = inject(CreditService);
+  private readonly ref = inject(MatDialogRef<LenderEventDialog, boolean>);
+
+  protected readonly e = this.data.event;
+  protected readonly kinds = Object.keys(EVENT_KIND_LABELS) as LenderEventKind[];
+  protected readonly labels = EVENT_KIND_LABELS;
+  protected readonly date = signal<Date | null>(fromIsoDate(this.e?.date ?? todayIso()));
+  protected readonly kind = signal<LenderEventKind>(this.e?.kind ?? 'NOTE');
+  protected readonly note = signal(this.e?.note ?? '');
+  /** Prochaine relance proposée 7 jours plus tard (R-CRE-25). */
+  protected readonly next = signal<Date | null>(inDays(7));
+  protected readonly error = signal<string | null>(null);
+  protected readonly busy = signal(false);
+
+  protected async save(): Promise<void> {
+    const date = this.date();
+    if (!date) return;
+    const ids = { id: this.data.applicationId, request_id: this.data.request.id };
+    const note = this.note().trim() || null;
+    this.busy.set(true);
+    try {
+      if (this.data.followUp) {
+        const next = this.next();
+        await firstValueFrom(
+          this.api.followUpLenderRequest({
+            ...ids,
+            body: { note, next_follow_up_on: next ? toIsoDate(next) : null },
+          }),
+        );
+      } else {
+        const body = { date: toIsoDate(date), kind: this.kind(), note };
+        await firstValueFrom(
+          this.e
+            ? this.api.updateLenderEvent({ ...ids, event_id: this.e.id, body })
+            : this.api.createLenderEvent({ ...ids, body }),
+        );
+      }
+      this.ref.close(true);
+    } catch (e) {
+      this.error.set(errorMessage(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}
+
+/** La date du jour décalée de `days` jours. */
+function inDays(days: number): Date {
+  const date = fromIsoDate(todayIso());
+  date.setDate(date.getDate() + days);
+  return date;
 }

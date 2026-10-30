@@ -3,7 +3,9 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
+  output,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
@@ -48,7 +50,6 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { editable, moneyOrZero } from './applications';
 import {
   INSURANCE_LABELS,
-  LoansTabs,
   PROJECT_KINDS,
   PROJECT_KIND_LABELS,
   formatDuration,
@@ -63,7 +64,6 @@ const axisMoney = (v: number) => formatChartValue(v, 'EUR', { bare: true }).repl
   selector: 'app-purchase-capacity',
   imports: [
     FormsModule,
-    LoansTabs,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -77,10 +77,7 @@ const axisMoney = (v: number) => formatChartValue(v, 'EUR', { bare: true }).repl
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="page">
-      <div class="page-header"><h1>Prêts</h1></div>
-      <app-loans-tabs />
-
+    <div class="part">
       @if (result(); as r) {
         <div class="layout">
           <section class="card hypotheses">
@@ -537,6 +534,8 @@ export class PurchaseCapacityPage {
   protected readonly rateLabel = formatRate;
 
   protected readonly result = signal<PurchaseCapacity | null>(null);
+  /** La capacité, à chaque calcul : le simulateur en part (R-CRE-37). */
+  readonly changed = output<PurchaseCapacity>();
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -608,6 +607,10 @@ export class PurchaseCapacityPage {
   });
 
   constructor() {
+    effect(() => {
+      const result = this.result();
+      if (result) this.changed.emit(result);
+    });
     void this.load();
     // Chaque changement recalcule la capacité et garde les hypothèses (R-CRE-30).
     toObservable(this.draft)
