@@ -61,6 +61,12 @@ import { confirm } from '../../shared/confirm-dialog';
           <mat-icon matListItemIcon>insights</mat-icon>
           <span matListItemTitle>Scénarios de projection</span>
         </a>
+        @if (features.value()?.loans) {
+          <a mat-list-item routerLink="/reglages/conditions-credit">
+            <mat-icon matListItemIcon>request_quote</mat-icon>
+            <span matListItemTitle>Conditions de crédit</span>
+          </a>
+        }
         <a mat-list-item routerLink="/reglages/regles">
           <mat-icon matListItemIcon>rule</mat-icon>
           <span matListItemTitle>Règles de catégorisation</span>

@@ -14,12 +14,16 @@ import { acceptOffer } from '../fn/credit/accept-offer';
 import { AcceptOffer$Params } from '../fn/credit/accept-offer';
 import { applicationFromCapacity } from '../fn/credit/application-from-capacity';
 import { ApplicationFromCapacity$Params } from '../fn/credit/application-from-capacity';
+import { applicationFromFinancing } from '../fn/credit/application-from-financing';
+import { ApplicationFromFinancing$Params } from '../fn/credit/application-from-financing';
 import { applicationFromSimulation } from '../fn/credit/application-from-simulation';
 import { ApplicationFromSimulation$Params } from '../fn/credit/application-from-simulation';
 import { ApplicationSummary } from '../models/application-summary';
 import { ApplicationView } from '../models/application-view';
 import { assignPiece } from '../fn/credit/assign-piece';
 import { AssignPiece$Params } from '../fn/credit/assign-piece';
+import { borrowerSituation } from '../fn/credit/borrower-situation';
+import { BorrowerSituation$Params } from '../fn/credit/borrower-situation';
 import { computeLoanSimulation } from '../fn/credit/compute-loan-simulation';
 import { ComputeLoanSimulation$Params } from '../fn/credit/compute-loan-simulation';
 import { ComputeResult } from '../models/compute-result';
@@ -43,6 +47,7 @@ import { deleteLoanSimulation } from '../fn/credit/delete-loan-simulation';
 import { DeleteLoanSimulation$Params } from '../fn/credit/delete-loan-simulation';
 import { exportLoanApplication } from '../fn/credit/export-loan-application';
 import { ExportLoanApplication$Params } from '../fn/credit/export-loan-application';
+import { FinancingView } from '../models/financing-view';
 import { followUpLenderRequest } from '../fn/credit/follow-up-lender-request';
 import { FollowUpLenderRequest$Params } from '../fn/credit/follow-up-lender-request';
 import { getLoanApplication } from '../fn/credit/get-loan-application';
@@ -56,19 +61,35 @@ import { listLoanSimulations } from '../fn/credit/list-loan-simulations';
 import { ListLoanSimulations$Params } from '../fn/credit/list-loan-simulations';
 import { loanApplicationSummary } from '../fn/credit/loan-application-summary';
 import { LoanApplicationSummary$Params } from '../fn/credit/loan-application-summary';
+import { loanCost } from '../fn/credit/loan-cost';
+import { LoanCost$Params } from '../fn/credit/loan-cost';
+import { LoanCostView } from '../models/loan-cost-view';
 import { LoanCreated } from '../models/loan-created';
 import { loanSimulationSchedule } from '../fn/credit/loan-simulation-schedule';
 import { LoanSimulationSchedule$Params } from '../fn/credit/loan-simulation-schedule';
+import { projectDefaults } from '../fn/credit/project-defaults';
+import { ProjectDefaults } from '../models/project-defaults';
+import { ProjectDefaults$Params } from '../fn/credit/project-defaults';
 import { purchaseCapacity } from '../fn/credit/purchase-capacity';
 import { PurchaseCapacity } from '../models/purchase-capacity';
 import { PurchaseCapacity$Params } from '../fn/credit/purchase-capacity';
+import { purchaseFinancing } from '../fn/credit/purchase-financing';
+import { PurchaseFinancing$Params } from '../fn/credit/purchase-financing';
 import { recordOffer } from '../fn/credit/record-offer';
 import { RecordOffer$Params } from '../fn/credit/record-offer';
-import { savePurchaseHypotheses } from '../fn/credit/save-purchase-hypotheses';
-import { SavePurchaseHypotheses$Params } from '../fn/credit/save-purchase-hypotheses';
+import { saveBorrowerSituation } from '../fn/credit/save-borrower-situation';
+import { SaveBorrowerSituation$Params } from '../fn/credit/save-borrower-situation';
+import { saveProjectDefaults } from '../fn/credit/save-project-defaults';
+import { SaveProjectDefaults$Params } from '../fn/credit/save-project-defaults';
+import { saveSimulateState } from '../fn/credit/save-simulate-state';
+import { SaveSimulateState$Params } from '../fn/credit/save-simulate-state';
 import { setPieceRequired } from '../fn/credit/set-piece-required';
 import { SetPieceRequired$Params } from '../fn/credit/set-piece-required';
+import { simulateState } from '../fn/credit/simulate-state';
+import { SimulateState } from '../models/simulate-state';
+import { SimulateState$Params } from '../fn/credit/simulate-state';
 import { SimulationView } from '../models/simulation-view';
+import { SituationView } from '../models/situation-view';
 import { unassignPiece } from '../fn/credit/unassign-piece';
 import { UnassignPiece$Params } from '../fn/credit/unassign-piece';
 import { updateLenderEvent } from '../fn/credit/update-lender-event';
@@ -88,6 +109,383 @@ import { UpdateLoanSimulation$Params } from '../fn/credit/update-loan-simulation
 export class CreditService extends BaseService {
   constructor(config: ApiConfiguration, http: HttpClient) {
     super(config, http);
+  }
+
+  /** Path part for operation `purchaseFinancing()` */
+  static readonly PurchaseFinancingPath = '/api/v1/credit/financing';
+
+  /**
+   * Puis-je financer cet achat ? (R-CRE-40).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `purchaseFinancing()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  purchaseFinancing$Response(params: PurchaseFinancing$Params, context?: HttpContext): Observable<StrictHttpResponse<FinancingView>> {
+    const obs = purchaseFinancing(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Puis-je financer cet achat ? (R-CRE-40).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `purchaseFinancing$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  purchaseFinancing(params: PurchaseFinancing$Params, context?: HttpContext): Observable<FinancingView> {
+    const resp = this.purchaseFinancing$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<FinancingView>): FinancingView => r.body)
+    );
+  }
+
+  /** Path part for operation `applicationFromFinancing()` */
+  static readonly ApplicationFromFinancingPath = '/api/v1/credit/financing/application';
+
+  /**
+   * Crée une demande depuis « Puis-je financer cet achat ? » (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `applicationFromFinancing()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromFinancing$Response(params: ApplicationFromFinancing$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = applicationFromFinancing(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Crée une demande depuis « Puis-je financer cet achat ? » (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `applicationFromFinancing$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromFinancing(params: ApplicationFromFinancing$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.applicationFromFinancing$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
+    );
+  }
+
+  /** Path part for operation `loanCost()` */
+  static readonly LoanCostPath = '/api/v1/credit/loan-cost';
+
+  /**
+   * Que coûte ce prêt ? (R-CRE-41).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `loanCost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  loanCost$Response(params: LoanCost$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanCostView>> {
+    const obs = loanCost(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Que coûte ce prêt ? (R-CRE-41).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `loanCost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  loanCost(params: LoanCost$Params, context?: HttpContext): Observable<LoanCostView> {
+    const resp = this.loanCost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<LoanCostView>): LoanCostView => r.body)
+    );
+  }
+
+  /** Path part for operation `projectDefaults()` */
+  static readonly ProjectDefaultsPath = '/api/v1/credit/project-defaults';
+
+  /**
+   * Conditions par défaut de chaque type de projet (R-CRE-38).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `projectDefaults()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  projectDefaults$Response(params?: ProjectDefaults$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ProjectDefaults>>> {
+    const obs = projectDefaults(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Conditions par défaut de chaque type de projet (R-CRE-38).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `projectDefaults$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  projectDefaults(params?: ProjectDefaults$Params, context?: HttpContext): Observable<Array<ProjectDefaults>> {
+    const resp = this.projectDefaults$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<ProjectDefaults>>): Array<ProjectDefaults> => r.body)
+    );
+  }
+
+  /** Path part for operation `saveProjectDefaults()` */
+  static readonly SaveProjectDefaultsPath = '/api/v1/credit/project-defaults';
+
+  /**
+   * Garde les conditions par défaut (R-CRE-38).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `saveProjectDefaults()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveProjectDefaults$Response(params: SaveProjectDefaults$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ProjectDefaults>>> {
+    const obs = saveProjectDefaults(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Garde les conditions par défaut (R-CRE-38).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `saveProjectDefaults$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveProjectDefaults(params: SaveProjectDefaults$Params, context?: HttpContext): Observable<Array<ProjectDefaults>> {
+    const resp = this.saveProjectDefaults$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<ProjectDefaults>>): Array<ProjectDefaults> => r.body)
+    );
+  }
+
+  /** Path part for operation `purchaseCapacity()` */
+  static readonly PurchaseCapacityPath = '/api/v1/credit/purchase-capacity';
+
+  /**
+   * Que puis-je acheter ? (R-CRE-31 à R-CRE-35).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `purchaseCapacity()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  purchaseCapacity$Response(params: PurchaseCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
+    const obs = purchaseCapacity(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Que puis-je acheter ? (R-CRE-31 à R-CRE-35).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `purchaseCapacity$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  purchaseCapacity(params: PurchaseCapacity$Params, context?: HttpContext): Observable<PurchaseCapacity> {
+    const resp = this.purchaseCapacity$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<PurchaseCapacity>): PurchaseCapacity => r.body)
+    );
+  }
+
+  /** Path part for operation `applicationFromCapacity()` */
+  static readonly ApplicationFromCapacityPath = '/api/v1/credit/purchase-capacity/application';
+
+  /**
+   * Crée une demande depuis « Que puis-je acheter ? » (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `applicationFromCapacity()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromCapacity$Response(params: ApplicationFromCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
+    const obs = applicationFromCapacity(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Crée une demande depuis « Que puis-je acheter ? » (R-CRE-36).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `applicationFromCapacity$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  applicationFromCapacity(params: ApplicationFromCapacity$Params, context?: HttpContext): Observable<ApplicationView> {
+    const resp = this.applicationFromCapacity$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
+    );
+  }
+
+  /** Path part for operation `simulateState()` */
+  static readonly SimulateStatePath = '/api/v1/credit/simulate-state';
+
+  /**
+   * Dernier état de l'onglet Simuler (R-CRE-39).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `simulateState()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  simulateState$Response(params?: SimulateState$Params, context?: HttpContext): Observable<StrictHttpResponse<SimulateState>> {
+    const obs = simulateState(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Dernier état de l'onglet Simuler (R-CRE-39).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `simulateState$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  simulateState(params?: SimulateState$Params, context?: HttpContext): Observable<SimulateState> {
+    const resp = this.simulateState$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<SimulateState>): SimulateState => r.body)
+    );
+  }
+
+  /** Path part for operation `saveSimulateState()` */
+  static readonly SaveSimulateStatePath = '/api/v1/credit/simulate-state';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `saveSimulateState()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveSimulateState$Response(params: SaveSimulateState$Params, context?: HttpContext): Observable<StrictHttpResponse<SimulateState>> {
+    const obs = saveSimulateState(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `saveSimulateState$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveSimulateState(params: SaveSimulateState$Params, context?: HttpContext): Observable<SimulateState> {
+    const resp = this.saveSimulateState$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<SimulateState>): SimulateState => r.body)
+    );
+  }
+
+  /** Path part for operation `borrowerSituation()` */
+  static readonly BorrowerSituationPath = '/api/v1/credit/situation';
+
+  /**
+   * Situation d'emprunteur et son résumé (R-CRE-30).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `borrowerSituation()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  borrowerSituation$Response(params?: BorrowerSituation$Params, context?: HttpContext): Observable<StrictHttpResponse<SituationView>> {
+    const obs = borrowerSituation(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Situation d'emprunteur et son résumé (R-CRE-30).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `borrowerSituation$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  borrowerSituation(params?: BorrowerSituation$Params, context?: HttpContext): Observable<SituationView> {
+    const resp = this.borrowerSituation$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<SituationView>): SituationView => r.body)
+    );
+  }
+
+  /** Path part for operation `saveBorrowerSituation()` */
+  static readonly SaveBorrowerSituationPath = '/api/v1/credit/situation';
+
+  /**
+   * Garde la situation d'emprunteur (R-CRE-30).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `saveBorrowerSituation()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveBorrowerSituation$Response(params: SaveBorrowerSituation$Params, context?: HttpContext): Observable<StrictHttpResponse<SituationView>> {
+    const obs = saveBorrowerSituation(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Garde la situation d'emprunteur (R-CRE-30).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `saveBorrowerSituation$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  saveBorrowerSituation(params: SaveBorrowerSituation$Params, context?: HttpContext): Observable<SituationView> {
+    const resp = this.saveBorrowerSituation$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<SituationView>): SituationView => r.body)
+    );
   }
 
   /** Path part for operation `listLoanApplications()` */
@@ -971,111 +1369,6 @@ export class CreditService extends BaseService {
     const resp = this.loanSimulationSchedule$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Array<InstallmentView>>): Array<InstallmentView> => r.body)
-    );
-  }
-
-  /** Path part for operation `purchaseCapacity()` */
-  static readonly PurchaseCapacityPath = '/api/v1/purchase-capacity';
-
-  /**
-   * Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `purchaseCapacity()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  purchaseCapacity$Response(params?: PurchaseCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
-    const obs = purchaseCapacity(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `purchaseCapacity$Response()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  purchaseCapacity(params?: PurchaseCapacity$Params, context?: HttpContext): Observable<PurchaseCapacity> {
-    const resp = this.purchaseCapacity$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<PurchaseCapacity>): PurchaseCapacity => r.body)
-    );
-  }
-
-  /** Path part for operation `savePurchaseHypotheses()` */
-  static readonly SavePurchaseHypothesesPath = '/api/v1/purchase-capacity';
-
-  /**
-   * Garde les hypothèses de la capacité d'achat (R-CRE-30).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `savePurchaseHypotheses()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  savePurchaseHypotheses$Response(params: SavePurchaseHypotheses$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
-    const obs = savePurchaseHypotheses(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Garde les hypothèses de la capacité d'achat (R-CRE-30).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `savePurchaseHypotheses$Response()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  savePurchaseHypotheses(params: SavePurchaseHypotheses$Params, context?: HttpContext): Observable<PurchaseCapacity> {
-    const resp = this.savePurchaseHypotheses$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<PurchaseCapacity>): PurchaseCapacity => r.body)
-    );
-  }
-
-  /** Path part for operation `applicationFromCapacity()` */
-  static readonly ApplicationFromCapacityPath = '/api/v1/purchase-capacity/application';
-
-  /**
-   * Crée une demande à partir de la capacité d'achat (R-CRE-36).
-   *
-   *
-   *
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `applicationFromCapacity()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  applicationFromCapacity$Response(params: ApplicationFromCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {
-    const obs = applicationFromCapacity(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * Crée une demande à partir de la capacité d'achat (R-CRE-36).
-   *
-   *
-   *
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `applicationFromCapacity$Response()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  applicationFromCapacity(params: ApplicationFromCapacity$Params, context?: HttpContext): Observable<ApplicationView> {
-    const resp = this.applicationFromCapacity$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<ApplicationView>): ApplicationView => r.body)
     );
   }
 

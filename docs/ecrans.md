@@ -933,7 +933,6 @@ Ordinateur
 │ Assurance aucune · Frais 0 €       │  │ Capacité d'épargne  600 € → 222,58 €  │
 │ [Conditions par défaut]            │  │ [Enregistrer] [Préparer une demande]  │
 └────────────────────────────────────┘  └───────────────────────────────────────┘
- ▸ Tableau d'amortissement
  Simulations enregistrées …
 ```
 
@@ -989,7 +988,9 @@ assurance (aucune, montant mensuel, taux annuel), frais de dossier, frais de gar
   frais), TAEG, le capital ou la durée trouvés ; taux d'endettement et reste à vivre (R-CRE-41).
 
 Sous le résultat : **« Enregistrer »** (un nom et, en option, la demande à laquelle rattacher la simulation,
-R-CRE-37) et **« Préparer une demande »** (R-CRE-36).
+R-CRE-37), **« Préparer une demande »** (R-CRE-36), **« Tableau d'amortissement »** (dialogue, une année à la
+fois comme E28) quand un crédit est calculé, et, pour « Que puis-je acheter ? », **« Simuler ce prêt »** qui
+ouvre « Que coûte ce prêt ? » au capital empruntable.
 
 **Détails repliés** (`[mat-expansion-panel]`), sous la zone de travail :
 
@@ -997,8 +998,6 @@ R-CRE-37) et **« Préparer une demande »** (R-CRE-36).
   maximale, apport possible, prix maximal ; mention « hypothèses du scénario par défaut » ; sur mobile, une
   carte par année), **Sensibilité** (prix maximal par durée et par taux, R-CRE-34, la case des conditions en
   gras), **Patrimoine projeté** `[echarts]` pour un logement ou des travaux (R-CRE-35).
-- *Puis-je financer cet achat ?* et *Que coûte ce prêt ?* : **Tableau d'amortissement** (une année à la fois,
-  comme E28).
 
 **Simulations enregistrées** : liste (nom, capital, durée, taux, mensualité totale, TAEG, coût total ; la
 demande et l'établissement en petit ; « prêt créé » s'il y a lieu). Cases à cocher et « Comparer » (E37 en

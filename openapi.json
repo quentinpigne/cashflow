@@ -2305,6 +2305,380 @@
         }
       }
     },
+    "/api/v1/credit/financing": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Puis-je financer cet achat ? (R-CRE-40)",
+        "operationId": "purchaseFinancing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancingView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/financing/application": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Crée une demande depuis « Puis-je financer cet achat ? » (R-CRE-36).",
+        "operationId": "applicationFromFinancing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FromFinancingInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/loan-cost": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Que coûte ce prêt ? (R-CRE-41)",
+        "operationId": "loanCost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanCostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanCostView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/project-defaults": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Conditions par défaut de chaque type de projet (R-CRE-38).",
+        "operationId": "projectDefaults",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDefaults"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Garde les conditions par défaut (R-CRE-38).",
+        "operationId": "saveProjectDefaults",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ProjectDefaultsInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDefaults"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/purchase-capacity": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Que puis-je acheter ? (R-CRE-31 à R-CRE-35)",
+        "operationId": "purchaseCapacity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapacityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCapacity"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/purchase-capacity/application": {
+      "post": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Crée une demande depuis « Que puis-je acheter ? » (R-CRE-36).",
+        "operationId": "applicationFromCapacity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FromCapacityInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/simulate-state": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Dernier état de l'onglet Simuler (R-CRE-39).",
+        "operationId": "simulateState",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateState"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "operationId": "saveSimulateState",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateState"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateState"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit/situation": {
+      "get": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Situation d'emprunteur et son résumé (R-CRE-30).",
+        "operationId": "borrowerSituation",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SituationView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "credit"
+        ],
+        "summary": "Garde la situation d'emprunteur (R-CRE-30).",
+        "operationId": "saveBorrowerSituation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BorrowerSituation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SituationView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "tags": [
@@ -5175,7 +5549,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FromCapacityInput"
+                "$ref": "#/components/schemas/FromSimulationInput"
               }
             }
           },
@@ -6438,102 +6812,6 @@
         ],
         "responses": {
           "204": {},
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/purchase-capacity": {
-      "get": {
-        "tags": [
-          "credit"
-        ],
-        "summary": "Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).",
-        "operationId": "purchaseCapacity",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PurchaseCapacity"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "credit"
-        ],
-        "summary": "Garde les hypothèses de la capacité d'achat (R-CRE-30).",
-        "operationId": "savePurchaseHypotheses",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PurchaseHypotheses"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PurchaseCapacity"
-                }
-              }
-            }
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/purchase-capacity/application": {
-      "post": {
-        "tags": [
-          "credit"
-        ],
-        "summary": "Crée une demande à partir de la capacité d'achat (R-CRE-36).",
-        "operationId": "applicationFromCapacity",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FromCapacityInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApplicationView"
-                }
-              }
-            }
-          },
           "422": {
             "content": {
               "application/json": {
@@ -9197,6 +9475,73 @@
           }
         }
       },
+      "AffordabilityView": {
+        "type": "object",
+        "description": "Endettement d'une échéance face à la situation (R-CRE-15, R-CRE-32, R-CRE-41).",
+        "required": [
+          "payment_minor",
+          "income_minor",
+          "charges_minor",
+          "max_debt_ratio_ppm",
+          "debt_ratio_exceeded",
+          "duration_exceeded",
+          "remaining_income_minor"
+        ],
+        "properties": {
+          "charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "debt_ratio_exceeded": {
+            "type": "boolean",
+            "description": "Au-delà du taux d'endettement visé."
+          },
+          "debt_ratio_ppm": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Absent sans revenus."
+          },
+          "duration_exceeded": {
+            "type": "boolean",
+            "description": "Au-delà de la durée maximale du HCSF, pour un logement (R-CRE-15)."
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_debt_ratio_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payment_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Échéance totale envisagée : mensualité + assurance."
+          },
+          "remaining_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_capacity_after_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "savings_capacity_before_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Capacité d'épargne mensuelle avant et après (R-CRE-32) ; absente sans capacité dans le scénario."
+          }
+        }
+      },
       "AlertLevel": {
         "type": "string",
         "description": "Niveau d'alerte d'une ligne (R-BUD-61).",
@@ -10394,6 +10739,64 @@
           }
         }
       },
+      "BorrowerSituation": {
+        "type": "object",
+        "description": "Situation d'emprunteur, commune aux trois questions et à tous les projets (R-CRE-30).",
+        "required": [
+          "max_debt_ratio_ppm",
+          "reserve_months",
+          "other_income_minor",
+          "other_charges_minor",
+          "co_borrower_income_minor",
+          "co_borrower_charges_minor",
+          "excluded_loan_ids"
+        ],
+        "properties": {
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AccountId"
+            },
+            "description": "Comptes mobilisables ; absent : ceux de l'épargne de précaution."
+          },
+          "co_borrower_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "co_borrower_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "excluded_loan_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanId"
+            }
+          },
+          "max_debt_ratio_ppm": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taux d'endettement visé."
+          },
+          "other_charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reserve_months": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Réserve de sécurité, en mois de dépenses moyennes.",
+            "minimum": 0
+          }
+        }
+      },
       "BudgetKind": {
         "type": "string",
         "description": "Nature d'une ligne de budget.",
@@ -11030,6 +11433,22 @@
           "total_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "CapacityRequest": {
+        "type": "object",
+        "description": "Le projet et les conditions d'un calcul.",
+        "required": [
+          "project_kind",
+          "conditions"
+        ],
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/CreditConditions"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
           }
         }
       },
@@ -11966,6 +12385,43 @@
           }
         }
       },
+      "CreditConditions": {
+        "type": "object",
+        "description": "Conditions d'un crédit, sans le capital (R-CRE-38).",
+        "required": [
+          "kind",
+          "annual_rate_ppm",
+          "duration_months",
+          "insurance",
+          "fees_minor",
+          "guarantee_fees_minor"
+        ],
+        "properties": {
+          "annual_rate_ppm": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_months": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "guarantee_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "insurance": {
+            "$ref": "#/components/schemas/Insurance"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanKind"
+          }
+        }
+      },
       "Dashboard": {
         "type": "object",
         "required": [
@@ -12753,6 +13209,131 @@
           }
         }
       },
+      "FinancingRequest": {
+        "type": "object",
+        "description": "Un achat au prix connu (R-CRE-40).",
+        "required": [
+          "project_kind",
+          "conditions",
+          "price_minor"
+        ],
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/CreditConditions"
+          },
+          "down_payment_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Absent : l'apport proposé, le plus petit de l'apport possible et du coût du projet."
+          },
+          "notary_fees_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Absents : estimés (R-CRE-12)."
+          },
+          "price_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          },
+          "target_payment_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Présente : la mensualité est fixée, on cherche la durée (R-CRE-5)."
+          }
+        }
+      },
+      "FinancingView": {
+        "type": "object",
+        "description": "Le financement d'un achat au prix connu (E36).",
+        "required": [
+          "price_minor",
+          "notary_fees_minor",
+          "estimated_notary_fees_minor",
+          "other_costs_minor",
+          "project_cost_minor",
+          "down_payment_minor",
+          "possible_down_payment_minor",
+          "down_payment_exceeds_possible",
+          "to_borrow_minor",
+          "savings_after_minor",
+          "affordability"
+        ],
+        "properties": {
+          "affordability": {
+            "$ref": "#/components/schemas/AffordabilityView"
+          },
+          "down_payment_exceeds_possible": {
+            "type": "boolean",
+            "description": "L'apport entame la réserve de sécurité."
+          },
+          "down_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "estimated_notary_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loan": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ComputeResult",
+                "description": "Le crédit ; absent pour un achat comptant."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notary_fees_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "other_costs_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "possible_down_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "project_cost_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_after_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_after_tenths_of_months": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "to_borrow_minor": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "FixedSummary": {
         "type": "object",
         "required": [
@@ -12909,13 +13490,53 @@
         ]
       },
       "FromCapacityInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CapacityRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "FromFinancingInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FinancingRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "FromSimulationInput": {
         "type": "object",
         "required": [
-          "name"
+          "name",
+          "project_kind"
         ],
         "properties": {
           "name": {
             "type": "string"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
           }
         }
       },
@@ -14093,6 +14714,37 @@
       "LoanApplicationId": {
         "type": "string",
         "format": "uuid"
+      },
+      "LoanCostRequest": {
+        "type": "object",
+        "description": "Un prêt au montant connu, et le projet qu'il finance.",
+        "required": [
+          "project_kind",
+          "loan"
+        ],
+        "properties": {
+          "loan": {
+            "$ref": "#/components/schemas/ComputeInput"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          }
+        }
+      },
+      "LoanCostView": {
+        "type": "object",
+        "required": [
+          "loan",
+          "affordability"
+        ],
+        "properties": {
+          "affordability": {
+            "$ref": "#/components/schemas/AffordabilityView"
+          },
+          "loan": {
+            "$ref": "#/components/schemas/ComputeResult"
+          }
+        }
       },
       "LoanCreated": {
         "type": "object",
@@ -16577,6 +17229,42 @@
           }
         }
       },
+      "ProjectDefaults": {
+        "type": "object",
+        "description": "Conditions par défaut d'un type de projet et ses valeurs initiales (E42).",
+        "required": [
+          "project_kind",
+          "conditions",
+          "initial"
+        ],
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/CreditConditions"
+          },
+          "initial": {
+            "$ref": "#/components/schemas/CreditConditions"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          }
+        }
+      },
+      "ProjectDefaultsInput": {
+        "type": "object",
+        "description": "Conditions par défaut d'un type de projet (R-CRE-38).",
+        "required": [
+          "project_kind",
+          "conditions"
+        ],
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/CreditConditions"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          }
+        }
+      },
       "ProjectId": {
         "type": "string",
         "format": "uuid"
@@ -16795,54 +17483,29 @@
       },
       "PurchaseCapacity": {
         "type": "object",
-        "description": "Capacité d'achat (E40).",
+        "description": "Que puis-je acheter ? (E36)",
         "required": [
-          "hypotheses",
-          "accounts",
-          "loans",
-          "expenses_minor",
           "today",
           "savings_after_minor",
-          "remaining_income_minor",
+          "affordability",
           "years",
           "sensitivity",
           "net_worth"
         ],
         "properties": {
-          "accounts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SavingsAccount"
-            }
-          },
-          "expenses_minor": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Dépenses mensuelles moyennes (R-TDB-8)."
-          },
-          "hypotheses": {
-            "$ref": "#/components/schemas/PurchaseHypotheses"
-          },
-          "loans": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChargeLine"
-            }
+          "affordability": {
+            "$ref": "#/components/schemas/AffordabilityView"
           },
           "net_worth": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NetWorthComparison"
-            }
-          },
-          "remaining_income_minor": {
-            "type": "integer",
-            "format": "int64"
+            },
+            "description": "Pour un logement ou des travaux seulement (R-CRE-35)."
           },
           "savings_after_minor": {
             "type": "integer",
-            "format": "int64",
-            "description": "Épargne restante après l'apport, en mois de dépenses (dixièmes)."
+            "format": "int64"
           },
           "savings_after_tenths_of_months": {
             "type": [
@@ -16850,21 +17513,6 @@
               "null"
             ],
             "format": "int64"
-          },
-          "savings_capacity_after_minor": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          },
-          "savings_capacity_before_minor": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "description": "Capacité d'épargne mensuelle avant et après l'achat (R-CRE-32) ; absente sans capacité dans le scénario."
           },
           "sensitivity": {
             "type": "array",
@@ -16881,93 +17529,6 @@
               "$ref": "#/components/schemas/PurchaseView"
             },
             "description": "Les 5 prochaines années (R-CRE-33)."
-          }
-        }
-      },
-      "PurchaseHypotheses": {
-        "type": "object",
-        "description": "Hypothèses de la capacité d'achat (R-CRE-30).",
-        "required": [
-          "project_kind",
-          "annual_rate_ppm",
-          "duration_months",
-          "insurance",
-          "fees_minor",
-          "guarantee_fees_minor",
-          "max_debt_ratio_ppm",
-          "reserve_months",
-          "other_income_minor",
-          "other_charges_minor",
-          "co_borrower_income_minor",
-          "co_borrower_charges_minor",
-          "excluded_loan_ids"
-        ],
-        "properties": {
-          "account_ids": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/AccountId"
-            },
-            "description": "Comptes mobilisables ; absent : ceux de l'épargne de précaution."
-          },
-          "annual_rate_ppm": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "co_borrower_charges_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "co_borrower_income_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "duration_months": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "excluded_loan_ids": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LoanId"
-            }
-          },
-          "fees_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "guarantee_fees_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "insurance": {
-            "$ref": "#/components/schemas/Insurance"
-          },
-          "max_debt_ratio_ppm": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Taux d'endettement visé."
-          },
-          "other_charges_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "other_income_minor": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "project_kind": {
-            "$ref": "#/components/schemas/ProjectKind"
-          },
-          "reserve_months": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Réserve de sécurité, en mois de dépenses moyennes.",
-            "minimum": 0
           }
         }
       },
@@ -18325,6 +18886,83 @@
           "credit"
         ]
       },
+      "SimulateQuestion": {
+        "type": "string",
+        "description": "Question posée dans l'onglet Simuler.",
+        "enum": [
+          "MAX_PRICE",
+          "FINANCE_PURCHASE",
+          "LOAN"
+        ]
+      },
+      "SimulateState": {
+        "type": "object",
+        "description": "Dernier état de l'onglet : projet, question, conditions du calcul et montants saisis (R-CRE-39).",
+        "required": [
+          "project_kind",
+          "question",
+          "conditions",
+          "goal",
+          "fix_payment"
+        ],
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/CreditConditions"
+          },
+          "down_payment_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Apport saisi ; absent, l'apport proposé."
+          },
+          "fix_payment": {
+            "type": "boolean",
+            "description": "« Puis-je financer cet achat ? » : la mensualité est fixée, on cherche la durée."
+          },
+          "goal": {
+            "$ref": "#/components/schemas/SimulationGoal",
+            "description": "« Que coûte ce prêt ? » : ce que cherche le simulateur."
+          },
+          "notary_fees_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Frais de notaire saisis ; absents, estimés."
+          },
+          "price_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "principal_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "project_kind": {
+            "$ref": "#/components/schemas/ProjectKind"
+          },
+          "question": {
+            "$ref": "#/components/schemas/SimulateQuestion"
+          },
+          "target_payment_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Mensualité visée : fixée pour un achat, ou saisie dans le simulateur."
+          }
+        }
+      },
       "SimulationGoal": {
         "type": "string",
         "description": "Ce que cherche le simulateur (R-CRE-5).",
@@ -18550,6 +19188,64 @@
           },
           "result": {
             "$ref": "#/components/schemas/SimulationResult"
+          }
+        }
+      },
+      "SituationView": {
+        "type": "object",
+        "description": "La situation d'emprunteur et son résumé (E36).",
+        "required": [
+          "situation",
+          "accounts",
+          "loans",
+          "income_minor",
+          "charges_minor",
+          "expenses_minor",
+          "savings_minor",
+          "reserve_minor",
+          "possible_down_payment_minor"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavingsAccount"
+            }
+          },
+          "charges_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expenses_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Dépenses mensuelles moyennes (R-TDB-8)."
+          },
+          "income_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeLine"
+            }
+          },
+          "possible_down_payment_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reserve_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "savings_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Épargne mobilisable."
+          },
+          "situation": {
+            "$ref": "#/components/schemas/BorrowerSituation"
           }
         }
       },

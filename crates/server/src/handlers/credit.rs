@@ -2,6 +2,7 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::IntoResponse;
+use cashflow_domain::credit::ProjectKind;
 use cashflow_domain::credit::pieces::Piece;
 use cashflow_domain::shared::ids::{
     DocumentId, LenderEventId, LenderRequestId, LoanApplicationId, LoanId, LoanSimulationId,
@@ -10,9 +11,13 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::error::{AppResult, Problem};
+use crate::services::credit::simulate::{
+    self as simulate, BorrowerSituation, CapacityRequest, FinancingRequest, FinancingView, LoanCostRequest,
+    LoanCostView, ProjectDefaults, ProjectDefaultsInput, PurchaseCapacity, SimulateState, SituationView,
+};
 use crate::services::credit::{
     self, ApplicationInput, ApplicationSummary, ApplicationView, ComputeInput, ComputeResult, FollowUpInput,
-    LenderEventInput, LenderRequestInput, PurchaseCapacity, PurchaseHypotheses, SimulationInput, SimulationView,
+    LenderEventInput, LenderRequestInput, SimulationInput, SimulationView,
 };
 use crate::services::loans::{InstallmentView, LoanInput};
 use crate::state::AppState;
@@ -347,38 +352,122 @@ pub async fn summary(State(state): State<AppState>, Path(id): Path<LoanApplicati
     ))
 }
 
-// ---------------------------------------------------------------- Capacité d'achat
+// ---------------------------------------------------------------- Onglet Simuler
 
-/// Capacité d'achat : aujourd'hui, dans les années à venir, sensibilité, patrimoine projeté (CRE-07).
+/// Situation d'emprunteur et son résumé (R-CRE-30).
 #[utoipa::path(
-    get, operation_id = "purchaseCapacity", path = "/purchase-capacity", tag = "credit",
-    responses((status = 200, body = PurchaseCapacity))
+    get, operation_id = "borrowerSituation", path = "/credit/situation", tag = "credit",
+    responses((status = 200, body = SituationView))
 )]
-pub async fn purchase_capacity(State(state): State<AppState>) -> AppResult<Json<PurchaseCapacity>> {
-    Ok(Json(credit::purchase_capacity(&state.db, state.clock.today()).await?))
+pub async fn borrower_situation(State(state): State<AppState>) -> AppResult<Json<SituationView>> {
+    Ok(Json(simulate::borrower_situation(&state.db, state.clock.today()).await?))
 }
 
-/// Garde les hypothèses de la capacité d'achat (R-CRE-30).
+/// Garde la situation d'emprunteur (R-CRE-30).
 #[utoipa::path(
-    put, operation_id = "savePurchaseHypotheses", path = "/purchase-capacity", tag = "credit",
-    request_body = PurchaseHypotheses,
+    put, operation_id = "saveBorrowerSituation", path = "/credit/situation", tag = "credit",
+    request_body = BorrowerSituation,
+    responses((status = 200, body = SituationView), (status = 422, body = Problem))
+)]
+pub async fn save_borrower_situation(
+    State(state): State<AppState>,
+    Json(input): Json<BorrowerSituation>,
+) -> AppResult<Json<SituationView>> {
+    Ok(Json(simulate::save_borrower_situation(&state.db, &input, state.clock.today()).await?))
+}
+
+/// Conditions par défaut de chaque type de projet (R-CRE-38).
+#[utoipa::path(
+    get, operation_id = "projectDefaults", path = "/credit/project-defaults", tag = "credit",
+    responses((status = 200, body = Vec<ProjectDefaults>))
+)]
+pub async fn project_defaults(State(state): State<AppState>) -> AppResult<Json<Vec<ProjectDefaults>>> {
+    Ok(Json(simulate::project_defaults(&state.db).await?))
+}
+
+/// Garde les conditions par défaut (R-CRE-38).
+#[utoipa::path(
+    put, operation_id = "saveProjectDefaults", path = "/credit/project-defaults", tag = "credit",
+    request_body = Vec<ProjectDefaultsInput>,
+    responses((status = 200, body = Vec<ProjectDefaults>), (status = 422, body = Problem))
+)]
+pub async fn save_project_defaults(
+    State(state): State<AppState>,
+    Json(input): Json<Vec<ProjectDefaultsInput>>,
+) -> AppResult<Json<Vec<ProjectDefaults>>> {
+    Ok(Json(simulate::save_project_defaults(&state.db, &input).await?))
+}
+
+/// Dernier état de l'onglet Simuler (R-CRE-39).
+#[utoipa::path(
+    get, operation_id = "simulateState", path = "/credit/simulate-state", tag = "credit",
+    responses((status = 200, body = SimulateState))
+)]
+pub async fn simulate_state(State(state): State<AppState>) -> AppResult<Json<SimulateState>> {
+    Ok(Json(simulate::simulate_state(&state.db).await?))
+}
+
+#[utoipa::path(
+    put, operation_id = "saveSimulateState", path = "/credit/simulate-state", tag = "credit",
+    request_body = SimulateState,
+    responses((status = 200, body = SimulateState), (status = 422, body = Problem))
+)]
+pub async fn save_simulate_state(
+    State(state): State<AppState>,
+    Json(input): Json<SimulateState>,
+) -> AppResult<Json<SimulateState>> {
+    Ok(Json(simulate::save_simulate_state(&state.db, &input).await?))
+}
+
+/// Que puis-je acheter ? (R-CRE-31 à R-CRE-35)
+#[utoipa::path(
+    post, operation_id = "purchaseCapacity", path = "/credit/purchase-capacity", tag = "credit",
+    request_body = CapacityRequest,
     responses((status = 200, body = PurchaseCapacity), (status = 422, body = Problem))
 )]
-pub async fn save_purchase_hypotheses(
+pub async fn purchase_capacity(
     State(state): State<AppState>,
-    Json(input): Json<PurchaseHypotheses>,
+    Json(input): Json<CapacityRequest>,
 ) -> AppResult<Json<PurchaseCapacity>> {
-    Ok(Json(credit::save_purchase_hypotheses(&state.db, &input, state.clock.today()).await?))
+    Ok(Json(simulate::purchase_capacity(&state.db, &input, state.clock.today()).await?))
+}
+
+/// Puis-je financer cet achat ? (R-CRE-40)
+#[utoipa::path(
+    post, operation_id = "purchaseFinancing", path = "/credit/financing", tag = "credit",
+    request_body = FinancingRequest,
+    responses((status = 200, body = FinancingView), (status = 422, body = Problem))
+)]
+pub async fn financing(
+    State(state): State<AppState>,
+    Json(input): Json<FinancingRequest>,
+) -> AppResult<Json<FinancingView>> {
+    Ok(Json(simulate::financing(&state.db, &input, state.clock.today()).await?))
+}
+
+/// Que coûte ce prêt ? (R-CRE-41)
+#[utoipa::path(
+    post, operation_id = "loanCost", path = "/credit/loan-cost", tag = "credit",
+    request_body = LoanCostRequest,
+    responses((status = 200, body = LoanCostView), (status = 422, body = Problem))
+)]
+pub async fn loan_cost(
+    State(state): State<AppState>,
+    Json(input): Json<LoanCostRequest>,
+) -> AppResult<Json<LoanCostView>> {
+    Ok(Json(simulate::loan_cost(&state.db, &input, state.clock.today()).await?))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct FromCapacityInput {
     pub name: String,
+    #[serde(flatten)]
+    pub request: CapacityRequest,
 }
 
-/// Crée une demande à partir de la capacité d'achat (R-CRE-36).
+/// Crée une demande depuis « Que puis-je acheter ? » (R-CRE-36).
 #[utoipa::path(
-    post, operation_id = "applicationFromCapacity", path = "/purchase-capacity/application", tag = "credit",
+    post, operation_id = "applicationFromCapacity", path = "/credit/purchase-capacity/application", tag = "credit",
     request_body = FromCapacityInput,
     responses((status = 200, body = ApplicationView), (status = 422, body = Problem))
 )]
@@ -386,21 +475,50 @@ pub async fn application_from_capacity(
     State(state): State<AppState>,
     Json(input): Json<FromCapacityInput>,
 ) -> AppResult<Json<ApplicationView>> {
-    Ok(Json(credit::application_from_capacity(&state.db, &input.name, state.clock.today()).await?))
+    let today = state.clock.today();
+    Ok(Json(simulate::application_from_capacity(&state.db, &input.request, &input.name, today).await?))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct FromFinancingInput {
+    pub name: String,
+    #[serde(flatten)]
+    pub request: FinancingRequest,
+}
+
+/// Crée une demande depuis « Puis-je financer cet achat ? » (R-CRE-36).
+#[utoipa::path(
+    post, operation_id = "applicationFromFinancing", path = "/credit/financing/application", tag = "credit",
+    request_body = FromFinancingInput,
+    responses((status = 200, body = ApplicationView), (status = 422, body = Problem))
+)]
+pub async fn application_from_financing(
+    State(state): State<AppState>,
+    Json(input): Json<FromFinancingInput>,
+) -> AppResult<Json<ApplicationView>> {
+    let today = state.clock.today();
+    Ok(Json(simulate::application_from_financing(&state.db, &input.request, &input.name, today).await?))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct FromSimulationInput {
+    pub name: String,
+    pub project_kind: ProjectKind,
 }
 
 /// Prépare une demande depuis une simulation (R-CRE-36).
 #[utoipa::path(
     post, operation_id = "applicationFromSimulation", path = "/loan-simulations/{id}/application", tag = "credit",
-    params(("id" = LoanSimulationId, Path)), request_body = FromCapacityInput,
+    params(("id" = LoanSimulationId, Path)), request_body = FromSimulationInput,
     responses((status = 200, body = ApplicationView), (status = 404, body = Problem), (status = 422, body = Problem))
 )]
 pub async fn application_from_simulation(
     State(state): State<AppState>,
     Path(id): Path<LoanSimulationId>,
-    Json(input): Json<FromCapacityInput>,
+    Json(input): Json<FromSimulationInput>,
 ) -> AppResult<Json<ApplicationView>> {
-    Ok(Json(credit::application_from_simulation(&state.db, id, &input.name, state.clock.today()).await?))
+    let today = state.clock.today();
+    Ok(Json(simulate::application_from_simulation(&state.db, id, input.project_kind, &input.name, today).await?))
 }
 
 // ---------------------------------------------------------------- Journal et relances

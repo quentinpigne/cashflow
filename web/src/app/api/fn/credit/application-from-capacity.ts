@@ -30,4 +30,4 @@ export function applicationFromCapacity(http: HttpClient, rootUrl: string, param
   );
 }
 
-applicationFromCapacity.PATH = '/api/v1/purchase-capacity/application';
+applicationFromCapacity.PATH = '/api/v1/credit/purchase-capacity/application';

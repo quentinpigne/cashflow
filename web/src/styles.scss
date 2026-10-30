@@ -185,3 +185,20 @@ input.amount {
   border-radius: 50%;
   vertical-align: middle;
 }
+
+// Panneau latéral (ordinateur) et feuille du bas (mobile) ouverts en dialogue (E36, « Ajuster »).
+.side-panel {
+  height: 100dvh;
+
+  .mat-mdc-dialog-surface {
+    border-radius: 0 !important;
+  }
+}
+
+.bottom-panel {
+  max-height: 85dvh;
+
+  .mat-mdc-dialog-surface {
+    border-radius: var(--mat-sys-corner-extra-large) var(--mat-sys-corner-extra-large) 0 0 !important;
+  }
+}

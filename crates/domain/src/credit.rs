@@ -322,13 +322,19 @@ pub struct Capacity {
     pub duration_exceeded: bool,
 }
 
+/// Taux d'endettement : (charges + mensualité) / revenus ; sans revenus, absent (R-CRE-15).
+pub fn debt_ratio(income: Money, charges: Money, payment: Money) -> Option<Rate> {
+    income.is_positive().then(|| {
+        let ratio =
+            Decimal::from((charges + payment).minor()) * Decimal::from(1_000_000) / Decimal::from(income.minor());
+        Rate::from_ppm(ratio.round_dp_with_strategy(0, RoundingStrategy::MidpointAwayFromZero).to_i64().unwrap_or(0))
+    })
+}
+
 pub fn capacity(input: &CapacityInput) -> Capacity {
     let payment = input.payment.unwrap_or(Money::ZERO);
     let income = Decimal::from(input.income.minor());
-    let debt_ratio = input.income.is_positive().then(|| {
-        let ratio = Decimal::from((input.charges + payment).minor()) * Decimal::from(1_000_000) / income;
-        Rate::from_ppm(ratio.round_dp_with_strategy(0, RoundingStrategy::MidpointAwayFromZero).to_i64().unwrap_or(0))
-    });
+    let debt_ratio = debt_ratio(input.income, input.charges, payment);
     let ceiling = round(income * MAX_DEBT_RATIO.to_fraction());
     let max_payment = if ceiling > input.charges { ceiling - input.charges } else { Money::ZERO };
     let borrowing_capacity = input
@@ -445,6 +451,147 @@ pub fn net_worth_with_purchase(
             (*date, *value - one_off - cost)
         })
         .collect()
+}
+
+// ======================================================================= Onglet Simuler (CRE-11, CRE-12)
+
+/// Conditions d'un crédit, sans le capital : celles par défaut d'un type de projet (R-CRE-38) ou celles d'un
+/// calcul (R-CRE-39).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Conditions {
+    pub kind: LoanKind,
+    pub annual_rate: Rate,
+    pub duration_months: u32,
+    pub insurance: Insurance,
+    pub fees: Money,
+    pub guarantee_fees: Money,
+}
+
+impl Conditions {
+    /// Taux positif ou nul, durée de 1 mois à 40 ans, frais positifs ou nuls.
+    pub fn validate(&self) -> Result<(), DomainError> {
+        let insurance_ok = match self.insurance {
+            Insurance::None => true,
+            Insurance::Fixed { amount_minor } => amount_minor >= 0,
+            Insurance::RateOnPrincipal { rate_ppm } => rate_ppm >= 0,
+        };
+        if self.annual_rate.ppm() < 0
+            || !(1..=MAX_DURATION_MONTHS).contains(&self.duration_months)
+            || self.fees.is_negative()
+            || self.guarantee_fees.is_negative()
+            || !insurance_ok
+        {
+            return Err(DomainError::InvalidSimulation);
+        }
+        Ok(())
+    }
+
+    /// Les conditions appliquées à un capital.
+    pub fn with_principal(&self, principal: Money) -> SimulationTerms {
+        SimulationTerms {
+            kind: self.kind,
+            principal,
+            annual_rate: self.annual_rate,
+            duration_months: self.duration_months,
+            insurance: self.insurance,
+            fees: self.fees,
+            guarantee_fees: self.guarantee_fees,
+        }
+    }
+}
+
+impl ProjectKind {
+    pub const ALL: [Self; 5] = [Self::ExistingHome, Self::NewHome, Self::Works, Self::Vehicle, Self::Other];
+
+    /// Conditions par défaut initiales, des ordres de grandeur (R-CRE-38).
+    pub fn initial_conditions(self) -> Conditions {
+        let euros = |value: i64| Money::from_minor(value * 100);
+        let (kind, rate, months, insurance, fees, guarantee) = match self {
+            Self::ExistingHome | Self::NewHome => {
+                (LoanKind::Mortgage, 32_000, 300, Insurance::RateOnPrincipal { rate_ppm: 3_000 }, 1_000, 2_000)
+            }
+            Self::Works => (LoanKind::Mortgage, 35_000, 180, Insurance::RateOnPrincipal { rate_ppm: 3_000 }, 500, 0),
+            Self::Vehicle => (LoanKind::Consumer, 50_000, 60, Insurance::None, 0, 0),
+            Self::Other => (LoanKind::Consumer, 60_000, 48, Insurance::None, 0, 0),
+        };
+        Conditions {
+            kind,
+            annual_rate: Rate::from_ppm(rate),
+            duration_months: months,
+            insurance,
+            fees: euros(fees),
+            guarantee_fees: euros(guarantee),
+        }
+    }
+
+    /// Durées de la sensibilité (R-CRE-34) : 15, 20 et 25 ans pour un logement (27 dans le neuf) ; sinon la durée
+    /// des conditions, 12 mois de moins et 12 mois de plus, entre 12 mois et 40 ans.
+    pub fn sensitivity_durations(self, duration_months: u32) -> Vec<u32> {
+        if self.is_home_purchase() {
+            return vec![180, 240, self.max_duration()];
+        }
+        let mut durations: Vec<u32> = [duration_months.saturating_sub(12), duration_months, duration_months + 12]
+            .into_iter()
+            .map(|d| d.clamp(12, MAX_DURATION_MONTHS))
+            .collect();
+        durations.dedup();
+        durations
+    }
+
+    /// Le patrimoine projeté avec l'achat n'a de sens que pour un bien qui garde sa valeur (R-CRE-35).
+    pub fn projects_net_worth(self) -> bool {
+        matches!(self, Self::ExistingHome | Self::NewHome | Self::Works)
+    }
+}
+
+/// Endettement d'une mensualité envisagée face à la situation d'emprunteur (R-CRE-40, R-CRE-41).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Affordability {
+    pub debt_ratio: Option<Rate>,
+    pub remaining_income: Money,
+    /// Au-delà du taux d'endettement visé.
+    pub debt_ratio_exceeded: bool,
+}
+
+pub fn affordability(income: Money, charges: Money, payment: Money, max_debt_ratio: Rate) -> Affordability {
+    let debt_ratio = debt_ratio(income, charges, payment);
+    Affordability {
+        debt_ratio,
+        remaining_income: income - charges - payment,
+        debt_ratio_exceeded: debt_ratio.is_some_and(|r| r > max_debt_ratio),
+    }
+}
+
+/// Un achat au prix connu (R-CRE-40).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PurchaseFinancing {
+    pub project: ProjectKind,
+    pub price: Money,
+    /// Frais de notaire saisis ; absents, estimés (R-CRE-12).
+    pub notary_fees: Option<Money>,
+    pub fees: Money,
+    pub guarantee_fees: Money,
+    pub down_payment: Money,
+}
+
+impl PurchaseFinancing {
+    /// Le plan de financement : coût = prix + notaire + frais de dossier et de garantie ; capital = coût − apport.
+    pub fn plan(&self) -> Result<FinancingPlan, DomainError> {
+        let plan = FinancingPlan {
+            price: self.price,
+            notary_fees: self.notary_fees.unwrap_or_else(|| estimated_notary_fees(self.project, self.price)),
+            works: Money::ZERO,
+            other_costs: self.fees + self.guarantee_fees,
+            down_payment: self.down_payment,
+        };
+        plan.validate()?;
+        Ok(plan)
+    }
+}
+
+/// Apport proposé : le plus petit de l'apport possible et du coût du projet (R-CRE-40).
+pub fn proposed_down_payment(possible: Money, project_cost: Money) -> Money {
+    possible.min(project_cost).max(Money::ZERO)
 }
 
 // ======================================================================= Statuts (CRE-06)
@@ -770,5 +917,90 @@ mod tests {
         assert!(!follow_up_due(Sent, Some(d("2026-11-04")), d("2026-11-03")));
         assert!(!follow_up_due(Refused, Some(d("2026-11-01")), d("2026-11-03")));
         assert!(!follow_up_due(Sent, None, d("2026-11-03")));
+    }
+
+    #[test]
+    fn r_cre_38_initial_conditions_by_project() {
+        let home = ProjectKind::ExistingHome.initial_conditions();
+        assert_eq!(
+            (home.kind, home.annual_rate, home.duration_months),
+            (LoanKind::Mortgage, Rate::from_ppm(32_000), 300)
+        );
+        assert_eq!(home.guarantee_fees, euros(2_000));
+        let vehicle = ProjectKind::Vehicle.initial_conditions();
+        assert_eq!(
+            (vehicle.kind, vehicle.annual_rate, vehicle.duration_months, vehicle.insurance),
+            (LoanKind::Consumer, Rate::from_ppm(50_000), 60, Insurance::None)
+        );
+        assert_eq!(vehicle.fees + vehicle.guarantee_fees, Money::ZERO);
+        for project in ProjectKind::ALL {
+            assert!(project.initial_conditions().validate().is_ok());
+        }
+    }
+
+    #[test]
+    fn r_cre_34_sensitivity_durations_by_project() {
+        assert_eq!(ProjectKind::ExistingHome.sensitivity_durations(300), [180, 240, 300]);
+        assert_eq!(ProjectKind::NewHome.sensitivity_durations(240), [180, 240, 324]);
+        assert_eq!(ProjectKind::Vehicle.sensitivity_durations(60), [48, 60, 72]);
+        assert_eq!(ProjectKind::Other.sensitivity_durations(12), [12, 24]);
+    }
+
+    #[test]
+    fn r_cre_35_net_worth_only_for_lasting_assets() {
+        assert!(ProjectKind::ExistingHome.projects_net_worth());
+        assert!(ProjectKind::Works.projects_net_worth());
+        assert!(!ProjectKind::Vehicle.projects_net_worth());
+    }
+
+    #[test]
+    fn r_cre_40_vehicle_with_known_price() {
+        let conditions = ProjectKind::Vehicle.initial_conditions();
+        let financing = PurchaseFinancing {
+            project: ProjectKind::Vehicle,
+            price: euros(25_000),
+            notary_fees: None,
+            fees: conditions.fees,
+            guarantee_fees: conditions.guarantee_fees,
+            down_payment: euros(5_000),
+        };
+        let plan = financing.plan().unwrap();
+        assert_eq!((plan.notary_fees, plan.to_borrow()), (Money::ZERO, euros(20_000)));
+        let simulation = simulate(&conditions.with_principal(plan.to_borrow()), d(TODAY)).unwrap();
+        assert_eq!(simulation.total_payment(), Money::from_minor(37_742));
+        let check = affordability(Money::from_minor(291_667), euros(230), simulation.total_payment(), MAX_DEBT_RATIO);
+        assert_eq!(check.debt_ratio, Some(Rate::from_ppm(208_258)));
+        assert!(!check.debt_ratio_exceeded);
+        // Un apport au-delà du coût est refusé ; l'apport proposé ne le dépasse jamais.
+        let too_much = PurchaseFinancing { down_payment: euros(26_000), ..financing };
+        assert_eq!(too_much.plan(), Err(DomainError::InvalidFinancingPlan));
+        assert_eq!(proposed_down_payment(euros(48_000), euros(25_000)), euros(25_000));
+        assert_eq!(proposed_down_payment(euros(3_000), euros(25_000)), euros(3_000));
+    }
+
+    #[test]
+    fn r_cre_40_home_price_adds_estimated_notary_fees() {
+        let financing = PurchaseFinancing {
+            project: ProjectKind::ExistingHome,
+            price: euros(280_000),
+            notary_fees: None,
+            fees: euros(1_000),
+            guarantee_fees: euros(2_000),
+            down_payment: euros(40_000),
+        };
+        let plan = financing.plan().unwrap();
+        assert_eq!(plan.project_cost(), euros(280_000 + 21_000 + 3_000));
+        assert_eq!(plan.to_borrow(), euros(264_000));
+        let typed = PurchaseFinancing { notary_fees: Some(euros(19_000)), ..financing };
+        assert_eq!(typed.plan().unwrap().to_borrow(), euros(262_000));
+    }
+
+    #[test]
+    fn r_cre_41_affordability_against_the_target_ratio() {
+        let check = affordability(euros(3_000), euros(500), euros(700), Rate::from_ppm(350_000));
+        assert_eq!(check.debt_ratio, Some(Rate::from_ppm(400_000)));
+        assert!(check.debt_ratio_exceeded);
+        assert_eq!(check.remaining_income, euros(1_800));
+        assert_eq!(affordability(Money::ZERO, euros(500), euros(700), MAX_DEBT_RATIO).debt_ratio, None);
     }
 }

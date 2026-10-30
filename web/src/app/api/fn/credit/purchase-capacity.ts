@@ -7,14 +7,17 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { CapacityRequest } from '../../models/capacity-request';
 import { PurchaseCapacity } from '../../models/purchase-capacity';
 
 export interface PurchaseCapacity$Params {
+      body: CapacityRequest
 }
 
-export function purchaseCapacity(http: HttpClient, rootUrl: string, params?: PurchaseCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
-  const rb = new RequestBuilder(rootUrl, purchaseCapacity.PATH, 'get');
+export function purchaseCapacity(http: HttpClient, rootUrl: string, params: PurchaseCapacity$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
+  const rb = new RequestBuilder(rootUrl, purchaseCapacity.PATH, 'post');
   if (params) {
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(
@@ -27,4 +30,4 @@ export function purchaseCapacity(http: HttpClient, rootUrl: string, params?: Pur
   );
 }
 
-purchaseCapacity.PATH = '/api/v1/purchase-capacity';
+purchaseCapacity.PATH = '/api/v1/credit/purchase-capacity';

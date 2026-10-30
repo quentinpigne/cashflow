@@ -1,0 +1,183 @@
+.projects {
+  display: block;
+  margin-bottom: 0.75rem;
+
+  @media (max-width: 599.98px) {
+    ::ng-deep .mdc-evolution-chip-set__chips {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+  }
+}
+
+.questions {
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  .short {
+    display: none;
+  }
+
+  @media (max-width: 599.98px) {
+    .long {
+      display: none;
+    }
+
+    .short {
+      display: inline;
+    }
+  }
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+
+  @media (max-width: 899.98px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font: var(--mat-sys-title-medium);
+}
+
+h3 {
+  margin: 1rem 0 0.5rem;
+  font: var(--mat-sys-title-small);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: calc(var(--field-gap) * 1.5) var(--field-gap);
+  align-items: start;
+  margin-bottom: 0.5rem;
+}
+
+.goal {
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.conditions {
+  margin-top: 1rem;
+
+  .defaults {
+    margin-top: 0.5rem;
+  }
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  position: sticky;
+  top: 1rem;
+
+  @media (max-width: 899.98px) {
+    position: static;
+  }
+
+  .busy {
+    margin-bottom: 0.5rem;
+  }
+
+  .headline {
+    font: var(--mat-sys-display-small);
+    color: var(--mat-sys-primary);
+  }
+
+  .headline-small {
+    font: var(--mat-sys-title-large);
+    color: var(--mat-sys-primary);
+  }
+
+  app-loan-figures,
+  app-affordability {
+    display: block;
+    margin-top: 1rem;
+  }
+}
+
+.cascade {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  strong {
+    font: var(--mat-sys-title-large);
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.hint,
+.warning {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0.75rem 0 0;
+}
+
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.warning,
+.warn {
+  color: var(--cf-warning, #b26a00);
+}
+
+.negative {
+  color: var(--mat-sys-error);
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}
+
+app-capacity-details {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+// Le chiffre clé, collé en bas sur mobile au-dessus de la barre de navigation (E36).
+.sticky-summary {
+  display: none;
+
+  @media (max-width: 599.98px) {
+    display: block;
+    position: sticky;
+    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    z-index: 2;
+    margin: 0 4.5rem 1rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--mat-sys-corner-medium);
+    background: var(--mat-sys-inverse-surface);
+    color: var(--mat-sys-inverse-on-surface);
+    font: var(--mat-sys-label-large);
+  }
+}

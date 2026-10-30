@@ -8,12 +8,12 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { ApplicationView } from '../../models/application-view';
-import { FromCapacityInput } from '../../models/from-capacity-input';
+import { FromSimulationInput } from '../../models/from-simulation-input';
 import { LoanSimulationId } from '../../models/loan-simulation-id';
 
 export interface ApplicationFromSimulation$Params {
   id: LoanSimulationId;
-      body: FromCapacityInput
+      body: FromSimulationInput
 }
 
 export function applicationFromSimulation(http: HttpClient, rootUrl: string, params: ApplicationFromSimulation$Params, context?: HttpContext): Observable<StrictHttpResponse<ApplicationView>> {

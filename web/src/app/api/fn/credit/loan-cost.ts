@@ -7,15 +7,15 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { PurchaseCapacity } from '../../models/purchase-capacity';
-import { PurchaseHypotheses } from '../../models/purchase-hypotheses';
+import { LoanCostRequest } from '../../models/loan-cost-request';
+import { LoanCostView } from '../../models/loan-cost-view';
 
-export interface SavePurchaseHypotheses$Params {
-      body: PurchaseHypotheses
+export interface LoanCost$Params {
+      body: LoanCostRequest
 }
 
-export function savePurchaseHypotheses(http: HttpClient, rootUrl: string, params: SavePurchaseHypotheses$Params, context?: HttpContext): Observable<StrictHttpResponse<PurchaseCapacity>> {
-  const rb = new RequestBuilder(rootUrl, savePurchaseHypotheses.PATH, 'put');
+export function loanCost(http: HttpClient, rootUrl: string, params: LoanCost$Params, context?: HttpContext): Observable<StrictHttpResponse<LoanCostView>> {
+  const rb = new RequestBuilder(rootUrl, loanCost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
@@ -25,9 +25,9 @@ export function savePurchaseHypotheses(http: HttpClient, rootUrl: string, params
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<PurchaseCapacity>;
+      return r as StrictHttpResponse<LoanCostView>;
     })
   );
 }
 
-savePurchaseHypotheses.PATH = '/api/v1/purchase-capacity';
+loanCost.PATH = '/api/v1/credit/loan-cost';

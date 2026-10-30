@@ -133,11 +133,11 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] CRE-09 — journal des démarches, relances et rappels
 - [x] CRE-10 — acceptation d'une offre : bien, prêt et documents en une fois
 
-## Compléments V1 — onglet Simuler par projet (conception 2026-10-30)
+## Compléments V1 — onglet Simuler par projet (2026-10-30, livrés)
 
-- [ ] CRE-11 — onglet Simuler par projet : situation d'emprunteur, trois questions (que puis-je acheter,
+- [x] CRE-11 — onglet Simuler par projet : situation d'emprunteur, trois questions (que puis-je acheter,
       financer un achat au prix connu, coût d'un prêt), un seul jeu de conditions
-- [ ] CRE-12 — conditions de crédit par défaut de chaque type de projet, dans les réglages (E42)
+- [x] CRE-12 — conditions de crédit par défaut de chaque type de projet, dans les réglages (E42)
 
 ## Mise en service (prochaine étape)
 

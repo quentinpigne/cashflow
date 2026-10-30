@@ -175,6 +175,12 @@ export const routes: Routes = [
           import('./features/projections/scenarios').then((m) => m.ScenariosPage),
       },
       {
+        path: 'reglages/conditions-credit',
+        title: 'Conditions de crédit — Cashflow',
+        loadComponent: () =>
+          import('./features/credit/credit-defaults').then((m) => m.CreditDefaultsPage),
+      },
+      {
         path: 'reglages/profils',
         title: 'Profils d’import — Cashflow',
         loadComponent: () => import('./features/settings/profiles').then((m) => m.ProfilesPage),

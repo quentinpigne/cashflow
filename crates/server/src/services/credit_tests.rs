@@ -10,6 +10,9 @@ use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::loans::{Insurance, LoanKind};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, EmploymentId, LoanApplicationId};
 
+use super::credit::simulate::{
+    self, CapacityRequest, CreditConditions, FinancingRequest, LoanCostRequest, SimulateQuestion,
+};
 use super::credit::{self, ApplicationInput, ComputeInput, LenderRequestInput, SimulationGoal, SimulationInput};
 use super::documents::{self, Upload};
 use super::loans::{self, LoanInput, ScheduleInput};
@@ -334,6 +337,10 @@ async fn cre_06_r_cre_20_to_r_cre_22_lender_requests_and_offers() {
     credit::delete_lender_request(&db, view.id, ca).await.unwrap();
 }
 
+fn home(conditions: CreditConditions) -> CapacityRequest {
+    CapacityRequest { project_kind: ProjectKind::ExistingHome, conditions }
+}
+
 #[tokio::test]
 async fn cre_07_r_cre_30_to_r_cre_36_purchase_capacity() {
     let (db, _dir) = setup().await;
@@ -341,29 +348,38 @@ async fn cre_07_r_cre_30_to_r_cre_36_purchase_capacity() {
     let f = fixture(&db).await;
     loans::create(&db, &car_loan(&f), today).await.unwrap();
 
-    // Hypothèses par défaut : le compte courant fait partie de l'épargne de précaution (R-CPT-13).
-    let capacity = credit::purchase_capacity(&db, today).await.unwrap();
-    assert_eq!(capacity.today.income_minor, 270_000);
-    assert_eq!(capacity.today.charges_minor, 20_000);
+    // Situation par défaut : le compte courant fait partie de l'épargne de précaution (R-CPT-13, R-CRE-30).
+    let situation = simulate::borrower_situation(&db, today).await.unwrap();
+    assert_eq!(situation.income_minor, 270_000);
+    assert_eq!(situation.charges_minor, 20_000);
+    assert!(situation.accounts.iter().all(|a| a.selected));
+    assert_eq!(situation.savings_minor, 6_000_000);
+
+    let defaults = simulate::project_defaults(&db).await.unwrap();
+    let conditions = defaults[0].conditions;
+    let capacity = simulate::purchase_capacity(&db, &home(conditions), today).await.unwrap();
     assert_eq!(capacity.today.max_payment_minor, 94_500 - 20_000, "35 % de 2 700 € − 200 €");
     assert!(capacity.today.capital_minor > 0);
-    assert!(capacity.accounts.iter().all(|a| a.selected));
-    assert_eq!(capacity.today.savings_minor, 6_000_000);
     assert_eq!(capacity.sensitivity.len(), 9);
     // Les 5 prochaines années, avec les salaires projetés du scénario par défaut (R-CRE-33).
     assert_eq!(capacity.years.len(), 6);
     assert!(capacity.years[5].income_minor > capacity.years[0].income_minor, "hausse des salaires");
 
-    // Le compte courant mobilisé, sans réserve ni frais, à 3 % sur 20 ans sans assurance.
-    let mut h = capacity.hypotheses.clone();
-    h.account_ids = Some(vec![f.checking]);
-    h.reserve_months = 0;
-    h.fees_minor = 0;
-    h.guarantee_fees_minor = 0;
-    h.insurance = Insurance::None;
-    h.annual_rate_ppm = 30_000;
-    h.duration_months = 240;
-    let capacity = credit::save_purchase_hypotheses(&db, &h, today).await.unwrap();
+    // Le compte courant mobilisé, sans réserve ; à 3 % sur 20 ans, sans assurance ni frais.
+    let mut s = situation.situation.clone();
+    s.account_ids = Some(vec![f.checking]);
+    s.reserve_months = 0;
+    let situation = simulate::save_borrower_situation(&db, &s, today).await.unwrap();
+    assert_eq!(situation.possible_down_payment_minor, 6_000_000);
+    let bare = CreditConditions {
+        annual_rate_ppm: 30_000,
+        duration_months: 240,
+        insurance: Insurance::None,
+        fees_minor: 0,
+        guarantee_fees_minor: 0,
+        ..conditions
+    };
+    let capacity = simulate::purchase_capacity(&db, &home(bare), today).await.unwrap();
     assert_eq!(capacity.today.down_payment_minor, 6_000_000, "R-CRE-31");
     assert!(capacity.today.max_price_minor > capacity.today.capital_minor);
     assert!(
@@ -371,26 +387,174 @@ async fn cre_07_r_cre_30_to_r_cre_36_purchase_capacity() {
             <= capacity.today.capital_minor + capacity.today.down_payment_minor
     );
     assert_eq!(capacity.savings_after_minor, 0);
-    assert_eq!(capacity.remaining_income_minor, 270_000 - 20_000 - capacity.today.payment_minor);
-    assert_eq!(credit::purchase_capacity(&db, today).await.unwrap().hypotheses.duration_months, 240, "gardées");
+    assert_eq!(capacity.affordability.remaining_income_minor, 270_000 - 20_000 - capacity.today.payment_minor);
+    assert_eq!(simulate::borrower_situation(&db, today).await.unwrap().situation.reserve_months, 0, "gardée");
 
     // Patrimoine projeté : l'achat coûte les frais de notaire, puis les intérêts au fil des mois (R-CRE-35).
-    let gap = |p: &credit::NetWorthComparison| p.without_minor - p.with_minor;
+    let gap = |p: &simulate::NetWorthComparison| p.without_minor - p.with_minor;
     assert_eq!(capacity.net_worth.len(), 120);
     assert!(gap(&capacity.net_worth[0]) > capacity.today.notary_fees_minor);
     assert!(gap(&capacity.net_worth[119]) > gap(&capacity.net_worth[0]));
 
-    // Hypothèses invalides refusées.
-    let invalid = credit::PurchaseHypotheses { duration_months: 0, ..h.clone() };
-    assert_eq!(code(credit::save_purchase_hypotheses(&db, &invalid, today).await.unwrap_err()), "INVALID_HYPOTHESES");
+    // Pour un véhicule : sans frais de notaire, sensibilité autour de la durée, sans patrimoine (R-CRE-34, R-CRE-35).
+    let vehicle = CapacityRequest {
+        project_kind: ProjectKind::Vehicle,
+        conditions: defaults.iter().find(|d| d.project_kind == ProjectKind::Vehicle).unwrap().conditions,
+    };
+    let capacity = simulate::purchase_capacity(&db, &vehicle, today).await.unwrap();
+    assert_eq!(capacity.today.notary_fees_minor, 0);
+    assert!(capacity.net_worth.is_empty());
+    let durations: Vec<u32> = capacity.sensitivity.iter().map(|c| c.duration_months).collect();
+    assert_eq!(durations, [48, 48, 48, 60, 60, 60, 72, 72, 72]);
+
+    // Situation et conditions invalides refusées.
+    let invalid = simulate::BorrowerSituation { max_debt_ratio_ppm: 0, ..s.clone() };
+    assert_eq!(code(simulate::save_borrower_situation(&db, &invalid, today).await.unwrap_err()), "INVALID_SITUATION");
+    let zero = CreditConditions { duration_months: 0, ..bare };
+    assert_eq!(code(simulate::purchase_capacity(&db, &home(zero), today).await.unwrap_err()), "INVALID_SIMULATION");
 
     // Une demande créée depuis la capacité (R-CRE-36).
-    let view = credit::application_from_capacity(&db, "Projet", today).await.unwrap();
+    let capacity = simulate::purchase_capacity(&db, &home(bare), today).await.unwrap();
+    let view = simulate::application_from_capacity(&db, &home(bare), "Projet", today).await.unwrap();
     assert_eq!(view.price_minor, capacity.today.max_price_minor);
     assert!(view.down_payment_minor <= 6_000_000, "au plus l'apport possible");
     assert_eq!(view.to_borrow_minor, capacity.today.capital_minor, "l'apport complète le capital empruntable");
     let selected = view.simulations.iter().find(|s| Some(s.id) == view.selected_simulation_id).unwrap();
     assert_eq!(selected.principal_minor, view.to_borrow_minor);
+}
+
+#[tokio::test]
+async fn cre_12_r_cre_38_r_cre_39_project_defaults_and_state() {
+    let (db, _dir) = setup().await;
+    let defaults = simulate::project_defaults(&db).await.unwrap();
+    assert_eq!(defaults.len(), 5);
+    let vehicle = defaults.iter().find(|d| d.project_kind == ProjectKind::Vehicle).unwrap();
+    assert_eq!((vehicle.conditions.annual_rate_ppm, vehicle.conditions.duration_months), (50_000, 60));
+
+    // Je règle le véhicule à 4,5 % sur 48 mois ; les valeurs initiales restent connues.
+    let mine = CreditConditions { annual_rate_ppm: 45_000, duration_months: 48, ..vehicle.conditions };
+    let input = [simulate::ProjectDefaultsInput { project_kind: ProjectKind::Vehicle, conditions: mine }];
+    let saved = simulate::save_project_defaults(&db, &input).await.unwrap();
+    let vehicle = saved.iter().find(|d| d.project_kind == ProjectKind::Vehicle).unwrap();
+    assert_eq!(vehicle.conditions, mine);
+    assert_eq!(vehicle.initial.annual_rate_ppm, 50_000);
+    assert_eq!(saved[0].conditions, saved[0].initial, "les autres projets gardent leurs valeurs initiales");
+    let invalid = [simulate::ProjectDefaultsInput {
+        project_kind: ProjectKind::Other,
+        conditions: CreditConditions { annual_rate_ppm: -1, ..mine },
+    }];
+    assert!(simulate::save_project_defaults(&db, &invalid).await.is_err());
+
+    // Le dernier état de l'onglet : par défaut, l'ancien et ses conditions ; puis ce qui a été gardé (R-CRE-39).
+    let state = simulate::simulate_state(&db).await.unwrap();
+    assert_eq!((state.project_kind, state.question), (ProjectKind::ExistingHome, SimulateQuestion::MaxPrice));
+    assert_eq!(state.conditions, saved[0].conditions);
+    let mine = simulate::SimulateState {
+        project_kind: ProjectKind::Vehicle,
+        question: SimulateQuestion::FinancePurchase,
+        conditions: mine,
+        price_minor: Some(2_500_000),
+        ..state
+    };
+    simulate::save_simulate_state(&db, &mine).await.unwrap();
+    let state = simulate::simulate_state(&db).await.unwrap();
+    assert_eq!((state.project_kind, state.price_minor), (ProjectKind::Vehicle, Some(2_500_000)));
+}
+
+#[tokio::test]
+async fn cre_11_r_cre_40_r_cre_41_finance_a_purchase_and_cost_of_a_loan() {
+    let (db, _dir) = setup().await;
+    let today = d(TODAY);
+    let f = fixture(&db).await;
+    loans::create(&db, &car_loan(&f), today).await.unwrap();
+    let mut s = simulate::borrower_situation(&db, today).await.unwrap().situation;
+    s.reserve_months = 0;
+    simulate::save_borrower_situation(&db, &s, today).await.unwrap();
+    let conditions = CreditConditions::from(ProjectKind::Vehicle.initial_conditions());
+
+    // Une voiture à 25 000 € avec 5 000 € d'apport, à 5 % sur 60 mois (R-CRE-40).
+    let request = FinancingRequest {
+        project_kind: ProjectKind::Vehicle,
+        conditions,
+        price_minor: 2_500_000,
+        down_payment_minor: Some(500_000),
+        notary_fees_minor: None,
+        target_payment_minor: None,
+    };
+    let view = simulate::financing(&db, &request, today).await.unwrap();
+    assert_eq!((view.notary_fees_minor, view.to_borrow_minor), (0, 2_000_000));
+    let loan = view.loan.as_ref().unwrap();
+    assert_eq!((loan.result.total_payment_minor, loan.duration_months), (37_742, 60));
+    let a = &view.affordability;
+    assert_eq!(a.debt_ratio_ppm, Some(213_859), "(200 + 377,42) / 2 700");
+    assert!(!a.debt_ratio_exceeded && !view.down_payment_exceeds_possible);
+    assert_eq!(view.savings_after_minor, 6_000_000 - 500_000);
+
+    // Sans apport saisi : l'apport proposé, au plus le coût ; égal au coût, rien à emprunter.
+    let proposed = FinancingRequest { down_payment_minor: None, ..request.clone() };
+    let view = simulate::financing(&db, &proposed, today).await.unwrap();
+    assert_eq!(view.down_payment_minor, 2_500_000);
+    assert!(view.loan.is_none());
+    let error = simulate::application_from_financing(&db, &proposed, "Comptant", today).await.unwrap_err();
+    assert_eq!(code(error), "NOTHING_TO_BORROW");
+
+    // Un apport au-delà de l'apport possible (aucun compte mobilisé) est signalé ; au-delà du coût, refusé.
+    s.account_ids = Some(vec![]);
+    simulate::save_borrower_situation(&db, &s, today).await.unwrap();
+    let view = simulate::financing(&db, &request, today).await.unwrap();
+    assert!(view.down_payment_exceeds_possible);
+    let too_much = FinancingRequest { down_payment_minor: Some(3_000_000), ..request.clone() };
+    assert_eq!(code(simulate::financing(&db, &too_much, today).await.unwrap_err()), "INVALID_FINANCING_PLAN");
+
+    // La mensualité fixée à 400 € : on cherche la durée.
+    let fixed = FinancingRequest { target_payment_minor: Some(40_000), ..request.clone() };
+    let duration = simulate::financing(&db, &fixed, today).await.unwrap().loan.unwrap().duration_months;
+    assert!(duration < 60);
+
+    // Un logement : frais de notaire estimés, modifiables.
+    let flat = FinancingRequest {
+        project_kind: ProjectKind::ExistingHome,
+        conditions: CreditConditions::from(ProjectKind::ExistingHome.initial_conditions()),
+        price_minor: 28_000_000,
+        down_payment_minor: Some(4_000_000),
+        notary_fees_minor: None,
+        target_payment_minor: None,
+    };
+    let view = simulate::financing(&db, &flat, today).await.unwrap();
+    assert_eq!(view.notary_fees_minor, 2_100_000);
+    assert_eq!(view.to_borrow_minor, 28_000_000 + 2_100_000 + 300_000 - 4_000_000);
+    assert!(view.affordability.debt_ratio_exceeded, "2 700 € de revenus ne suffisent pas");
+
+    // La demande préparée reprend le prix, les frais et l'apport saisis (R-CRE-36).
+    let application = simulate::application_from_financing(&db, &request, "Voiture", today).await.unwrap();
+    assert_eq!(application.project_kind, ProjectKind::Vehicle);
+    assert_eq!((application.price_minor, application.down_payment_minor), (2_500_000, 500_000));
+    assert_eq!(application.to_borrow_minor, 2_000_000);
+    assert!(application.selected_simulation_id.is_some());
+
+    // Que coûte ce prêt ? Le simulateur, et l'endettement qu'il donnerait (R-CRE-41).
+    let cost = simulate::loan_cost(
+        &db,
+        &LoanCostRequest {
+            project_kind: ProjectKind::Vehicle,
+            loan: ComputeInput {
+                goal: SimulationGoal::Payment,
+                kind: LoanKind::Consumer,
+                principal_minor: Some(2_000_000),
+                duration_months: Some(60),
+                target_payment_minor: None,
+                annual_rate_ppm: 50_000,
+                insurance: Insurance::None,
+                fees_minor: 0,
+                guarantee_fees_minor: 0,
+            },
+        },
+        today,
+    )
+    .await
+    .unwrap();
+    assert_eq!(cost.loan.result.total_payment_minor, 37_742);
+    assert_eq!(cost.affordability.remaining_income_minor, 270_000 - 20_000 - 37_742);
 }
 
 #[tokio::test]
@@ -400,20 +564,22 @@ async fn r_cre_36_application_from_capacity_on_the_demo_data() {
     data.ensure().unwrap();
     let today = d("2026-10-20");
     super::demo::load(&db, &data, today).await.unwrap();
-    // Charges au-delà de 35 % : aucun capital empruntable, un prix maximal minuscule qui laisse un reliquat
-    // d'épargne ; la demande se crée quand même, sans plus d'apport que nécessaire.
-    let mut h = credit::purchase_capacity(&db, today).await.unwrap().hypotheses;
-    h.other_charges_minor = 10_000_000;
-    let capacity = credit::save_purchase_hypotheses(&db, &h, today).await.unwrap();
+    // Charges au-delà de 35 % : aucun capital empruntable ; la demande depuis la capacité est refusée.
+    let mut s = simulate::borrower_situation(&db, today).await.unwrap().situation;
+    s.other_charges_minor = 10_000_000;
+    let situation = simulate::save_borrower_situation(&db, &s, today).await.unwrap();
+    let request = home(CreditConditions::from(ProjectKind::ExistingHome.initial_conditions()));
+    let capacity = simulate::purchase_capacity(&db, &request, today).await.unwrap();
     assert_eq!(capacity.today.capital_minor, 0);
-    let error = credit::application_from_capacity(&db, "Achat", today).await.unwrap_err();
+    let error = simulate::application_from_capacity(&db, &request, "Achat", today).await.unwrap_err();
     assert_eq!(code(error), "NO_BORROWING_CAPACITY");
 
     // Depuis une simulation, la demande se prépare quand même, sans plus d'apport que nécessaire (R-CRE-36).
     let small = SimulationInput { principal_minor: 100_000, ..simulation("Petit crédit", None) };
     let sim = credit::save_simulation(&db, None, &small, today).await.unwrap();
-    let view = credit::application_from_simulation(&db, sim.id, "Achat", today).await.unwrap();
-    assert!(view.down_payment_minor <= capacity.today.down_payment_minor);
+    let view = simulate::application_from_simulation(&db, sim.id, ProjectKind::Vehicle, "Achat", today).await.unwrap();
+    assert_eq!(view.project_kind, ProjectKind::Vehicle);
+    assert!(view.down_payment_minor <= situation.possible_down_payment_minor);
     assert_eq!(view.selected_simulation_id, Some(sim.id));
     assert!(view.to_borrow_minor <= 100_000);
     assert_eq!(credit::simulation(&db, sim.id, today).await.unwrap().application_id, Some(view.id));

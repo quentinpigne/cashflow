@@ -22,6 +22,7 @@ import { LoanKind } from '../../api/models/loan-kind';
 import { PieceStatus } from '../../api/models/piece-status';
 import { ProjectKind } from '../../api/models/project-kind';
 import { SimulationInput } from '../../api/models/simulation-input';
+import { InstallmentView } from '../../api/models/installment-view';
 import { SimulationView } from '../../api/models/simulation-view';
 import { CreditService } from '../../api/services/credit.service';
 import { errorMessage } from '../../core/http-errors';
@@ -579,22 +580,30 @@ export function compareSimulations(dialog: MatDialog, simulations: SimulationVie
   `,
 })
 export class ScheduleDialog {
-  protected readonly data = inject<SimulationView>(MAT_DIALOG_DATA);
+  protected readonly data = inject<ScheduleData>(MAT_DIALOG_DATA);
   private readonly api = inject(CreditService);
   private readonly schedule = rxResource({
-    params: () => this.data.id,
+    params: () => (this.data.installments ? undefined : this.data.id),
     stream: ({ params }) => this.api.loanSimulationSchedule({ id: params }),
   });
+  private readonly rows = computed(() => this.data.installments ?? this.schedule.value() ?? []);
   protected readonly years = computed(() => [
-    ...new Set((this.schedule.value() ?? []).map((i) => Number(i.date.slice(0, 4)))),
+    ...new Set(this.rows().map((i) => Number(i.date.slice(0, 4)))),
   ]);
   protected readonly year = signal<number | null>(null);
   protected readonly shown = computed(() => {
     const year = this.year() ?? this.years()[0];
-    return (this.schedule.value() ?? []).filter((i) => Number(i.date.slice(0, 4)) === year);
+    return this.rows().filter((i) => Number(i.date.slice(0, 4)) === year);
   });
 }
 
-export function showSchedule(dialog: MatDialog, simulation: SimulationView): void {
+/** Le tableau d'une simulation enregistrée (`id`), ou d'un calcul non enregistré (`installments`). */
+interface ScheduleData {
+  name: string;
+  id?: string;
+  installments?: InstallmentView[];
+}
+
+export function showSchedule(dialog: MatDialog, simulation: ScheduleData): void {
   dialog.open(ScheduleDialog, { data: simulation, maxWidth: '100vw' });
 }
