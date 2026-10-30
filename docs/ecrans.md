@@ -480,7 +480,10 @@ Ce qui change dans les écrans existants :
   en alerte avec leur jauge, objectifs d'épargne du mois, projets en cours. Absent tant qu'aucun budget
   ni projet n'existe.
 - **E7 Détail d'une transaction** : champ **Projet** (en cours, ou le projet actuel même terminé). Le
-  projet s'applique à toutes les ventilations de la transaction.
+  projet s'applique à toutes les ventilations de la transaction. Si le projet a des postes, champ
+  **Poste** à côté : « Hors postes » ou l'un des postes, présélectionné d'après la catégorie (R-BUD-27) ;
+  il s'applique à toutes les ventilations. Si elles sont rangées dans des postes différents, le champ
+  affiche « Plusieurs postes » et ne les change pas tant qu'on n'en choisit pas un.
 - **E14 Transactions** : dans la barre d'action de la sélection, **Projet** puis « Rattacher » (ou
   « Aucun » pour détacher).
 - **E15 Analyses** : case « Inclure les projets » (TDB-07).
@@ -519,9 +522,14 @@ cochées à partir du mois en cours.
 ## E20 — Projets (BUD-06)
 
 - **Liste** : en cours, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
-- **Détail** : réel et jauge, dates, exclusion des lignes du mois ; réel **par catégorie** ; transactions
-  rattachées, celles hors des dates signalées (R-BUD-23). « Modifier » (y compris clôturer) ;
-  « Supprimer » seulement sans transaction rattachée.
+- **Dialogue de projet** : nom, dates, **Postes** (BUD-11) : une ligne par poste (nom, montant,
+  catégories facultatives), « Ajouter un poste », total des postes. Sans poste, un champ **Montant
+  prévu** global ; il disparaît dès le premier poste (R-BUD-26), et ajouter le premier poste lui reprend
+  ce montant.
+- **Détail** : réel et jauge, dates, exclusion des lignes du mois ; **postes** (s'il y en a) : réel sur
+  prévu et jauge de chacun, puis « Hors postes » s'il n'est pas nul (R-BUD-28) ; réel **par catégorie** ;
+  transactions rattachées, avec leur poste, celles hors des dates signalées (R-BUD-23). « Modifier » (y
+  compris clôturer) ; « Supprimer » seulement sans transaction rattachée.
 
 ## E21 — Notifications (BUD-08)
 

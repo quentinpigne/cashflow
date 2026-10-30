@@ -93,6 +93,10 @@ erDiagram
     CategorizationRule }o--o{ Category : "affecte"
     ProjectionScenario }o--o{ Account : "hypothèses par compte"
     Project ||--o{ Split : "regroupe"
+    Project ||--o{ ProjectLine : "détaille"
+    ProjectLine ||--o{ Split : "range"
+    ProjectLine ||--o{ ProjectLineCategory : "propose"
+    Category ||--o{ ProjectLineCategory : "proposée par"
     BudgetLine ||--o{ BudgetLineCategory : "porte"
     Category ||--o{ BudgetLineCategory : "budgétée par"
     Account ||--o{ BudgetLine : "objectif d'épargne vers"
@@ -223,6 +227,7 @@ Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `
 | `note` | texte | optionnel |
 | `position` | entier | ordre d'affichage |
 | `project_id` | `Id` → Project | optionnel ; projet `ACTIVE` à l'affectation (R-BUD-24) ; `null` sur une ventilation de virement, de remboursement ou d'acquisition |
+| `project_line_id` | `Id` → ProjectLine | optionnel : poste du projet où la ventilation est rangée (R-BUD-27) ; un poste de `project_id`, `null` sans projet ; remis à `null` quand le poste est supprimé |
 | `loan_id` | `Id` → Loan | optionnel : **ventilation de remboursement** (R-PRE-7) ; alors sans catégorie ni bien |
 | `asset_id` | `Id` → Asset | optionnel : **ventilation d'acquisition** (R-BIE-8) ; alors sans catégorie ni prêt |
 | `refunds_transaction_id` | `Id` → Transaction | optionnel : **remboursement de frais** (R-TRX-50) ; ventilation positive, sur une catégorie de dépense, visant une autre transaction de montant négatif. Lien retiré si la dépense est supprimée (R-TRX-55) |
@@ -707,11 +712,35 @@ Catégories d'une version de ligne (R-BUD-10). Une nouvelle version reçoit les 
 | `name` | texte ≤ 80 | requis, unique |
 | `start_date` | `Date` | requis |
 | `end_date` | `Date` | optionnel, ≥ `start_date` |
-| `amount` | `Money` | requis, > 0 |
+| `amount` | `Money` | montant global : requis, > 0 sans poste ; `null` quand le projet a des postes (R-BUD-26) |
 | `exclude_from_period_budgets` | booléen | défaut `true` (R-BUD-21) |
 | `status` | enum | `ACTIVE` \| `CLOSED` |
 | `alert_thresholds` | `Json` | optionnel, comme pour `BudgetLine` |
 | `note` | texte | optionnel |
+
+Prévu du projet : `amount`, ou Σ `ProjectLine.amount` s'il a des postes (R-BUD-26).
+
+### ProjectLine
+
+Poste d'un projet (R-BUD-26).
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `project_id` | `Id` → Project | requis, suppression en cascade |
+| `name` | texte ≤ 80 | requis, unique dans le projet (sans tenir compte de la casse) |
+| `amount` | `Money` | requis, > 0 |
+| `position` | entier | ordre d'affichage |
+| catégories | `ProjectLineCategory` | zéro, une ou plusieurs catégories de dépense |
+
+### ProjectLineCategory
+
+Catégories qui proposent un poste (R-BUD-27).
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `project_line_id` | `Id` → ProjectLine | requis ; supprimé avec le poste |
+| `project_id` | `Id` → Project | requis : celui du poste |
+| `category_id` | `Id` → Category | requis, catégorie de dépense ; unique dans le projet (R-BUD-27) |
 
 ## Authentification — ADR-0006, ADR-0015, ADR-0023
 

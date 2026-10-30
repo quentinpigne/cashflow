@@ -1,7 +1,7 @@
 # Spec 05 — Budgets
 
 Statut : **Validée** (2026-10-20)
-Modèle : [Project, BudgetLine, BudgetOverride](../modele-de-donnees.md#budgets--spec-05)
+Modèle : [Project, ProjectLine, BudgetLine, BudgetOverride](../modele-de-donnees.md#budgets--spec-05)
 Décision : ADR-0014 (modèle de budget), issue du point dédié du 2026-10-20
 
 ## Concepts
@@ -108,8 +108,9 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 
 ### Projets
 
-- **R-BUD-20** — Un projet a un nom, une date de début, une date de fin optionnelle, un montant prévu
-  global et un statut (`ACTIVE`, `CLOSED`). Une ventilation porte **au plus un** projet.
+- **R-BUD-20** — Un projet a un nom, une date de début, une date de fin optionnelle, un prévu (un montant
+  global, ou la somme de ses postes, R-BUD-26) et un statut (`ACTIVE`, `CLOSED`). Une ventilation porte
+  **au plus un** projet.
 - **R-BUD-21** — Le drapeau `exclude_from_period_budgets` du projet (par défaut `true`) détermine si ses
   ventilations sont **retirées** des lignes mensuelles et annuelles. Dans les deux cas, elles restent
   comptées dans les analyses par catégorie (spec 08).
@@ -121,6 +122,35 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
   projet fige son bilan, sans rien verrouiller : les ventilations restent modifiables.
 - **R-BUD-25** — Les ventilations des comptes hors budget (R-BUD-1) peuvent aussi être rattachées à un
   projet : un projet suit une dépense, quel que soit le compte qui l'a payée.
+
+### Postes d'un projet
+
+```
+Projet « Italie 2027 » — 1 000 € prévus (Σ des postes)
+ ├─ Train        500 €   catégorie Transports en commun
+ ├─ Logement     300 €
+ ├─ Restaurants  100 €   catégorie Restaurants
+ ├─ Loisirs      100 €   catégorie Loisirs (et ses sous-catégories)
+ └─ Hors postes          ce qui n'est rangé dans aucun poste
+```
+
+- **R-BUD-26** — Un projet peut détailler son prévu en **postes** (`ProjectLine`) : un nom libre (≤ 80
+  caractères, unique dans le projet), un montant prévu > 0 et **zéro, une ou plusieurs** catégories de
+  dépense. Les postes sont facultatifs : sans poste, le prévu du projet est son montant global ; avec des
+  postes, c'est la somme de leurs montants, et le projet n'a pas de montant global.
+- **R-BUD-27** — Une catégorie appartient **au plus à un** poste d'un même projet. Une ventilation
+  rattachée au projet est rangée dans au plus un de ses postes, sinon elle est **hors postes**. Le **poste
+  proposé** pour une ventilation est celui qui porte sa catégorie, sinon celui qui porte sa catégorie
+  parente (comme R-BUD-12), sinon aucun. Rattacher en masse, par une règle ou à l'import range la
+  ventilation dans le poste proposé ; le détail d'une transaction le présélectionne, et l'utilisateur
+  peut en choisir un autre (le train d'un voyage catégorisé « Voyages », par exemple).
+- **R-BUD-28** — Réel d'un poste = −Σ des ventilations qui y sont rangées, remboursements déduits
+  (R-BUD-22). Réel hors postes = réel du projet − Σ des réels des postes. Enregistrer les postes d'un
+  projet range dans leur poste proposé les ventilations hors postes du projet ; supprimer un poste renvoie
+  ses ventilations hors postes ; retirer une ventilation du projet, ou la changer de projet, la retire de
+  son poste.
+- **R-BUD-29** — Un poste n'a pas d'alerte propre : sa jauge se colore selon les seuils du projet
+  (R-BUD-60, R-BUD-61), sans notification. Seul le projet notifie, sur son prévu total.
 
 ### Objectifs d'épargne
 
@@ -189,7 +219,7 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 | BUD-08 | V1 | Alertes visuelles et centre de notifications intégré |
 | BUD-09 | V2 | Notifications push sur le téléphone (ntfy ou Web Push), via un second canal de notification |
 | BUD-10 | V1 | Assistant de création initiale : propose des montants à partir de la moyenne des 3 à 6 derniers mois par catégorie |
-| BUD-11 | V2 | Ventilation prévue d'un projet par catégorie (prévu par catégorie au sein du projet) |
+| BUD-11 | V1 | Postes d'un projet : prévu détaillé (train, logement…), catégories facultatives, réel par poste et hors postes |
 | BUD-12 | V2 | Alerte prévisionnelle : le rythme de dépense projette un dépassement en fin de période |
 | BUD-13 | V2 | Historique : prévu vs réel sur 12 mois par ligne |
 
@@ -219,6 +249,20 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 - Étant donné le projet « Italie 2027 » avec `exclude_from_period_budgets = true`, quand une ventilation
   « Restaurants » de 80 € est rattachée au projet, alors la ligne mensuelle Restaurants n'augmente pas,
   le projet augmente de 80 €, et l'analyse par catégorie (TDB-02) compte bien 80 € de restaurants.
+
+**BUD-11 / R-BUD-26 à R-BUD-28 — postes d'un projet**
+- Étant donné le projet « Italie 2027 » avec les postes Train 500 € (sans catégorie), Logement 300 €,
+  Restaurants 100 € (catégorie Restaurants) et Loisirs 100 € (catégorie Loisirs), alors son prévu vaut
+  1 000 €.
+- Quand je rattache en masse un dîner de 45 € catégorisé « Restaurants » et une entrée de musée de 12 €
+  catégorisée « Culture » (sous-catégorie de Loisirs), alors Restaurants affiche 45 / 100 € et Loisirs
+  12 / 100 €.
+- Quand je rattache un billet de 180 € catégorisé « Voyages », alors il est hors postes ; quand je le
+  range dans Train depuis le détail de la transaction, alors Train affiche 180 / 500 € et le hors postes
+  revient à 0 €.
+- Étant donné ce projet, quand j'ajoute à Logement la catégorie Restaurants, alors l'enregistrement est
+  refusé (R-BUD-27).
+- Quand je supprime le poste Train, alors le billet repasse hors postes et le prévu du projet vaut 500 €.
 
 **BUD-07 / R-BUD-31 — objectif d'épargne**
 - Étant donné un objectif de 200 €/mois vers le Livret A, un virement de 300 € du compte courant vers le

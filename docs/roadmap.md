@@ -139,6 +139,11 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       financer un achat au prix connu), un seul jeu de conditions
 - [x] CRE-12 — conditions de crédit par défaut de chaque type de projet, dans les réglages (E42)
 
+## Compléments V1 — postes des projets (2026-10-30)
+
+- [ ] BUD-11 — postes d'un projet : prévu détaillé, catégories facultatives, réel par poste et hors postes
+      (spec 05, R-BUD-26 à R-BUD-29)
+
 ## Mise en service (prochaine étape)
 
 - [ ] Exposition sur Internet derrière un proxy, en HTTPS : passe d'exploitation et de sécurité (Q15, à
@@ -153,7 +158,7 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - EPA-07, EPA-08, EPA-09
 - PRJ-06 à PRJ-09
 - SAL-06 à SAL-08
-- BUD-09 (push mobile), BUD-11, BUD-12, BUD-13
+- BUD-09 (push mobile), BUD-12, BUD-13
 - TRX-10, CPT-08, TIE-05
 - DOC-05 (échéances des contrats et garanties), DOC-06 (OCR des images, ADR-0007)
 - Tableaux d'amortissement des prêts (hors périmètre V1, cf. vision)
