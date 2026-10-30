@@ -431,7 +431,10 @@ async fn tdb_02_category_report_and_tdb_03_evolution() {
     assert_eq!(line.previous_minor, 3_000);
     assert_eq!(line.average_minor, 250, "3 000 sur 12 mois complets");
 
-    let evolution = reports::evolution(&db, &reports::EvolutionQuery { months: Some(12) }, d(TODAY)).await.unwrap();
+    let evolution =
+        reports::evolution(&db, &reports::EvolutionQuery { months: Some(12), planned_projects: None }, d(TODAY))
+            .await
+            .unwrap();
     assert_eq!(evolution.months.len(), 12);
     let march = evolution.months.last().unwrap();
     assert_eq!(march.month, "2026-03");

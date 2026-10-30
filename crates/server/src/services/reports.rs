@@ -2,14 +2,16 @@
 
 use std::collections::HashMap;
 
+use cashflow_domain::budgeting::{self, Month};
 use cashflow_domain::ledger::category::CategoryKind;
-use cashflow_domain::reporting::{self, CategorizedFact, Period, SplitFact};
+use cashflow_domain::reporting::{self, CategorizedFact, Period, PlannedFlows, SplitFact};
 use cashflow_domain::shared::ids::CategoryId;
 use cashflow_domain::{Currency, Date, Money};
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
+use super::budgets;
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -61,6 +63,30 @@ pub struct CategoryReport {
 pub struct EvolutionQuery {
     /// 12 ou 24 (12 par défaut).
     pub months: Option<u32>,
+    /// Compter les projets en projet dans les mois à venir (oui par défaut, R-BUD-72).
+    pub planned_projects: Option<bool>,
+}
+
+/// Un mois à venir de l'évolution : revenus et dépenses prévus (R-TDB-14).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PlannedMonthFlows {
+    /// `AAAA-MM`.
+    pub month: String,
+    pub income_minor: i64,
+    /// Dépenses prévues : lignes du budget et projets.
+    pub expenses_minor: i64,
+    /// Dont projets.
+    pub projects_minor: i64,
+    pub savings_minor: i64,
+}
+
+/// Estimation de fin d'année : réel à date et prévu des mois suivants (R-TDB-14).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct YearEnd {
+    pub year: i32,
+    pub income_minor: i64,
+    pub expenses_minor: i64,
+    pub savings_minor: i64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -82,6 +108,12 @@ pub struct MonthFlows {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Evolution {
     pub months: Vec<MonthFlows>,
+    /// Mois qui suivent le mois en cours, jusqu'à décembre (R-TDB-14).
+    pub upcoming: Vec<PlannedMonthFlows>,
+    pub year_end: YearEnd,
+    /// Au moins une ligne de budget : sans elle, les mois à venir ne montrent que les projets.
+    pub has_budget: bool,
+    pub planned_projects: bool,
 }
 
 fn parse_month(month: &str) -> AppResult<Date> {
@@ -220,5 +252,53 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
             current_month: period.from == reporting::first_of_month(today),
         })
         .collect();
-    Ok(Evolution { months })
+
+    // Mois à venir jusqu'à décembre et estimation de fin d'année (R-TDB-14).
+    let current = Month::of(today);
+    let upcoming_months = current.next().until(Month { year: current.year, month: 12 });
+    let budget = budgets::planned_months(db, &upcoming_months).await?;
+    let planned_projects = query.planned_projects.unwrap_or(true);
+    let mut projects: HashMap<Month, Money> = HashMap::new();
+    for project in budgets::remaining(db, today)
+        .await?
+        .iter()
+        .filter(|p| p.exclude_from_period_budgets && budgeting::counted(p.status, planned_projects))
+    {
+        for (_, month, amount) in &project.parts {
+            *projects.entry(*month).or_insert(Money::ZERO) += *amount;
+        }
+    }
+    let planned: Vec<PlannedFlows> = upcoming_months
+        .iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let (income, budget_expenses) = budget.get(i).copied().unwrap_or((Money::ZERO, Money::ZERO));
+            PlannedFlows { income, budget_expenses, projects: projects.get(m).copied().unwrap_or(Money::ZERO) }
+        })
+        .collect();
+    let this_year: Vec<reporting::Flows> =
+        periods.iter().zip(&flows).filter(|(p, _)| p.from.year() == today.year()).map(|(_, f)| *f).collect();
+    let (income, expenses, savings) = reporting::year_estimate(&this_year, &planned);
+    Ok(Evolution {
+        months,
+        upcoming: upcoming_months
+            .iter()
+            .zip(&planned)
+            .map(|(m, p)| PlannedMonthFlows {
+                month: m.to_string(),
+                income_minor: p.income.minor(),
+                expenses_minor: p.expenses().minor(),
+                projects_minor: p.projects.minor(),
+                savings_minor: p.savings().minor(),
+            })
+            .collect(),
+        year_end: YearEnd {
+            year: today.year(),
+            income_minor: income.minor(),
+            expenses_minor: expenses.minor(),
+            savings_minor: savings.minor(),
+        },
+        has_budget: !budget.is_empty(),
+        planned_projects,
+    })
 }

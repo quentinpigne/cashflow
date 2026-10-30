@@ -636,3 +636,46 @@ fn project_lines(project: &ProjectView) -> Vec<ProjectLineInput> {
         })
         .collect()
 }
+
+/// Critère d'acceptation de TDB-09 / R-TDB-14 : les mois à venir de l'évolution et l'estimation de fin d'année.
+#[tokio::test]
+async fn tdb_09_r_tdb_14_upcoming_months_and_year_end() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let food = category(&db, "Courses B", CategoryKind::Expense, None).await;
+    let salary = category(&db, "Salaire B", CategoryKind::Income, None).await;
+    budgets::create_line(&db, &line(BudgetKind::Income, salary, 300_000, "2026-01")).await.unwrap();
+    budgets::create_line(&db, &line(BudgetKind::Expense, food, 100_000, "2026-01")).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-02-10", -100_000, Some(food))).await.unwrap();
+    transactions::create(&db, &tx(checking, "2026-03-01", 300_000, Some(salary))).await.unwrap();
+    let mut train = post(None, "Train", 50_000, &[]);
+    train.planned_month = Some("2026-05".into());
+    let input = ProjectInput {
+        name: "Italie".into(),
+        start_date: d("2026-07-01"),
+        end_date: None,
+        amount_minor: None,
+        lines: vec![train, post(None, "Hôtel", 30_000, &[])],
+        exclude_from_period_budgets: true,
+        status: ProjectStatus::Planned,
+        alert_thresholds: None,
+        note: None,
+        provision_from: None,
+    };
+    budgets::save_project(&db, None, &input).await.unwrap();
+
+    let query = |planned_projects| reports::EvolutionQuery { months: Some(12), planned_projects };
+    let evolution = reports::evolution(&db, &query(None), d(TODAY)).await.unwrap();
+    assert!(evolution.has_budget);
+    assert_eq!(evolution.upcoming.len(), 9, "d'avril à décembre");
+    let may = evolution.upcoming.iter().find(|m| m.month == "2026-05").unwrap();
+    assert_eq!((may.income_minor, may.expenses_minor, may.projects_minor), (300_000, 150_000, 50_000));
+    assert_eq!(may.savings_minor, 150_000);
+    let year = &evolution.year_end;
+    assert_eq!((year.income_minor, year.expenses_minor), (3_000_000, 1_080_000));
+    assert_eq!(year.savings_minor, 1_920_000);
+
+    // Sans les projets en projet, l'Italie sort de l'estimation (R-BUD-72).
+    let without = reports::evolution(&db, &query(Some(false)), d(TODAY)).await.unwrap();
+    assert_eq!(without.year_end.expenses_minor, 1_000_000);
+}

@@ -433,6 +433,8 @@ pub fn plan_of(lines: &[ProjectLineRow], project: ProjectId) -> Vec<budgeting::P
 pub struct ProjectRemaining {
     pub name: String,
     pub status: ProjectStatus,
+    /// Ses dépenses sont retirées des lignes du mois (R-BUD-21).
+    pub exclude_from_period_budgets: bool,
     pub start: Date,
     /// Nom du poste daté, ou `None` pour ce qui est étalé ; mois ; montant positif.
     pub parts: Vec<(Option<String>, Month, Money)>,
@@ -459,7 +461,43 @@ pub async fn remaining(db: &Db, today: Date) -> AppResult<Vec<ProjectRemaining>>
                     (name, part.month, part.amount)
                 })
                 .collect();
-            ProjectRemaining { name: p.name.clone(), status: p.status, start: p.start_date, parts }
+            ProjectRemaining {
+                name: p.name.clone(),
+                status: p.status,
+                exclude_from_period_budgets: p.exclude_from_period_budgets,
+                start: p.start_date,
+                parts,
+            }
+        })
+        .collect())
+}
+
+/// Revenus et dépenses prévus par les lignes du budget, pour chacun des `months` (R-TDB-14) : lignes de revenu, et
+/// lignes de dépense mensuelles avec les quotes-parts annuelles. Vide sans aucune ligne.
+pub async fn planned_months(db: &Db, months: &[Month]) -> AppResult<Vec<(Money, Money)>> {
+    let Some(last) = months.iter().max().copied() else { return Ok(Vec::new()) };
+    let loaded = Loaded::load(db, last).await?;
+    if loaded.rows.is_empty() {
+        return Ok(Vec::new());
+    }
+    let versions: Vec<_> = loaded.rows.iter().map(version).collect();
+    let overrides: Vec<Override<BudgetLineId>> =
+        loaded.overrides.iter().map(|o| Override { line: o.line_id, period: o.period, amount: o.amount }).collect();
+    let budget = BudgetData {
+        lines: &versions,
+        overrides: &overrides,
+        splits: &loaded.splits,
+        moves: &loaded.moves,
+        parents: &loaded.parents,
+        projects: &[],
+    }
+    .build();
+    Ok(months
+        .iter()
+        .map(|m| {
+            let month = budget.month(*m);
+            let planned = |kind: BudgetKind| month.lines.iter().filter(|l| l.kind == kind).map(|l| l.planned).sum();
+            (planned(BudgetKind::Income), planned(BudgetKind::Expense))
         })
         .collect())
 }

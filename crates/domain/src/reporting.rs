@@ -150,6 +150,36 @@ pub fn rolling_rate(window: &[Flows]) -> Option<Rate> {
     savings_rate(savings, income)
 }
 
+/// Revenus et dépenses prévus d'un mois à venir (R-TDB-14).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlannedFlows {
+    /// Lignes de revenu du budget du mois.
+    pub income: Money,
+    /// Lignes de dépense mensuelles et quotes-parts annuelles du mois.
+    pub budget_expenses: Money,
+    /// Restants prévus du mois des projets exclus des lignes et pris en compte (R-BUD-71, R-BUD-72).
+    pub projects: Money,
+}
+
+impl PlannedFlows {
+    pub fn expenses(&self) -> Money {
+        self.budget_expenses + self.projects
+    }
+
+    pub fn savings(&self) -> Money {
+        self.income - self.expenses()
+    }
+}
+
+/// Estimation de fin d'année (R-TDB-14) : le réel des mois écoulés de l'année, mois en cours compris, plus le prévu
+/// des mois suivants.
+pub fn year_estimate(actual: &[Flows], planned: &[PlannedFlows]) -> (Money, Money, Money) {
+    let income = actual.iter().map(|f| f.income).sum::<Money>() + planned.iter().map(|p| p.income).sum::<Money>();
+    let expenses =
+        actual.iter().map(|f| f.expenses).sum::<Money>() + planned.iter().map(PlannedFlows::expenses).sum::<Money>();
+    (income, expenses, income - expenses)
+}
+
 /// Moyenne exacte, arrondie à l'unité mineure, demi vers le haut (R-TDB-8).
 pub fn average(amounts: &[Money]) -> Money {
     if amounts.is_empty() {
@@ -324,5 +354,21 @@ mod tests {
         let (_, previous) = month_to_date(d("2026-03-12"));
         assert_eq!(previous, Period { from: d("2026-02-01"), to: d("2026-02-12") });
         assert_eq!(end_of_previous_month(d("2026-03-12")), d("2026-02-28"));
+    }
+
+    /// Critère d'acceptation de TDB-09 / R-TDB-14 : réel de l'année à date, plus le prévu des mois suivants.
+    #[test]
+    fn r_tdb_14_year_end_estimate() {
+        let eur = |e: i64| Money::from_minor(e * 100);
+        let month = |income, expenses| Flows {
+            income: eur(income),
+            expenses: eur(expenses),
+            savings: eur(income - expenses),
+            ..Flows::default()
+        };
+        let planned = PlannedFlows { income: eur(3_000), budget_expenses: eur(2_000), projects: eur(500) };
+        assert_eq!((planned.expenses(), planned.savings()), (eur(2_500), eur(500)));
+        let actual = [month(3_000, 2_200), month(3_100, 1_900)];
+        assert_eq!(year_estimate(&actual, &[planned, planned]), (eur(12_100), eur(9_100), eur(3_000)));
     }
 }
