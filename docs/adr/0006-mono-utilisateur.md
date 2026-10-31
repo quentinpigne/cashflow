@@ -42,10 +42,10 @@ Option 3.
 - Un **membre** (`Member`) est une **personne** du foyer, pas un utilisateur : il n'a pas de connexion.
   L'application garde **une seule connexion** (`app_user`, une ligne) ; tout ce qui est visible l'est pour
   elle. Il n'y a ni droits par membre, ni filtrage de sécurité, ni `AccountAccess`.
-- Les membres servent à attribuer : les **comptes**, les **biens** et les **prêts** ont des propriétaires
-  avec une **quote-part** (tables `account_owner`, `asset_owner`, `loan_owner`) ; un **emploi** a au plus un
-  membre ; un **document** peut être rattaché à un membre. On en tire le patrimoine **par membre**, en plus
-  de celui du foyer.
+- Les membres servent à **affecter** : un **compte** (au plus un membre, son titulaire), une **ventilation**
+  et un **emploi** ont au plus un membre (colonnes `member_id`) ; ce qui n'en a pas est au foyer. On choisit
+  ensuite les membres à afficher dans l'accueil, les analyses et les projections. Les comptes joints à
+  quotes-parts et les membres des biens, des prêts et des documents viendront plus tard (MBR-05).
 - Catégories, règles, tiers, profils d'import, barèmes de taux, budgets, projets, scénarios de projection et
   récurrences restent **communs au foyer** (Q19).
 - La rubrique **Foyer** s'active dans les réglages, désactivée par défaut : sans elle, l'application reste
@@ -61,9 +61,9 @@ Options écartées pour les membres :
 ## Conséquences
 
 - La V1 reste simple : aucun écran ni aucune règle liés aux membres.
-- Les membres n'ajoutent que des tables de propriétaires et quelques colonnes : aucune requête existante
-  n'a à filtrer par membre, et rien ne change quand la rubrique Foyer est désactivée.
-- Le patrimoine existe en deux vues, foyer et membre (R-MBR-10 à R-MBR-12). Les dépenses, revenus et
-  épargne par membre demandent de répartir les flux d'un compte joint : à concevoir (MBR-05).
+- Les membres n'ajoutent qu'une table et trois colonnes : aucune requête existante n'a à filtrer par membre
+  pour des raisons de droits, et rien ne change quand la rubrique Foyer est désactivée.
+- Le choix des membres affichés ne fait que restreindre les calculs existants (flux, soldes, projections) à
+  des ventilations et des comptes ; toutes les cases cochées, les chiffres sont ceux du foyer (R-MBR-10).
 - Le contexte d'appel (`RequestContext`) prévu en V1 n'a pas été construit : sans droits par membre, il
   n'est plus nécessaire.

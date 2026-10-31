@@ -57,14 +57,9 @@ erDiagram
     Employment ||--o{ Salary : "rémunérations successives"
     Employment ||--o{ SalaryBonus : "primes"
     Category ||--o{ Employment : "salaire reçu sur"
-    Member ||--o{ AccountOwner : "possède (quote-part)"
-    Account ||--o{ AccountOwner : "propriétaires"
-    Member ||--o{ AssetOwner : "possède (quote-part)"
-    Asset ||--o{ AssetOwner : "propriétaires"
-    Member ||--o{ LoanOwner : "emprunte (quote-part)"
-    Loan ||--o{ LoanOwner : "emprunteurs"
+    Member |o--o{ Account : "titulaire"
+    Member |o--o{ Split : "concerne"
     Member |o--o{ Employment : "occupe"
-    DocumentLink }o--o| Member : "membre"
     Document ||--o{ DocumentLink : "rattaché par"
     DocumentLink }o--o| Account : "compte (relevés)"
     DocumentLink }o--o| Employment : "emploi (fiches de paie)"
@@ -141,8 +136,7 @@ erDiagram
 | `display_order` | entier | ordre dans la famille ; à la création, après le dernier compte de la famille (CPT-07) |
 | `color` | texte | optionnel, `#RRGGBB` (CPT-07) |
 | `notes` | texte | optionnel |
-
-Propriétaires : `AccountOwner` ([Foyer](#foyer--spec-14)).
+| `member_id` | `Id` → Member | optionnel : titulaire ([Foyer](#foyer--spec-14), R-MBR-4) ; `null` = compte du foyer ; mis à `null` à la suppression du membre (R-MBR-2) |
 
 `AccountKind` → `AccountFamily` (correspondance fixe, cf. spec 01) :
 
@@ -243,7 +237,7 @@ Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `
 | `loan_id` | `Id` → Loan | optionnel : **ventilation de remboursement** (R-PRE-7) ; alors sans catégorie ni bien |
 | `asset_id` | `Id` → Asset | optionnel : **ventilation d'acquisition** (R-BIE-8) ; alors sans catégorie ni prêt |
 | `refunds_transaction_id` | `Id` → Transaction | optionnel : **remboursement de frais** (R-TRX-50) ; ventilation positive, sur une catégorie de dépense, visant une autre transaction de montant négatif. Lien retiré si la dépense est supprimée (R-TRX-55) |
-| `member_id` | `Id` → Member | optionnel : membre que la ventilation concerne (R-MBR-14) ; `null` sur une ventilation de virement ; mis à `null` à la suppression du membre (R-MBR-2) |
+| `member_id` | `Id` → Member | optionnel : membre que la ventilation concerne (R-MBR-5) ; `null` sur une ventilation de virement ; mis à `null` à la suppression du membre (R-MBR-2) |
 
 Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (ADR-0003). Pour toute dépense,
 Σ des ventilations qui la remboursent ≤ −`amount` (R-TRX-52).
@@ -506,7 +500,7 @@ Décision : ADR-0022. Montants en euros.
 | `raise_month` | entier | 1 à 12, défaut 1 : mois des augmentations (R-SAL-10) |
 | `paid_next_month` | booléen | défaut `false` : le salaire du mois M est versé en M+1 |
 | `notes` | texte | optionnel |
-| `member_id` | `Id` → Member | optionnel ; mis à `null` à la suppression du membre (R-MBR-7, R-MBR-2) |
+| `member_id` | `Id` → Member | optionnel ; mis à `null` à la suppression du membre (R-MBR-7, R-MBR-2) ; `null` = emploi du foyer |
 
 ### Salary (rémunération)
 
@@ -584,7 +578,6 @@ rattachements se modifient. La suppression d'un document est toujours explicite 
 | `loan_id` | `Id` → Loan | optionnel, suppression en cascade |
 | `payee_id` | `Id` → Payee | optionnel, suppression en cascade |
 | `project_id` | `Id` → Project | optionnel, suppression en cascade |
-| `member_id` | `Id` → Member | optionnel, suppression en cascade (R-MBR-8) |
 
 **Exactement une** cible est renseignée (`CHECK`). Un document est rattaché au plus une fois à un même objet
 (un index unique partiel par cible : `(document_id, account_id) WHERE account_id IS NOT NULL`…). La suppression
@@ -780,19 +773,10 @@ Catégories qui proposent un poste (R-BUD-27).
 | `color` | texte | optionnel, `#RRGGBB` |
 | `display_order` | entier | requis ; à la création, après le dernier membre |
 
-Une personne, pas un utilisateur : aucune connexion (ADR-0006).
+Une personne, pas un utilisateur : aucune connexion (ADR-0006). Lui sont affectés des comptes
+(`Account.member_id`), des ventilations (`Split.member_id`) et des emplois (`Employment.member_id`) ; ce qui
+n'a pas de membre est au foyer (R-MBR-4 à R-MBR-7).
 
-### AccountOwner, AssetOwner, LoanOwner (propriétaires)
-
-| Champ | Type | Contraintes |
-|---|---|---|
-| `account_id` / `asset_id` / `loan_id` | `Id` | requis, suppression en cascade |
-| `member_id` | `Id` → Member | requis ; la suppression du membre passe par le service (R-MBR-2) |
-| `share_bp` | entier | quote-part en centièmes de pour cent, `CHECK (share_bp BETWEEN 1 AND 10000)` |
-
-Clé primaire `(objet, member_id)` : un membre est propriétaire au plus une fois d'un objet. La somme des
-`share_bp` d'un objet qui a des propriétaires vaut 10 000 : vérifiée par le domaine, pas par le schéma
-(R-MBR-4). Pas d'`id` ni d'horodatages : les propriétaires d'un objet se remplacent d'un bloc.
 
 ## Authentification — ADR-0006, ADR-0015, ADR-0023
 

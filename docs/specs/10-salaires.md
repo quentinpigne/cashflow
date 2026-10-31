@@ -29,7 +29,8 @@ La rubrique est **facultative**, comme Biens et Prêts.
   hausses, qui sert à la projection (R-SAL-10). Optionnels : le poste, la date de fin, une note, et le
   **versement décalé** (le salaire du mois M est versé en M+1). Deux emplois peuvent se chevaucher. Une date
   de fin ou de début future décrit un changement d'emploi ou une fin d'activité prévus. Montants en euros.
-  Avec la rubrique Foyer, un emploi appartient à au plus un membre (R-MBR-7, spec 14).
+  Avec la rubrique Foyer, un emploi est affecté à au plus un membre ; sans membre, il est au foyer (R-MBR-7,
+  spec 14).
 - **R-SAL-2** — Une **rémunération** a un **mois d'effet**, un **brut annuel de base** (hors primes : un 13e
   mois se saisit comme prime), un **net mensuel versé** (après prélèvement à la source), tous deux positifs,
   et un **motif** : `HIRE` embauche, `RAISE` augmentation, `PROMOTION` promotion, `TAX_RATE` changement de

@@ -186,10 +186,9 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 Conception : spec 14, ADR-0006 (membres sans connexion), écrans « foyer » et E44.
 
 - [ ] MBR-01 — membres du foyer, activation de la rubrique
-- [ ] MBR-06 — membre d'une transaction ou d'une ventilation, filtre et affectation en masse (prioritaire)
-- [ ] MBR-02 — propriétaires et quotes-parts des comptes, des biens et des prêts
-- [ ] MBR-03 — membre d'un emploi, documents rattachés à un membre
-- [ ] MBR-04 — patrimoine par membre (accueil, onglet Patrimoine des projections), filtre des comptes par membre
+- [ ] MBR-02 — membre d'un compte et d'un emploi
+- [ ] MBR-03 — membre d'une transaction ou de chaque ventilation
+- [ ] MBR-04 — choix des membres affichés dans l'accueil, les analyses et les projections
 
 ## Phase 7 — V2 (à prioriser plus tard)
 
@@ -201,7 +200,7 @@ Conception : spec 14, ADR-0006 (membres sans connexion), écrans « foyer » et 
 - TRX-10, CPT-08 (TIE-05 avancée, cf. « Avancé de la V2 »)
 - DOC-05 (échéances des contrats et garanties), DOC-06 (OCR des images, ADR-0007)
 - Tableaux d'amortissement des prêts (hors périmètre V1, cf. vision)
-- MBR-05 — dépenses, revenus et épargne par membre dans les analyses et le budget (spec 14, à concevoir)
+- MBR-05 — comptes joints à quotes-parts ; membres des biens, des prêts et des documents (spec 14, à concevoir)
 
 > LCL exporte en CSV/Excel la période récente, et en PDF seulement l'historique : le CSV (phase 2)
 > suffit au quotidien, et IMP-10 (phase 3) sert à reprendre l'historique.
