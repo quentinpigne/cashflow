@@ -24,6 +24,8 @@ pub struct MemberView {
     pub account_count: i64,
     pub split_count: i64,
     pub employment_count: i64,
+    pub asset_count: i64,
+    pub document_count: i64,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -51,6 +53,8 @@ pub async fn list(db: &Db) -> AppResult<Vec<MemberView>> {
             account_count: r.account_count,
             split_count: r.split_count,
             employment_count: r.employment_count,
+            asset_count: r.asset_count,
+            document_count: r.document_count,
         })
         .collect())
 }

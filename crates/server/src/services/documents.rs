@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use cashflow_domain::documents::{self, Description, DocumentKind, LinkKind, LinkTarget, MediaType};
-use cashflow_domain::shared::ids::{DocumentId, EmploymentId};
+use cashflow_domain::shared::ids::{AccountId, DocumentId, EmploymentId, MemberId};
 use cashflow_domain::{Date, DomainError};
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
@@ -64,6 +64,8 @@ pub struct DocumentView {
     /// Date qui classe le document (R-DOC-8).
     pub reference_date: Date,
     pub links: Vec<LinkView>,
+    /// Membre que le document concerne ; absent : personne (R-MBR-13).
+    pub member_id: Option<MemberId>,
     /// Dans une recherche : extrait du contenu où le texte est trouvé, mots trouvés entre U+0002 et U+0003.
     pub snippet: Option<String>,
 }
@@ -88,6 +90,11 @@ pub struct DocumentFilter {
     /// Seulement les documents sans rattachement.
     #[serde(default)]
     pub unlinked: bool,
+    /// Seulement les documents de ce membre (R-MBR-13).
+    pub member_id: Option<MemberId>,
+    /// Seulement les documents affectés à personne.
+    #[serde(default)]
+    pub without_member: bool,
 }
 
 /// Description d'un document ; le fichier ne se modifie pas (R-DOC-2).
@@ -101,6 +108,9 @@ pub struct DocumentInput {
     /// Premier jour du mois, pour un relevé ou une fiche de paie.
     pub month: Option<Date>,
     pub note: Option<String>,
+    /// Membre que le document concerne ; absent : personne (R-MBR-13).
+    #[serde(default)]
+    pub member_id: Option<MemberId>,
 }
 
 /// Document envoyé, avec sa description éventuelle et l'objet depuis lequel il l'est (R-DOC-14, R-DOC-15).
@@ -153,6 +163,7 @@ fn view(row: DocumentRow, links: &[LinkRow], snippet: Option<String>, today: Dat
         content_indexed: row.content_indexed,
         sent_on,
         links: links.iter().map(link_view).collect(),
+        member_id: row.member_id,
         snippet,
     }
 }
@@ -200,7 +211,9 @@ pub async fn list(db: &Db, filter: &DocumentFilter, today: Date) -> AppResult<Ve
             && (!filter.unsorted || row.kind.is_none())
             && (!filter.unlinked || doc_links.is_empty())
             && filter.link_kind.is_none_or(|kind| doc_links.iter().any(|l| l.target.kind == kind))
-            && filter.link_id.is_none_or(|id| doc_links.iter().any(|l| l.target.id == id));
+            && filter.link_id.is_none_or(|id| doc_links.iter().any(|l| l.target.id == id))
+            && filter.member_id.is_none_or(|member| row.member_id == Some(member))
+            && (!filter.without_member || row.member_id.is_none());
         if !keep {
             continue;
         }
@@ -282,6 +295,25 @@ async fn insert(
     Ok(())
 }
 
+/// Membre par défaut d'un document envoyé (R-MBR-14) : le titulaire du compte d'un relevé, le membre de l'emploi
+/// d'une fiche de paie ; personne sinon.
+async fn default_member(
+    conn: &mut SqliteConnection,
+    kind: Option<DocumentKind>,
+    target: Option<LinkTarget>,
+) -> AppResult<Option<MemberId>> {
+    let Some(target) = target else { return Ok(None) };
+    Ok(match (kind, target.kind) {
+        (Some(DocumentKind::BankStatement), LinkKind::Account) => {
+            db::accounts::find(&mut *conn, AccountId::from_uuid(target.id)).await?.and_then(|a| a.member_id)
+        }
+        (Some(DocumentKind::Payslip), LinkKind::Employment) => {
+            db::salaries::find(&mut *conn, EmploymentId::from_uuid(target.id)).await?.and_then(|e| e.member_id)
+        }
+        _ => None,
+    })
+}
+
 /// Archive un document envoyé, depuis la bibliothèque ou depuis la fiche d'un objet (R-DOC-1 à R-DOC-15).
 pub async fn create(db: &Db, data: &DataDir, upload: Upload, today: Date) -> AppResult<DocumentView> {
     let mut staged = stage(data, &upload.file_name, &upload.content)?;
@@ -314,6 +346,7 @@ pub async fn create(db: &Db, data: &DataDir, upload: Upload, today: Date) -> App
     let text = extract_text(row.media_type, upload.content).await;
     row.content_indexed = text.is_some();
     let mut tx = db.write.begin().await?;
+    row.member_id = default_member(&mut tx, row.kind, upload.target).await?;
     check_payslip_month(&mut tx, &description, &targets).await?;
     insert(&mut tx, &staged.row, &targets, text.as_deref()).await?;
     tx.commit().await?;
@@ -353,6 +386,7 @@ pub async fn archive_import(
     row.title = documents::owned_title(DocumentKind::BankStatement, &import.account_name, import.month);
     (row.period_start, row.period_end) = import.period.unzip();
     row.content_indexed = text.is_some();
+    row.member_id = db::accounts::find(&mut *conn, import.account).await?.and_then(|a| a.member_id);
     let target = LinkTarget { kind: LinkKind::Account, id: *import.account.as_uuid() };
     insert(conn, &staged.row, &[target], text.as_deref()).await?;
     Ok(Some(staged))
@@ -378,6 +412,8 @@ pub async fn update(db: &Db, id: DocumentId, input: &DocumentInput, today: Date)
     let mut tx = db.write.begin().await?;
     check_payslip_month(&mut tx, &description, &targets).await?;
     db::documents::update_description(&mut *tx, id, &description).await?;
+    super::members::check_exists(&mut tx, input.member_id).await?;
+    db::documents::set_member(&mut *tx, id, input.member_id).await?;
     db::documents::reindex_description(&mut *tx, id, &description).await?;
     tx.commit().await?;
     get(db, id, today).await
@@ -498,6 +534,7 @@ pub fn stage(data: &DataDir, name: &str, content: &[u8]) -> AppResult<Staged> {
         sha256: hex::encode(Sha256::digest(content)),
         content_indexed: false,
         created_at: timestamp(),
+        member_id: None,
     };
     std::fs::create_dir_all(data.documents()).with_context(|| format!("création de {}", data.documents().display()))?;
     let temp = data.documents().join(format!(".{id}.tmp"));

@@ -279,6 +279,7 @@ async fn sal_09_r_sal_15_to_r_sal_18_payslips_are_documents_of_their_employment(
     // R-SAL-17 : le mois et la note se modifient, pas le fichier ; le mois reste pendant l'emploi.
     let rectified = view.payslips[1].id;
     let mut input = DocumentInput {
+        member_id: None,
         kind: Some(DocumentKind::Payslip),
         title: view.payslips[1].title.clone(),
         document_date: None,

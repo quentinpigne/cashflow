@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT count(*) AS \"count!: i64\" FROM asset a\n           WHERE coalesce((SELECT sum(share_bp) FROM asset_share s WHERE s.asset_id = a.id), 0) < 10000",
+  "describe": {
+    "columns": [
+      {
+        "name": "count!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "65692e01470a47d787d90a3db444fd0e980ec31f3d1a8175559cce82f057b788"
+}

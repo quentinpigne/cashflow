@@ -128,6 +128,7 @@ async fn r_cpt_20_statement_month_and_note_change_and_deletion_trashes_the_docum
     let doc = documents::create(&db, &data, upload(account, "2026-01-01", pdf("janvier")), today).await.unwrap();
 
     let input = DocumentInput {
+        member_id: None,
         kind: doc.kind,
         title: doc.title.clone(),
         document_date: None,
@@ -342,6 +343,7 @@ async fn r_doc_10_statement_and_payslip_owners() {
     // Classer un document en fiche de paie demande un emploi.
     let doc = documents::create(&db, &data, library("paie.pdf", pdf("paie")), today).await.unwrap();
     let input = DocumentInput {
+        member_id: None,
         kind: Some(DocumentKind::Payslip),
         title: "Fiche de paie".into(),
         document_date: None,
@@ -403,6 +405,7 @@ async fn r_doc_18_r_doc_19_r_doc_20_search_and_filters() {
 
     // Le titre modifié est cherchable.
     let input = DocumentInput {
+        member_id: None,
         kind: Some(DocumentKind::Letter),
         title: "Hausse des tarifs".into(),
         document_date: Some(d("2024-05-12")),

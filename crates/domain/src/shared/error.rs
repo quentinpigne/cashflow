@@ -150,6 +150,10 @@ pub enum DomainError {
     InvalidMemberColor,
     #[error("une ventilation de virement n'a pas de membre : un virement n'est ni une dépense ni un revenu")]
     MemberOnTransfer,
+    #[error(
+        "quotes-parts invalides : chacune entre 0,01 % et 100 %, un membre au plus une fois, 100 % au total au plus"
+    )]
+    InvalidAssetShares,
 
     // ----- Virements internes
     #[error("un virement relie deux comptes différents")]
@@ -283,6 +287,7 @@ impl DomainError {
             MemberNameTaken => "MEMBER_NAME_TAKEN",
             InvalidMemberColor => "INVALID_MEMBER_COLOR",
             MemberOnTransfer => "MEMBER_ON_TRANSFER",
+            InvalidAssetShares => "INVALID_ASSET_SHARES",
             AddressIncomplete => "ADDRESS_INCOMPLETE",
             InvalidCountryCode => "INVALID_COUNTRY_CODE",
             InvalidPostalCode => "INVALID_POSTAL_CODE",
@@ -365,6 +370,7 @@ impl DomainError {
             PayeeArchived => "R-TIE-33",
             MemberNameTaken | InvalidMemberColor => "R-MBR-1",
             MemberOnTransfer => "R-MBR-5",
+            InvalidAssetShares => "R-MBR-11",
             AddressIncomplete | InvalidCountryCode | InvalidPostalCode => "R-TIE-23",
             InvalidCoordinates => "R-TIE-25",
             TransferSameAccount | TransferCurrencyMismatch | TransferAmountsNotOpposite | AlreadyTransferLeg => {

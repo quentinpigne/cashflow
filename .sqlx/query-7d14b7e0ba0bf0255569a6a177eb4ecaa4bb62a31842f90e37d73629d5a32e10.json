@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, kind, title, document_date AS \"document_date: Date\", period_start AS \"period_start: Date\",\n                  period_end AS \"period_end: Date\", month AS \"month: Date\", note, file_name, media_type, size_bytes,\n                  sha256, content_indexed AS \"content_indexed: bool\", created_at\n           FROM document ORDER BY created_at DESC, id DESC",
+  "query": "SELECT d.id, d.kind, d.title, d.document_date AS \"document_date: Date\",\n                  d.period_start AS \"period_start: Date\", d.period_end AS \"period_end: Date\", d.month AS \"month: Date\",\n                  d.note, d.file_name, d.media_type, d.size_bytes, d.sha256,\n                  d.content_indexed AS \"content_indexed: bool\", d.created_at, d.member_id\n           FROM document d\n           WHERE d.kind = ?1 AND EXISTS (SELECT 1 FROM document_link l WHERE l.document_id = d.id\n                                         AND (l.account_id = ?2 OR l.employment_id = ?2))\n           ORDER BY d.month, d.created_at",
   "describe": {
     "columns": [
       {
@@ -156,10 +156,21 @@
             "name": "created_at"
           }
         }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "member_id"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 2
     },
     "nullable": [
       false,
@@ -175,8 +186,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "747fabfa6cd755a176bc3cce518e18c8c18f8e6ed120c4737169be7b239b9d8d"
+  "hash": "7d14b7e0ba0bf0255569a6a177eb4ecaa4bb62a31842f90e37d73629d5a32e10"
 }

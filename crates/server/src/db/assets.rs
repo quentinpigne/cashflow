@@ -1,9 +1,9 @@
 //! Biens et leurs estimations (spec 09, ADR-0019).
 
 use cashflow_domain::assets::AssetKind;
-use cashflow_domain::shared::ids::{AssetId, AssetValuationId};
+use cashflow_domain::shared::ids::{AssetId, AssetValuationId, MemberId};
 use cashflow_domain::{Date, Money};
-use sqlx::SqliteExecutor;
+use sqlx::{SqliteConnection, SqliteExecutor};
 
 use super::codec::{enum_from_db, enum_to_db, id_from_db};
 use crate::clock::timestamp;
@@ -156,4 +156,49 @@ pub async fn delete_valuation(
         .execute(db)
         .await?
         .rows_affected())
+}
+
+/// Quote-part d'un bien détenue par un membre (R-MBR-11).
+#[derive(Debug, Clone)]
+pub struct ShareRow {
+    pub asset_id: AssetId,
+    pub member_id: MemberId,
+    pub share_bp: u32,
+}
+
+/// Toutes les quotes-parts, dans l'ordre des membres (R-MBR-12 : à reste égal, le premier membre).
+pub async fn shares(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<ShareRow>> {
+    let rows = sqlx::query!(
+        "SELECT s.asset_id, s.member_id, s.share_bp
+         FROM asset_share s JOIN member m ON m.id = s.member_id
+         ORDER BY s.asset_id, m.display_order, m.name COLLATE NOCASE"
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(ShareRow {
+                asset_id: id_from_db(&r.asset_id)?,
+                member_id: id_from_db(&r.member_id)?,
+                share_bp: u32::try_from(r.share_bp)?,
+            })
+        })
+        .collect()
+}
+
+/// Remplace les quotes-parts d'un bien (R-MBR-11).
+pub async fn replace_shares(
+    conn: &mut SqliteConnection,
+    asset: AssetId,
+    shares: &[(MemberId, u32)],
+) -> anyhow::Result<()> {
+    let asset = asset.to_string();
+    sqlx::query!("DELETE FROM asset_share WHERE asset_id = ?", asset).execute(&mut *conn).await?;
+    for (member, bp) in shares {
+        let member = member.to_string();
+        sqlx::query!("INSERT INTO asset_share (asset_id, member_id, share_bp) VALUES (?, ?, ?)", asset, member, bp)
+            .execute(&mut *conn)
+            .await?;
+    }
+    Ok(())
 }

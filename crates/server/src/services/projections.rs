@@ -816,7 +816,7 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
             .assets
             .iter()
             .filter(|a| a.include_in_net_worth)
-            .filter_map(|a| assets.value(a, today).filter(|_| assets.value(a, at).is_some()))
+            .filter_map(|a| assets.value_for(a, today, selection.as_ref()).filter(|_| assets.value(a, at).is_some()))
             .sum();
         let debts: Money =
             loans.loans.iter().filter(|l| l.include_in_net_worth).filter_map(|l| loans.outstanding(l, value_at)).sum();
@@ -859,15 +859,15 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
     })
 }
 
-/// Biens et prêts, vides quand la case « Foyer » n'est pas cochée : ils n'ont pas de membre (R-MBR-9).
+/// Biens et prêts ; les prêts sont vides quand la case « Foyer » n'est pas cochée : ils n'ont pas de membre
+/// (R-MBR-9). Un bien compte selon les parts des membres choisis (`AssetBook::value_for`, R-MBR-12).
 async fn household_books(
     db: &Db,
     selection: Option<&cashflow_domain::household::MemberSelection>,
 ) -> AppResult<(AssetBook, LoanBook)> {
-    let mut assets = AssetBook::load(db).await?;
+    let assets = AssetBook::load(db).await?;
     let mut loans = LoanBook::load(db).await?;
     if !super::members::includes(selection, None) {
-        assets.assets.clear();
         loans.loans.clear();
     }
     Ok((assets, loans))
@@ -937,7 +937,7 @@ pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Ve
                 .assets
                 .iter()
                 .filter(|a| a.include_in_net_worth)
-                .filter_map(|a| assets.value(a, date))
+                .filter_map(|a| assets.value_for(a, date, selection.as_ref()))
                 .sum::<Money>()
                 .minor();
             point.liabilities_minor = -loans

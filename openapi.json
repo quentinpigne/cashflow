@@ -1354,6 +1354,55 @@
         }
       }
     },
+    "/api/v1/assets/{id}/shares": {
+      "put": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Répartit un bien entre membres, en pourcentage ou en montant ; le reste est au foyer (R-MBR-11).",
+        "operationId": "setAssetShares",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssetId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetSharesInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assets/{id}/valuations": {
       "post": {
         "tags": [
@@ -2800,6 +2849,24 @@
             "name": "unlinked",
             "in": "query",
             "description": "Seulement les documents sans rattachement.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "member_id",
+            "in": "query",
+            "description": "Seulement les documents de ce membre (R-MBR-13).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MemberId"
+            }
+          },
+          {
+            "name": "without_member",
+            "in": "query",
+            "description": "Seulement les documents affectés à personne.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -10688,6 +10755,73 @@
           "OTHER"
         ]
       },
+      "AssetShareInput": {
+        "type": "object",
+        "description": "Une quote-part saisie, en pourcentage (`share_bp`) ou en montant (`amount_minor`, converti d'après la valeur\nd'aujourd'hui) (R-MBR-11).",
+        "required": [
+          "member_id"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "member_id": {
+            "$ref": "#/components/schemas/MemberId"
+          },
+          "share_bp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "AssetShareView": {
+        "type": "object",
+        "description": "Quote-part d'un membre et sa part de la valeur d'aujourd'hui (R-MBR-11, R-MBR-12).",
+        "required": [
+          "member_id",
+          "share_bp"
+        ],
+        "properties": {
+          "member_id": {
+            "$ref": "#/components/schemas/MemberId"
+          },
+          "share_bp": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "value_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "AssetSharesInput": {
+        "type": "object",
+        "description": "Répartition d'un bien entre membres ; vide, le bien est entièrement au foyer (R-MBR-11).",
+        "required": [
+          "shares"
+        ],
+        "properties": {
+          "shares": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetShareInput"
+            }
+          }
+        }
+      },
       "AssetSummary": {
         "type": "object",
         "description": "Un bien dans la liste (E25) et sur l'accueil.",
@@ -10697,9 +10831,25 @@
           "kind",
           "purchase_date",
           "purchase_price_minor",
-          "include_in_net_worth"
+          "include_in_net_worth",
+          "shares",
+          "household_share_bp"
         ],
         "properties": {
+          "household_share_bp": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Quote-part du foyer : le reste, en centièmes de pour cent.",
+            "minimum": 0
+          },
+          "household_value_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Part du foyer dans la valeur d'aujourd'hui (R-MBR-12)."
+          },
           "id": {
             "$ref": "#/components/schemas/AssetId"
           },
@@ -10719,6 +10869,13 @@
           "purchase_price_minor": {
             "type": "integer",
             "format": "int64"
+          },
+          "shares": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetShareView"
+            },
+            "description": "Quotes-parts des membres, dans leur ordre (R-MBR-11)."
           },
           "sold_on": {
             "type": [
@@ -13290,6 +13447,17 @@
               }
             ]
           },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre que le document concerne ; absent : personne (R-MBR-13)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "month": {
             "type": [
               "string",
@@ -13400,6 +13568,17 @@
           },
           "media_type": {
             "$ref": "#/components/schemas/MediaType"
+          },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre que le document concerne ; absent : personne (R-MBR-13)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "month": {
             "type": [
@@ -13799,6 +13978,7 @@
           "household",
           "member_count",
           "household_split_count",
+          "household_asset_count",
           "salary_gap_tolerance_ppm",
           "geocoding"
         ],
@@ -13822,6 +14002,11 @@
           "household": {
             "type": "boolean",
             "description": "Rubrique Foyer (R-MBR-3) ; elle ne se désactive que sans membre."
+          },
+          "household_asset_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Biens qui gardent une part au foyer (R-MBR-11)."
           },
           "household_split_count": {
             "type": "integer",
@@ -16287,13 +16472,19 @@
           "display_order",
           "account_count",
           "split_count",
-          "employment_count"
+          "employment_count",
+          "asset_count",
+          "document_count"
         ],
         "properties": {
           "account_count": {
             "type": "integer",
             "format": "int64",
             "description": "Ce qui lui est affecté, et revient au foyer à sa suppression (R-MBR-2)."
+          },
+          "asset_count": {
+            "type": "integer",
+            "format": "int64"
           },
           "color": {
             "type": [
@@ -16303,6 +16494,10 @@
             "description": "`#RRGGBB`."
           },
           "display_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "document_count": {
             "type": "integer",
             "format": "int64"
           },

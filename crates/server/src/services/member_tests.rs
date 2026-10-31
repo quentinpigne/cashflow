@@ -2,12 +2,16 @@
 
 use cashflow_domain::DomainError;
 use cashflow_domain::accounts::AccountKind;
+use cashflow_domain::assets::AssetKind;
+use cashflow_domain::documents::{DocumentKind, LinkKind, LinkTarget};
 use cashflow_domain::import::rules::{Actions, Conditions, LabelCondition, LabelField, LabelOp, SplitShare};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{AccountId, MemberId};
 
 use super::accounts::{self, AccountInput};
+use super::assets;
 use super::dashboard::{self, DashboardQuery};
+use super::documents;
 use super::features::{self, FeaturesInput};
 use super::members::HOUSEHOLD;
 use super::members::{self, MemberInput};
@@ -380,4 +384,132 @@ async fn r_mbr_4_changing_the_holder_reassigns_splits_on_request() {
     accounts::update(&db, joint, &with, d(TODAY)).await.unwrap();
     assert_eq!(member_of(common).await, Some(claire));
     assert_eq!(member_of(gift).await, Some(leo), "une affectation à un autre membre ne bouge pas");
+}
+
+fn house() -> assets::AssetInput {
+    assets::AssetInput {
+        name: "Maison".into(),
+        kind: AssetKind::RealEstate,
+        purchase_date: d("2025-01-01"),
+        purchase_price_minor: 42_000_000,
+        sold_on: None,
+        sale_price_minor: None,
+        include_in_net_worth: None,
+        notes: None,
+    }
+}
+
+fn share(member: MemberId, bp: Option<u32>, amount: Option<i64>) -> assets::AssetShareInput {
+    assets::AssetShareInput { member_id: member, share_bp: bp, amount_minor: amount }
+}
+
+/// Critères d'acceptation de MBR-06 : quotes-parts, reste au foyer, saisie en montant, plafond de 100 %.
+#[tokio::test]
+async fn r_mbr_11_r_mbr_12_an_asset_is_shared_between_members_with_the_rest_to_the_household() {
+    let (db, _dir) = setup().await;
+    features::update(&db, &FeaturesInput { assets: Some(true), ..Default::default() }).await.unwrap();
+    let quentin = member(&db, "Quentin").await;
+    let claire = member(&db, "Claire").await;
+    let id = assets::create(&db, &house(), d(TODAY)).await.unwrap().summary.id;
+
+    let input =
+        assets::AssetSharesInput { shares: vec![share(quentin, Some(6_000), None), share(claire, Some(3_000), None)] };
+    let view = assets::set_shares(&db, id, &input, d(TODAY)).await.unwrap().summary;
+    let values: Vec<_> = view.shares.iter().map(|s| (s.share_bp, s.value_minor)).collect();
+    assert_eq!(values, vec![(6_000, Some(25_200_000)), (3_000, Some(12_600_000))]);
+    assert_eq!((view.household_share_bp, view.household_value_minor), (1_000, Some(4_200_000)));
+
+    let home = |members: Option<String>| {
+        let db = db.clone();
+        async move { dashboard::get_for(&db, &DashboardQuery { members }, d(TODAY)).await.unwrap().net_worth }
+    };
+    assert_eq!(home(Some(quentin.to_string())).await.total_minor, 25_200_000);
+    assert_eq!(home(Some(HOUSEHOLD.into())).await.total_minor, 4_200_000);
+    assert_eq!(home(None).await.total_minor, 42_000_000);
+
+    // Un montant devient une quote-part d'après la valeur du jour, qui reste quand la valeur change.
+    let by_amount = assets::AssetSharesInput { shares: vec![share(claire, None, Some(10_500_000))] };
+    assert_eq!(assets::set_shares(&db, id, &by_amount, d(TODAY)).await.unwrap().summary.shares[0].share_bp, 2_500);
+    let valuation = assets::AssetValuationInput { date: d("2026-03-01"), value_minor: 44_000_000, note: None };
+    let view = assets::save_valuation(&db, id, &valuation, d(TODAY)).await.unwrap().summary;
+    assert_eq!(view.shares[0].value_minor, Some(11_000_000));
+
+    let over =
+        assets::AssetSharesInput { shares: vec![share(quentin, Some(7_000), None), share(claire, Some(4_000), None)] };
+    assert_eq!(domain_error(assets::set_shares(&db, id, &over, d(TODAY)).await), DomainError::InvalidAssetShares);
+
+    // Supprimer un membre rend sa quote-part au foyer (R-MBR-2).
+    members::delete(&db, claire).await.unwrap();
+    let view = assets::get(&db, id, d(TODAY)).await.unwrap().summary;
+    assert!(view.shares.is_empty());
+    assert_eq!(view.household_share_bp, 10_000);
+}
+
+/// Critères d'acceptation de MBR-07 : membre par défaut d'un relevé et d'une fiche de paie, « Personne », filtre.
+#[tokio::test]
+async fn r_mbr_13_r_mbr_14_documents_get_the_account_or_employment_member_by_default() {
+    let (db, dir) = setup().await;
+    let data = crate::config::DataDir::new(dir.path().join("data"));
+    data.ensure().unwrap();
+    let quentin = member(&db, "Quentin").await;
+    let claire = member(&db, "Claire").await;
+    let mut input = account_input("Courant de Quentin", Some(quentin));
+    input.kind = AccountKind::Checking;
+    let checking = accounts::create(&db, &input, d(TODAY)).await.unwrap().id;
+    let pay = category(&db, "Paie", CategoryKind::Income, None).await;
+    let job = EmploymentInput {
+        employer: "Acme".into(),
+        job_title: None,
+        start_date: d("2025-01-01"),
+        end_date: None,
+        income_category_id: pay,
+        raise_month: None,
+        paid_next_month: false,
+        notes: None,
+        member_id: Some(claire),
+    };
+    let job = salaries::create(&db, &job, d(TODAY)).await.unwrap().summary.id;
+    let upload = |name: &str, kind, target| documents::Upload {
+        file_name: name.into(),
+        content: format!("%PDF-1.4 {name}").into_bytes(),
+        kind,
+        month: kind.map(|_| d("2026-02-01")),
+        target,
+        ..Default::default()
+    };
+    let on_account = LinkTarget { kind: LinkKind::Account, id: *checking.as_uuid() };
+    let on_job = LinkTarget { kind: LinkKind::Employment, id: *job.as_uuid() };
+
+    let statement = documents::create(
+        &db,
+        &data,
+        upload("releve.pdf", Some(DocumentKind::BankStatement), Some(on_account)),
+        d(TODAY),
+    )
+    .await
+    .unwrap();
+    assert_eq!(statement.member_id, Some(quentin));
+    let payslip =
+        documents::create(&db, &data, upload("fiche.pdf", Some(DocumentKind::Payslip), Some(on_job)), d(TODAY))
+            .await
+            .unwrap();
+    assert_eq!(payslip.member_id, Some(claire));
+    let invoice = documents::create(&db, &data, upload("facture.pdf", None, None), d(TODAY)).await.unwrap();
+    assert_eq!(invoice.member_id, None);
+
+    let to_nobody = documents::DocumentInput {
+        kind: statement.kind,
+        title: statement.title.clone(),
+        document_date: None,
+        period_start: None,
+        period_end: None,
+        month: statement.month,
+        note: None,
+        member_id: None,
+    };
+    assert_eq!(documents::update(&db, statement.id, &to_nobody, d(TODAY)).await.unwrap().member_id, None);
+    let nobody = documents::DocumentFilter { without_member: true, ..Default::default() };
+    assert_eq!(documents::list(&db, &nobody, d(TODAY)).await.unwrap().len(), 2);
+    let of_claire = documents::DocumentFilter { member_id: Some(claire), ..Default::default() };
+    assert_eq!(documents::list(&db, &of_claire, d(TODAY)).await.unwrap()[0].id, payslip.id);
 }

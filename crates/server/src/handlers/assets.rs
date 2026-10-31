@@ -5,7 +5,7 @@ use cashflow_domain::shared::ids::{AssetId, AssetValuationId};
 
 use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
-use crate::services::assets::{self, AssetInput, AssetSummary, AssetValuationInput, AssetView};
+use crate::services::assets::{self, AssetInput, AssetSharesInput, AssetSummary, AssetValuationInput, AssetView};
 use crate::services::features::{self, Features, FeaturesInput};
 use crate::state::AppState;
 
@@ -58,6 +58,20 @@ pub async fn delete(
 ) -> AppResult<StatusCode> {
     assets::delete(&state.db, &state.data, id, query.delete_documents, state.clock.today()).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Répartit un bien entre membres, en pourcentage ou en montant ; le reste est au foyer (R-MBR-11).
+#[utoipa::path(
+    put, operation_id = "setAssetShares", path = "/assets/{id}/shares", tag = "assets",
+    params(("id" = AssetId, Path)), request_body = AssetSharesInput,
+    responses((status = 200, body = AssetView), (status = 422, body = Problem))
+)]
+pub async fn set_shares(
+    State(state): State<AppState>,
+    Path(id): Path<AssetId>,
+    Json(input): Json<AssetSharesInput>,
+) -> AppResult<Json<AssetView>> {
+    Ok(Json(assets::set_shares(&state.db, id, &input, state.clock.today()).await?))
 }
 
 /// Ajoute ou remplace l'estimation d'une date (R-BIE-3).

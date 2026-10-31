@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.asset_id, s.member_id, s.share_bp\n         FROM asset_share s JOIN member m ON m.id = s.member_id\n         ORDER BY s.asset_id, m.display_order, m.name COLLATE NOCASE",
+  "describe": {
+    "columns": [
+      {
+        "name": "asset_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset_share",
+            "name": "asset_id"
+          }
+        }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "asset_share",
+            "name": "member_id"
+          }
+        }
+      },
+      {
+        "name": "share_bp",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "asset_share",
+            "name": "share_bp"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5d41d9abed86e8c6887fb732ada3b3a602889e6e702e5536dede7b17713f3ac7"
+}

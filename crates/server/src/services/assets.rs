@@ -3,7 +3,8 @@
 use std::collections::HashMap;
 
 use cashflow_domain::assets::{AssetKind, Holding};
-use cashflow_domain::shared::ids::{AssetId, AssetValuationId, LoanId, TransactionId};
+use cashflow_domain::household::{self, MemberSelection};
+use cashflow_domain::shared::ids::{AssetId, AssetValuationId, LoanId, MemberId, TransactionId};
 use cashflow_domain::{Date, Money};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -21,6 +22,8 @@ use crate::error::{AppError, AppResult};
 pub struct AssetBook {
     pub assets: Vec<AssetRow>,
     valuations: HashMap<AssetId, Vec<(Date, Money)>>,
+    /// Quotes-parts des membres, dans leur ordre (R-MBR-11).
+    shares: HashMap<AssetId, Vec<(MemberId, u32)>>,
 }
 
 fn holding(asset: &AssetRow) -> Holding {
@@ -33,7 +36,33 @@ impl AssetBook {
         for v in db::assets::valuations(&db.read).await? {
             valuations.entry(v.asset_id).or_default().push((v.date, v.value));
         }
-        Ok(Self { assets: db::assets::list(&db.read).await?, valuations })
+        let mut shares: HashMap<AssetId, Vec<(MemberId, u32)>> = HashMap::new();
+        for s in db::assets::shares(&db.read).await? {
+            shares.entry(s.asset_id).or_default().push((s.member_id, s.share_bp));
+        }
+        Ok(Self { assets: db::assets::list(&db.read).await?, valuations, shares })
+    }
+
+    /// Quotes-parts d'un bien, dans l'ordre des membres (R-MBR-11).
+    pub fn shares(&self, asset: AssetId) -> &[(MemberId, u32)] {
+        self.shares.get(&asset).map(Vec::as_slice).unwrap_or_default()
+    }
+
+    /// Parts de la valeur d'un bien : celle de chaque membre, puis celle du foyer (R-MBR-12).
+    pub fn parts(&self, asset: &AssetRow, date: Date) -> Option<(Vec<(MemberId, Money)>, Money)> {
+        let value = self.value(asset, date)?;
+        let shares = self.shares(asset.id);
+        let (parts, household) = household::split_value(value, &shares.iter().map(|(_, bp)| *bp).collect::<Vec<_>>());
+        Some((shares.iter().map(|(m, _)| *m).zip(parts).collect(), household))
+    }
+
+    /// Valeur d'un bien comptée pour un choix de membres : leurs parts, et le reste avec « Foyer » ; la valeur
+    /// entière sans choix (R-MBR-9, R-MBR-12).
+    pub fn value_for(&self, asset: &AssetRow, date: Date, selection: Option<&MemberSelection>) -> Option<Money> {
+        let Some(selection) = selection else { return self.value(asset, date) };
+        let (parts, household) = self.parts(asset, date)?;
+        let members: Money = parts.iter().filter(|(m, _)| selection.includes(Some(*m))).map(|(_, v)| *v).sum();
+        Some(members + if selection.includes(None) { household } else { Money::ZERO })
     }
 
     /// Valeur à une date (R-BIE-2) ; rien si le bien n'est pas possédé.
@@ -69,6 +98,35 @@ pub struct AssetSummary {
     pub value_minor: Option<i64>,
     pub sold_on: Option<Date>,
     pub include_in_net_worth: bool,
+    /// Quotes-parts des membres, dans leur ordre (R-MBR-11).
+    pub shares: Vec<AssetShareView>,
+    /// Quote-part du foyer : le reste, en centièmes de pour cent.
+    pub household_share_bp: u32,
+    /// Part du foyer dans la valeur d'aujourd'hui (R-MBR-12).
+    pub household_value_minor: Option<i64>,
+}
+
+/// Quote-part d'un membre et sa part de la valeur d'aujourd'hui (R-MBR-11, R-MBR-12).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AssetShareView {
+    pub member_id: MemberId,
+    pub share_bp: u32,
+    pub value_minor: Option<i64>,
+}
+
+/// Une quote-part saisie, en pourcentage (`share_bp`) ou en montant (`amount_minor`, converti d'après la valeur
+/// d'aujourd'hui) (R-MBR-11).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct AssetShareInput {
+    pub member_id: MemberId,
+    pub share_bp: Option<u32>,
+    pub amount_minor: Option<i64>,
+}
+
+/// Répartition d'un bien entre membres ; vide, le bien est entièrement au foyer (R-MBR-11).
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct AssetSharesInput {
+    pub shares: Vec<AssetShareInput>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -120,7 +178,20 @@ pub struct AssetValuationInput {
 }
 
 fn summary(asset: &AssetRow, book: &AssetBook, today: Date) -> AssetSummary {
+    let parts = book.parts(asset, today);
+    let shares = book
+        .shares(asset.id)
+        .iter()
+        .map(|(member, bp)| AssetShareView {
+            member_id: *member,
+            share_bp: *bp,
+            value_minor: parts.as_ref().and_then(|(p, _)| p.iter().find(|(m, _)| m == member)).map(|(_, v)| v.minor()),
+        })
+        .collect();
     AssetSummary {
+        shares,
+        household_share_bp: household::FULL_SHARE.saturating_sub(book.shares(asset.id).iter().map(|(_, bp)| bp).sum()),
+        household_value_minor: parts.map(|(_, h)| h.minor()),
         id: asset.id,
         name: asset.name.clone(),
         kind: asset.kind,
@@ -242,6 +313,31 @@ pub async fn save_valuation(db: &Db, id: AssetId, input: &AssetValuationInput, t
         note: clean(input.note.as_deref()),
     };
     db::assets::upsert_valuation(&db.write, &row).await?;
+    get(db, id, today).await
+}
+
+/// Répartit un bien entre membres (R-MBR-11) : un montant devient une quote-part d'après la valeur d'aujourd'hui.
+pub async fn set_shares(db: &Db, id: AssetId, input: &AssetSharesInput, today: Date) -> AppResult<AssetView> {
+    let book = AssetBook::load(db).await?;
+    let asset = book.assets.iter().find(|a| a.id == id).ok_or(AppError::NotFound("bien"))?;
+    let mut shares: Vec<(MemberId, u32)> = Vec::new();
+    for line in &input.shares {
+        let bp = match (line.share_bp, line.amount_minor) {
+            (Some(bp), None) => Some(bp),
+            (None, Some(amount)) => {
+                book.value(asset, today).and_then(|value| household::share_of_amount(Money::from_minor(amount), value))
+            }
+            _ => None,
+        };
+        shares.push((line.member_id, bp.ok_or(cashflow_domain::DomainError::InvalidAssetShares)?));
+    }
+    household::check_shares(&shares)?;
+    let mut tx = db.write.begin().await?;
+    for (member, _) in &shares {
+        super::members::check_exists(&mut tx, Some(*member)).await?;
+    }
+    db::assets::replace_shares(&mut tx, id, &shares).await?;
+    tx.commit().await?;
     get(db, id, today).await
 }
 

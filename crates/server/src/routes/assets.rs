@@ -19,6 +19,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(assets::list, assets::create))
         .routes(routes!(assets::get, assets::update, assets::delete))
         .routes(routes!(assets::save_valuation))
+        .routes(routes!(assets::set_shares))
         .routes(routes!(assets::delete_valuation))
         .routes(routes!(assets::get_features, assets::update_features))
 }

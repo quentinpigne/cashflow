@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, kind, title, document_date AS \"document_date: Date\", period_start AS \"period_start: Date\",\n                  period_end AS \"period_end: Date\", month AS \"month: Date\", note, file_name, media_type, size_bytes,\n                  sha256, content_indexed AS \"content_indexed: bool\", created_at\n           FROM document WHERE id = ?",
+  "query": "SELECT id, kind, title, document_date AS \"document_date: Date\", period_start AS \"period_start: Date\",\n                  period_end AS \"period_end: Date\", month AS \"month: Date\", note, file_name, media_type, size_bytes,\n                  sha256, content_indexed AS \"content_indexed: bool\", created_at, member_id\n           FROM document WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -156,6 +156,17 @@
             "name": "created_at"
           }
         }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document",
+            "name": "member_id"
+          }
+        }
       }
     ],
     "parameters": {
@@ -175,8 +186,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "a779ef78dbc18bfb2b0925266d383f00a09c0372edf4b398d16e71885652e9e1"
+  "hash": "2fd0d4bd1173be1ad111b12b0933d5e12a569e7f8bc20258d253043a45100212"
 }

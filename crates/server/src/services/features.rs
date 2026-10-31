@@ -27,6 +27,8 @@ pub struct Features {
     pub member_count: i64,
     /// Ventilations au foyer, hors virements (R-MBR-8).
     pub household_split_count: i64,
+    /// Biens qui gardent une part au foyer (R-MBR-11).
+    pub household_asset_count: i64,
     /// Tolérance de l'écart entre salaire attendu et reçu, en millionièmes (R-SAL-9).
     pub salary_gap_tolerance_ppm: i64,
     /// Recherche d'adresse des tiers par la Base Adresse Nationale, désactivée par défaut (R-TIE-26, ADR-0007).
@@ -55,6 +57,7 @@ pub async fn get(db: &Db) -> AppResult<Features> {
         household: db::settings::get::<bool>(&db.read, HOUSEHOLD).await?.unwrap_or(false),
         member_count: db::members::count(&db.read).await?,
         household_split_count: db::members::household_split_count(&db.read).await?,
+        household_asset_count: db::members::household_asset_count(&db.read).await?,
         salary_gap_tolerance_ppm: super::salaries::tolerance(db).await?.ppm(),
         geocoding: geocoding_enabled(db).await?,
     })

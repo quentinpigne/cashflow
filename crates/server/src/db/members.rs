@@ -16,6 +16,10 @@ pub struct MemberRow {
     pub account_count: i64,
     pub split_count: i64,
     pub employment_count: i64,
+    /// Biens dont il a une quote-part (R-MBR-11).
+    pub asset_count: i64,
+    /// Documents qui lui sont affectés (R-MBR-13).
+    pub document_count: i64,
 }
 
 pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<MemberRow>> {
@@ -23,7 +27,9 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<MemberRow>>
         r#"SELECT m.id, m.name, m.color, m.display_order,
                   (SELECT count(*) FROM account a WHERE a.member_id = m.id) AS "account_count!: i64",
                   (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS "split_count!: i64",
-                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS "employment_count!: i64"
+                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS "employment_count!: i64",
+                  (SELECT count(*) FROM asset_share a WHERE a.member_id = m.id) AS "asset_count!: i64",
+                  (SELECT count(*) FROM document d WHERE d.member_id = m.id) AS "document_count!: i64"
            FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE"#
     )
     .fetch_all(db)
@@ -38,6 +44,8 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<MemberRow>>
                 account_count: r.account_count,
                 split_count: r.split_count,
                 employment_count: r.employment_count,
+                asset_count: r.asset_count,
+                document_count: r.document_count,
             })
         })
         .collect()
@@ -167,6 +175,16 @@ pub async fn reassign_account_splits(
     Ok(result.rows_affected())
 }
 
+/// Biens qui ne sont pas entièrement répartis entre membres : il leur reste une part au foyer (R-MBR-11).
+pub async fn household_asset_count(db: impl SqliteExecutor<'_>) -> anyhow::Result<i64> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!: i64" FROM asset a
+           WHERE coalesce((SELECT sum(share_bp) FROM asset_share s WHERE s.asset_id = a.id), 0) < 10000"#
+    )
+    .fetch_one(db)
+    .await?)
+}
+
 /// Ventilations au foyer (sans membre), hors virements : la case « Foyer » des flux n'est proposée que s'il y en a
 /// (R-MBR-8).
 pub async fn household_split_count(db: impl SqliteExecutor<'_>) -> anyhow::Result<i64> {
@@ -192,6 +210,10 @@ pub async fn delete(conn: &mut SqliteConnection, id: MemberId) -> anyhow::Result
     sqlx::query!("UPDATE employment SET member_id = NULL, updated_at = ? WHERE member_id = ?", now, id)
         .execute(&mut *conn)
         .await?;
+    sqlx::query!("UPDATE document SET member_id = NULL, updated_at = ? WHERE member_id = ?", now, id)
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query!("DELETE FROM asset_share WHERE member_id = ?", id).execute(&mut *conn).await?;
     let result = sqlx::query!("DELETE FROM member WHERE id = ?", id).execute(&mut *conn).await?;
     Ok(result.rows_affected() > 0)
 }

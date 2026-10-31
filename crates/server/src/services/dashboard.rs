@@ -1,6 +1,7 @@
 //! Accueil (TDB-01) : patrimoine, mois en cours, comptes, ventilations à catégoriser.
 
 use cashflow_domain::accounts::AccountFamily;
+use cashflow_domain::household::MemberSelection;
 use cashflow_domain::ledger::ClearingStatus;
 use cashflow_domain::reporting::{self, Flows, HoldingValue, Period, SplitFact};
 use cashflow_domain::shared::ids::{AccountId, CategoryId, SplitId, TransactionId};
@@ -116,6 +117,7 @@ pub(crate) fn holdings(
     assets: &AssetBook,
     loans: &LoanBook,
     at: Date,
+    selection: Option<&MemberSelection>,
 ) -> Vec<HoldingValue> {
     let accounts = rows.iter().filter(|row| row.opening_date <= at).map(|row| {
         let (value, _) = ledger.value(row, at);
@@ -128,7 +130,8 @@ pub(crate) fn holdings(
         }
     });
     let goods = assets.assets.iter().filter_map(|a| {
-        assets.value(a, at).map(|value| HoldingValue {
+        // D'un bien, les parts des membres choisis et, avec « Foyer », le reste (R-MBR-12).
+        assets.value_for(a, at, selection).map(|value| HoldingValue {
             include_in_net_worth: a.include_in_net_worth,
             is_eur: true,
             value,
@@ -175,19 +178,22 @@ pub async fn get_for(db: &Db, query: &DashboardQuery, today: Date) -> AppResult<
         .filter(|a| super::members::includes(selection, a.member_id))
         .collect();
     let ledger = accounts::Ledger::load(db).await?;
-    let mut asset_book = AssetBook::load(db).await?;
+    let asset_book = AssetBook::load(db).await?;
     let mut loan_book = LoanBook::load(db).await?;
-    // Les biens et les prêts n'ont pas de membre : ils sont au foyer (R-MBR-9).
+    // Les prêts n'ont pas de membre : ils sont au foyer (R-MBR-9).
     if !household {
-        asset_book.assets.clear();
         loan_book.loans.clear();
     }
 
-    let net_worth = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, today));
+    let net_worth = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, today, selection));
     let previous_end = reporting::end_of_previous_month(today);
-    let previous = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, previous_end));
-    let asset_values: Money =
-        asset_book.assets.iter().filter(|a| a.include_in_net_worth).filter_map(|a| asset_book.value(a, today)).sum();
+    let previous = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, previous_end, selection));
+    let asset_values: Money = asset_book
+        .assets
+        .iter()
+        .filter(|a| a.include_in_net_worth)
+        .filter_map(|a| asset_book.value_for(a, today, selection))
+        .sum();
     let loans_outstanding: Money =
         loan_book.loans.iter().filter(|l| l.include_in_net_worth).filter_map(|l| loan_book.outstanding(l, today)).sum();
     let features = super::features::get(db).await?;

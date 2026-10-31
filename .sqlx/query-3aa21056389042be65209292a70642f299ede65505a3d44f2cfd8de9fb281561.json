@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT m.id, m.name, m.color, m.display_order,\n                  (SELECT count(*) FROM account a WHERE a.member_id = m.id) AS \"account_count!: i64\",\n                  (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS \"split_count!: i64\",\n                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS \"employment_count!: i64\"\n           FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE",
+  "query": "SELECT m.id, m.name, m.color, m.display_order,\n                  (SELECT count(*) FROM account a WHERE a.member_id = m.id) AS \"account_count!: i64\",\n                  (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS \"split_count!: i64\",\n                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS \"employment_count!: i64\",\n                  (SELECT count(*) FROM asset_share a WHERE a.member_id = m.id) AS \"asset_count!: i64\",\n                  (SELECT count(*) FROM document d WHERE d.member_id = m.id) AS \"document_count!: i64\"\n           FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE",
   "describe": {
     "columns": [
       {
@@ -64,6 +64,18 @@
         "ordinal": 6,
         "type_info": "Integer",
         "origin": "Expression"
+      },
+      {
+        "name": "asset_count!: i64",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "document_count!: i64",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -76,8 +88,10 @@
       false,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "5379d803c9bc6be416bb15e097e13ab5bfb0aa737984ac861449fee1e4effb14"
+  "hash": "3aa21056389042be65209292a70642f299ede65505a3d44f2cfd8de9fb281561"
 }

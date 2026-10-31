@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO asset_share (asset_id, member_id, share_bp) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e868207bc3421d9498395a5a006ccf7c457eebc4892ef6d9bed22445ab8d94fe"
+}

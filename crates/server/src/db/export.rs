@@ -25,6 +25,7 @@ pub const TABLES: &[&str] = &[
     "valuation",
     "asset",
     "asset_valuation",
+    "asset_share",
     "loan",
     "loan_balance",
     "employment",
