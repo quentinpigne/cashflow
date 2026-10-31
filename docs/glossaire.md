@@ -70,10 +70,12 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Terme | Identifiant | Définition |
 |---|---|---|
 | Transaction | `Transaction` | Mouvement d'argent sur **un** compte, à une date, d'un montant signé (négatif = sortie). |
-| Date d'opération | `date` | Date de l'opération telle que je la connais (saisie, ou date bancaire à l'import). Sert à l'affichage, aux budgets et aux rapports. |
+| Date d'opération | `date` | Date de l'opération telle que je la connais (saisie, ou date bancaire à l'import). Sert à l'affichage, et aux budgets et rapports sauf mois d'analyse contraire. |
 | Date bancaire | `bank_date` | Date de l'opération selon la banque, connue à l'import ou au pointage. |
 | Date de solde | `balance_date` | `bank_date` si elle est connue, sinon `date`. Sert aux soldes et au rapprochement. |
 | Date d'achat | `purchase_date` | Date d'un paiement par carte, lue dans le libellé d'un relevé (« CB … 03/09/26 ») ; devient la date d'une transaction créée par import (R-IMP-26). |
+| Mois d'analyse | `analysis_month` | Mois sur lequel une transaction compte pour le budget, les analyses et les rapports, s'il diffère du mois de sa date (R-TRX-57). |
+| Date d'analyse | `analysis_date` | `date`, ou le 1er du mois d'analyse s'il diffère : range les ventilations dans les mois et les périodes (R-TRX-57). |
 | Date de valeur | `value_date` | Date de prise en compte par la banque pour les intérêts. Optionnelle. |
 | Libellé bancaire | `bank_label` | Libellé brut, tel que fourni par la banque. Jamais modifié après import. |
 | Libellé | `label` | Libellé lisible, choisi par l'utilisateur ou une règle. Par défaut, le libellé bancaire. |

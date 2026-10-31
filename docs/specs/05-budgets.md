@@ -63,8 +63,8 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 - **R-BUD-2** — Seules les ventilations des transactions de comptes `include_in_budget` alimentent les
   lignes de dépense et de revenu. Les jambes de virement interne n'alimentent jamais ces lignes
   (R-TRX-32), seulement les objectifs d'épargne (R-BUD-30).
-- **R-BUD-3** — Une ventilation est rattachée à une période budgétaire par la `date` de sa transaction
-  (et non sa `bank_date`, R-TRX-7).
+- **R-BUD-3** — Une ventilation est rattachée à une période budgétaire par la date d'analyse de sa
+  transaction (R-TRX-57) : sa `date`, sauf mois d'analyse contraire (et non sa `bank_date`, R-TRX-7).
 
 ### Lignes de dépense et de revenu
 
@@ -214,7 +214,7 @@ Mise de côté à partir de novembre 2026, chaque dépense sur les mois qui la p
   (`target_account_id`) de famille `FIXED_SAVINGS` ou `VARIABLE_SAVINGS`.
 - **R-BUD-31** — Réel d'un objectif sur un mois = Σ des virements internes entrant sur le compte cible
   depuis un compte `include_in_budget` − Σ des virements internes sortant du compte cible vers un compte
-  `include_in_budget`, sur le mois. Un retrait de l'épargne vers le compte courant réduit donc le réel.
+  `include_in_budget`, sur le mois (date d'analyse de la jambe sur le compte cible, R-TRX-57). Un retrait de l'épargne vers le compte courant réduit donc le réel.
 - **R-BUD-32** — Un objectif d'épargne peut avoir un report (R-BUD-17), pour rattraper un mois sans versement.
 - **R-BUD-33** — Un versement sur le compte cible depuis un compte **non suivi** n'alimente pas
   l'objectif : ce n'est pas un virement interne.

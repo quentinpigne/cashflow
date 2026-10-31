@@ -64,8 +64,8 @@ La rubrique est **facultative**, comme Biens et Prêts.
 - **R-SAL-9** — Pour une catégorie de revenu et un mois M :
   - **attendu** = Σ, sur les emplois reliés à cette catégorie, du net en vigueur au mois de paie (M, ou M−1
     en versement décalé) + Σ de leurs primes versées en M ;
-  - **reçu** = Σ des ventilations de cette catégorie et de ses sous-catégories datées en M, tous comptes
-    confondus ;
+  - **reçu** = Σ des ventilations de cette catégorie et de ses sous-catégories dont la date d'analyse
+    (R-TRX-57) tombe en M, tous comptes confondus ;
   - **écart** = reçu − attendu, **signalé** quand sa valeur absolue dépasse la tolérance (5 % de l'attendu par
     défaut, réglable).
   Ne sont jamais signalés : le mois en cours, un mois partiel (début ou fin d'emploi), un mois non renseigné.

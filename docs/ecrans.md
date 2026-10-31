@@ -316,6 +316,8 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
 - Champs modifiables : montant, date, libellé, note, catégorie (ou ventilation via E6). Le libellé
   bancaire, s'il existe, est affiché en lecture seule sous le libellé (R-TRX-2).
 - Informations : statut, origine, date bancaire et date de valeur si elles existent.
+- **Mois d'analyse** (TRX-13) : sélecteur « Mois de la date » (par défaut), puis les douze mois avant et après la date, sous la date ;
+  modifiable même rapprochée (R-TRX-3, R-TRX-57).
 - Une transaction ventilée affiche ses ventilations ; modifier le montant demande de rééquilibrer la
   ventilation (R-TRX-4).
 - Une transaction `RECONCILED` affiche les champs verrouillés avec un cadenas et l'explication
@@ -440,8 +442,10 @@ Panneau de la fiche compte (E3), pour les comptes de liquidités et d'épargne �
 ## E14 — Transactions (TRX-08, TRX-06)
 
 Toutes les transactions, tous comptes confondus, avec les filtres d'E3 plus le compte et « à
-catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Catégoriser » (TRX-06). Pas de
-solde après opération : il n'a de sens que par compte.
+catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Catégoriser » (TRX-06) et « Mois
+d'analyse » (TRX-13). Une transaction dont le mois d'analyse diffère de sa date affiche « compte en
+novembre 2026 » (aussi en E3). Ouverte depuis le budget ou les analyses, la liste filtre sur le mois
+d'analyse (R-TRX-58). Pas de solde après opération : il n'a de sens que par compte.
 
 ## E15 — Analyses (TDB-02, TDB-03)
 
@@ -461,7 +465,8 @@ Graphiques : ECharts (ADR-0009).
 
 Dans les réglages. Liste par priorité (glisser-déposer), avec nombre d'utilisations, actif / inactif.
 Formulaire : conditions (libellé contient / commence par / égal / motif avec `*`, montant, sens,
-comptes), actions (libellé, catégorie ou ventilation en %, virement vers un compte, note),
+comptes), actions (libellé, catégorie ou ventilation en %, virement vers un compte, note, **compter sur le
+mois** : précédent, suivant…, R-IMP-29),
 « arrêter ici ». Un encadré **Appliquer aux transactions existantes** explique que la règle vaut pour les
 prochains imports et peut traiter les transactions déjà enregistrées ; « Rechercher les transactions » liste
 celles qui ne sont pas catégorisées et que la règle concerne, qu'on peut cocher et catégoriser d'un coup avec

@@ -225,12 +225,18 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   "set_project": "<project_id>",                               // rattache à un projet actif (ADR-0014)
   "set_payee": "<payee_id>",                                   // tiers existant de la transaction (spec 11, R-TIE-16)
   "mark_transfer_to": "<account_id>",                          // suggère un virement interne
-  "set_note": null
+  "set_note": null,
+  "shift_analysis_month": 1                                    // mois d'analyse = mois de la date + 1 (R-IMP-29)
 }
 ```
 
 - **R-IMP-19** — Les règles s'appliquent aussi **à la demande** sur des transactions existantes non
-  catégorisées (ou sans tiers, pour une règle qui en affecte un, R-TIE-19), avec un aperçu avant application.
+  catégorisées (ou sans tiers, pour une règle qui en affecte un, R-TIE-19 ; ou sans mois d'analyse, pour une
+  règle qui le décale, R-IMP-29), avec un aperçu avant application.
+- **R-IMP-29** — L'action `shift_analysis_month` (entier, de −12 à 12, non nul) donne à la transaction le mois
+  d'analyse (R-TRX-57) mois de sa `date` + n : « le salaire du 28 compte le mois suivant ». Elle s'applique à la
+  création par import comme les autres actions, et à la demande (R-IMP-19) aux transactions sans mois
+  d'analyse que la règle concerne. Un mois d'analyse choisi à la main n'est jamais remplacé par une règle.
 - **R-IMP-20** — Depuis une transaction, « créer une règle à partir de celle-ci » préremplit la
   condition sur le libellé normalisé et les actions sur sa ventilation et son tiers.
 
@@ -251,6 +257,7 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
 | IMP-11 | V1 | Suggestions de virements internes entre lots / comptes |
 | IMP-12 | V2 | Import PDF générique par OCR (opt-in) |
 | IMP-13 | V2 | Suggestion de catégorie apprise (au-delà de R-IMP-13) |
+| IMP-14 | V1 | Action de règle « compter sur le mois » : décaler le mois d'analyse (R-IMP-29) |
 
 ### IMP-01 — Assistant de mapping
 

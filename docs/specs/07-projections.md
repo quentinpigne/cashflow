@@ -32,7 +32,8 @@ Répondre à trois questions :
   fois. Les mensualités déjà ventilées (R-PRE-6) n'entrent pas dans la dépense variable moyenne
   (R-PRJ-11).
 - **R-PRJ-11** — Une dépense variable moyenne est **incluse par défaut**, et désactivable : moyenne
-  des dépenses **non récurrentes** des 3 derniers mois complets, hors ventilations rattachées à un projet
+  des dépenses **non récurrentes** des 3 derniers mois complets (par date d'analyse, R-TRX-57), hors
+  ventilations rattachées à un projet
   (projetées à part, R-PRJ-48), répartie uniformément sur les jours.
   Elle est affichée séparément des échéances connues.
 - **R-PRJ-12** — Le solde minimum projeté et sa date sont mis en évidence ; un passage sous 0 (ou sous

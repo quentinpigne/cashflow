@@ -12,7 +12,8 @@ Chaque indicateur a **une définition écrite ici**, testée, et accessible dans
 
 Sauf mention contraire, les indicateurs portent sur un **mois civil** M et sur les comptes en EUR
 (R-CPT-2). Les virements internes sont exclus des revenus et des dépenses (R-TRX-32). Les flux sont
-rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la date de solde (R-TRX-7).
+rattachés au mois par leur date d'analyse (R-TRX-57 : la `date`, sauf mois d'analyse contraire) ; les soldes et
+le patrimoine utilisent la date de solde (R-TRX-7).
 
 | Indicateur | Définition | Règle |
 |---|---|---|
@@ -43,7 +44,9 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
   (prévu du mois − réel du mois) quand c'est positif — chaque ligne compte ainsi le plus grand de son prévu
   et de son réel, quel que soit le jour où tombent ses mouvements ; une ligne annuelle ne dépasse pas ce qui
   reste de son année — + Σ des restants prévus du mois en cours des projets pris en compte comme ci-dessus.
-  Sans ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale.
+  Sans ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale. Un mois à
+  venir peut avoir du réel, par des transactions dont le mois d'analyse est futur (R-TRX-57) : il compte
+  alors, comme le mois en cours, son réel + son encore à venir.
 
 ## Écrans
 

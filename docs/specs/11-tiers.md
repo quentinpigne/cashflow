@@ -87,7 +87,8 @@ Aucun tiers n'est créé automatiquement à partir des libellés (cf. TIE-05, V2
 ## Analyses
 
 - **R-TIE-20** — Pour un tiers, sur une période, les **dépenses**, les **revenus** et le **non catégorisé**
-  sont ceux de spec 08 (R-TDB-3, R-TDB-4, R-TDB-5), restreints aux ventilations des transactions de ce tiers.
+  sont ceux de spec 08 (R-TDB-3, R-TDB-4, R-TDB-5, rangés par date d'analyse, R-TRX-57), restreints aux
+  ventilations des transactions de ce tiers.
   Pour un groupe, on somme ceux de ses tiers. Les ventilations de virement, de remboursement et d'acquisition
   sont exclues, comme partout (R-TRX-37), ainsi que celles d'une catégorie hors analyses (R-TRX-24). Rien
   n'est stocké.

@@ -199,10 +199,12 @@ Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu)
 | Champ | Type | Contraintes |
 |---|---|---|
 | `account_id` | `Id` → Account | requis |
-| `date` | `Date` | requis, ≥ `opening_date` du compte, ≤ `closed_on` s'il existe. Date choisie par l'utilisateur : affichage, budgets, rapports |
+| `date` | `Date` | requis, ≥ `opening_date` du compte, ≤ `closed_on` s'il existe. Date choisie par l'utilisateur : affichage |
 | `bank_date` | `Date` | optionnel : date de l'opération selon la banque, renseignée à l'import ou au pointage ; mêmes bornes que `date` |
 | `balance_date` | `Date` | **colonne générée** = `COALESCE(bank_date, date)` : date utilisée pour les soldes et le rapprochement (R-TRX-7) |
 | `value_date` | `Date` | optionnel : date de valeur bancaire (intérêts) |
+| `analysis_month` | mois `YYYY-MM` | optionnel : **mois d'analyse**, n'importe quel mois (R-TRX-57) ; `null` = mois de `date` |
+| `analysis_date` | `Date` | **colonne générée** = `date` si `analysis_month` est `null` ou égal au mois de `date`, sinon le 1er de `analysis_month` : date utilisée pour les budgets, les analyses et les rapports (R-TRX-57) |
 | `amount` | `Money` | requis, ≠ 0 |
 | `bank_label` | texte ≤ 500 | optionnel (absent pour une saisie manuelle), immuable une fois renseigné |
 | `label` | texte ≤ 200 | requis (défaut : `bank_label`) |

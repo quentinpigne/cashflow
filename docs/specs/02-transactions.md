@@ -47,8 +47,8 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   et vaut `bank_label` par défaut.
 - **R-TRX-3** — Une transaction `RECONCILED` ne peut être ni modifiée (montant, compte, date de solde),
   ni supprimée, sans déverrouillage explicite du point de contrôle qui la couvre (spec 04, R-RAP-6).
-  Le libellé, la note, la ventilation, le tiers (spec 11), et la `date` quand une `bank_date` existe,
-  restent modifiables : ils n'affectent pas le solde.
+  Le libellé, la note, la ventilation, le tiers (spec 11), le mois d'analyse (R-TRX-57), et la `date` quand
+  une `bank_date` existe, restent modifiables : ils n'affectent pas le solde.
 - **R-TRX-4** — Modifier le montant d'une transaction à une seule ventilation met à jour cette
   ventilation. Avec plusieurs ventilations, la modification est refusée tant que la ventilation
   n'est pas rééquilibrée (l'interface propose de reporter l'écart sur une ventilation choisie).
@@ -57,11 +57,24 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 - **R-TRX-6** — Supprimer une transaction issue d'un import ne supprime pas la ligne d'import :
   la ligne repasse à l'état « non traitée » et pourra être réimportée.
 - **R-TRX-7** — **Trois dates.** `date` est la date que je connais : saisie à la main, ou date bancaire
-  pour une transaction créée par import. Elle sert à l'affichage, aux budgets et aux rapports.
+  pour une transaction créée par import. Elle sert à l'affichage ; les budgets et les rapports suivent la
+  date d'analyse (R-TRX-57), qui vaut la `date` sauf mois d'analyse contraire.
   `bank_date` est la date selon la banque, renseignée à l'import (création ou pointage, R-IMP-11).
   `balance_date` = `bank_date` si elle existe, sinon `date` : c'est la seule date utilisée pour les
   soldes et le rapprochement, afin qu'une saisie datée différemment de la banque ne crée pas d'écart
   fictif. `value_date` (date de valeur) ne sert qu'aux intérêts (spec 06).
+
+- **R-TRX-57** — **Mois d'analyse** (`analysis_month`, `AAAA-MM`, facultatif, n'importe quel mois) : le
+  mois sur lequel la transaction compte, entière. La **date d'analyse** (`analysis_date`, générée) vaut la
+  `date` si le mois d'analyse est vide ou égal au mois de la `date`, sinon le 1er du mois d'analyse. Elle
+  remplace la `date` partout où une ventilation est rangée dans un mois ou une période : budget (R-BUD-3),
+  objectifs d'épargne (R-BUD-31), indicateurs et analyses (spec 08), moyennes des projections (R-PRJ-11,
+  R-PRJ-44), contrôle des salaires (R-SAL-9), analyses par tiers et par lieu (spec 11). Les soldes, le
+  rapprochement, les intérêts, la trésorerie projetée, les dates d'un projet (R-BUD-23) et le tri des listes
+  gardent leurs dates. Choisir le mois de la `date` revient à vider le mois d'analyse (ADR-0028).
+- **R-TRX-58** — Le mois d'analyse se modifie sur une transaction (E7) ou sur une sélection (E14, TRX-13),
+  ou par une règle de catégorisation (R-IMP-29). Une liste ouverte depuis le budget ou les analyses filtre
+  sur le mois d'analyse : elle montre les transactions qui comptent dans le mois, quelle que soit leur date.
 
 ### Ventilation
 
@@ -189,6 +202,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 | TRX-10 | V2 | Étiquettes libres (tags) transverses aux catégories (« Vacances 2026 ») |
 | TRX-11 | — | *(supprimée : devenue DOC-04, spec 12)* |
 | TRX-12 | V1 | Remboursements de frais : lier une entrée à une ou plusieurs dépenses, en tout ou partie ; remboursement attendu et reste à recevoir |
+| TRX-13 | V1 | Mois d'analyse d'une transaction : choisir le mois sur lequel elle compte (une transaction, une sélection, une règle) |
 
 ### TRX-01 — Saisir une transaction
 
@@ -240,3 +254,19 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   10 €, alors c'est refusé (R-TRX-52).
 - Étant donné une consultation de mars remboursée en avril, alors les dépenses de mars ne changent pas et celles
   d'avril baissent du remboursement (R-TRX-51).
+
+### TRX-13 — Mois d'analyse
+
+- Sur la fiche d'une transaction (E7) : le champ « Mois d'analyse », « Mois de la date » par défaut.
+- Dans la liste (E14, E3) : « compte en novembre 2026 » sous une transaction dont le mois d'analyse diffère
+  de sa date ; action « Mois d'analyse » sur une sélection.
+- Dans une règle (E16) : l'action « Compter sur le mois » (même mois, suivant, précédent…).
+
+**Critères d'acceptation**
+- Étant donné un salaire de +3 000 € daté du 28 octobre, quand je choisis novembre comme mois d'analyse, alors
+  il sort des revenus d'octobre et entre dans ceux de novembre (budget, analyses, accueil), et le solde du
+  compte au 28 octobre ne change pas (R-TRX-57).
+- Étant donné cette transaction rapprochée, alors son mois d'analyse reste modifiable (R-TRX-3).
+- Quand je rechoisis « Mois de la date », alors le mois d'analyse est vidé et le salaire revient en octobre.
+- Depuis le budget de novembre, la liste des revenus de la ligne Salaire montre le salaire du 28 octobre
+  (R-TRX-58).
