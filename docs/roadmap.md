@@ -152,12 +152,12 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] PRJ-11 — projets dans la trésorerie et la capacité d'épargne (spec 07, R-PRJ-48)
 - [x] TDB-09 — mois à venir et estimation de fin d'année dans l'évolution (spec 08, R-TDB-14)
 
-## Compléments V1 — mois d'analyse (2026-10-31, à faire)
+## Compléments V1 — mois d'analyse (2026-10-31, livrés)
 
-- [ ] TRX-13 — mois d'analyse d'une transaction : fiche, sélection, liste filtrée par mois d'analyse ; budget,
+- [x] TRX-13 — mois d'analyse d'une transaction : fiche, sélection, liste filtrée par mois d'analyse ; budget,
       analyses, accueil, salaires, projections et tiers par date d'analyse (ADR-0028, spec 02, R-TRX-57,
       R-TRX-58)
-- [ ] IMP-14 — action de règle « compter sur le mois » (spec 03, R-IMP-29)
+- [x] IMP-14 — action de règle « compter sur le mois » (spec 03, R-IMP-29)
 
 ## Mise en service (prochaine étape)
 

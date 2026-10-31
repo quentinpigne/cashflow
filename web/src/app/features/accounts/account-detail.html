@@ -210,6 +210,9 @@
                     @if (item.clearing_status === 'PENDING') {
                       · <span class="badge">en attente</span>
                     }
+                    @if (item.analysis_month) {
+                      · compte en {{ monthLabel(item.analysis_month).toLowerCase() }}
+                    }
                   </span>
                 </span>
                 <span class="item-amounts">
@@ -266,7 +269,14 @@
             </ng-container>
             <ng-container matColumnDef="category">
               <th mat-header-cell *matHeaderCellDef>Catégorie</th>
-              <td mat-cell *matCellDef="let t" class="muted">{{ categoryText(t) }}</td>
+              <td mat-cell *matCellDef="let t" class="muted">
+                {{ categoryText(t) }}
+                @if (t.analysis_month) {
+                  <span class="small">
+                    · compte en {{ monthLabel(t.analysis_month).toLowerCase() }}</span
+                  >
+                }
+              </td>
             </ng-container>
             <ng-container matColumnDef="amount">
               <th

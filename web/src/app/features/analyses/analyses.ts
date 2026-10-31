@@ -220,7 +220,8 @@ export class AnalysesPage {
     if (!report) {
       return;
     }
-    const queryParams: Record<string, string> = { du: report.from, au: report.to };
+    // Le rapport porte sur un mois : la liste filtre sur le mois d'analyse (R-TRX-58).
+    const queryParams: Record<string, string> = { mois: report.from.slice(0, 7) };
     if (line.category_id) {
       queryParams['categorie'] = line.category_id;
     } else {

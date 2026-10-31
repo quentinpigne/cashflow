@@ -7,6 +7,18 @@
       Filtres
     </button>
   }
+  @if (analysisMonth(); as month) {
+    <div class="analysis-filter">
+      <span>Comptent en {{ monthLabel(month).toLowerCase() }}, quelle que soit leur date</span>
+      <button
+        mat-icon-button
+        (click)="analysisMonth.set(null); reset()"
+        aria-label="Retirer le filtre du mois"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
   <div class="filters card" [hidden]="layout.mobile() && !showFilters()">
     <mat-form-field>
       <mat-label>Comptes</mat-label>
@@ -143,6 +155,22 @@
       <button mat-button (click)="setPayeeOfSelection(true)" [disabled]="busy()">
         Retirer le tiers
       </button>
+      <mat-form-field class="bulk-project" subscriptSizing="dynamic">
+        <mat-label>Mois d'analyse</mat-label>
+        <mat-select [value]="bulkMonth()" (selectionChange)="bulkMonth.set($event.value)">
+          <mat-option [value]="DATE_MONTH">Mois de la date</mat-option>
+          @for (m of monthChoices; track m) {
+            <mat-option [value]="m">{{ monthLabel(m) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button
+        mat-stroked-button
+        (click)="setMonthOfSelection()"
+        [disabled]="!bulkMonth() || busy()"
+      >
+        Appliquer le mois
+      </button>
       @if (projects.active().length > 0) {
         <mat-form-field class="bulk-project" subscriptSizing="dynamic">
           <mat-label>Projet</mat-label>
@@ -195,6 +223,11 @@
               >{{ item.date | frDate: 'short' }} · {{ item.account_name }} ·
               {{ categoryText(item) }}</span
             >
+            @if (item.analysis_month) {
+              <span class="muted small analysis"
+                >compte en {{ monthLabel(item.analysis_month).toLowerCase() }}</span
+              >
+            }
           </span>
           <span class="amount" [class.negative]="item.amount_minor < 0">{{
             item.amount_minor | money

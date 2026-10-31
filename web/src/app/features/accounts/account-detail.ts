@@ -24,7 +24,7 @@ import { AccountsService } from '../../api/services/accounts.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { keptValue } from '../../core/resources';
-import { formatDate, toIsoDate } from '../../core/dates';
+import { formatDate, formatMonthKey, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { ClearingStatus } from '../../api/models/clearing-status';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
@@ -119,6 +119,7 @@ export class AccountDetailPage {
   protected readonly columns = ['status', 'date', 'label', 'category', 'amount', 'balance'];
   protected readonly statuses: ClearingStatus[] = ['PENDING', 'CLEARED', 'RECONCILED'];
   protected readonly statusLabels = STATUS_LABELS;
+  protected readonly monthLabel = formatMonthKey;
   protected readonly computed = hasComputedBalance;
   protected readonly balanceDate = signal<Date | null>(null);
   protected readonly filters = signal<Filters>(NO_FILTERS);

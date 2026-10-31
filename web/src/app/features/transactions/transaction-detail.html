@@ -72,6 +72,19 @@
         <mat-datepicker #picker />
       </mat-form-field>
       <mat-form-field>
+        <mat-label>Mois d'analyse</mat-label>
+        <mat-select
+          [value]="analysisMonth() ?? DATE_MONTH"
+          (selectionChange)="analysisMonth.set($event.value === DATE_MONTH ? null : $event.value)"
+        >
+          <mat-option [value]="DATE_MONTH">Mois de la date</mat-option>
+          @for (m of analysisChoices(); track m) {
+            <mat-option [value]="m">{{ monthLabel(m) }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Le mois sur lequel elle compte dans le budget et les analyses.</mat-hint>
+      </mat-form-field>
+      <mat-form-field>
         <mat-label>Libellé</mat-label>
         <input matInput formControlName="label" maxlength="200" />
         @if (t.bank_label) {

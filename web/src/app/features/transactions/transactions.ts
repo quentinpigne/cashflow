@@ -27,7 +27,14 @@ import { TransactionListItem } from '../../api/models/transaction-list-item';
 import { BudgetsService } from '../../api/services/budgets.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
-import { fromIsoDate, toIsoDate } from '../../core/dates';
+import {
+  currentMonth,
+  formatMonthKey,
+  fromIsoDate,
+  monthsBetween,
+  shiftMonth,
+  toIsoDate,
+} from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { STATUS_LABELS } from '../../core/labels';
 import { Layout } from '../../core/layout';
@@ -80,6 +87,8 @@ export class TransactionsPage implements OnInit {
   readonly a_categoriser = input<string>();
   readonly tiers = input<string>();
   readonly groupe = input<string>();
+  /** Mois d'analyse `AAAA-MM` : lien depuis le budget ou les analyses (R-TRX-58). */
+  readonly mois = input<string>();
 
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly statuses: ClearingStatus[] = ['PENDING', 'CLEARED', 'RECONCILED'];
@@ -98,6 +107,16 @@ export class TransactionsPage implements OnInit {
   protected readonly withoutPayee = signal(false);
   /** Avec ou sans justificatif (DOC-04). */
   protected readonly withDocuments = signal<boolean | null>(null);
+  /** Transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58). */
+  protected readonly analysisMonth = signal<string | null>(null);
+  /** Mois d'analyse choisi en masse : `DATE` pour le mois de la date (TRX-13). */
+  protected readonly bulkMonth = signal<string | null>(null);
+  protected readonly DATE_MONTH = 'date';
+  protected readonly monthChoices = monthsBetween(
+    shiftMonth(currentMonth(), -12),
+    shiftMonth(currentMonth(), 12),
+  );
+  protected readonly monthLabel = formatMonthKey;
   protected readonly bulkPayee = signal<string | null>(null);
   protected readonly limit = signal(PAGE);
   protected readonly selection = signal<Set<string>>(new Set());
@@ -126,6 +145,7 @@ export class TransactionsPage implements OnInit {
         payee_group_id: this.payeeGroup() ?? undefined,
         without_payee: this.withoutPayee() || undefined,
         with_documents: this.withDocuments() ?? undefined,
+        analysis_month: this.analysisMonth() ?? undefined,
         limit: this.limit(),
         version: this.version.value(),
       };
@@ -157,6 +177,7 @@ export class TransactionsPage implements OnInit {
     if (this.a_categoriser()) this.uncategorized.set(true);
     if (this.tiers()) this.payee.set(this.tiers() ?? null);
     if (this.groupe()) this.payeeGroup.set(this.groupe() ?? null);
+    if (this.mois()) this.analysisMonth.set(this.mois() ?? null);
   }
 
   protected categoryText(item: TransactionListItem): string {
@@ -245,6 +266,35 @@ export class TransactionsPage implements OnInit {
       const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
       const verb = remove ? 'sans tiers' : `affectée(s) à ${this.payees.name(payee)}`;
       this.snack.open(`${result.updated} transaction(s) ${verb}${skipped}`, undefined, {
+        duration: 4000,
+      });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Mois d'analyse en masse (TRX-13, R-TRX-57). */
+  protected async setMonthOfSelection(): Promise<void> {
+    const choice = this.bulkMonth();
+    if (!choice || this.selection().size === 0) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const month = choice === this.DATE_MONTH ? null : choice;
+      const result = await firstValueFrom(
+        this.api.setTransactionsAnalysisMonth({
+          body: { transaction_ids: [...this.selection()], analysis_month: month },
+        }),
+      );
+      this.selection.set(new Set());
+      this.version.bump();
+      const where = month
+        ? `en ${formatMonthKey(month).toLowerCase()}`
+        : 'sur le mois de leur date';
+      this.snack.open(`${result.updated} transaction(s) comptent ${where}`, undefined, {
         duration: 4000,
       });
     } catch (error) {

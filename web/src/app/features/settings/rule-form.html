@@ -129,6 +129,19 @@
       [value]="payee()"
       (valueChange)="payee.set($event)"
     />
+    <mat-form-field>
+      <mat-label>Compter sur le mois</mat-label>
+      <mat-select
+        [ngModel]="monthShift() ?? 0"
+        (ngModelChange)="monthShift.set($event === 0 ? null : $event)"
+      >
+        <mat-option [value]="0">Mois de la date</mat-option>
+        @for (s of shifts; track s.value) {
+          <mat-option [value]="s.value">{{ s.label }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>Le mois d'analyse : le salaire du 28 compte le mois suivant.</mat-hint>
+    </mat-form-field>
     @if (projectOptions().length > 0) {
       <mat-form-field>
         <mat-label>Rattacher au projet</mat-label>
@@ -164,7 +177,7 @@
       La règle s'applique aux prochains imports. Elle peut aussi traiter les transactions déjà
       enregistrées qui ne sont pas catégorisées{{
         payee() && !transferTo() ? ' ou qui n’ont pas de tiers' : ''
-      }}
+      }}{{ monthShift() !== null && !transferTo() ? ' ou qui n’ont pas de mois d’analyse' : '' }}
       : les retrouver, puis choisir celles à modifier.
     </p>
     <button mat-stroked-button (click)="preview()">
@@ -184,7 +197,7 @@
         >
           {{ m.date | frDate: 'short' }} · {{ m.account_name }} · {{ m.label }} ·
           {{ m.amount_minor | money }}
-          @if (payee() && !transferTo()) {
+          @if (widened()) {
             <span class="muted"> · {{ change(m) }}</span>
           }
         </mat-checkbox>

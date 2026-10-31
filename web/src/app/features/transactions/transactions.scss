@@ -81,3 +81,14 @@
   vertical-align: text-bottom;
   color: var(--mat-sys-on-surface-variant);
 }
+
+.analysis-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  border-radius: var(--mat-sys-corner-medium, 12px);
+  background: var(--mat-sys-secondary-container);
+}

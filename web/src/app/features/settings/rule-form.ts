@@ -82,6 +82,16 @@ export class RuleFormDialog {
   protected readonly note = signal(this.source.actions?.set_note ?? '');
   /** Action `set_payee` : un tiers existant (R-TIE-16). */
   protected readonly payee = signal<string | null>(this.source.actions?.set_payee ?? null);
+  /** Action `shift_analysis_month` : mois d'analyse = mois de la date + n (R-IMP-29). */
+  protected readonly monthShift = signal<number | null>(
+    this.source.actions?.shift_analysis_month ?? null,
+  );
+  protected readonly shifts = [
+    { value: -2, label: 'Deux mois avant' },
+    { value: -1, label: 'Mois précédent' },
+    { value: 1, label: 'Mois suivant' },
+    { value: 2, label: 'Deux mois après' },
+  ];
   /** Action `set_project` (BUD-06). */
   protected readonly project = signal<string>(this.source.actions?.set_project ?? '');
   private readonly projects = inject(ProjectsStore);
@@ -157,6 +167,7 @@ export class RuleFormDialog {
         set_project: this.transferTo() ? null : this.project() || null,
         set_note: this.note().trim() || null,
         set_payee: this.transferTo() ? null : this.payee(),
+        shift_analysis_month: this.transferTo() ? null : this.monthShift(),
       },
       stop_processing: this.stop(),
       active: this.active(),
@@ -171,6 +182,7 @@ export class RuleFormDialog {
         this.api.previewRule({
           body: this.conditions(),
           sets_payee: !this.transferTo() && !!this.payee(),
+          shifts_month: !this.transferTo() && this.monthShift() !== null,
         }),
       );
       this.matches.set(matches);
@@ -182,9 +194,20 @@ export class RuleFormDialog {
 
   /** Ce que l'application de la règle changera sur une transaction de l'aperçu. */
   protected change(m: RuleMatch): string {
-    if (m.sets_category && m.sets_payee) return 'catégorie et tiers';
-    return m.sets_payee ? 'tiers' : 'catégorie';
+    const changes = [
+      m.sets_category ? 'catégorie' : null,
+      m.sets_payee ? 'tiers' : null,
+      m.sets_month ? "mois d'analyse" : null,
+    ].filter((c) => c !== null);
+    return changes.length > 1
+      ? `${changes.slice(0, -1).join(', ')} et ${changes[changes.length - 1]}`
+      : changes.join('');
   }
+
+  /** L'aperçu vise aussi les transactions sans tiers ou sans mois d'analyse (R-TIE-19, R-IMP-29). */
+  protected readonly widened = computed(
+    () => !this.transferTo() && (!!this.payee() || this.monthShift() !== null),
+  );
 
   protected toggle(id: string, checked: boolean): void {
     this.chosen.update((s) => {

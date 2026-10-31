@@ -129,14 +129,9 @@ export class BudgetPage {
     });
   }
 
-  /** Les transactions qui alimentent une ligne ou un groupe, pour ce mois (E14). */
+  /** Les transactions qui comptent dans une ligne ou un groupe, pour ce mois, par mois d'analyse (E14, R-TRX-58). */
   protected drill(categoryId: string | null | undefined, uncategorized = false): void {
-    const [y, m] = this.month().split('-').map(Number);
-    const last = new Date(y, m, 0).getDate();
-    const queryParams: Record<string, string> = {
-      du: `${this.month()}-01`,
-      au: `${this.month()}-${String(last).padStart(2, '0')}`,
-    };
+    const queryParams: Record<string, string> = { mois: this.month() };
     if (categoryId) queryParams['categorie'] = categoryId;
     if (uncategorized) queryParams['a_categoriser'] = '1';
     void this.router.navigate(['/transactions'], { queryParams });

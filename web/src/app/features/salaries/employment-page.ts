@@ -25,7 +25,6 @@ import { SalaryView } from '../../api/models/salary-view';
 import { DocumentsService } from '../../api/services/documents.service';
 import { SalariesService } from '../../api/services/salaries.service';
 import { DataVersion } from '../../core/data-version';
-import { toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { BONUS_KIND_LABELS, SALARY_REASON_LABELS } from '../../core/labels';
 import { confirm } from '../../shared/confirm-dialog';
@@ -605,15 +604,10 @@ export class EmploymentPage {
     }
   }
 
-  /** Transactions de la catégorie sur ce mois (E14 filtrée). */
+  /** Transactions de la catégorie qui comptent sur ce mois (E14 filtrée par mois d'analyse, R-TRX-58). */
   protected async openMonth(j: EmploymentView, check: MonthCheck): Promise<void> {
-    const [year, month] = check.month.split('-').map(Number);
     await this.router.navigate(['/transactions'], {
-      queryParams: {
-        categorie: j.summary.income_category_id,
-        du: check.month,
-        au: toIsoDate(new Date(year, month, 0)),
-      },
+      queryParams: { categorie: j.summary.income_category_id, mois: check.month.slice(0, 7) },
     });
   }
 }

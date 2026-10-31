@@ -29,7 +29,14 @@ import { LoanPaymentProposal } from '../../api/models/loan-payment-proposal';
 import { LoansService } from '../../api/services/loans.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
-import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
+import {
+  formatMonthKey,
+  fromIsoDate,
+  monthsBetween,
+  shiftMonth,
+  todayIso,
+  toIsoDate,
+} from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
 import { ORIGIN_LABELS, STATUS_LABELS } from '../../core/labels';
@@ -119,6 +126,21 @@ export class TransactionDetailView {
   protected readonly category = signal<string | null>(null);
   /** Tiers, modifiable même sur une transaction rapprochée (R-TIE-12). */
   protected readonly payee = signal<string | null>(null);
+  /** Mois d'analyse, `null` : le mois de la date ; modifiable même rapprochée (R-TRX-57, R-TRX-3). */
+  protected readonly analysisMonth = signal<string | null>(null);
+  protected readonly monthLabel = formatMonthKey;
+  protected readonly DATE_MONTH = 'date';
+  /** Les douze mois avant et après celui de la date, et le mois choisi s'il est plus loin (E7). */
+  protected readonly analysisChoices = computed(() => {
+    const t = this.value();
+    if (!t) return [];
+    const own = t.date.slice(0, 7);
+    const months = monthsBetween(shiftMonth(own, -12), shiftMonth(own, 12)).filter(
+      (m) => m !== own,
+    );
+    const chosen = t.analysis_month;
+    return chosen && !months.includes(chosen) ? [...months, chosen].sort() : months;
+  });
   /** Projet de la transaction (BUD-06) : l'interface le porte sur toutes ses ventilations. */
   protected readonly project = signal<string | null>(null);
   protected readonly projects = inject(ProjectsStore);
@@ -192,6 +214,7 @@ export class TransactionDetailView {
       this.direction.set(t.amount_minor < 0 ? 'out' : 'in');
       this.category.set(t.splits.length === 1 ? encodeAttachment(t.splits[0]) : null);
       this.payee.set(t.payee_id ?? null);
+      this.analysisMonth.set(t.analysis_month ?? null);
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       const lines = new Set(t.splits.map((s) => s.project_line_id ?? null));
       this.initialLine = lines.size > 1 ? this.MIXED : (t.splits[0]?.project_line_id ?? null);
@@ -311,6 +334,13 @@ export class TransactionDetailView {
           },
         }),
       );
+      if (this.analysisMonth() !== (t.analysis_month ?? null)) {
+        await firstValueFrom(
+          this.api.setTransactionsAnalysisMonth({
+            body: { transaction_ids: [t.id], analysis_month: this.analysisMonth() },
+          }),
+        );
+      }
       this.version.bump();
       this.snack.open('Transaction enregistrée', undefined, { duration: 3000 });
     } catch (error) {
