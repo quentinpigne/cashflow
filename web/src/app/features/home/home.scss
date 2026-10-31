@@ -223,8 +223,10 @@
   }
 }
 
+// L'empreinte prend la place de l'encadré déplacé : même espacement que lui (voir .widget).
 .placeholder {
   min-height: 5rem;
+  margin-bottom: 1rem;
   border: 2px dashed var(--mat-sys-outline-variant);
   border-radius: 1rem;
   background: var(--mat-sys-surface-container-low);
