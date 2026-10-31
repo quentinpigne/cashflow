@@ -15,7 +15,9 @@ import { DataVersion } from '../../core/data-version';
 import { Layout } from '../../core/layout';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
+import { MemberChip } from '../../shared/member-chip';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { MembersStore } from '../../shared/stores';
 import { EmploymentDialog } from './salary-dialogs';
 
 const axisMoney = (v: number) => formatChartValue(v, 'EUR', { bare: true }).replace(/,00$/, '');
@@ -38,6 +40,7 @@ export function formatChange(ppm: number | null | undefined): string {
     NgxEchartsDirective,
     MoneyPipe,
     FrDatePipe,
+    MemberChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -111,6 +114,9 @@ export function formatChange(ppm: number | null | undefined): string {
             <header><h2>Emplois</h2></header>
             @for (e of employments(); track e.id) {
               <a class="row" [routerLink]="['/salaires', e.id]">
+                @if (e.member_id && members.byId().get(e.member_id); as m) {
+                  <app-member-chip [member]="m" />
+                }
                 <span class="name">
                   <span>{{ e.employer }}</span>
                   <span class="muted small"
@@ -172,6 +178,7 @@ export class SalariesPage {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   protected readonly layout = inject(Layout);
+  protected readonly members = inject(MembersStore);
 
   protected readonly overview = rxResource({
     params: () => this.version.value(),

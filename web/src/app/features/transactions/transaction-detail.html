@@ -150,6 +150,9 @@
                 @if (split.note) {
                   · <span class="muted">{{ split.note }}</span>
                 }
+                @if (members.active() && split.member_id) {
+                  · <span class="muted">{{ members.name(split.member_id) }}</span>
+                }
               </span>
               <span class="amount" [class.negative]="split.amount_minor < 0">{{
                 split.amount_minor | money: t.currency
@@ -182,6 +185,21 @@
               Ventiler selon l'échéance
             </button>
           </div>
+        }
+        @if (members.active()) {
+          <mat-form-field>
+            <mat-label>Membre</mat-label>
+            <mat-select
+              [value]="member() ?? ''"
+              (selectionChange)="member.set($event.value || null)"
+            >
+              <mat-option value="">{{ defaultMember(t) }}</mat-option>
+              @for (m of members.list(); track m.id) {
+                <mat-option [value]="m.id">{{ m.name }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Celui que la dépense ou le revenu concerne.</mat-hint>
+          </mat-form-field>
         }
         <div class="links">
           <button mat-button type="button" (click)="editSplits(t)">

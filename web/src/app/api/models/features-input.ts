@@ -4,6 +4,7 @@
 export interface FeaturesInput {
   assets?: (boolean | null);
   geocoding?: (boolean | null);
+  household?: (boolean | null);
   loans?: (boolean | null);
   salaries?: (boolean | null);
   salary_gap_tolerance_ppm?: (number | null);

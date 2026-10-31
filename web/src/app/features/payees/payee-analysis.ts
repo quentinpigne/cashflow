@@ -18,6 +18,7 @@ import { currentMonth, formatMonthKey, shiftMonth } from '../../core/dates';
 import { formatChartValue, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Barres du graphique : les premières lignes seulement (ecrans.md E15). */
 const CHART_LINES = 15;
@@ -184,6 +185,7 @@ export class PayeeAnalysis {
   protected readonly groupBy = signal<ReportGrouping>('GROUP');
   protected readonly expanded = signal<Set<string>>(new Set());
 
+  private readonly members = inject(MemberSelections).of('analyses');
   protected readonly report = rxResource({
     params: () => ({
       period: this.period(),
@@ -192,6 +194,7 @@ export class PayeeAnalysis {
       kind: this.kind(),
       group_by: this.groupBy(),
       version: this.version.value(),
+      members: this.members.param(),
     }),
     stream: ({ params }) =>
       this.api.payeeReport({
@@ -200,6 +203,7 @@ export class PayeeAnalysis {
         year: params.period === 'YEAR' ? params.year : undefined,
         kind: params.kind,
         group_by: params.group_by,
+        members: params.members,
       }),
   });
 

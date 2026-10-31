@@ -26,7 +26,7 @@ import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { BONUS_KIND_LABELS, SALARY_REASON_LABELS } from '../../core/labels';
 import { parseMoney, toEditable } from '../../core/money';
-import { CategoriesStore } from '../../shared/stores';
+import { CategoriesStore, MembersStore } from '../../shared/stores';
 
 const FORM_STYLES = `
   .form {
@@ -141,6 +141,18 @@ export const MONTH_NAMES = [
           </mat-select>
         </mat-form-field>
       </div>
+      @if (members.active()) {
+        <mat-form-field>
+          <mat-label>Membre</mat-label>
+          <mat-select [ngModel]="member() ?? ''" (ngModelChange)="member.set($event || null)">
+            <mat-option value="">Foyer</mat-option>
+            @for (m of members.list(); track m.id) {
+              <mat-option [value]="m.id">{{ m.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>La personne qui occupe l'emploi.</mat-hint>
+        </mat-form-field>
+      }
       <mat-checkbox [ngModel]="paidNextMonth()" (ngModelChange)="paidNextMonth.set($event)">
         Versement décalé : le salaire du mois est versé le mois suivant
       </mat-checkbox>
@@ -195,6 +207,9 @@ export class EmploymentDialog {
   protected readonly raiseMonth = signal(this.job?.raise_month ?? 1);
   protected readonly paidNextMonth = signal(this.job?.paid_next_month ?? false);
   protected readonly notes = signal(this.job?.notes ?? '');
+  /** Membre de l'emploi ; `null` : emploi du foyer (R-MBR-7). */
+  protected readonly member = signal<string | null>(this.s?.member_id ?? null);
+  protected readonly members = inject(MembersStore);
   protected readonly error = signal<string | null>(null);
 
   protected readonly body = computed(() => {
@@ -212,6 +227,7 @@ export class EmploymentDialog {
       raise_month: this.raiseMonth(),
       paid_next_month: this.paidNextMonth(),
       notes: this.notes().trim() || null,
+      member_id: this.member(),
     };
   });
 

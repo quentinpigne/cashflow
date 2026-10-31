@@ -8,6 +8,7 @@ import { currentMonth } from '../../core/dates';
 import { percentOf } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { WidgetMenu } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Les 5 catégories aux plus fortes dépenses du mois, avec leur moyenne sur 12 mois (TDB-11, R-TDB-19). */
 @Component({
@@ -54,9 +55,11 @@ export class HomeCategories {
   private readonly api = inject(DashboardService);
   private readonly version = inject(DataVersion);
 
+  /** Membres cochés sur l'accueil (R-MBR-9). */
+  private readonly members = inject(MemberSelections).of('home');
   private readonly report = rxResource({
-    params: () => this.version.value(),
-    stream: () => this.api.categoryReport({ kind: 'EXPENSE' }),
+    params: () => ({ version: this.version.value(), members: this.members.param() }),
+    stream: ({ params }) => this.api.categoryReport({ kind: 'EXPENSE', members: params.members }),
   });
 
   protected readonly rows = computed(() => {

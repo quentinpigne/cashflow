@@ -219,6 +219,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/categories').then((m) => m.CategoriesPage),
       },
       {
+        path: 'reglages/foyer',
+        title: 'Membres du foyer — Cashflow',
+        loadComponent: () => import('./features/household/members').then((m) => m.MembersPage),
+      },
+      {
         path: 'reglages/etablissements',
         title: 'Établissements — Cashflow',
         loadComponent: () =>

@@ -7,6 +7,7 @@ import { DataVersion } from '../../core/data-version';
 import { percentOf, sum } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { WidgetMenu } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Les 5 tiers aux plus fortes dépenses du mois, et leur part (TDB-11, R-TDB-21). */
 @Component({
@@ -36,9 +37,17 @@ export class HomePayees {
   private readonly api = inject(PayeesService);
   private readonly version = inject(DataVersion);
 
+  /** Membres cochés sur l'accueil (R-MBR-9). */
+  private readonly members = inject(MemberSelections).of('home');
   private readonly report = rxResource({
-    params: () => this.version.value(),
-    stream: () => this.api.payeeReport({ period: 'MONTH', kind: 'EXPENSE', group_by: 'PAYEE' }),
+    params: () => ({ version: this.version.value(), members: this.members.param() }),
+    stream: ({ params }) =>
+      this.api.payeeReport({
+        period: 'MONTH',
+        kind: 'EXPENSE',
+        group_by: 'PAYEE',
+        members: params.members,
+      }),
   });
 
   protected readonly rows = computed(() => {

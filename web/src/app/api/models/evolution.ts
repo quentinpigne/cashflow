@@ -15,6 +15,12 @@ export interface Evolution {
    */
   has_budget: boolean;
   months: Array<MonthFlows>;
+
+  /**
+   * Toutes les cases ne sont pas cochées : le prévu (mois à venir, fin d'année) est celui du foyer et ne
+   * s'affiche pas (R-MBR-9).
+   */
+  partial_members: boolean;
   planned_projects: boolean;
 
   /**

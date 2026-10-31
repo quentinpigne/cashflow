@@ -42,7 +42,13 @@ import { Layout } from '../../core/layout';
 import { formatMoney, negate, parseMoney, sum } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { PayeePicker } from '../../shared/payee-picker';
-import { AccountsStore, CategoriesStore, PayeesStore, ProjectsStore } from '../../shared/stores';
+import {
+  AccountsStore,
+  CategoriesStore,
+  MembersStore,
+  PayeesStore,
+  ProjectsStore,
+} from '../../shared/stores';
 import { proposedLine } from '../budget/project-lines';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
@@ -129,6 +135,9 @@ export class QuickEntryForm {
   private readonly payees = inject(PayeesStore);
   private readonly categories = inject(CategoriesStore);
   protected readonly splits = signal<SplitDraft[] | null>(null);
+  /** Membre de la transaction non ventilée (R-MBR-5). */
+  protected readonly member = signal<string | null>(null);
+  protected readonly members = inject(MembersStore);
   /** Projet en cours de la transaction (BUD-06), et son poste (BUD-11). */
   protected readonly projects = inject(ProjectsStore);
   protected readonly project = signal<string | null>(null);
@@ -255,13 +264,14 @@ export class QuickEntryForm {
       return;
     }
     const current = this.splits() ?? [
-      { amount_minor: total, category_id: this.category(), note: null },
+      { amount_minor: total, category_id: this.category(), note: null, member_id: this.member() },
     ];
     const data: SplitEditorData = {
       totalMinor: total,
       currency: this.currency(),
       kind: this.categoryKind(),
       splits: current,
+      members: true,
     };
     const ref = this.dialog.open<SplitEditor, SplitEditorData, SplitDraft[]>(SplitEditor, {
       data,
@@ -273,8 +283,15 @@ export class QuickEntryForm {
       this.splits.set(result.length > 1 ? result : null);
       if (result.length === 1) {
         this.category.set(result[0].category_id);
+        this.member.set(result[0].member_id ?? null);
       }
     }
+  }
+
+  /** Sans membre, la ventilation est au titulaire du compte, à défaut au foyer (R-MBR-6). */
+  protected defaultMember(): string {
+    const holder = this.accounts.byId().get(this.accountValue())?.member_id;
+    return holder ? `${this.members.name(holder)} (titulaire du compte)` : 'Foyer';
   }
 
   protected close(): void {
@@ -287,9 +304,11 @@ export class QuickEntryForm {
    * ventilation rattachée (R-TRX-37).
    */
   private apiSplits(splits: SplitDraft[] | null, amount: number): SplitInput[] | null {
-    const lines = splits ?? [{ amount_minor: amount, category_id: this.category(), note: null }];
+    const lines = splits ?? [
+      { amount_minor: amount, category_id: this.category(), note: null, member_id: this.member() },
+    ];
     const project = this.project();
-    if (!splits && !project && !isAttachment(this.category())) return null;
+    if (!splits && !project && !isAttachment(this.category()) && !this.member()) return null;
     const line = this.line();
     return lines.map((s) => ({
       ...s,

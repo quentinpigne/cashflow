@@ -20,6 +20,12 @@ export interface EvolutionReport$Params {
  * Compter les projets planifiés dans les mois à venir (oui par défaut, R-BUD-72).
  */
   planned_projects?: boolean;
+
+/**
+ * Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout
+ * (R-MBR-8, R-MBR-9).
+ */
+  members?: string;
 }
 
 export function evolutionReport(http: HttpClient, rootUrl: string, params?: EvolutionReport$Params, context?: HttpContext): Observable<StrictHttpResponse<Evolution>> {
@@ -27,6 +33,7 @@ export function evolutionReport(http: HttpClient, rootUrl: string, params?: Evol
   if (params) {
     rb.query('months', params.months, {});
     rb.query('planned_projects', params.planned_projects, {});
+    rb.query('members', params.members, {});
   }
 
   return http.request(

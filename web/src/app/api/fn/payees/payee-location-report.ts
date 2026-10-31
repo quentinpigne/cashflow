@@ -34,6 +34,11 @@ export interface PayeeLocationReport$Params {
  * `CITY` par défaut.
  */
   group_by?: LocationGrouping;
+
+/**
+ * Membres comptés : `household` et des identifiants de membres ; absent : tout (R-MBR-9).
+ */
+  members?: string;
 }
 
 export function payeeLocationReport(http: HttpClient, rootUrl: string, params?: PayeeLocationReport$Params, context?: HttpContext): Observable<StrictHttpResponse<LocationReport>> {
@@ -44,6 +49,7 @@ export function payeeLocationReport(http: HttpClient, rootUrl: string, params?: 
     rb.query('year', params.year, {});
     rb.query('kind', params.kind, {});
     rb.query('group_by', params.group_by, {});
+    rb.query('members', params.members, {});
   }
 
   return http.request(

@@ -31,6 +31,7 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountsStore, FeaturesStore } from '../../shared/stores';
 import { formatChange } from '../salaries/salaries';
+import { MemberFilter, MemberSelections } from '../../shared/member-filter';
 
 const axisMoney = (v: number) => formatChartValue(v, 'EUR', { bare: true }).replace(/,00$/, '');
 
@@ -40,6 +41,7 @@ const NEGATIVE = '#c62828';
 @Component({
   selector: 'app-projections',
   imports: [
+    MemberFilter,
     FormsModule,
     MatButtonModule,
     MatButtonToggleModule,
@@ -75,13 +77,20 @@ export class ProjectionsPage {
   // ------------------------------------------------------------ Patrimoine (PRJ-05, TDB-04)
 
   protected readonly years = signal(10);
+  /** Membres cochés sur les projections (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('projections');
   protected readonly worth = rxResource({
-    params: () => ({ months: this.years() * 12, version: this.version.value() }),
-    stream: ({ params }) => this.api.netWorthProjection({ months: params.months }),
+    params: () => ({
+      months: this.years() * 12,
+      version: this.version.value(),
+      members: this.members.param(),
+    }),
+    stream: ({ params }) =>
+      this.api.netWorthProjection({ months: params.months, members: params.members }),
   });
   protected readonly history = rxResource({
-    params: () => this.version.value(),
-    stream: () => this.dashboard.netWorthHistory({ months: 24 }),
+    params: () => ({ version: this.version.value(), members: this.members.param() }),
+    stream: ({ params }) => this.dashboard.netWorthHistory({ months: 24, members: params.members }),
   });
 
   protected readonly worthChart = computed<EChartsCoreOption | null>(() => {
@@ -250,7 +259,7 @@ export class ProjectionsPage {
   // ------------------------------------------------------------ Trésorerie (PRJ-01)
 
   protected readonly cashAccounts = computed(() =>
-    this.accounts.open().filter((a) => a.family === 'CASH'),
+    this.accounts.open().filter((a) => a.family === 'CASH' && this.members.includes(a.member_id)),
   );
   protected readonly cashAccount = linkedSignal(
     () => this.compte() ?? this.cashAccounts()[0]?.id ?? null,
@@ -328,7 +337,11 @@ export class ProjectionsPage {
   protected readonly savingsAccounts = computed(() =>
     this.accounts
       .open()
-      .filter((a) => a.family === 'FIXED_SAVINGS' || a.family === 'VARIABLE_SAVINGS'),
+      .filter(
+        (a) =>
+          (a.family === 'FIXED_SAVINGS' || a.family === 'VARIABLE_SAVINGS') &&
+          this.members.includes(a.member_id),
+      ),
   );
   protected readonly savingsAccount = linkedSignal(() => this.savingsAccounts()[0]?.id ?? null);
   protected readonly savingsYears = signal(5);

@@ -3,6 +3,7 @@
 
 import { AccountKind } from '../models/account-kind';
 import { InstitutionId } from '../models/institution-id';
+import { MemberId } from '../models/member-id';
 export interface AccountInput {
   account_number?: (string | null);
   color?: (string | null);
@@ -18,6 +19,7 @@ export interface AccountInput {
   include_in_net_worth?: (boolean | null);
   institution_id?: (InstitutionId | null);
   kind: AccountKind;
+  member_id?: (MemberId | null);
   name: string;
   notes?: (string | null);
   opening_balance_minor?: number;

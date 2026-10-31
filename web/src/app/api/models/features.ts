@@ -14,8 +14,14 @@ export interface Features {
    * Recherche d'adresse des tiers par la Base Adresse Nationale, désactivée par défaut (R-TIE-26, ADR-0007).
    */
   geocoding: boolean;
+
+  /**
+   * Rubrique Foyer (R-MBR-3) ; elle ne se désactive que sans membre.
+   */
+  household: boolean;
   loan_count: number;
   loans: boolean;
+  member_count: number;
   salaries: boolean;
 
   /**

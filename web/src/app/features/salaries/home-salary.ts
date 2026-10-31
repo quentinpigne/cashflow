@@ -10,6 +10,7 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { FeaturesStore } from '../../shared/stores';
 import { WidgetMenu } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Dernier mois contrôlé de chaque emploi en cours, et mois sans fiche de paie (TDB-12, R-TDB-26). */
 @Component({
@@ -76,16 +77,21 @@ export class HomeSalary {
         : of([]),
   });
 
+  /** Membres cochés sur l'accueil (R-MBR-9). */
+  private readonly members = inject(MemberSelections).of('home');
+  /** Emplois dont le membre est coché, ceux sans membre avec « Foyer » (R-MBR-9). */
   protected readonly rows = computed(() =>
-    (this.employments.value() ?? []).map((e) => ({
-      id: e.summary.id,
-      employer: e.summary.employer,
-      // Dernier mois contrôlé : ni le mois en cours, ni un mois partiel ou non renseigné (R-SAL-9).
-      check:
-        [...e.checks]
-          .sort((a, b) => b.month.localeCompare(a.month))
-          .find((c) => !c.in_progress && !c.partial && !c.unknown) ?? null,
-      missing: e.missing_payslip_months.map((m) => formatMonth(m).toLowerCase()),
-    })),
+    (this.employments.value() ?? [])
+      .filter((e) => this.members.includes(e.summary.member_id))
+      .map((e) => ({
+        id: e.summary.id,
+        employer: e.summary.employer,
+        // Dernier mois contrôlé : ni le mois en cours, ni un mois partiel ou non renseigné (R-SAL-9).
+        check:
+          [...e.checks]
+            .sort((a, b) => b.month.localeCompare(a.month))
+            .find((c) => !c.in_progress && !c.partial && !c.unknown) ?? null,
+        missing: e.missing_payslip_months.map((m) => formatMonth(m).toLowerCase()),
+      })),
   );
 }

@@ -10,6 +10,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountsStore } from '../../shared/stores';
 import { yearTotals } from '../home/widget-rules';
 import { WidgetMenu } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Estimation de fin d'année comparée à l'année précédente (TDB-10, R-TDB-17). */
 @Component({
@@ -17,7 +18,7 @@ import { WidgetMenu } from '../home/widget-menu';
   imports: [RouterLink, WidgetMenu, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (evolution.value(); as e) {
+    @if (!members.partial() && evolution.value(); as e) {
       <section class="card">
         <h2 class="widget-title">
           <a routerLink="/analyses" [queryParams]="{ onglet: 'evolution' }"
@@ -57,10 +58,16 @@ export class HomeYearEnd {
   private readonly version = inject(DataVersion);
   private readonly plannedProjects = inject(PlannedProjects);
   private readonly accounts = inject(AccountsStore);
+  /** Membres cochés sur l'accueil (R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('home');
 
   /** Assez de mois pour couvrir toute l'année précédente. */
   protected readonly evolution = rxResource({
-    params: () => ({ planned: this.plannedProjects.value(), version: this.version.value() }),
+    // Le prévu vient du budget, commun au foyer : rien à estimer pour une partie des membres (R-MBR-9).
+    params: () =>
+      this.members.partial()
+        ? undefined
+        : { planned: this.plannedProjects.value(), version: this.version.value() },
     stream: ({ params }) =>
       this.api.evolutionReport({
         months: new Date().getMonth() + 13,

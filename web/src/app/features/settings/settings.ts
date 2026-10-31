@@ -45,6 +45,12 @@ import { confirm } from '../../shared/confirm-dialog';
           <mat-icon matListItemIcon>storefront</mat-icon>
           <span matListItemTitle>Tiers</span>
         </a>
+        @if (features.value()?.household) {
+          <a mat-list-item routerLink="/reglages/foyer">
+            <mat-icon matListItemIcon>family_restroom</mat-icon>
+            <span matListItemTitle>Membres du foyer</span>
+          </a>
+        }
         <a mat-list-item routerLink="/reglages/etablissements">
           <mat-icon matListItemIcon>account_balance</mat-icon>
           <span matListItemTitle>Établissements</span>
@@ -84,8 +90,8 @@ import { confirm } from '../../shared/confirm-dialog';
       <section class="card section">
         <h2>Rubriques</h2>
         <p class="muted">
-          Les biens (logement, véhicule), les prêts et les salaires ont leurs propres rubriques, à
-          activer si vous en avez.
+          Les biens (logement, véhicule), les prêts, les salaires et les membres du foyer ont leurs
+          propres rubriques, à activer si vous en avez.
         </p>
         @if (features.value(); as f) {
           <mat-slide-toggle
@@ -119,6 +125,17 @@ import { confirm } from '../../shared/confirm-dialog';
           @if (f.salaries && f.employment_count > 0) {
             <p class="muted small">
               {{ f.employment_count }} emploi(s) : les supprimer pour désactiver la rubrique.
+            </p>
+          }
+          <mat-slide-toggle
+            [checked]="f.household"
+            [disabled]="f.household && f.member_count > 0"
+            (change)="toggle({ household: $event.checked })"
+            >Foyer</mat-slide-toggle
+          >
+          @if (f.household && f.member_count > 0) {
+            <p class="muted small">
+              {{ f.member_count }} membre(s) : les supprimer pour désactiver la rubrique.
             </p>
           }
           @if (f.salaries) {
@@ -242,7 +259,7 @@ export class SettingsPage {
     await this.toggle({ salary_gap_tolerance_ppm: ppm });
   }
 
-  /** Active ou désactive une rubrique (R-BIE-7, R-PRE-12, R-SAL-14). */
+  /** Active ou désactive une rubrique (R-BIE-7, R-PRE-12, R-SAL-14, R-MBR-3). */
   protected async toggle(body: FeaturesInput): Promise<void> {
     try {
       await firstValueFrom(this.system.updateFeatures({ body }));

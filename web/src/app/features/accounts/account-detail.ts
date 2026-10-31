@@ -34,7 +34,7 @@ import { formatMoney, parseMoney } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { CategoriesStore } from '../../shared/stores';
+import { CategoriesStore, MembersStore } from '../../shared/stores';
 import { TransactionDetailView } from '../transactions/transaction-detail';
 import { AccountForm } from './account-form';
 import { CloseAccountDialog } from './close-dialog';
@@ -45,6 +45,7 @@ import { AccountStatements } from './statements';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
+import { MemberChip } from '../../shared/member-chip';
 
 interface Filters {
   from: Date | null;
@@ -71,6 +72,7 @@ const PAGE = 200;
 @Component({
   selector: 'app-account-detail',
   imports: [
+    MemberChip,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -102,6 +104,7 @@ const PAGE = 200;
   styleUrl: './account-detail.scss',
 })
 export class AccountDetailPage {
+  protected readonly members = inject(MembersStore);
   private readonly accountsApi = inject(AccountsService);
   private readonly transactionsApi = inject(TransactionsService);
   private readonly reconciliation = inject(ReconciliationService);

@@ -5,6 +5,7 @@ import { AccountFamily } from '../models/account-family';
 import { AccountId } from '../models/account-id';
 import { AccountKind } from '../models/account-kind';
 import { InstitutionId } from '../models/institution-id';
+import { MemberId } from '../models/member-id';
 
 /**
  * Un compte, avec sa valeur à la date demandée.
@@ -45,6 +46,7 @@ export interface Account {
   institution_id?: (InstitutionId | null);
   institution_name?: (string | null);
   kind: AccountKind;
+  member_id?: (MemberId | null);
   name: string;
   notes?: (string | null);
   opening_balance_minor: number;

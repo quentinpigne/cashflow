@@ -43,7 +43,14 @@ import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PayeePicker } from '../../shared/payee-picker';
-import { AccountsStore, CategoriesStore, PayeesStore, ProjectsStore } from '../../shared/stores';
+import {
+  AccountsStore,
+  CategoriesStore,
+  MembersStore,
+  PayeesStore,
+  ProjectsStore,
+} from '../../shared/stores';
+import { MemberChip } from '../../shared/member-chip';
 
 const PAGE = 200;
 
@@ -51,6 +58,7 @@ const PAGE = 200;
 @Component({
   selector: 'app-transactions',
   imports: [
+    MemberChip,
     FormsModule,
     MatButtonModule,
     MatCheckboxModule,
@@ -71,6 +79,7 @@ const PAGE = 200;
   styleUrl: './transactions.scss',
 })
 export class TransactionsPage implements OnInit {
+  protected readonly members = inject(MembersStore);
   private readonly api = inject(TransactionsService);
   private readonly version = inject(DataVersion);
   private readonly router = inject(Router);

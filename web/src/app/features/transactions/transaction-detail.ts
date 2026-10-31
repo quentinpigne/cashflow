@@ -47,7 +47,14 @@ import { confirm } from '../../shared/confirm-dialog';
 import { PayeePicker } from '../../shared/payee-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AttachmentsStore, CategoriesStore, PayeesStore, ProjectsStore } from '../../shared/stores';
+import {
+  AccountsStore,
+  AttachmentsStore,
+  CategoriesStore,
+  MembersStore,
+  PayeesStore,
+  ProjectsStore,
+} from '../../shared/stores';
 import { MarkTransferDialog } from './mark-transfer';
 import { RefundPanel } from './refund-panel';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
@@ -124,6 +131,10 @@ export class TransactionDetailView {
   protected readonly error = signal<string | null>(null);
   protected readonly direction = signal<Direction>('out');
   protected readonly category = signal<string | null>(null);
+  /** Membre d'une transaction à une ventilation ; modifiable même rapprochée (R-MBR-5). */
+  protected readonly member = signal<string | null>(null);
+  protected readonly members = inject(MembersStore);
+  private readonly accounts = inject(AccountsStore);
   /** Tiers, modifiable même sur une transaction rapprochée (R-TIE-12). */
   protected readonly payee = signal<string | null>(null);
   /** Mois d'analyse, `null` : le mois de la date ; modifiable même rapprochée (R-TRX-57, R-TRX-3). */
@@ -198,6 +209,12 @@ export class TransactionDetailView {
     return this.categories.label(value);
   }
 
+  /** Sans membre, la ventilation est au titulaire du compte, à défaut au foyer (R-MBR-6). */
+  protected defaultMember(t: TransactionDetail): string {
+    const holder = this.accounts.byId().get(t.account_id)?.member_id;
+    return holder ? `${this.members.name(holder)} (titulaire du compte)` : 'Foyer';
+  }
+
   constructor() {
     // Le formulaire reprend la transaction à chaque chargement.
     effect(() => {
@@ -214,6 +231,7 @@ export class TransactionDetailView {
       this.direction.set(t.amount_minor < 0 ? 'out' : 'in');
       this.category.set(t.splits.length === 1 ? encodeAttachment(t.splits[0]) : null);
       this.payee.set(t.payee_id ?? null);
+      this.member.set(t.splits.length === 1 ? (t.splits[0].member_id ?? null) : null);
       this.analysisMonth.set(t.analysis_month ?? null);
       this.project.set(t.splits.find((s) => s.project_id)?.project_id ?? null);
       const lines = new Set(t.splits.map((s) => s.project_line_id ?? null));
@@ -253,17 +271,26 @@ export class TransactionDetailView {
       category_id: encodeAttachment(s),
       note: s.note ?? null,
       refunds_transaction_id: s.refunds_transaction_id ?? null,
+      member_id: s.member_id ?? null,
     }));
     // Une ventilation unique suit le montant saisi (R-TRX-4).
     const splits =
       current.length === 1
-        ? [{ ...current[0], amount_minor: total, category_id: this.category() }]
+        ? [
+            {
+              ...current[0],
+              amount_minor: total,
+              category_id: this.category(),
+              member_id: this.member(),
+            },
+          ]
         : current;
     const data: SplitEditorData = {
       totalMinor: total,
       currency: t.currency,
       kind: total < 0 ? 'EXPENSE' : 'INCOME',
       splits,
+      members: true,
     };
     const ref = this.dialog.open<SplitEditor, SplitEditorData, SplitDraft[]>(SplitEditor, {
       data,
@@ -275,6 +302,7 @@ export class TransactionDetailView {
       this.pendingSplits.set(result);
       if (result.length === 1) {
         this.category.set(result[0].category_id);
+        this.member.set(result[0].member_id ?? null);
       }
     }
   }
@@ -294,6 +322,7 @@ export class TransactionDetailView {
           category_id: this.category(),
           note: t.splits[0]?.note ?? null,
           refunds_transaction_id: t.splits[0]?.refunds_transaction_id ?? null,
+          member_id: this.member(),
         },
       ];
     }
@@ -309,6 +338,7 @@ export class TransactionDetailView {
         category_id: encodeAttachment(s),
         note: s.note ?? null,
         refunds_transaction_id: s.refunds_transaction_id ?? null,
+        member_id: s.member_id ?? null,
       }));
     }
     this.busy.set(true);

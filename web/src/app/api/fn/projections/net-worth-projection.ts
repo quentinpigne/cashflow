@@ -15,12 +15,19 @@ export interface NetWorthProjection$Params {
  * Horizon en mois (celui du scénario par défaut sinon).
  */
   months?: number;
+
+/**
+ * Membres comptés : `household` et des identifiants de membres ; absent : tout. Les biens et les prêts comptent
+ * avec `household` (R-MBR-9).
+ */
+  members?: string;
 }
 
 export function netWorthProjection(http: HttpClient, rootUrl: string, params?: NetWorthProjection$Params, context?: HttpContext): Observable<StrictHttpResponse<NetWorthProjection>> {
   const rb = new RequestBuilder(rootUrl, netWorthProjection.PATH, 'get');
   if (params) {
     rb.query('months', params.months, {});
+    rb.query('members', params.members, {});
   }
 
   return http.request(

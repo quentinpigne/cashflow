@@ -4,6 +4,7 @@
 import { AssetId } from '../models/asset-id';
 import { CategoryId } from '../models/category-id';
 import { LoanId } from '../models/loan-id';
+import { MemberId } from '../models/member-id';
 import { ProjectId } from '../models/project-id';
 import { ProjectLineId } from '../models/project-line-id';
 import { SplitId } from '../models/split-id';
@@ -14,6 +15,7 @@ export interface Split {
   category_id?: (CategoryId | null);
   id: SplitId;
   loan_id?: (LoanId | null);
+  member_id?: (MemberId | null);
   note?: (string | null);
   project_id?: (ProjectId | null);
   project_line_id?: (ProjectLineId | null);

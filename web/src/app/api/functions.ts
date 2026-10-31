@@ -429,6 +429,16 @@ export type { LoanPaymentProposals$Params as LoanPaymentProposals$Params } from 
 export { loanPaymentProposals as loanPaymentProposals } from './fn/loans/loan-payment-proposals';
 export type { TransactionLoanProposal$Params as TransactionLoanProposal$Params } from './fn/loans/transaction-loan-proposal';
 export { transactionLoanProposal as transactionLoanProposal } from './fn/loans/transaction-loan-proposal';
+export type { ListMembers$Params as ListMembers$Params } from './fn/household/list-members';
+export { listMembers as listMembers } from './fn/household/list-members';
+export type { CreateMember$Params as CreateMember$Params } from './fn/household/create-member';
+export { createMember as createMember } from './fn/household/create-member';
+export type { ReorderMembers$Params as ReorderMembers$Params } from './fn/household/reorder-members';
+export { reorderMembers as reorderMembers } from './fn/household/reorder-members';
+export type { UpdateMember$Params as UpdateMember$Params } from './fn/household/update-member';
+export { updateMember as updateMember } from './fn/household/update-member';
+export type { DeleteMember$Params as DeleteMember$Params } from './fn/household/delete-member';
+export { deleteMember as deleteMember } from './fn/household/delete-member';
 export type { ListRules$Params as ListRules$Params } from './fn/rules/list-rules';
 export { listRules as listRules } from './fn/rules/list-rules';
 export type { CreateRule$Params as CreateRule$Params } from './fn/rules/create-rule';

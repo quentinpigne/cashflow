@@ -59,6 +59,7 @@ import { HomeSettings } from './home-settings';
 import { WidgetMenu, WidgetMenuItem, optionItem } from './widget-menu';
 import { HomeRecent } from './home-recent';
 import { NetWorthChart } from './net-worth-chart';
+import { MemberFilter, MemberSelections } from '../../shared/member-filter';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
 const DEFINITIONS = {
@@ -100,6 +101,7 @@ const DEFINITIONS = {
     HomeMissed,
     HomeRefunds,
     WidgetMenu,
+    MemberFilter,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -122,9 +124,11 @@ export class HomePage {
 
   protected readonly definitions = DEFINITIONS;
   protected readonly familyLabels = FAMILY_LABELS;
+  /** Membres cochés sur l'accueil (R-MBR-8, R-MBR-9). */
+  private readonly members = inject(MemberSelections).of('home');
   protected readonly dashboard = rxResource({
-    params: () => this.version.value(),
-    stream: () => this.api.getDashboard(),
+    params: () => ({ version: this.version.value(), members: this.members.param() }),
+    stream: ({ params }) => this.api.getDashboard({ members: params.members }),
   });
 
   protected readonly layout = inject(HomeLayout);

@@ -66,6 +66,18 @@
         [kind]="categoryKind()"
       />
     }
+    <!-- Membre, sans ventilation : chaque ventilation a le sien (R-MBR-5). -->
+    @if (members.active() && !splits()) {
+      <mat-form-field>
+        <mat-label>Membre</mat-label>
+        <mat-select [value]="member() ?? ''" (selectionChange)="member.set($event.value || null)">
+          <mat-option value="">{{ defaultMember() }}</mat-option>
+          @for (m of members.list(); track m.id) {
+            <mat-option [value]="m.id">{{ m.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
     <!-- Projet et poste, seulement s'il existe un projet en cours (BUD-06, BUD-11). -->
     @if (projects.active().length > 0) {
       <div class="project">

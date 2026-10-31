@@ -19,4 +19,5 @@ export { PayeesService } from './services/payees.service';
 export { ImportsService } from './services/imports.service';
 export { InstitutionsService } from './services/institutions.service';
 export { LoansService } from './services/loans.service';
+export { HouseholdService } from './services/household.service';
 export { RulesService } from './services/rules.service';

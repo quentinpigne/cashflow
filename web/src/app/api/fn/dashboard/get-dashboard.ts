@@ -10,11 +10,18 @@ import { RequestBuilder } from '../../request-builder';
 import { Dashboard } from '../../models/dashboard';
 
 export interface GetDashboard$Params {
+
+/**
+ * Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout
+ * (R-MBR-9).
+ */
+  members?: string;
 }
 
 export function getDashboard(http: HttpClient, rootUrl: string, params?: GetDashboard$Params, context?: HttpContext): Observable<StrictHttpResponse<Dashboard>> {
   const rb = new RequestBuilder(rootUrl, getDashboard.PATH, 'get');
   if (params) {
+    rb.query('members', params.members, {});
   }
 
   return http.request(

@@ -9,6 +9,7 @@ import { DataVersion } from '../../core/data-version';
 import { formatMonth } from '../../core/dates';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { WidgetMenu } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Épargne des 12 derniers mois et taux d'épargne glissant (TDB-11, R-TDB-20). */
 @Component({
@@ -46,9 +47,11 @@ export class HomeEvolution {
   private readonly api = inject(DashboardService);
   private readonly version = inject(DataVersion);
 
+  /** Membres cochés sur l'accueil (R-MBR-9). */
+  private readonly members = inject(MemberSelections).of('home');
   private readonly evolution = rxResource({
-    params: () => this.version.value(),
-    stream: () => this.api.evolutionReport({ months: 12 }),
+    params: () => ({ version: this.version.value(), members: this.members.param() }),
+    stream: ({ params }) => this.api.evolutionReport({ months: 12, members: params.members }),
   });
 
   protected readonly rate = computed(() => {

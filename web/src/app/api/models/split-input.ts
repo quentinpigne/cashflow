@@ -4,6 +4,7 @@
 import { AssetId } from '../models/asset-id';
 import { CategoryId } from '../models/category-id';
 import { LoanId } from '../models/loan-id';
+import { MemberId } from '../models/member-id';
 import { ProjectId } from '../models/project-id';
 import { ProjectLineId } from '../models/project-line-id';
 import { TransactionId } from '../models/transaction-id';
@@ -12,6 +13,7 @@ export interface SplitInput {
   asset_id?: (AssetId | null);
   category_id?: (CategoryId | null);
   loan_id?: (LoanId | null);
+  member_id?: (MemberId | null);
   note?: (string | null);
   project_id?: (ProjectId | null);
   project_line_id?: (ProjectLineId | null);

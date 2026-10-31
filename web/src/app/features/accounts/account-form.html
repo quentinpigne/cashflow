@@ -42,6 +42,19 @@
       </mat-form-field>
     }
 
+    @if (members.active()) {
+      <mat-form-field>
+        <mat-label>Titulaire</mat-label>
+        <mat-select formControlName="memberId">
+          <mat-option value="">Foyer</mat-option>
+          @for (member of members.list(); track member.id) {
+            <mat-option [value]="member.id">{{ member.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Sans titulaire, le compte appartient au foyer.</mat-hint>
+      </mat-form-field>
+    }
+
     <div class="colors" role="radiogroup" aria-label="Couleur du compte">
       <span class="muted">Couleur</span>
       <button

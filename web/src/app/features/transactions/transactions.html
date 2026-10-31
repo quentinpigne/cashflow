@@ -218,8 +218,14 @@
         />
         <button class="open" (click)="open(item)">
           <span class="text">
-            <span
-              >{{ item.label }}
+            <span>
+              @if (members.active()) {
+                @let chip = members.chip(item.splits);
+                @if (chip !== undefined) {
+                  <app-member-chip [member]="chip" />
+                }
+              }
+              {{ item.label }}
               @if (item.has_documents) {
                 <mat-icon class="attached" aria-label="Avec justificatif">attach_file</mat-icon>
               }

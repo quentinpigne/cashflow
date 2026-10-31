@@ -15,12 +15,19 @@ export interface NetWorthHistory$Params {
  * Mois d'historique (24 par défaut).
  */
   months?: number;
+
+/**
+ * Membres comptés : `household` et des identifiants de membres ; absent : tout. Les biens et les prêts comptent
+ * avec `household` (R-MBR-9).
+ */
+  members?: string;
 }
 
 export function netWorthHistory(http: HttpClient, rootUrl: string, params?: NetWorthHistory$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<NetWorthPoint>>> {
   const rb = new RequestBuilder(rootUrl, netWorthHistory.PATH, 'get');
   if (params) {
     rb.query('months', params.months, {});
+    rb.query('members', params.members, {});
   }
 
   return http.request(

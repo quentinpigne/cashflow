@@ -56,6 +56,20 @@
           [name]="'note' + i"
         />
       </mat-form-field>
+      @if (withMembers()) {
+        <mat-form-field class="member">
+          <mat-label>Membre</mat-label>
+          <mat-select
+            [value]="line.member ?? ''"
+            (selectionChange)="update(i, { member: $event.value || null })"
+          >
+            <mat-option value="">Foyer</mat-option>
+            @for (member of members.list(); track member.id) {
+              <mat-option [value]="member.id">{{ member.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
       <div class="line-actions">
         @if (mode() === 'amount') {
           <button

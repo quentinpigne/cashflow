@@ -26,6 +26,12 @@ export interface CategoryReport$Params {
  * Retire les ventilations rattachées à un projet (TDB-07) ; incluses par défaut.
  */
   exclude_projects?: boolean;
+
+/**
+ * Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout
+ * (R-MBR-8, R-MBR-9).
+ */
+  members?: string;
 }
 
 export function categoryReport(http: HttpClient, rootUrl: string, params?: CategoryReport$Params, context?: HttpContext): Observable<StrictHttpResponse<CategoryReport>> {
@@ -34,6 +40,7 @@ export function categoryReport(http: HttpClient, rootUrl: string, params?: Categ
     rb.query('month', params.month, {});
     rb.query('kind', params.kind, {});
     rb.query('exclude_projects', params.exclude_projects, {});
+    rb.query('members', params.members, {});
   }
 
   return http.request(

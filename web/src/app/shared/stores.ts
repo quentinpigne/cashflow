@@ -5,12 +5,14 @@ import { firstValueFrom } from 'rxjs';
 import { Account } from '../api/models/account';
 import { Category } from '../api/models/category';
 import { Institution } from '../api/models/institution';
+import { MemberView } from '../api/models/member-view';
 import { PayeeGroupView } from '../api/models/payee-group-view';
 import { PayeeView } from '../api/models/payee-view';
 import { ProjectView } from '../api/models/project-view';
 import { AccountsService } from '../api/services/accounts.service';
 import { BudgetsService } from '../api/services/budgets.service';
 import { CategoriesService } from '../api/services/categories.service';
+import { HouseholdService } from '../api/services/household.service';
 import { InstitutionsService } from '../api/services/institutions.service';
 import { AssetsService } from '../api/services/assets.service';
 import { LoansService } from '../api/services/loans.service';
@@ -176,6 +178,44 @@ export class FeaturesStore {
   readonly loans = computed(() => this.features.value()?.loans ?? false);
   readonly salaries = computed(() => this.features.value()?.salaries ?? false);
   readonly geocoding = computed(() => this.features.value()?.geocoding ?? false);
+  readonly household = computed(() => this.features.value()?.household ?? false);
+}
+
+/**
+ * Membres du foyer (spec 14). `active` : la rubrique est activée et a au moins un membre ; sinon, aucun champ
+ * Membre ni aucune case à cocher n'apparaît (R-MBR-3).
+ */
+@Injectable({ providedIn: 'root' })
+export class MembersStore {
+  private readonly api = inject(HouseholdService);
+  private readonly version = inject(DataVersion);
+  private readonly features = inject(FeaturesStore);
+
+  readonly all = rxResource({
+    params: () => (this.features.household() ? this.version.value() : undefined),
+    stream: () => this.api.listMembers(),
+  });
+  readonly list = computed<MemberView[]>(() =>
+    this.features.household() && this.all.hasValue() ? this.all.value() : [],
+  );
+  readonly active = computed(() => this.list().length > 0);
+  readonly byId = computed(() => new Map(this.list().map((m) => [m.id, m])));
+
+  name(id: string | null | undefined): string {
+    return id ? (this.byId().get(id)?.name ?? '—') : 'Foyer';
+  }
+
+  /**
+   * Pastille d'une transaction (E3, E14) : le membre de ses ventilations, `null` si elles en ont plusieurs,
+   * `undefined` si aucune n'en a.
+   */
+  chip(splits: { member_id?: string | null }[]): MemberView | null | undefined {
+    const ids = new Set(splits.map((s) => s.member_id ?? null));
+    if (ids.size === 1 && ids.has(null)) return undefined;
+    if (ids.size > 1) return null;
+    const [id] = [...ids];
+    return id ? this.byId().get(id) : undefined;
+  }
 }
 
 /** Un rattachement possible d'une ventilation, à la place d'une catégorie (R-TRX-37). */

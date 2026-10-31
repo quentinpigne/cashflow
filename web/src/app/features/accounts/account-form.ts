@@ -42,7 +42,7 @@ import {
 } from '../../core/labels';
 import { Layout } from '../../core/layout';
 import { parseMoney, toEditable } from '../../core/money';
-import { InstitutionsStore } from '../../shared/stores';
+import { InstitutionsStore, MembersStore } from '../../shared/stores';
 
 const NEW_INSTITUTION = '__new__';
 
@@ -90,6 +90,7 @@ export class AccountFormDialog {
   private readonly version = inject(DataVersion);
   private readonly router = inject(Router);
   protected readonly institutions = inject(InstitutionsStore);
+  protected readonly members = inject(MembersStore);
 
   protected readonly kindLabels = KIND_LABELS;
   protected readonly colors = ACCOUNT_COLORS;
@@ -132,6 +133,7 @@ export class AccountFormDialog {
     budget: [this.account?.include_in_budget ?? defaultFlags('CHECKING').budget],
     notes: [this.account?.notes ?? ''],
     color: [this.account?.color ?? (null as string | null)],
+    memberId: [this.account?.member_id ?? ''],
   });
 
   private readonly kind = toSignal(this.form.controls.kind.valueChanges, {
@@ -222,6 +224,7 @@ export class AccountFormDialog {
         include_in_budget: value.budget,
         notes: value.notes || null,
         color: value.color,
+        member_id: value.memberId || null,
       };
       if (this.account) {
         const iban = body.iban === undefined ? await this.currentIban() : body.iban;

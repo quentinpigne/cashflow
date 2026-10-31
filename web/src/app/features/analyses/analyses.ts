@@ -22,11 +22,13 @@ import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money'
 import { MoneyPipe } from '../../shared/money.pipe';
 import { LocationAnalysis } from '../payees/location-analysis';
 import { PayeeAnalysis } from '../payees/payee-analysis';
+import { MemberFilter, MemberSelections } from '../../shared/member-filter';
 
 /** E15 — Analyses (TDB-02, TDB-03, TIE-04, TIE-07). */
 @Component({
   selector: 'app-analyses',
   imports: [
+    MemberFilter,
     FormsModule,
     MatButtonModule,
     MatButtonToggleModule,
@@ -61,18 +63,22 @@ export class AnalysesPage {
   protected readonly withProjects = signal(true);
   protected readonly expanded = signal<Set<string>>(new Set());
 
+  /** Membres cochés sur les analyses (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('analyses');
   protected readonly report = rxResource({
     params: () => ({
       month: this.month(),
       kind: this.kind(),
       withProjects: this.withProjects(),
       version: this.version.value(),
+      members: this.members.param(),
     }),
     stream: ({ params }) =>
       this.api.categoryReport({
         month: params.month,
         kind: params.kind,
         exclude_projects: !params.withProjects,
+        members: params.members,
       }),
   });
 
@@ -81,9 +87,14 @@ export class AnalysesPage {
       months: this.months(),
       planned: this.plannedProjects.value(),
       version: this.version.value(),
+      members: this.members.param(),
     }),
     stream: ({ params }) =>
-      this.api.evolutionReport({ months: params.months, planned_projects: params.planned }),
+      this.api.evolutionReport({
+        months: params.months,
+        planned_projects: params.planned,
+        members: params.members,
+      }),
   });
 
   protected readonly chartHeight = computed(() =>
@@ -130,7 +141,9 @@ export class AnalysesPage {
 
   protected readonly evolutionChart = computed<EChartsCoreOption | null>(() => {
     const months = this.evolution.value()?.months ?? [];
-    const upcoming = this.evolution.value()?.upcoming ?? [];
+    // Le prévu vient du budget du foyer : il ne s'affiche pas pour une partie des membres (R-MBR-9).
+    const e = this.evolution.value();
+    const upcoming = e && !e.partial_members ? e.upcoming : [];
     if (months.length === 0) {
       return null;
     }

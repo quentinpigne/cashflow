@@ -1,5 +1,9 @@
 <div class="page">
   <div class="page-header"><h1>Analyses</h1></div>
+  <app-member-filter
+    screen="analyses"
+    note="le prévu des mois à venir et l'estimation de fin d'année restent ceux du foyer"
+  />
   <mat-tab-group [selectedIndex]="tab()">
     <mat-tab label="Par catégorie">
       <div class="tab">
@@ -132,32 +136,35 @@
           @if (evolutionChart(); as options) {
             <div echarts [options]="options" class="chart evolution-chart"></div>
           }
-          <section class="card year-end" aria-label="Estimation de fin d'année">
-            <h2>Estimation fin {{ e.year_end.year }}</h2>
-            <div class="figures">
-              <span
-                >Revenus <strong class="amount">{{ e.year_end.income_minor | money }}</strong></span
-              >
-              <span
-                >Dépenses
-                <strong class="amount">{{ e.year_end.expenses_minor | money }}</strong></span
-              >
-              <span
-                >Épargne
-                <strong class="amount" [class.negative]="e.year_end.savings_minor < 0">{{
-                  e.year_end.savings_minor | money
-                }}</strong></span
-              >
-            </div>
-            <p class="muted small">
-              Réel depuis le 1er janvier, plus ce qui reste à venir ce mois-ci, ligne par ligne,
-              puis le prévu des mois suivants : lignes du budget et projets (hachurés sur le
-              graphique).
-              @if (e.upcoming.length > 0 && !e.has_budget) {
-                Sans ligne de budget, les mois à venir ne comptent que les projets.
-              }
-            </p>
-          </section>
+          @if (!e.partial_members) {
+            <section class="card year-end" aria-label="Estimation de fin d'année">
+              <h2>Estimation fin {{ e.year_end.year }}</h2>
+              <div class="figures">
+                <span
+                  >Revenus
+                  <strong class="amount">{{ e.year_end.income_minor | money }}</strong></span
+                >
+                <span
+                  >Dépenses
+                  <strong class="amount">{{ e.year_end.expenses_minor | money }}</strong></span
+                >
+                <span
+                  >Épargne
+                  <strong class="amount" [class.negative]="e.year_end.savings_minor < 0">{{
+                    e.year_end.savings_minor | money
+                  }}</strong></span
+                >
+              </div>
+              <p class="muted small">
+                Réel depuis le 1er janvier, plus ce qui reste à venir ce mois-ci, ligne par ligne,
+                puis le prévu des mois suivants : lignes du budget et projets (hachurés sur le
+                graphique).
+                @if (e.upcoming.length > 0 && !e.has_budget) {
+                  Sans ligne de budget, les mois à venir ne comptent que les projets.
+                }
+              </p>
+            </section>
+          }
           <table class="table">
             <thead>
               <tr>
@@ -170,7 +177,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (m of e.upcoming.slice().reverse(); track m.month) {
+              @for (m of e.partial_members ? [] : e.upcoming.slice().reverse(); track m.month) {
                 <tr class="planned">
                   <td>{{ m.month }} <span class="muted small">prévu</span></td>
                   <td class="amount">{{ m.income_minor | money }}</td>

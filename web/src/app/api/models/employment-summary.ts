@@ -3,6 +3,7 @@
 
 import { CategoryId } from '../models/category-id';
 import { EmploymentId } from '../models/employment-id';
+import { MemberId } from '../models/member-id';
 
 /**
  * Un emploi dans la liste (E29).
@@ -23,5 +24,6 @@ export interface EmploymentSummary {
   id: EmploymentId;
   income_category_id: CategoryId;
   job_title?: (string | null);
+  member_id?: (MemberId | null);
   start_date: string;
 }

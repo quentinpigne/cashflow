@@ -15,6 +15,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { AccountsStore } from '../../shared/stores';
 import { cashAccount } from '../home/widget-rules';
 import { WidgetMenu } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Trésorerie à venir du compte courant sur 30 jours (TDB-10, R-TDB-15). */
 @Component({
@@ -69,7 +70,12 @@ export class HomeCash {
   private readonly accounts = inject(AccountsStore);
   private readonly plannedProjects = inject(PlannedProjects);
 
-  protected readonly account = computed(() => cashAccount(this.accounts.list()));
+  /** Membres cochés sur l'accueil (R-MBR-9). */
+  private readonly members = inject(MemberSelections).of('home');
+  /** Premier compte courant d'un titulaire coché, sans titulaire avec « Foyer » (R-MBR-9). */
+  protected readonly account = computed(() =>
+    cashAccount(this.accounts.list().filter((a) => this.members.includes(a.member_id))),
+  );
 
   protected readonly projection = rxResource({
     params: () => ({

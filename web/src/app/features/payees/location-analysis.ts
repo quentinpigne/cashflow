@@ -21,6 +21,7 @@ import { formatChartValue, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { countryName } from './address';
+import { MemberSelections } from '../../shared/member-filter';
 
 /** Nom du fond de carte enregistré auprès d'ECharts. */
 const MAP = 'departements';
@@ -247,6 +248,7 @@ export class LocationAnalysis {
   protected readonly groupBy = signal<LocationGrouping>('CITY');
   protected readonly expanded = signal<Set<string>>(new Set());
 
+  private readonly members = inject(MemberSelections).of('analyses');
   protected readonly report = rxResource({
     params: () => ({
       period: this.period(),
@@ -255,6 +257,7 @@ export class LocationAnalysis {
       kind: this.kind(),
       group_by: this.groupBy(),
       version: this.version.value(),
+      members: this.members.param(),
     }),
     stream: ({ params }) =>
       this.api.payeeLocationReport({
@@ -263,6 +266,7 @@ export class LocationAnalysis {
         year: params.period === 'YEAR' ? params.year : undefined,
         kind: params.kind,
         group_by: params.group_by,
+        members: params.members,
       }),
   });
 

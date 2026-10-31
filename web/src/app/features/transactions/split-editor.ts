@@ -6,10 +6,12 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { CategoryKind } from '../../api/models/category-kind';
 import { allocate, formatMoney, parseMoney, parsePercent, sum, toEditable } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
+import { MembersStore } from '../../shared/stores';
 
 /** Une ventilation en cours d'édition (montant signé, comme la transaction). */
 export interface SplitDraft {
@@ -18,6 +20,8 @@ export interface SplitDraft {
   note: string | null;
   /** Dépense que la ventilation rembourse (R-TRX-50) : gardée telle quelle. */
   refunds_transaction_id?: string | null;
+  /** Membre que la ventilation concerne (R-MBR-5). */
+  member_id?: string | null;
 }
 
 export interface SplitEditorData {
@@ -25,12 +29,15 @@ export interface SplitEditorData {
   currency: string;
   kind: CategoryKind;
   splits: SplitDraft[];
+  /** Propose un membre par ventilation (R-MBR-5), si le foyer a des membres. */
+  members?: boolean;
 }
 
 interface Line {
   category: string | null;
   note: string;
   refunds: string | null;
+  member: string | null;
   /** Montant saisi en valeur absolue, ou pourcentage, selon le mode. */
   input: string;
 }
@@ -49,6 +56,7 @@ interface Line {
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
+    MatSelectModule,
     CategoryPicker,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,6 +65,8 @@ interface Line {
 })
 export class SplitEditor {
   protected readonly data = inject<SplitEditorData>(MAT_DIALOG_DATA);
+  protected readonly members = inject(MembersStore);
+  protected readonly withMembers = computed(() => !!this.data.members && this.members.active());
   private readonly ref = inject(MatDialogRef<SplitEditor, SplitDraft[]>);
 
   /** Signe de la transaction : les lignes sont saisies en valeur absolue. */
@@ -68,6 +78,7 @@ export class SplitEditor {
           category: s.category_id,
           note: s.note ?? '',
           refunds: s.refunds_transaction_id ?? null,
+          member: s.member_id ?? null,
           input: toEditable(s.amount_minor * this.sign, this.data.currency),
         }))
       : [
@@ -75,6 +86,7 @@ export class SplitEditor {
             category: null,
             note: '',
             refunds: null,
+            member: null,
             input: toEditable(Math.abs(this.data.totalMinor), this.data.currency),
           },
         ],
@@ -133,7 +145,10 @@ export class SplitEditor {
       this.mode() === 'amount' && remaining
         ? toEditable(Math.abs(remaining), this.data.currency)
         : '';
-    this.lines.update((lines) => [...lines, { category: null, note: '', refunds: null, input }]);
+    this.lines.update((lines) => [
+      ...lines,
+      { category: null, note: '', refunds: null, member: null, input },
+    ]);
   }
 
   protected remove(index: number): void {
@@ -182,6 +197,7 @@ export class SplitEditor {
         category_id: line.category,
         note: line.note.trim() || null,
         refunds_transaction_id: line.refunds,
+        member_id: line.member,
       })),
     );
   }

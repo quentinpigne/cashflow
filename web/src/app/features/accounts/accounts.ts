@@ -14,7 +14,7 @@ import { AccountsService } from '../../api/services/accounts.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { AccountsStore } from '../../shared/stores';
+import { AccountsStore, MembersStore } from '../../shared/stores';
 import { AccountGroup, groupByFamily } from './account-groups';
 import { AccountForm } from './account-form';
 
@@ -36,6 +36,7 @@ import { AccountForm } from './account-form';
 })
 export class AccountsPage {
   protected readonly store = inject(AccountsStore);
+  protected readonly members = inject(MembersStore);
   private readonly form = inject(AccountForm);
   private readonly api = inject(AccountsService);
   private readonly version = inject(DataVersion);

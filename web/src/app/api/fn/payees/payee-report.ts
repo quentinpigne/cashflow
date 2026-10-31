@@ -30,6 +30,11 @@ export interface PayeeReport$Params {
  */
   kind?: CategoryKind;
   group_by?: ReportGrouping;
+
+/**
+ * Membres comptés : `household` et des identifiants de membres ; absent : tout (R-MBR-9).
+ */
+  members?: string;
 }
 
 export function payeeReport(http: HttpClient, rootUrl: string, params?: PayeeReport$Params, context?: HttpContext): Observable<StrictHttpResponse<PayeeReport>> {
@@ -40,6 +45,7 @@ export function payeeReport(http: HttpClient, rootUrl: string, params?: PayeeRep
     rb.query('year', params.year, {});
     rb.query('kind', params.kind, {});
     rb.query('group_by', params.group_by, {});
+    rb.query('members', params.members, {});
   }
 
   return http.request(

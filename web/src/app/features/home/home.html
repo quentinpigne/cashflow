@@ -22,6 +22,10 @@
       }
     }
   </div>
+  <app-member-filter
+    screen="home"
+    note="budget, projets, échéances et estimation de fin d'année restent ceux du foyer"
+  />
   @if (dashboard.value(); as d) {
     <div class="grid" cdkDropListGroup [style.--columns]="count()">
       @for (column of columns(); track $index; let c = $index) {
