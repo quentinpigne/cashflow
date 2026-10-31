@@ -99,7 +99,6 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Foyer | `Household` | L'ensemble des membres ; ce qui n'est affecté à aucun membre est au foyer, à tout le monde (spec 14). |
 | Membre (du foyer) | `Member` | Personne de la famille, sans connexion, à qui l'on affecte des comptes, des ventilations et des emplois (R-MBR-1, ADR-0006). |
 | Titulaire (d'un compte) | `Account.member_id` | Membre à qui le compte est affecté ; sans titulaire, le compte est au foyer (R-MBR-4). |
-| Membre retenu | `effective_member` | Membre d'une ventilation, à défaut celui de son compte, à défaut le foyer (R-MBR-6). |
 | Choix des membres | `MemberSelection` | Cases cochées (« Foyer » et les membres) qui limitent l'accueil, les analyses et les projections (R-MBR-8, R-MBR-9). |
 
 ## Tiers

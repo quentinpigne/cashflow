@@ -46,17 +46,21 @@ au foyer (Q19).
 
 - **R-MBR-4** — Un **compte** est affecté à **au plus un** membre, son titulaire. Sans membre, c'est un
   compte du foyer (un compte joint, par exemple). Le membre se modifie à tout moment, même si le compte a des
-  transactions rapprochées : il n'affecte aucun solde (R-TRX-3).
-- **R-MBR-5** — Une **ventilation** est affectée à **au plus un** membre : celui que la dépense ou le revenu
-  concerne (le cadeau pour Claire, la cantine de Léo). Affecter une **transaction** à un membre affecte toutes
+  transactions rapprochées : il n'affecte aucun solde (R-TRX-3). Changer le titulaire d'un compte qui a des
+  transactions demande s'il faut aussi passer au nouveau titulaire les ventilations du compte affectées à
+  l'ancien (ou au foyer, si le compte n'en avait pas) ; sinon elles restent telles quelles.
+- **R-MBR-5** — Une **ventilation** est affectée à **un membre** ou au **foyer** (sans membre) : celui que la
+  dépense ou le revenu concerne (le cadeau pour Claire, la cantine de Léo, les courses communes). Affecter une **transaction** à un membre affecte toutes
   ses ventilations ; ventilée, chaque ventilation se choisit séparément. Plusieurs transactions s'affectent
   d'un coup depuis la liste des transactions, les virements étant laissés tels quels. Une **ventilation de virement** n'a
   jamais de membre : un virement n'est ni une dépense ni un revenu (ADR-0004). Le membre reste modifiable sur
   une transaction rapprochée (R-TRX-3). Quand la réapplication des règles (IMP-08) recalcule les ventilations,
-  les nouvelles reçoivent le membre commun aux anciennes, s'il y en a un.
-- **R-MBR-6** — Le **membre retenu** d'une ventilation est son membre ; à défaut, le membre de son compte ;
-  à défaut, le foyer. Ainsi, les dépenses du compte personnel de Quentin sont à Quentin sans rien affecter,
-  et celles du compte joint au foyer, sauf affectation contraire.
+  les nouvelles reçoivent le membre commun aux anciennes, à défaut le titulaire du compte.
+- **R-MBR-6** — À la **création** d'une ventilation, son membre est par défaut le **titulaire du compte**
+  (le foyer si le compte n'en a pas) : saisie (le champ est prérempli), import, récurrence, intérêts, échéance
+  de prêt. Il se change ensuite librement, y compris pour le foyer. Ainsi, les dépenses du compte personnel de
+  Quentin sont à Quentin sans rien affecter, et une dépense commune payée depuis ce compte s'affecte au foyer.
+  Dans les listes, une transaction n'affiche son membre que s'il diffère du titulaire du compte.
 - **R-MBR-7** — Un **emploi** est affecté à **au plus un** membre (Q21). Ses rémunérations, primes et fiches
   de paie le suivent. Sans membre, il est au foyer.
 
@@ -77,14 +81,14 @@ au foyer (Q19).
   Une case non proposée ne compte rien : les chiffres n'en dépendent pas.
 - **R-MBR-9** — Avec un choix de membres :
   - les **flux** (revenus, dépenses, non catégorisé, épargne, par catégorie, par tiers, évolution) ne
-    comptent que les ventilations dont le membre retenu (R-MBR-6) est coché ;
+    comptent que les ventilations dont le membre (ou « Foyer », sans membre) est coché ;
   - les **soldes**, le **patrimoine** et les **projections** (patrimoine, trésorerie, épargne) ne comptent
     que les comptes dont le membre est coché, les comptes sans membre avec « Foyer » ; les biens et les prêts
     comptent avec « Foyer » ;
   - l'encadré **Salaire** ne montre que les emplois dont le membre est coché, ceux sans membre avec « Foyer » ;
   - l'encadré **Épargne** ne compte que les comptes dont le titulaire est coché (épargne de précaution,
     intérêts, épargne variable), et des dépenses mensuelles moyennes (R-TDB-8) que les ventilations dont le
-    membre retenu est coché.
+    membre est coché.
   - Sur l'accueil, les encadrés concernés sont donc Patrimoine, Mois en cours, Comptes, Trésorerie à venir,
     Dépenses par catégorie, Évolution, Tiers du mois, Salaire et Épargne. Les autres (budget, projets, fin
     d'année, échéances, à catégoriser, biens, prêts, comptes à mettre à jour, documents, démarches…) restent
@@ -120,13 +124,19 @@ au foyer (Q19).
 - Étant donné une dépense de 100 € ventilée 60 € Alimentation et 40 € Habillement, quand j'affecte les 40 € à
   Léo, alors seule cette ventilation a un membre (R-MBR-5).
 - Étant donné un virement, alors sa ventilation n'accepte pas de membre (R-MBR-5).
+- Étant donné le compte de Quentin, quand je saisis une dépense, alors le champ Membre propose Quentin ; quand
+  je choisis « Foyer », alors la dépense compte pour le foyer, et la liste affiche « Foyer » après son libellé
+  (R-MBR-6).
+- Étant donné le compte joint sans titulaire et ses transactions au foyer, quand j'en fais le compte de Claire
+  et que j'accepte de passer ses ventilations, alors elles sont à Claire ; si je refuse, elles restent au
+  foyer (R-MBR-4).
 
 ### MBR-04 — Critères d'acceptation
 
 - Étant donné le compte courant de Quentin, le livret de Claire et le compte joint sans membre, quand je ne
   coche que Claire, alors le patrimoine ne compte que le livret de Claire (R-MBR-9).
-- Étant donné, sur le compte de Quentin, 50 € de courses sans membre et 30 € de cadeau affectés à Claire, et
-  sur le compte joint 20 € de cantine sans membre : en ne cochant que Quentin, les dépenses valent 50 € ; que
+- Étant donné, sur le compte de Quentin, 50 € de courses (membre par défaut : Quentin) et 30 € de cadeau
+  affectés à Claire, et sur le compte joint 20 € de cantine (au foyer) : en ne cochant que Quentin, les dépenses valent 50 € ; que
   Claire, 30 € ; que Foyer, 20 € ; tout coché, 100 € (R-MBR-6, R-MBR-10).
 - Étant donné Claire seule cochée dans l'encadré Mois en cours, alors l'encadré Patrimoine reste celui du
   foyer ; quand je reviens sur l'accueil, Claire seule est toujours cochée dans Mois en cours, et son titre

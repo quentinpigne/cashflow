@@ -1162,14 +1162,17 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
 - **E4 Compte** (formulaire) : champ **Titulaire** `[mat-select]`, « Foyer » par défaut (R-MBR-4).
   **E2 Comptes** : le nom du titulaire devant l'établissement. Sur **E24**, les onglets Trésorerie et Épargne
   ne proposent que les comptes des membres cochés.
-- **E5 Saisie rapide** : champ **Membre** `[mat-select]` en dépense ou en revenu, vide par défaut (« Membre du
-  compte » ou « Foyer », selon le compte, R-MBR-6) ; il s'applique à toutes les ventilations.
+- **E5 Saisie rapide** : champ **Membre** `[mat-select]` en dépense ou en revenu (« Foyer », puis les
+  membres), prérempli avec le titulaire du compte et qui le suit quand on change de compte, tant qu'on ne l'a pas
+  choisi (R-MBR-6) ; il s'applique à toutes les ventilations. **E4 Compte** : changer le titulaire d'un compte
+  qui a des transactions demande « Passer aussi à Claire les ventilations de ce compte affectées à Quentin ? »
+  (R-MBR-4).
 - **E6 Ventilation** et **E7 Détail d'une transaction** : un champ **Membre** par ventilation, sauf une
   ventilation de virement (R-MBR-5). Une transaction à une ventilation montre un seul champ.
 - **E3**, **E14** : après le libellé, centrée sur la ligne, l'étiquette du membre (pastille de couleur et
-  nom) ; « Léo, Claire » si les ventilations ont des membres différents (« 3 membres » au-delà de deux),
-  suivi de « (en partie) » si certaines n'en ont pas ; rien sans membre. Sur **E14**, action de masse
-  **Membre** : un membre, ou « Aucun (retirer le membre) » ; les virements sont ignorés (R-MBR-5).
+  nom, « Foyer » sans membre), seulement quand il diffère du titulaire du compte (R-MBR-6) ; « Léo, Claire » si
+  les ventilations ont des membres différents (« 3 membres » au-delà de deux). Sur **E14**, action de masse
+  **Membre** : « Foyer » ou un membre ; les virements sont ignorés (R-MBR-5).
 - **E30 Emploi** (formulaire) : champ **Membre** (« Foyer » par défaut) ; **E29 Salaires** : la pastille du
   membre à côté de l'employeur.
 - **E1 Accueil** : dans le menu de réglages `tune` des encadrés concernés (R-MBR-9), une section
