@@ -410,7 +410,7 @@ pub async fn load(db: &Db, data: &DataDir, today: Date) -> anyhow::Result<()> {
             phone_plan =
                 Some(spend(db, checking, d, -1_299, "FORFAIT MOBILE", c.get("Abonnements", "Téléphone")).await?);
         }
-        if let Some(d) = day(27) {
+        if let Some(d) = day(1) {
             spend(db, checking, d, SALARY, "VIREMENT SALAIRE", c.get("Salaires", "")).await?;
         }
         if month.month() == 12
@@ -954,7 +954,7 @@ async fn recurrences(
         ("Box internet", 6, -2_999, c.get("Abonnements", "Internet"), None, 0),
         ("Forfait mobile", 15, -1_299, c.get("Abonnements", "Téléphone"), None, 0),
         ("Électricité et gaz", 10, -8_000, c.get("Logement", "Gaz, électricité, eau"), None, 1_700),
-        ("Salaire", 27, SALARY, c.get("Salaires", ""), None, 0),
+        ("Salaire", 1, SALARY, c.get("Salaires", ""), None, 0),
         ("Épargne Livret A", 2, -20_000, None, Some(livret_a), 0),
         ("Versement assurance vie", 16, -10_000, None, Some(life), 0),
     ];
