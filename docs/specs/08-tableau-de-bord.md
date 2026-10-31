@@ -49,6 +49,47 @@ le patrimoine utilisent la date de solde (R-TRX-7).
   à venir compte donc, comme le mois en cours, son réel + son encore à venir (pour un mois sans réel, c'est
   son prévu, sauf la quote-part d'une ligne annuelle, qui ne dépasse pas ce qui reste de son année).
 
+
+### Encadrés de l'accueil (TDB-10 à TDB-12)
+
+Chaque encadré ci-dessous est masqué quand il n'a rien à montrer, ou quand sa rubrique est désactivée
+(prêts, salaires : spec 09, spec 10). Un clic sur son titre ouvre l'écran détaillé.
+
+- **R-TDB-15** — **Trésorerie à venir** (TDB-10) : la projection de trésorerie (R-PRJ-10 à R-PRJ-12) du
+  premier compte courant (`CHECKING`) ouvert, dans l'ordre des comptes (`display_order`, CPT-07), sur **30 jours**, avec la
+  dépense variable moyenne (R-PRJ-11) et les projets selon l'interrupteur « Projets planifiés » (R-BUD-72) :
+  solde d'aujourd'hui, solde dans 30 jours, solde le plus bas et sa date (signalé sous zéro), mini-courbe.
+- **R-TDB-16** — **Prochaines échéances** (TDB-10) : sur les **15 prochains jours**, tous comptes confondus,
+  les échéances prévues des récurrences non encore honorées (R-TRX-40) et la prochaine échéance de chaque
+  prêt avec tableau (R-PRE-3), par date croissante, 8 au plus : date, libellé, compte ou prêt, montant.
+- **R-TDB-17** — **Fin d'année** (TDB-10) : l'estimation de fin d'année (R-TDB-14 : revenus, dépenses,
+  épargne), avec l'interrupteur « Projets planifiés », comparée au réel de l'année civile précédente (Σ de ses
+  douze mois, R-TDB-3 à R-TDB-6) ; l'écart s'affiche pour chacun des trois chiffres.
+- **R-TDB-18** — **Projets** (TDB-10) : les projets en cours et, selon l'interrupteur « Projets planifiés »,
+  planifiés (R-BUD-72) : réel sur prévu et jauge (R-BUD-22, R-BUD-26), mise de côté du mois en cours s'il y
+  en a une (R-BUD-73), et **prochaine dépense prévue** : le premier mois du calendrier prévu (R-BUD-70) à
+  partir du mois en cours, avec son montant.
+- **R-TDB-19** — **Dépenses par catégorie** (TDB-11) : les **5** catégories de premier niveau aux plus
+  fortes dépenses du mois en cours (R-TDB-3, par date d'analyse), chacune avec sa moyenne sur 12 mois
+  (R-TDB-8) ; un clic ouvre les transactions de la catégorie qui comptent dans le mois (R-TRX-58).
+- **R-TDB-20** — **Évolution** (TDB-11) : sur les 12 derniers mois, mois en cours compris, l'épargne de
+  chaque mois (R-TDB-6) en barres et le taux d'épargne glissant sur 12 mois (R-TDB-7) en courbe.
+- **R-TDB-21** — **Tiers du mois** (TDB-11) : les **5** tiers aux plus fortes dépenses du mois en cours
+  (R-TIE-20), avec leur part des dépenses du mois rattachées à un tiers ; un clic ouvre la fiche du tiers.
+- **R-TDB-22** — **Courbe du patrimoine** (TDB-11) : option de l'encadré Patrimoine, activée par défaut :
+  le patrimoine à chaque fin de mois des 12 derniers mois et aujourd'hui (TDB-04), en courbe sous le montant.
+- **R-TDB-23** — **Comptes à mettre à jour** (TDB-12) : les comptes ouverts qui ont au moins un import
+  validé (spec 03), avec la date de leur dernier relevé importé (fin de période du lot, à défaut sa date de
+  validation) et de leur dernier rapprochement (spec 04). Un compte dont le dernier relevé date de plus de
+  **31 jours** est **à mettre à jour** : signalé, et listé en premier.
+- **R-TDB-24** — **Documents à classer** (TDB-12) : le nombre de documents sans type de la bibliothèque
+  (spec 12, R-DOC-20) et les 3 plus récents ; un clic ouvre la bibliothèque filtrée sur « à classer ».
+- **R-TDB-25** — **Démarches à relancer** (TDB-12) : les demandes de crédit qui ont au moins une démarche à
+  relancer (R-CRE-26), avec leur nombre ; un clic ouvre la demande.
+- **R-TDB-26** — **Salaire** (TDB-12) : pour chaque emploi en cours, le dernier mois contrôlé hors mois en
+  cours (R-SAL-9) : reçu, attendu et écart, signalé au-delà de la tolérance ; et les mois sans fiche de paie
+  (SAL-09). Un clic ouvre la fiche de l'emploi.
+
 ## Écrans
 
 | ID | Priorité | Contenu |
@@ -62,6 +103,9 @@ le patrimoine utilisent la date de solde (R-TRX-7).
 | TDB-08 | V1 | **Biens et prêts sur l'accueil** : un encadré Biens (valeur de chaque bien) et un encadré Prêts (capital restant dû, prochaine échéance), masqués si la rubrique est désactivée (spec 09) |
 | TDB-07 | V1 | **Filtre projets** dans l'analyse par catégorie (TDB-02) : inclure ou exclure les dépenses rattachées à des projets |
 | TDB-09 | V1 | **Mois à venir et estimation de fin d'année** dans l'évolution (TDB-03), budget et projets compris (R-TDB-14, BUD-14) |
+| TDB-10 | V1 | **Accueil, anticiper** : encadrés Trésorerie à venir, Prochaines échéances, Fin d'année et Projets (R-TDB-15 à R-TDB-18) |
+| TDB-11 | V1 | **Accueil, analyser** : encadrés Dépenses par catégorie, Évolution et Tiers du mois, courbe du patrimoine (R-TDB-19 à R-TDB-22) |
+| TDB-12 | V1 | **Accueil, agir** : encadrés Comptes à mettre à jour, Documents à classer, Démarches à relancer et Salaire (R-TDB-23 à R-TDB-26) |
 
 ### TDB-01 — Critères d'acceptation
 

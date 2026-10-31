@@ -137,6 +137,27 @@ en cours à gauche, comptes à droite, « à catégoriser » et alertes en desso
 ```
 
 
+**Encadrés ajoutés** (TDB-10 à TDB-12, R-TDB-15 à R-TDB-26), chacun masqué quand il n'a rien à montrer :
+
+| Encadré | Contenu |
+|---|---|
+| Trésorerie à venir | Compte courant sur 30 jours : solde aujourd'hui et dans 30 jours, plus bas et sa date (rouge sous zéro), mini-courbe ; titre vers E24 |
+| Prochaines échéances | Récurrences et mensualités des 15 prochains jours : date, libellé, compte ou prêt, montant ; titre vers E23 |
+| Fin d'année | Revenus, dépenses et épargne estimés fin AAAA, écart avec l'année précédente ; titre vers E15 (Évolution) |
+| Projets | Par projet : nom, pastille « planifié », jauge réel / prévu, mise de côté du mois, prochaine dépense (« février 2027 · 500 € ») ; titre vers E20 |
+| Dépenses par catégorie | 5 catégories du mois : montant, barre, moyenne 12 mois ; une ligne ouvre E14 ; titre vers E15 |
+| Évolution | Barres de l'épargne des 12 derniers mois, courbe du taux glissant ; titre vers E15 (Évolution) |
+| Tiers du mois | 5 tiers : nom, montant, part ; une ligne ouvre E32 ; titre vers E31 |
+| Comptes à mettre à jour | Par compte importé : dernier relevé, dernier rapprochement, pastille « à mettre à jour » ; titre vers E10 |
+| Documents à classer | Nombre et 3 plus récents ; titre vers E34 filtré « à classer » |
+| Démarches à relancer | Demandes de crédit et nombre de démarches à relancer ; une ligne ouvre la demande |
+| Salaire | Par emploi en cours : dernier mois contrôlé, reçu / attendu, écart signalé, mois sans fiche ; titre vers E29 |
+
+L'encadré Patrimoine affiche la courbe des 12 derniers mois sous le montant (option « Courbe », oui par
+défaut). L'option « Projets » de l'encadré Budget du mois passe à « non » par défaut : l'encadré Projets la
+remplace. Un encadré ajouté à l'application rejoint, dans une disposition déjà personnalisée, la colonne
+qu'il occupe dans la disposition par défaut.
+
 **Dernières saisies.** Encadré des 5, 10 ou 15 dernières transactions **saisies** (ordre de
 création, quelle que soit leur date d'opération) : date, compte, libellé (en italique si en attente),
 catégorie, ventilation ou virement, montant ; un clic ouvre la transaction (E7). Le nombre affiché se
@@ -147,10 +168,10 @@ qui ouvre un menu : les options d'affichage propres à l'encadré, puis « Masqu
 
 | Encadré | Options (valeur par défaut) |
 |---|---|
-| Patrimoine | Détail actif brut / dettes (non ; un clic sur le montant bascule aussi) |
+| Patrimoine | Détail actif brut / dettes (non ; un clic sur le montant bascule aussi), Courbe (oui) |
 | Mois en cours | Comparer au mois précédent (oui) |
 | Dernières saisies | 5, 10 ou 15 transactions (5) |
-| Budget du mois | Objectifs d'épargne (oui), Projets (oui) |
+| Budget du mois | Objectifs d'épargne (oui), Projets (non) |
 | Épargne | Épargne de précaution, Intérêts de l'année, Épargne variable (oui) |
 | Comptes | Détail des comptes (oui ; sinon les familles seules) |
 

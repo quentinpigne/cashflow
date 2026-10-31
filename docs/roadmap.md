@@ -159,6 +159,15 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       R-TRX-58)
 - [x] IMP-14 — action de règle « compter sur le mois » (spec 03, R-IMP-29)
 
+## Compléments V1 — tableau de bord (2026-10-31, à faire)
+
+- [ ] TDB-10 — accueil, anticiper : trésorerie à venir, prochaines échéances, fin d'année, projets (spec 08,
+      R-TDB-15 à R-TDB-18)
+- [ ] TDB-11 — accueil, analyser : dépenses par catégorie, évolution, tiers du mois, courbe du patrimoine
+      (R-TDB-19 à R-TDB-22)
+- [ ] TDB-12 — accueil, agir : comptes à mettre à jour, documents à classer, démarches à relancer, salaire
+      (R-TDB-23 à R-TDB-26)
+
 ## Mise en service (prochaine étape)
 
 - [ ] Exposition sur Internet derrière un proxy, en HTTPS : passe d'exploitation et de sécurité (Q15, à
