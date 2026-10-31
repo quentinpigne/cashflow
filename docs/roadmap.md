@@ -176,9 +176,9 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       plus sur le fond (CLAUDE.md)
 - [ ] Critères de sortie des phases 1 et 2 vérifiés sur données réelles
 
-## Avancé de la V2 — propositions de tiers (2026-10-31)
+## Avancé de la V2 — propositions de tiers (2026-10-31, livré)
 
-- [ ] TIE-05 — proposer des tiers à partir des libellés bancaires, avec règle optionnelle (spec 11, R-TIE-30 à
+- [x] TIE-05 — proposer des tiers à partir des libellés bancaires, avec règle optionnelle (spec 11, R-TIE-30 à
       R-TIE-35, E43)
 
 ## Phase 7 — V2 (à prioriser plus tard)

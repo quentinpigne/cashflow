@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -12,6 +13,8 @@ import { RouterLink } from '@angular/router';
 
 import { PayeeGroupView } from '../../api/models/payee-group-view';
 import { PayeeView } from '../../api/models/payee-view';
+import { PayeesService } from '../../api/services/payees.service';
+import { DataVersion } from '../../core/data-version';
 import { PayeesStore } from '../../shared/stores';
 import { formatCity } from './address';
 import { PayeeActions } from './payee-actions';
@@ -57,6 +60,17 @@ interface Section {
         <mat-label>Rechercher</mat-label>
         <input matInput [ngModel]="query()" (ngModelChange)="query.set($event)" />
       </mat-form-field>
+
+      @if (suggestionCount() > 0) {
+        <div class="suggestions card">
+          <mat-icon>auto_awesome</mat-icon>
+          <span
+            >{{ suggestionCount() }} {{ suggestionCount() > 1 ? 'propositions' : 'proposition' }} de
+            tiers à partir des libellés bancaires</span
+          >
+          <a mat-button routerLink="/reglages/tiers/propositions">Voir</a>
+        </div>
+      }
 
       @if (selection().size > 0) {
         <div class="bulk card">
@@ -169,6 +183,21 @@ interface Section {
       margin-bottom: 0.5rem;
     }
 
+    .suggestions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+
+      span {
+        flex: 1;
+      }
+
+      mat-icon {
+        color: var(--mat-sys-primary);
+      }
+    }
+
     .bulk {
       display: flex;
       flex-wrap: wrap;
@@ -229,6 +258,18 @@ interface Section {
 export class PayeesPage {
   protected readonly store = inject(PayeesStore);
   protected readonly actions = inject(PayeeActions);
+
+  private readonly api = inject(PayeesService);
+  private readonly version = inject(DataVersion);
+
+  /** Propositions de tiers (R-TIE-31), annoncées au-dessus de la liste (E43). */
+  private readonly suggestions = rxResource({
+    params: () => this.version.value(),
+    stream: () => this.api.listPayeeSuggestions(),
+  });
+  protected readonly suggestionCount = computed(() =>
+    this.suggestions.hasValue() ? this.suggestions.value().suggestions.length : 0,
+  );
 
   protected readonly query = signal('');
   protected readonly selection = signal<Set<string>>(new Set());

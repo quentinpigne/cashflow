@@ -115,3 +115,60 @@ test('E15 : dépenses par lieu et carte (TIE-07)', async ({ page }) => {
   await page.getByRole('radio', { name: 'Départements' }).click();
   await expect(page.getByRole('row', { name: /Isère \(38\)/ })).toBeVisible();
 });
+
+test('E31, E43 : proposer, ignorer puis valider un tiers à partir des libellés (TIE-05)', async ({
+  page,
+}) => {
+  await login(page);
+  // Deux transactions sans tiers au même libellé ; la clé de tiers ignore les chiffres (R-TIE-30).
+  const word = Array.from({ length: 6 }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+  ).join('');
+  const accounts = await (await page.request.get('/api/v1/accounts')).json();
+  const checking = accounts.find((a: { name: string }) => a.name === 'Compte courant');
+  for (const [date, label] of [
+    ['2026-10-02', `CB PRESSING ${word} 02/10`],
+    ['2026-10-16', `CB PRESSING ${word} 16/10`],
+  ]) {
+    await page.request.post('/api/v1/transactions', {
+      data: { account_id: checking.id, date, amount_minor: -1_250, label },
+    });
+  }
+  const suggested = `Pressing ${word[0]}${word.slice(1).toLowerCase()}`;
+
+  await page.goto('/reglages/tiers');
+  await expect(
+    page.getByText(/propositions? de tiers à partir des libellés bancaires/),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Voir', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Propositions de tiers', level: 1 }),
+  ).toBeVisible();
+  const card = page.locator('section.suggestion', { hasText: suggested });
+  await expect(card).toContainText('2 transactions, du 2 octobre 2026 au 16 octobre 2026');
+  await expect(card).toContainText(`CB PRESSING ${word} 16/10`);
+
+  // R-TIE-35 : ignorer, puis rétablir.
+  await card.getByRole('button', { name: 'Ignorer' }).click();
+  await expect(card).toHaveCount(0);
+  await page.getByText(/Clés ignorées/).click();
+  await page
+    .locator('.row', { hasText: `PRESSING ${word}` })
+    .getByRole('button', { name: 'Rétablir' })
+    .click();
+  await expect(card).toBeVisible();
+
+  // R-TIE-33, R-TIE-34 : valider en créant le tiers, avec la règle.
+  await card.getByRole('button', { name: 'Valider…' }).click();
+  const dialog = await openedDialog(page, 'Valider la proposition');
+  await expect(dialog.getByLabel('Nom du tiers')).toHaveValue(suggested);
+  await expect(dialog.getByRole('checkbox', { name: /Créer aussi une règle/ })).toBeChecked();
+  await dialog.getByRole('button', { name: 'Valider' }).click();
+  await expect(page.getByText('2 transactions ont reçu ce tiers. Règle créée.')).toBeVisible();
+  await expect(card).toHaveCount(0);
+
+  await page.goto('/reglages/regles');
+  await expect(page.getByText(`Tiers : ${suggested}`)).toBeVisible();
+  await page.goto('/reglages/tiers');
+  await expect(page.getByRole('link', { name: suggested })).toBeVisible();
+});

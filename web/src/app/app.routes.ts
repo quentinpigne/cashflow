@@ -196,6 +196,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/payees/payees').then((m) => m.PayeesPage),
       },
       {
+        path: 'reglages/tiers/propositions',
+        title: 'Propositions de tiers — Cashflow',
+        loadComponent: () =>
+          import('./features/payees/payee-suggestions').then((m) => m.PayeeSuggestionsPage),
+      },
+      {
         path: 'tiers/groupe/:id',
         title: 'Groupe de tiers — Cashflow',
         data: { kind: 'group' },
