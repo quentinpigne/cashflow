@@ -176,6 +176,11 @@ mois, réimport sans doublon (à vérifier à la mise en service).
       plus sur le fond (CLAUDE.md)
 - [ ] Critères de sortie des phases 1 et 2 vérifiés sur données réelles
 
+## Avancé de la V2 — propositions de tiers (2026-10-31)
+
+- [ ] TIE-05 — proposer des tiers à partir des libellés bancaires, avec règle optionnelle (spec 11, R-TIE-30 à
+      R-TIE-35, E43)
+
 ## Phase 7 — V2 (à prioriser plus tard)
 
 - IMP-12 (PDF générique OCR), IMP-13
@@ -183,7 +188,7 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - PRJ-06 à PRJ-09
 - SAL-06 à SAL-08
 - BUD-09 (push mobile), BUD-12, BUD-13
-- TRX-10, CPT-08, TIE-05
+- TRX-10, CPT-08 (TIE-05 avancée, cf. « Avancé de la V2 »)
 - DOC-05 (échéances des contrats et garanties), DOC-06 (OCR des images, ADR-0007)
 - Tableaux d'amortissement des prêts (hors périmètre V1, cf. vision)
 - Multi-membres du foyer : accès par compte, vues par membre et par foyer (ADR-0006)

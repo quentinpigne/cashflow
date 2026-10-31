@@ -292,6 +292,17 @@ ADR-0021) ; une jambe de virement a une ventilation unique (R-TRX-32).
 Index : `group_id`. Le département se déduit du code postal, il n'est pas stocké (R-TIE-24). Décision :
 ADR-0025.
 
+### IgnoredPayeeKey (clé de tiers ignorée)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `key` | texte ≤ 200 | clé primaire ; clé de tiers (R-TIE-30) : majuscules sans accents, mots séparés par une espace |
+| `ignored_at` | `Timestamp` | requis |
+
+Les propositions de tiers elles-mêmes ne sont pas stockées : elles se recalculent (R-TIE-31). Pas d'`id` ni
+d'horodatages `created_at`/`updated_at` : la clé identifie la ligne, qui se supprime pour rétablir la
+proposition (R-TIE-35).
+
 ## Biens et prêts — [spec 09](specs/09-biens-et-prets.md)
 
 Ni les biens ni les prêts ne sont des comptes (ADR-0019). Montants en euros.

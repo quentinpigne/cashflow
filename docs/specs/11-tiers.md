@@ -1,7 +1,7 @@
 # Spec 11 — Tiers
 
-Statut : **Validée** (2026-10-23 ; adresse et lieu : 2026-10-28)
-Modèle : [Payee, PayeeGroup](../modele-de-donnees.md#tiers--spec-11)
+Statut : **Validée** (2026-10-23 ; adresse et lieu : 2026-10-28 ; propositions de tiers : 2026-10-31)
+Modèle : [Payee, PayeeGroup, IgnoredPayeeKey](../modele-de-donnees.md#tiers--spec-11)
 Décision : [ADR-0025](../adr/0025-adresse-des-tiers-et-geocodage.md) (adresse et géocodage)
 
 ## Concepts
@@ -82,7 +82,8 @@ opération à l'autre. Les règles de catégorisation font le lien entre les lib
   transactions **sans tiers**, même catégorisées ; elle ne remplace jamais un tiers existant. L'aperçu
   indique, par transaction, ce qui changera (catégorie, tiers ou les deux).
 
-Aucun tiers n'est créé automatiquement à partir des libellés (cf. TIE-05, V2).
+Aucun tiers n'est créé automatiquement à partir des libellés : les propositions de tiers (R-TIE-30 à R-TIE-35)
+attendent une validation explicite.
 
 ## Analyses
 
@@ -130,6 +131,42 @@ paiement. Décision : ADR-0025.
   cartographie n'est appelé. Le nombre de tiers de la période absents de la carte (sans coordonnées, outre-mer,
   étranger) est indiqué.
 
+## Propositions de tiers
+
+Les transactions importées avant de créer ses tiers, ou sans règle, n'ont pas de tiers. Plutôt que de les
+affecter une à une, l'application regroupe leurs libellés bancaires et propose un tiers par regroupement.
+Rien ne change avant validation.
+
+- **R-TIE-30** — La **clé de tiers** d'un libellé bancaire est sa clé d'apprentissage (R-IMP-13) sans les mots
+  qui décrivent le type d'opération (`CB`, `CARTE`, `PRLV`, `SEPA`, `VIR`, `RETRAIT`…, la liste de R-IMP-13) :
+  « CB CARREFOUR MEYLAN 14/03 » et « PRLV SEPA CARREFOUR MEYLAN » ont la clé « CARREFOUR MEYLAN ». Un libellé
+  qui n'a pas de clé d'apprentissage n'a pas de clé de tiers. Deux libellés sont **proches** s'ils ont la même
+  clé de tiers : il n'y a pas de rapprochement approché.
+- **R-TIE-31** — Une **proposition de tiers** regroupe les transactions **sans tiers**, hors jambes de virement
+  (R-TIE-11), tous comptes confondus, qui ont la même clé de tiers, à condition qu'elles soient **au moins
+  deux** et que la clé ne soit pas ignorée (R-TIE-35). Elle indique le nombre de transactions, la date de la
+  première et de la dernière, et jusqu'à trois libellés bancaires distincts, les plus récents. Les propositions
+  sont rangées par nombre de transactions décroissant, puis par clé. Rien n'est stocké : elles se recalculent
+  à chaque consultation, et une proposition dont il ne reste plus qu'une transaction sans tiers disparaît.
+- **R-TIE-32** — Une proposition suggère un **nom** : sa clé, chaque mot avec une majuscule initiale
+  (« CARREFOUR MEYLAN » → « Carrefour Meylan »), tronquée à 80 caractères. Elle suggère un **tiers existant**
+  à la place, s'il y en a un : celui, non archivé, de la dernière transaction (par `date`) de même clé de tiers
+  qui en a un ; à défaut, le tiers non archivé qui porte ce nom, sans distinction de casse.
+- **R-TIE-33** — **Valider** une proposition affecte un tiers à toutes ses transactions sans tiers, y compris
+  rapprochées (R-TIE-12) : un tiers existant non archivé choisi, ou un tiers créé sous le nom saisi, sans
+  groupe (R-TIE-1 : un nom déjà pris est refusé). Les catégories ne changent pas. La validation est atomique et
+  indique le nombre de transactions modifiées.
+- **R-TIE-34** — À la validation, l'option **« Créer aussi une règle »**, cochée par défaut, crée une règle de
+  catégorisation pour les imports suivants : condition « libellé bancaire correspond à `*MOT1*MOT2*…*` »
+  (opérateur `regex` de spec 03, où `*` remplace toute suite de caractères :
+  les mots de la clé, dans l'ordre), action `set_payee` seule, sans arrêt du traitement, priorité
+  après les règles existantes : les règles de catégorie gardent la main, celle-ci complète le tiers (R-IMP-12).
+  Elle s'appelle « Tiers : <nom du tiers> ». Sans règle, la suggestion apprise (R-TIE-17) prend déjà le
+  relais sur les libellés de même clé d'apprentissage.
+- **R-TIE-35** — **Ignorer** une proposition mémorise sa clé : elle n'est plus proposée (« FRAIS TENUE COMPTE »,
+  « COTISATION »), quelles que soient les transactions qui arrivent ensuite. Les clés ignorées se consultent et se
+  **rétablissent** ; rétablir une clé la propose de nouveau si elle remplit R-TIE-31.
+
 ## Features
 
 | ID | Priorité | Feature |
@@ -138,7 +175,7 @@ paiement. Décision : ADR-0025.
 | TIE-02 | V1 | Affecter un tiers : saisie (avec création à la volée), détail, récurrences, en masse ; suggestion de catégorie |
 | TIE-03 | V1 | Tiers à l'import : action de règle `set_payee`, suggestion apprise, revue d'import |
 | TIE-04 | V1 | Dépenses et revenus par tiers et par groupe : analyse, fiche d'un tiers ou d'un groupe, filtre des transactions |
-| TIE-05 | V2 | Proposer des tiers à partir des libellés bancaires (libellés proches regroupés) |
+| TIE-05 | V2 | Proposer des tiers à partir des libellés bancaires (libellés proches regroupés), avec règle optionnelle |
 | TIE-06 | V1 | Adresse d'un tiers : saisie, recherche d'adresse par la BAN (activable), affichage sur la fiche |
 | TIE-07 | V1 | Dépenses et revenus par lieu : par pays, département ou ville, et carte |
 
@@ -181,6 +218,23 @@ paiement. Décision : ADR-0025.
   catégorisés chez « Carrefour Meylan », tous deux tiers du groupe « Carrefour », alors en mars : dépenses du
   groupe = 95 €, non catégorisé = 15 € en sorties, et dépenses de « Carrefour Meylan » = 75 € (R-TIE-20,
   R-TIE-21).
+
+### TIE-05 — Critères d'acceptation
+
+- Étant donné trois transactions sans tiers « CB CARREFOUR MEYLAN 14/03 », « CB CARREFOUR MEYLAN 02/04 »
+  (compte courant) et « PRLV SEPA CARREFOUR MEYLAN » (compte joint), alors une proposition « Carrefour
+  Meylan » regroupe ces trois transactions (R-TIE-30, R-TIE-31).
+- Étant donné une seule transaction sans tiers « CB BOULANGERIE DUPONT 02/03 », alors aucune proposition ne la
+  concerne (R-TIE-31).
+- Étant donné une transaction « CB EDF 05/01 » rattachée au tiers « EDF » et deux transactions sans tiers
+  « PRLV SEPA EDF », alors la proposition « Edf » suggère le tiers existant « EDF » (R-TIE-32).
+- Étant donné la proposition « Carrefour Meylan » dont une transaction est rapprochée, quand je la valide en
+  créant le tiers « Carrefour Meylan » avec la règle, alors les trois transactions ont ce tiers, leurs
+  catégories sont inchangées, et la règle « Tiers : Carrefour Meylan » affecte ce tiers à l'import d'une ligne
+  « CB CARREFOUR MEYLAN 20/04 » (R-TIE-33, R-TIE-34).
+- Étant donné la proposition « Frais Tenue Compte », quand je l'ignore, alors elle n'est plus proposée, même
+  après l'import d'une nouvelle ligne de même clé ; quand je la rétablis, elle est de nouveau proposée
+  (R-TIE-35).
 
 ### TIE-06 — Critères d'acceptation
 

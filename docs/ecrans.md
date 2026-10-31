@@ -815,6 +815,8 @@ Dans les réglages, comme les catégories (E8).
   permet d'en créer un.
 - Sélection multiple : « Changer de groupe » pour plusieurs tiers d'un coup.
 - Les tiers archivés sont regroupés en bas, repliés, avec « Désarchiver ».
+- Au-dessus de la liste, quand il y a des propositions de tiers (R-TIE-31) : une carte « N propositions de
+  tiers à partir des libellés bancaires » avec « Voir », qui ouvre E43.
 
 ## Adresse et lieu (TIE-06, TIE-07)
 
@@ -1129,3 +1131,20 @@ de projet (ancien, neuf, travaux, véhicule, autre) : type de prêt, taux nomina
 dossier, frais de garantie ; « Valeurs initiales » remet celles de R-CRE-38. Enregistrement à la sortie de
 chaque champ, comme la situation d'emprunteur.
 
+## E43 — Propositions de tiers (TIE-05)
+
+Depuis **E31 Tiers** (carte des propositions). Route `/reglages/tiers/propositions`. Retour vers E31.
+
+- Liste des propositions (R-TIE-31), une carte chacune : nom suggéré en titre, ou « → <tiers existant> »
+  (R-TIE-32) ; nombre de transactions, période (« du 12 mars 2025 au 2 avril 2026 ») ; jusqu'à trois libellés
+  bancaires en police à chasse fixe, atténués.
+- Actions d'une carte : **Valider…** et **Ignorer**.
+- **Valider…** ouvre un dialogue : choix entre « Créer le tiers » (nom prérempli, modifiable) et « Affecter à
+  un tiers existant » (`[mat-autocomplete]` des tiers non archivés, prérempli avec le tiers suggéré, choisi par
+  défaut s'il existe) ; case « Créer aussi une règle pour les prochains imports », cochée (R-TIE-34) ; rappel
+  « N transactions recevront ce tiers. Leurs catégories ne changent pas. » Après validation, une
+  `[mat-snack-bar]` indique le nombre de transactions modifiées, et la carte disparaît.
+- **Ignorer** retire la carte sans confirmation, avec « Annuler » dans la `[mat-snack-bar]` (rétablit la clé).
+- En bas, repliées : **Clés ignorées (N)**, chacune avec « Rétablir » (R-TIE-35).
+- Aucune proposition : « Aucune proposition : les transactions sans tiers n'ont pas de libellés qui se
+  répètent. »
