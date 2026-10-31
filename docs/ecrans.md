@@ -144,7 +144,7 @@ en cours à gauche, comptes à droite, « à catégoriser » et alertes en desso
 | Trésorerie à venir | Compte courant sur 30 jours : solde aujourd'hui et dans 30 jours, plus bas et sa date (rouge sous zéro), mini-courbe ; titre vers E24 |
 | Prochaines échéances | Récurrences et mensualités des 15 prochains jours : date, libellé, compte ou prêt, montant ; titre vers E23 |
 | Fin d'année | Revenus, dépenses et épargne estimés fin AAAA, écart avec l'année précédente ; titre vers E15 (Évolution) |
-| Projets | Par projet : nom, pastille « planifié », jauge réel / prévu, mise de côté du mois, prochaine dépense (« février 2027 · 500 € ») ; titre vers E20 |
+| Projets | Par projet : nom, pastille « planifié », jauge réel / prévu, mise de côté du mois, prochaine dépense (« février 2027 · 500 € ») ; option « Projets planifiés » (l'interrupteur partagé, R-BUD-72) ; titre vers E20 |
 | Dépenses par catégorie | 5 catégories du mois : montant, barre, moyenne 12 mois ; une ligne ouvre E14 ; titre vers E15 |
 | Évolution | Barres de l'épargne des 12 derniers mois, courbe du taux glissant ; titre vers E15 (Évolution) |
 | Tiers du mois | 5 tiers : nom, montant, part ; une ligne ouvre E32 ; titre vers E31 |

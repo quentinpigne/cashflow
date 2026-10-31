@@ -5,6 +5,7 @@ import {
   formatRatePpm,
   parseMoney,
   parsePercent,
+  percentOf,
   parseRatePpm,
   subtract,
   takeFrom,
@@ -12,6 +13,12 @@ import {
 } from './money';
 
 describe('money', () => {
+  it('calcule une part en pour cent, nulle sur un total nul', () => {
+    expect(percentOf(25_000, 100_000)).toBe(25);
+    expect(percentOf(1, 3)).toBe(33);
+    expect(percentOf(5, 0)).toBe(0);
+  });
+
   it('formate et analyse les taux annuels', () => {
     expect(formatRate(17_000)).toBe('1,70\u00a0%');
     expect(formatRate(30_000)).toBe('3,00\u00a0%');

@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-/** Les encadrés de l'accueil (ecrans.md E1). */
+/** Les encadrés de l'accueil (ecrans.md E1, TDB-10 à TDB-12). */
 export const WIDGETS = [
   'net-worth',
   'month',
@@ -14,6 +14,17 @@ export const WIDGETS = [
   'accounts',
   'assets',
   'loans',
+  'cash',
+  'upcoming',
+  'year-end',
+  'projects',
+  'categories',
+  'evolution',
+  'payees',
+  'freshness',
+  'documents',
+  'follow-ups',
+  'salary',
 ] as const;
 
 export type Widget = (typeof WIDGETS)[number];
@@ -32,6 +43,17 @@ export const WIDGET_LABELS: Record<Widget, string> = {
   accounts: 'Comptes',
   assets: 'Biens',
   loans: 'Prêts',
+  cash: 'Trésorerie à venir',
+  upcoming: 'Prochaines échéances',
+  'year-end': 'Fin d’année',
+  projects: 'Projets',
+  categories: 'Dépenses par catégorie',
+  evolution: 'Évolution',
+  payees: 'Tiers du mois',
+  freshness: 'Comptes à mettre à jour',
+  documents: 'Documents à classer',
+  'follow-ups': 'Démarches à relancer',
+  salary: 'Salaire',
 };
 
 /** Nombre de colonnes, d'après la largeur disponible : une sur mobile, jusqu'à quatre sur grand écran. */
@@ -58,32 +80,68 @@ const DEFAULTS: Record<number, Widget[][]> = {
     [
       'net-worth',
       'month',
-      'recent',
+      'cash',
       'alerts',
       'missed',
-      'refunds',
+      'upcoming',
       'uncategorized',
+      'refunds',
+      'recent',
       'budget',
+      'projects',
+      'categories',
+      'year-end',
+      'evolution',
+      'payees',
+      'savings',
+      'accounts',
+      'freshness',
+      'assets',
+      'loans',
+      'salary',
+      'documents',
+      'follow-ups',
+    ],
+  ],
+  2: [
+    [
+      'net-worth',
+      'month',
+      'cash',
+      'alerts',
+      'missed',
+      'upcoming',
+      'uncategorized',
+      'refunds',
+      'recent',
+      'freshness',
+      'documents',
+      'follow-ups',
+    ],
+    [
+      'budget',
+      'projects',
+      'categories',
+      'year-end',
+      'evolution',
+      'payees',
       'savings',
       'accounts',
       'assets',
       'loans',
+      'salary',
     ],
   ],
-  2: [
-    ['net-worth', 'month', 'recent', 'alerts', 'missed', 'refunds', 'uncategorized'],
-    ['budget', 'savings', 'accounts', 'assets', 'loans'],
-  ],
   3: [
-    ['net-worth', 'month', 'alerts', 'missed'],
-    ['recent', 'uncategorized', 'refunds', 'savings'],
-    ['budget', 'accounts', 'assets', 'loans'],
+    ['net-worth', 'month', 'cash', 'alerts', 'missed', 'upcoming', 'freshness', 'follow-ups'],
+    ['recent', 'uncategorized', 'refunds', 'categories', 'payees', 'documents', 'salary'],
+    ['budget', 'projects', 'year-end', 'evolution', 'savings', 'accounts', 'assets', 'loans'],
   ],
   4: [
-    ['net-worth', 'month', 'alerts', 'missed'],
-    ['recent', 'uncategorized', 'refunds'],
-    ['budget', 'savings'],
-    ['accounts', 'assets', 'loans'],
+    ['net-worth', 'month', 'cash', 'alerts', 'missed', 'upcoming'],
+    ['recent', 'uncategorized', 'refunds', 'freshness', 'documents', 'follow-ups'],
+    ['budget', 'projects', 'categories', 'payees', 'salary'],
+    ['year-end', 'evolution', 'savings', 'accounts', 'assets', 'loans'],
   ],
 };
 
@@ -94,7 +152,7 @@ export function defaultColumns(count: number): Widget[][] {
 /**
  * Garde chaque encadré connu exactement une fois dans `count` colonnes : les inconnus (version
  * précédente) disparaissent, les colonnes en trop se replient sur la dernière, les nouveaux encadrés
- * s'ajoutent à la fin de la première colonne.
+ * rejoignent la fin de la colonne qu'ils occupent dans la disposition par défaut (ecrans.md E1).
  */
 export function normalize(columns: unknown, count: number): Widget[][] {
   if (!Array.isArray(columns)) return defaultColumns(count);
@@ -108,7 +166,14 @@ export function normalize(columns: unknown, count: number): Widget[][] {
     });
   const result = Array.from({ length: count }, (_, i) => keep(columns[i]));
   result[count - 1].push(...columns.slice(count).flatMap(keep));
-  result[0].push(...WIDGETS.filter((w) => !seen.has(w)));
+  const defaults = DEFAULTS[count];
+  for (const widget of WIDGETS.filter((w) => !seen.has(w))) {
+    const column = Math.max(
+      0,
+      defaults.findIndex((c) => c.includes(widget)),
+    );
+    result[column].push(widget);
+  }
   return result;
 }
 

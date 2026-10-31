@@ -88,6 +88,9 @@
                           }
                         </dl>
                       }
+                      @if (settings.option('net-worth.chart')) {
+                        <app-net-worth-chart />
+                      }
                     </section>
                   }
                   @case ('month') {
@@ -227,6 +230,39 @@
                   }
                   @case ('budget') {
                     <app-home-budget />
+                  }
+                  @case ('cash') {
+                    <app-home-cash />
+                  }
+                  @case ('upcoming') {
+                    <app-home-upcoming />
+                  }
+                  @case ('year-end') {
+                    <app-home-year-end />
+                  }
+                  @case ('projects') {
+                    <app-home-projects />
+                  }
+                  @case ('categories') {
+                    <app-home-categories />
+                  }
+                  @case ('evolution') {
+                    <app-home-evolution />
+                  }
+                  @case ('payees') {
+                    <app-home-payees />
+                  }
+                  @case ('freshness') {
+                    <app-home-freshness />
+                  }
+                  @case ('documents') {
+                    <app-home-documents />
+                  }
+                  @case ('follow-ups') {
+                    <app-home-follow-ups />
+                  }
+                  @case ('salary') {
+                    <app-home-salary />
                   }
                   @case ('savings') {
                     <app-home-savings />

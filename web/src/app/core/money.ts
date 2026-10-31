@@ -142,6 +142,11 @@ export function allocate(totalMinor: number, weights: number[]): number[] | null
   return parts;
 }
 
+/** Part de `part` dans `total`, en pour cent arrondi à l'unité (0 si le total est nul) : largeur d'une barre, part affichée. */
+export function percentOf(part: number, total: number): number {
+  return total === 0 ? 0 : Math.round((part * 100) / total);
+}
+
 /** Somme exacte de montants entiers. */
 export function sum(amounts: number[]): number {
   return amounts.reduce((total, amount) => total + amount, 0);

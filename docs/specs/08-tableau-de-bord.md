@@ -64,13 +64,15 @@ Chaque encadré ci-dessous est masqué quand il n'a rien à montrer, ou quand sa
   prêt avec tableau (R-PRE-3), par date croissante, 8 au plus : date, libellé, compte ou prêt, montant.
 - **R-TDB-17** — **Fin d'année** (TDB-10) : l'estimation de fin d'année (R-TDB-14 : revenus, dépenses,
   épargne), avec l'interrupteur « Projets planifiés », comparée au réel de l'année civile précédente (Σ de ses
-  douze mois, R-TDB-3 à R-TDB-6) ; l'écart s'affiche pour chacun des trois chiffres.
+  douze mois, R-TDB-3 à R-TDB-6) ; l'écart s'affiche pour chacun des trois chiffres, seulement si l'historique
+  couvre toute l'année précédente (premier compte ouvert au plus tard le 1er janvier de cette année).
 - **R-TDB-18** — **Projets** (TDB-10) : les projets en cours et, selon l'interrupteur « Projets planifiés »,
   planifiés (R-BUD-72) : réel sur prévu et jauge (R-BUD-22, R-BUD-26), mise de côté du mois en cours s'il y
   en a une (R-BUD-73), et **prochaine dépense prévue** : le premier mois du calendrier prévu (R-BUD-70) à
   partir du mois en cours, avec son montant.
 - **R-TDB-19** — **Dépenses par catégorie** (TDB-11) : les **5** catégories de premier niveau aux plus
-  fortes dépenses du mois en cours (R-TDB-3, par date d'analyse), chacune avec sa moyenne sur 12 mois
+  fortes dépenses du mois en cours (R-TDB-3, par date d'analyse ; le non catégorisé a son encadré), chacune
+  avec sa moyenne sur 12 mois
   (R-TDB-8) ; un clic ouvre les transactions de la catégorie qui comptent dans le mois (R-TRX-58).
 - **R-TDB-20** — **Évolution** (TDB-11) : sur les 12 derniers mois, mois en cours compris, l'épargne de
   chaque mois (R-TDB-6) en barres et le taux d'épargne glissant sur 12 mois (R-TDB-7) en courbe.

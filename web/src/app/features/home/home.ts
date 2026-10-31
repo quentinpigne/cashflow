@@ -39,7 +39,18 @@ import { formatRatePpm } from '../../core/money';
 import { CategoryPicker } from '../../shared/category-picker';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { HomeCategories } from '../analyses/home-categories';
+import { HomeEvolution } from '../analyses/home-evolution';
+import { HomeYearEnd } from '../analyses/home-year-end';
 import { HomeBudget } from '../budget/home-budget';
+import { HomeProjects } from '../budget/home-projects';
+import { HomeFollowUps } from '../credit/home-follow-ups';
+import { HomeDocuments } from '../documents/home-documents';
+import { HomeFreshness } from '../import/home-freshness';
+import { HomePayees } from '../payees/home-payees';
+import { HomeCash } from '../projections/home-cash';
+import { HomeUpcoming } from '../projections/home-upcoming';
+import { HomeSalary } from '../salaries/home-salary';
 import { HomeMissed } from '../projections/home-missed';
 import { HomeRefunds } from '../transactions/home-refunds';
 import { HomeSavings } from '../savings/home-savings';
@@ -47,6 +58,7 @@ import { HomeLayout, WIDGET_LABELS, Widget, columnCount } from './home-layout';
 import { HomeSettings } from './home-settings';
 import { WidgetMenu, WidgetMenuItem, optionItem } from './widget-menu';
 import { HomeRecent } from './home-recent';
+import { NetWorthChart } from './net-worth-chart';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
 const DEFINITIONS = {
@@ -71,6 +83,18 @@ const DEFINITIONS = {
     CdkDropList,
     CdkDropListGroup,
     HomeBudget,
+    HomeCash,
+    HomeCategories,
+    HomeDocuments,
+    HomeEvolution,
+    HomeFollowUps,
+    HomeFreshness,
+    HomePayees,
+    HomeProjects,
+    HomeSalary,
+    HomeUpcoming,
+    HomeYearEnd,
+    NetWorthChart,
     HomeRecent,
     HomeSavings,
     HomeMissed,
@@ -144,6 +168,7 @@ export class HomePage {
 
   protected readonly netWorthItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'net-worth.detail', 'Détail actif brut / dettes'),
+    optionItem(this.settings, 'net-worth.chart', 'Courbe des 12 derniers mois'),
   ]);
   protected readonly monthItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'month.previous', 'Comparer au mois précédent'),

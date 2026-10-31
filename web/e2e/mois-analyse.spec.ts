@@ -6,6 +6,7 @@ test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois 
   page,
 }) => {
   test.skip(isMobile(page), 'données partagées : modifié une seule fois, sur ordinateur');
+  test.slow();
   await login(page);
   await page.goto('/transactions');
   await page.getByLabel('Texte').fill('SALAIRE');

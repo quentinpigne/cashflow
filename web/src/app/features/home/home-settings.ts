@@ -5,10 +5,11 @@ import { WIDGETS, Widget } from './home-layout';
 /** Options d'affichage des encadrés de l'accueil (ecrans.md E1), avec leur valeur par défaut. */
 export const OPTION_DEFAULTS = {
   'net-worth.detail': false,
+  'net-worth.chart': true,
   'month.previous': true,
   'accounts.detail': true,
   'budget.goals': true,
-  'budget.projects': true,
+  'budget.projects': false,
   'savings.emergency': true,
   'savings.interest': true,
   'savings.variable': true,

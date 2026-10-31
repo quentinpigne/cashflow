@@ -20,8 +20,14 @@ describe('disposition de l’accueil', () => {
   it('garde chaque encadré une fois, retire les inconnus et ajoute les nouveaux', () => {
     const columns = normalize([['accounts', 'inconnu', 'accounts'], ['month']], 2);
     expect(columns[0].slice(0, 1)).toEqual(['accounts']);
-    expect(columns[1]).toEqual(['month']);
+    expect(columns[1][0]).toBe('month');
     expect([...columns.flat()].sort()).toEqual([...WIDGETS].sort());
+  });
+
+  it('place un nouvel encadré dans sa colonne par défaut', () => {
+    const columns = normalize([['month'], ['accounts']], 2);
+    expect(columns[1]).toContain('projects');
+    expect(columns[0]).toContain('cash');
   });
 
   it('replie les colonnes en trop sur la dernière', () => {
@@ -31,7 +37,7 @@ describe('disposition de l’accueil', () => {
 
   it('reprend la disposition de la version précédente', () => {
     const state = parse(null, { desktop: [['budget'], ['month']], mobile: ['accounts'] });
-    expect(state[2][1]).toEqual(['month']);
+    expect(state[2][1][0]).toBe('month');
     expect(state[1][0][0]).toBe('accounts');
     expect(state[1][0].length).toBe(WIDGETS.length);
   });
