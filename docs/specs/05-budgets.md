@@ -170,8 +170,10 @@ Projet « Italie 2027 » (planifié) — du 1er au 31 juillet 2027, 1 000 € pr
  ├─ Restaurants  100 €  ├ sans mois prévu : étalés sur la période du projet (juillet 2027)
  └─ Loisirs      100 €  ┘
 Calendrier prévu : février 2027 → 500 € ; juillet 2027 → 500 €
-Mise de côté à partir de novembre 2026 : 1 000 € sur novembre, décembre et janvier (avant février)
-                                         → 333,33 + 333,33 + 333,34 €
+Mise de côté à partir de novembre 2026, chaque dépense sur les mois qui la précèdent :
+  Train (février)  500 € sur novembre à janvier → 166,66 + 166,66 + 166,68 €
+  reste (juillet)  500 € sur novembre à juin    → 62,50 € par mois
+  soit 229,16 € en novembre et décembre, 229,18 € en janvier, 62,50 € de février à juin
 ```
 
 - **R-BUD-70** — Un poste peut porter un **mois prévu** (`planned_month`), quel qu'il soit, même avant
@@ -191,16 +193,18 @@ Mise de côté à partir de novembre 2026 : 1 000 € sur novembre, décembre et
   **planifiés**, selon un interrupteur « Projets planifiés », activé par défaut, du budget du mois, de
   l'évolution (R-TDB-14) et de chaque scénario de projection (R-PRJ-48) : on mesure l'effet d'un projet
   avant de s'y engager. Les projets terminés, jamais.
-- **R-BUD-73** — **Mise de côté** (`provision_from`, un mois, facultatif) : le prévu du projet est
-  réparti en quotes-parts mensuelles, exactes comme R-BUD-16, du mois `provision_from` au mois qui
-  précède le premier mois de son calendrier prévu (R-BUD-70) ; il faut au moins un mois. C'est une
+- **R-BUD-73** — **Mise de côté** (`provision_from`, un mois, facultatif) : chaque mois du calendrier
+  prévu (R-BUD-70) est réparti en quotes-parts mensuelles, exactes comme R-BUD-16, du mois
+  `provision_from` au mois qui le précède ; la mise de côté d'un mois est la somme de ces quotes-parts. Un
+  mois du calendrier sans mois avant lui (au plus tard `provision_from`) n'est pas mis de côté : il reste
+  dans son mois. Il faut au moins un mois du calendrier mis de côté. C'est une
   réservation dans le budget, comme la quote-part d'une ligne annuelle : elle ne déplace pas d'argent et
   n'a pas de réel. Changer le prévu ou le calendrier recalcule les quotes-parts, mois passés compris.
   Seul un projet exclu des budgets du mois (R-BUD-21) peut avoir une mise de côté.
 - **R-BUD-74** — **Projets dans le budget du mois M** : chaque projet exclu des budgets du mois
   (R-BUD-21) et pris en compte (R-BUD-72) a un prévu en M : sa quote-part de mise de côté en M s'il en a
-  une (les mois de la dépense n'ont alors pas de prévu : elle est déjà réservée), sinon sa part du
-  calendrier prévu en M. Son réel en M est celui des ventilations rattachées datées en M (R-BUD-22). Un
+  une, plus la part du calendrier en M qui n'est pas mise de côté (ce qui est réservé n'a plus de prévu
+  dans le mois de la dépense), sinon sa part du calendrier prévu en M. Son réel en M est celui des ventilations rattachées datées en M (R-BUD-22). Un
   projet non exclu n'a pas de prévu propre : ses dépenses sont prévues par les lignes de leurs
   catégories. Pas d'alerte mensuelle : seul le projet notifie, sur son total (R-BUD-62).
 
@@ -324,9 +328,14 @@ Mise de côté à partir de novembre 2026 : 1 000 € sur novembre, décembre et
 - Le budget de juillet 2027 affiche le projet avec 500 € de prévu, et son reste à budgéter baisse de
   500 € ; l'interrupteur « Projets planifiés » désactivé, le projet disparaît et le reste à budgéter
   remonte de 500 €. Passé en cours, le projet compte quel que soit l'interrupteur.
-- Avec une mise de côté à partir de novembre 2026, le budget affiche 333,33 € en novembre et en décembre,
-  333,34 € en janvier 2027, et rien en février ni en juillet. Une mise de côté à partir de février 2027
-  est refusée : aucun mois ne précède la dépense.
+- Avec une mise de côté à partir de novembre 2026, le budget affiche 229,16 € en novembre et en
+  décembre, 229,18 € en janvier 2027, 62,50 € de février à juin, et rien en juillet. À partir de
+  février 2027, le train reste en février (500 €) et le reste est mis de côté de février à juin (100 €
+  par mois) : 600 € en février. À partir de juillet 2027, elle est refusée : aucun mois ne précède la
+  dernière dépense.
+- Étant donné un projet de 1 050 € avec un acompte de 500 € prévu en novembre 2026 et 550 € en
+  février 2027, mis de côté dès octobre 2026, alors la mise de côté vaut 637,50 € en octobre (l'acompte
+  et la première part du reste), puis 137,50 € de novembre à janvier.
 - Le 20 décembre 2026, après un billet de 520 € rangé dans Train, le restant prévu (R-BUD-71) vaut 0 €
   pour Train et 500 € en juillet 2027 ; le calendrier prévu, lui, ne change pas.
 - Le projet terminé, il n'a plus de restant ni de prévu dans le budget ; son réel y reste.

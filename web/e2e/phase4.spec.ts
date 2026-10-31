@@ -166,9 +166,10 @@ test('E18, E20 : un projet envisagé dans le budget du mois, mise de côté et c
   await page.goto('/budget?mois=2026-10');
   const projects = page.locator('section.projects');
   const italy = projects.getByRole('link', { name: /Italie 2027/ });
-  // La démo met l'Italie de côté dès ce mois-ci, avant le train de février (R-BUD-73, R-BUD-74).
+  // La démo met l'Italie de côté dès ce mois-ci : le train de février sur octobre à janvier, le séjour de juin et
+  // juillet sur les mois qui le précèdent (R-BUD-73, R-BUD-74).
   await expect(italy).toContainText('mise de côté');
-  await expect(italy).toContainText('250,00');
+  await expect(italy).toContainText('184,02');
   // Interrupteur « Projets planifiés » : le projet envisagé sort du budget (R-BUD-72).
   await projects.getByRole('switch', { name: 'Projets planifiés' }).click();
   await expect(italy).toHaveCount(0);
@@ -178,16 +179,17 @@ test('E18, E20 : un projet envisagé dans le budget du mois, mise de côté et c
   // Le calendrier du projet : le train en février, le reste sur la période du voyage (R-BUD-70).
   await italy.click();
   const schedule = page.getByRole('region', { name: 'Calendrier' });
-  await expect(schedule.locator('.row', { hasText: 'Février 2027' })).toContainText('500,00');
-  await expect(schedule).toContainText(
-    /Mise de côté : 250,00\s€ par mois de octobre 2026 à janvier 2027/,
+  await expect(schedule.locator('.row', { hasText: 'Février 2027' }).first()).toContainText(
+    '500,00',
   );
+  await expect(schedule.locator('.row', { hasText: 'Octobre 2026' })).toContainText('184,02');
+  await expect(schedule.locator('.row', { hasText: 'Juin 2027' }).last()).toContainText('27,84');
 
   // Le dialogue garde la mise de côté et la résume.
   await page.getByRole('button', { name: /Modifier/ }).click();
   const dialog = await openedDialog(page);
   await expect(dialog.getByRole('checkbox', { name: 'Mettre de côté chaque mois' })).toBeChecked();
-  await expect(dialog.getByRole('status')).toContainText('par mois de octobre 2026 à janvier 2027');
+  await expect(dialog.getByRole('status')).toContainText("d'octobre 2026 à juin 2027");
   await dialog.getByRole('button', { name: 'Annuler' }).click();
 });
 

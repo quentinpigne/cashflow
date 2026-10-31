@@ -32,7 +32,7 @@ import {
   todayIso,
 } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
-import { formatMoney, monthlyShare, parseMoney, sum, toEditable } from '../../core/money';
+import { parseMoney, sum, toEditable } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { openAndRefresh } from './budget-dialogs';
@@ -54,6 +54,12 @@ interface LineDraft {
   categories: string[];
   /** Mois prévu `AAAA-MM`, ou `null` : étalé sur la période du projet (R-BUD-70). */
   plannedMonth: string | null;
+}
+
+/** « de mars 2027 », « d'octobre 2026 ». */
+function fromMonth(month: string): string {
+  const label = formatMonthKey(month).toLowerCase();
+  return /^[aeiou]/.test(label) ? `d'${label}` : `de ${label}`;
 }
 
 /** Création ou modification d'un projet (BUD-06, R-BUD-20, R-BUD-21), et de ses postes (BUD-11, R-BUD-26). */
@@ -369,35 +375,41 @@ export class ProjectDialog {
     return chosen && !months.includes(chosen) ? [chosen, ...months].sort() : months;
   }
 
-  /** Premier mois du calendrier prévu : le début, ou un mois prévu plus tôt (R-BUD-70). */
-  private readonly firstMonth = computed(() =>
-    this.lines()
+  /**
+   * Dernier mois du calendrier prévu (R-BUD-70) : le plus tardif des mois prévus, ou la fin de la période s'il reste
+   * un montant à y étaler.
+   */
+  private readonly lastMonth = computed(() => {
+    const lines = this.lines();
+    const end = this.end();
+    const periodEnd = end ? toIsoDate(end).slice(0, 7) : this.startMonth();
+    const spread = lines.length === 0 || lines.some((l) => !l.plannedMonth);
+    return lines
       .map((l) => l.plannedMonth)
-      .reduce<string>((first, m) => (m && m < first ? m : first), this.startMonth()),
-  );
+      .reduce<string>((last, m) => (m && m > last ? m : last), spread ? periodEnd : '');
+  });
 
-  /** Débuts possibles de la mise de côté : jusqu'au mois qui précède la dépense (R-BUD-73). */
+  /** Débuts possibles de la mise de côté : jusqu'au mois qui précède la dernière dépense (R-BUD-73). */
   protected readonly provisionChoices = computed(() => {
     const from = this.project?.provision_from;
     const first = from && from < currentMonth() ? from : currentMonth();
-    return monthsBetween(first, shiftMonth(this.firstMonth(), -1));
+    return monthsBetween(first, shiftMonth(this.lastMonth(), -1));
   });
 
   private readonly provisionMonths = computed(() =>
-    monthsBetween(this.provisionFrom(), shiftMonth(this.firstMonth(), -1)),
+    monthsBetween(this.provisionFrom(), shiftMonth(this.lastMonth(), -1)),
   );
 
   protected readonly provisionSummary = computed(() => {
     const months = this.provisionMonths();
     if (months.length === 0) {
-      return 'Aucun mois ne précède la dépense : la mise de côté est impossible.';
+      return 'Aucun mois ne précède les dépenses : la mise de côté est impossible.';
     }
-    const total = this.lines().length === 0 ? parseMoney(this.amount()) : this.linesTotal();
-    const share = total === null ? null : monthlyShare(total, months.length);
-    const amount = share === null ? '—' : formatMoney(share);
-    return months.length === 1
-      ? `${amount} en ${formatMonthKey(months[0]).toLowerCase()}, avant la dépense.`
-      : `${amount} par mois de ${formatMonthKey(months[0]).toLowerCase()} à ${formatMonthKey(months[months.length - 1]).toLowerCase()}, avant la dépense.`;
+    const range =
+      months.length === 1
+        ? `en ${formatMonthKey(months[0]).toLowerCase()}`
+        : `${fromMonth(months[0])} à ${formatMonthKey(months[months.length - 1]).toLowerCase()}`;
+    return `Mise de côté ${range}, chaque dépense sur les mois qui la précèdent ; détail dans le calendrier du projet.`;
   });
 
   protected readonly valid = computed(() => {
@@ -704,11 +716,16 @@ export class ProjectsPage {
               </div>
             }
             @if (p.provision.length > 0) {
+              <h3>Mise de côté</h3>
+              @for (m of p.provision; track m.month) {
+                <div class="row">
+                  <span>{{ monthLabel(m.month) }}</span>
+                  <span class="amount">{{ m.amount_minor | money }}</span>
+                </div>
+              }
               <p class="muted small">
-                Mise de côté : {{ p.provision[0].amount_minor | money }} par mois de
-                {{ monthLabel(p.provision[0].month).toLowerCase() }} à
-                {{ monthLabel(p.provision[p.provision.length - 1].month).toLowerCase() }}, réservée
-                dans le budget avant la dépense.
+                Réservée dans le budget avant chaque dépense ; une dépense sans mois avant elle
+                reste dans son mois.
               </p>
             } @else if (p.provision_from) {
               <p class="muted small">

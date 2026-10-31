@@ -784,21 +784,44 @@ pub fn remaining_date(month: Month, start: Date, tomorrow: Date) -> Date {
     date.max(tomorrow)
 }
 
-/// Mise de côté d'un projet (R-BUD-73) : son prévu en quotes-parts exactes, de `provision_from` au mois qui précède
-/// le premier mois de son calendrier prévu. Refusée sans mois avant la dépense, ou pour un projet dont les dépenses
-/// restent dans les lignes du mois.
+/// Montants par mois.
+type MonthAmounts = BTreeMap<Month, Money>;
+
+/// Mise de côté d'un projet (R-BUD-73) : chaque mois de son calendrier prévu est réparti en quotes-parts exactes sur
+/// les mois de `provision_from` au mois qui le précède. Un mois du calendrier sans mois avant lui reste dans son mois.
+/// Renvoie `(réservé, laissé au calendrier)`, ou le calendrier entier sans mise de côté. Refusée si rien ne peut être
+/// mis de côté, ou pour un projet dont les dépenses restent dans les lignes du mois.
+fn reservation<L, C>(
+    timing: &ProjectTiming,
+    lines: &[ProjectLine<L, C>],
+) -> Result<(MonthAmounts, MonthAmounts), DomainError> {
+    let schedule = planned_schedule(timing, lines);
+    let Some(from) = timing.provision_from else { return Ok((BTreeMap::new(), schedule)) };
+    if !timing.exclude_from_period_budgets {
+        return Err(DomainError::InvalidProvision);
+    }
+    let mut reserved = BTreeMap::new();
+    let mut kept = BTreeMap::new();
+    for (month, amount) in schedule {
+        let before = from.until(month.previous());
+        if before.is_empty() {
+            add_all(&mut kept, BTreeMap::from([(month, amount)]));
+        } else {
+            add_all(&mut reserved, spread(amount, &before));
+        }
+    }
+    if reserved.is_empty() {
+        return Err(DomainError::InvalidProvision);
+    }
+    Ok((reserved, kept))
+}
+
+/// Mise de côté d'un projet, mois par mois (R-BUD-73) ; vide sans `provision_from`.
 pub fn provision<L, C>(
     timing: &ProjectTiming,
     lines: &[ProjectLine<L, C>],
 ) -> Result<BTreeMap<Month, Money>, DomainError> {
-    let Some(from) = timing.provision_from else { return Ok(BTreeMap::new()) };
-    let schedule = planned_schedule(timing, lines);
-    let first = schedule.keys().next().copied().unwrap_or(Month::of(timing.start));
-    let months = from.until(first.previous());
-    if months.is_empty() || !timing.exclude_from_period_budgets {
-        return Err(DomainError::InvalidProvision);
-    }
-    Ok(spread(project_planned(timing.amount, lines), &months))
+    reservation(timing, lines).map(|(reserved, _)| reserved)
 }
 
 /// Le projet compte-t-il dans le budget, l'évolution et les projections (R-BUD-72) ? Toujours en cours, jamais
@@ -811,8 +834,8 @@ pub fn counted(status: ProjectStatus, planned_projects: bool) -> bool {
     }
 }
 
-/// Prévu d'un projet dans le budget, mois par mois (R-BUD-74) : sa mise de côté s'il en a une, sinon son calendrier
-/// prévu ; rien pour un projet non exclu des lignes du mois, ou qui ne compte pas (R-BUD-72). Une mise de côté
+/// Prévu d'un projet dans le budget, mois par mois (R-BUD-74) : sa mise de côté s'il en a une, avec ce qui reste au
+/// calendrier, sinon son calendrier prévu ; rien pour un projet non exclu des lignes du mois, ou qui ne compte pas (R-BUD-72). Une mise de côté
 /// devenue impossible (dates changées) laisse place au calendrier.
 pub fn budget_forecast<L, C>(
     timing: &ProjectTiming,
@@ -822,9 +845,12 @@ pub fn budget_forecast<L, C>(
     if !timing.exclude_from_period_budgets || !counted(timing.status, planned_projects) {
         return BTreeMap::new();
     }
-    match provision(timing, lines) {
-        Ok(provision) if !provision.is_empty() => provision,
-        _ => planned_schedule(timing, lines),
+    match reservation(timing, lines) {
+        Ok((mut reserved, kept)) => {
+            add_all(&mut reserved, kept);
+            reserved
+        }
+        Err(_) => planned_schedule(timing, lines),
     }
 }
 
@@ -1312,18 +1338,54 @@ mod tests {
         assert!(!counted(ProjectStatus::Closed, true));
     }
 
-    /// Critère d'acceptation de BUD-14 / R-BUD-73 : la mise de côté s'arrête avant le premier mois prévu.
+    /// Critère d'acceptation de BUD-14 / R-BUD-73 : chaque mois du calendrier est mis de côté sur les mois qui le
+    /// précèdent ; un mois sans mois avant lui reste au calendrier.
     #[test]
     fn r_bud_73_provision() {
+        // Le train (500, février) sur novembre à janvier ; le reste (500, juillet) sur novembre à juin.
         let from_november = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2026-11"));
-        assert_eq!(
-            provision(&from_november, &italy_dated()),
-            Ok(BTreeMap::from([(m("2026-11"), eur(33_333)), (m("2026-12"), eur(33_333)), (m("2027-01"), eur(33_334))]))
-        );
+        let mut expected = BTreeMap::from([
+            (m("2026-11"), eur(16_666 + 6_250)),
+            (m("2026-12"), eur(16_666 + 6_250)),
+            (m("2027-01"), eur(16_668 + 6_250)),
+        ]);
+        for month in ["2027-02", "2027-03", "2027-04", "2027-05", "2027-06"] {
+            expected.insert(m(month), eur(6_250));
+        }
+        assert_eq!(provision(&from_november, &italy_dated()), Ok(expected));
+        // À partir de février : le train reste en février, le reste est mis de côté de février à juin.
         let from_february = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2027-02"));
-        assert_eq!(provision(&from_february, &italy_dated()), Err(DomainError::InvalidProvision));
+        let reserved: BTreeMap<Month, Money> =
+            ["2027-02", "2027-03", "2027-04", "2027-05", "2027-06"].iter().map(|s| (m(s), eur(10_000))).collect();
+        assert_eq!(provision(&from_february, &italy_dated()), Ok(reserved));
+        let forecast = budget_forecast(&from_february, &italy_dated(), true);
+        assert_eq!(forecast.get(&m("2027-02")), Some(&eur(60_000)));
+        assert_eq!(forecast.get(&m("2027-07")), None);
+        // Rien avant le dernier mois du calendrier : impossible.
+        let from_july = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2027-07"));
+        assert_eq!(provision(&from_july, &italy_dated()), Err(DomainError::InvalidProvision));
         let kept_in_lines = ProjectTiming { exclude_from_period_budgets: false, ..from_november };
         assert_eq!(provision(&kept_in_lines, &italy_dated()), Err(DomainError::InvalidProvision));
+    }
+
+    /// R-BUD-73 : un acompte de 500 en novembre et 550 en février, mis de côté dès octobre : 500 en octobre pour
+    /// l'acompte, 550 sur octobre à janvier pour le reste.
+    #[test]
+    fn r_bud_73_provision_follows_each_planned_month() {
+        let mut deposit = post(1, "Acompte", 50_000, &[]);
+        deposit.planned_month = Some(m("2026-11"));
+        let mut stay = post(2, "Séjour", 55_000, &[]);
+        stay.planned_month = Some(m("2027-02"));
+        let trip = ProjectTiming { start: d("2027-02-10"), ..timing(ProjectStatus::Planned, None, Some("2026-10")) };
+        assert_eq!(
+            provision(&trip, &[deposit, stay]),
+            Ok(BTreeMap::from([
+                (m("2026-10"), eur(50_000 + 13_750)),
+                (m("2026-11"), eur(13_750)),
+                (m("2026-12"), eur(13_750)),
+                (m("2027-01"), eur(13_750)),
+            ]))
+        );
     }
 
     /// Critère d'acceptation de BUD-14 / R-BUD-74 et R-BUD-40 : le prévu du projet entre dans le reste à budgéter.
@@ -1358,10 +1420,10 @@ mod tests {
         let without = month(&[forecast(false)]);
         assert_eq!(without.projects, vec![ProjectMonth { project: 99, planned: Money::ZERO, actual: eur(4_500) }]);
         assert_eq!(without.to_budget, eur(-15_000));
-        // Avec une mise de côté, les mois de la dépense n'ont plus de prévu.
+        // Avec une mise de côté, ce qui est réservé n'a plus de prévu dans le mois de la dépense.
         let provisioned = timing(ProjectStatus::Planned, Some("2027-07-31"), Some("2026-11"));
         let planned = budget_forecast(&provisioned, &italy_dated(), true);
-        assert_eq!(planned.get(&m("2026-12")), Some(&eur(33_333)));
+        assert_eq!(planned.get(&m("2026-12")), Some(&eur(22_916)));
         assert_eq!(planned.get(&m("2027-07")), None);
         // Un projet non exclu des lignes du mois n'a pas de prévu propre.
         let kept = ProjectTiming { exclude_from_period_budgets: false, ..july };

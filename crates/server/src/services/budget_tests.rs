@@ -587,7 +587,8 @@ async fn bud_14_project_in_month_budget_r_bud_70_to_74() {
     assert!(without.projects.is_empty());
     assert_eq!(without.to_budget_minor, 300_000);
 
-    // Mise de côté de mars à avril, avant le train de mai (R-BUD-73) : les mois de la dépense n'ont plus de prévu.
+    // Mise de côté dès mars (R-BUD-73) : le train de mai sur mars et avril, le reste de juillet sur mars à juin ; ce qui
+    // est réservé n'a plus de prévu dans le mois de la dépense.
     let provisioned = budgets::save_project(
         &db,
         Some(project.id),
@@ -597,11 +598,12 @@ async fn bud_14_project_in_month_budget_r_bud_70_to_74() {
     .unwrap();
     let provision: Vec<(&str, i64)> =
         provisioned.provision.iter().map(|m| (m.month.as_str(), m.amount_minor)).collect();
-    assert_eq!(provision, vec![("2026-03", 50_000), ("2026-04", 50_000)]);
+    assert_eq!(provision, vec![("2026-03", 37_500), ("2026-04", 37_500), ("2026-05", 12_500), ("2026-06", 12_500)]);
     let march = view(&db, "2026-03").await;
     assert!(march.projects[0].provision);
-    assert_eq!(march.to_budget_minor, 250_000);
-    assert!(view(&db, "2026-05").await.projects.is_empty());
+    assert_eq!(march.to_budget_minor, 262_500);
+    assert_eq!(view(&db, "2026-05").await.projects[0].planned_minor, 12_500);
+    assert!(view(&db, "2026-07").await.projects.is_empty());
 
     // Le réel du mois s'affiche avec le projet (R-BUD-74).
     let dinner = transactions::create(&db, &tx(checking, "2026-03-10", -4_500, Some(restaurants))).await.unwrap();
@@ -613,11 +615,11 @@ async fn bud_14_project_in_month_budget_r_bud_70_to_74() {
     assert_eq!(march.projects[0].actual_minor, 4_500);
     assert_eq!(march.projects[0].planned_minor, 0);
 
-    // Une mise de côté sans mois avant la dépense est refusée.
+    // Une mise de côté sans aucun mois avant une dépense est refusée.
     let refused = budgets::save_project(
         &db,
         Some(project.id),
-        &ProjectInput { provision_from: Some("2026-05".into()), ..input.clone() },
+        &ProjectInput { provision_from: Some("2026-07".into()), ..input.clone() },
     )
     .await;
     assert_eq!(domain_error(refused), DomainError::InvalidProvision);

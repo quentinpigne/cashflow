@@ -538,14 +538,15 @@ cochées à partir du mois en cours.
   prévu** global ; il disparaît dès le premier poste (R-BUD-26) : le premier poste reprend ce montant,
   et retirer le dernier poste le rend au montant global. Chaque poste a un **mois prévu** facultatif
   (R-BUD-70). Case **Mettre de côté chaque mois**, à partir d'un mois (le mois en cours par défaut),
-  seulement si le projet est exclu des lignes du mois : le dialogue affiche la quote-part et ses mois
-  (« 333,33 € par mois de novembre 2026 à janvier 2027 », R-BUD-73), ou pourquoi c'est impossible.
+  seulement si le projet est exclu des lignes du mois, jusqu'au mois qui précède la dernière dépense : le
+  dialogue affiche ses mois (« Mise de côté de novembre 2026 à juin 2027, chaque dépense sur les mois qui
+  la précèdent », R-BUD-73), ou pourquoi c'est impossible.
 - **Détail** : réel et jauge, dates, exclusion des lignes du mois ; **postes** (s'il y en a) : réel sur
   prévu et jauge de chacun, puis « Hors postes » s'il n'est pas nul (R-BUD-28) ; réel **par catégorie** ;
   transactions rattachées, avec leur poste, celles hors des dates signalées (R-BUD-23). Pastille du statut
   s'il n'est pas « en cours ». « Modifier » (y compris le statut) ; « Supprimer » seulement sans
   transaction rattachée. **Calendrier** (BUD-14) : les mois du calendrier prévu avec leur prévu et leur réel,
-  le mois prévu de chaque poste, et la mise de côté s'il y en a une.
+  le mois prévu de chaque poste, et la mise de côté mois par mois s'il y en a une.
 
 ## E21 — Notifications (BUD-08)
 

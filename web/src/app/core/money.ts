@@ -142,15 +142,6 @@ export function allocate(totalMinor: number, weights: number[]): number[] | null
   return parts;
 }
 
-/**
- * Quote-part mensuelle d'un montant étalé sur `count` mois : parts arrondies à l'inférieur, le dernier mois
- * absorbe le reste (R-BUD-16, R-BUD-73). Même calcul que le domaine (`budgeting::spread`).
- */
-export function monthlyShare(totalMinor: number, count: number): number | null {
-  if (count <= 0 || !Number.isInteger(count)) return null;
-  return Math.floor(totalMinor / count);
-}
-
 /** Somme exacte de montants entiers. */
 export function sum(amounts: number[]): number {
   return amounts.reduce((total, amount) => total + amount, 0);

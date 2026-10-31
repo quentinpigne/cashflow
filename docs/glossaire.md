@@ -177,7 +177,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Mois prévu (d'un poste) | `planned_month` | Mois où la dépense d'un poste est attendue (« Train » en février) ; sans lui, le poste est étalé sur la période du projet (R-BUD-70). |
 | Calendrier prévu | `PlannedSchedule` | Répartition par mois du prévu d'un projet, d'après les mois prévus de ses postes et sa période (R-BUD-70). |
 | Restant prévu | `remaining` | Part du prévu d'un projet qui reste à dépenser, placée dans les mois à venir ; sert aux projections et à l'estimation de fin d'année (R-BUD-71). |
-| Mise de côté | `provision` | Réservation mensuelle du prévu d'un projet dans le budget, avant sa dépense, comme la quote-part d'une ligne annuelle ; ne déplace pas d'argent (R-BUD-73). |
+| Mise de côté | `provision` | Réservation mensuelle du prévu d'un projet dans le budget, chaque dépense de son calendrier prévu sur les mois qui la précèdent, comme la quote-part d'une ligne annuelle ; ne déplace pas d'argent (R-BUD-73). |
 | Projets planifiés (interrupteur) | `planned_projects` | Inclut ou non les projets planifiés dans le budget du mois, l'évolution et les projections (R-BUD-72). |
 | Report | `rollover` | Reliquat (positif ou négatif) d'une ligne ajouté au disponible de la période suivante. |
 | Quote-part mensuelle | — | Montant d'une ligne annuelle / 12, affiché et pris en compte dans le reste à budgéter du mois. |
