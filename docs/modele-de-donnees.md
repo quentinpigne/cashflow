@@ -60,6 +60,9 @@ erDiagram
     Member |o--o{ Account : "titulaire"
     Member |o--o{ Split : "concerne"
     Member |o--o{ Employment : "occupe"
+    Member ||--o{ AssetShare : "possède (quote-part)"
+    Asset ||--o{ AssetShare : "réparti entre"
+    Member |o--o{ Document : "concerne"
     Document ||--o{ DocumentLink : "rattaché par"
     DocumentLink }o--o| Account : "compte (relevés)"
     DocumentLink }o--o| Employment : "emploi (fiches de paie)"
@@ -552,6 +555,7 @@ Décision : ADR-0024.
 | `size_bytes` | entier | requis, > 0 et ≤ 10 Mo |
 | `sha256` | texte | requis, **unique** : empreinte du contenu, 64 caractères hexadécimaux (R-DOC-3) |
 | `content_indexed` | booléen | `true` si du texte a été extrait du fichier et indexé (R-DOC-19) |
+| `member_id` | `Id` → Member | optionnel : membre que le document concerne, `null` = personne (R-MBR-13) ; par défaut le titulaire du compte d'un relevé, le membre de l'emploi d'une fiche de paie (R-MBR-14) ; mis à `null` à la suppression du membre |
 
 `DocumentKind` : `BANK_STATEMENT` (relevé de compte), `PAYSLIP` (fiche de paie), `CONTRACT` (contrat),
 `RECEIPT` (ticket de caisse), `INVOICE` (facture), `TAX` (document fiscal), `CERTIFICATE` (attestation),
@@ -775,7 +779,20 @@ Catégories qui proposent un poste (R-BUD-27).
 
 Une personne, pas un utilisateur : aucune connexion (ADR-0006). Lui sont affectés des comptes
 (`Account.member_id`), des ventilations (`Split.member_id`) et des emplois (`Employment.member_id`) ; ce qui
-n'a pas de membre est au foyer (R-MBR-4 à R-MBR-7).
+n'a pas de membre est au foyer (R-MBR-4 à R-MBR-7). Un bien se répartit par quotes-parts (`AssetShare`) ; un
+document est affecté à un membre ou à personne (`Document.member_id`, R-MBR-13).
+
+### AssetShare (quote-part d'un bien)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `asset_id` | `Id` → Asset | requis, suppression en cascade |
+| `member_id` | `Id` → Member | requis, suppression en cascade : la quote-part revient au foyer (R-MBR-2) |
+| `share_bp` | entier | quote-part en centièmes de pour cent, `CHECK (share_bp BETWEEN 1 AND 10000)` |
+
+Clé primaire `(asset_id, member_id)`. La somme des `share_bp` d'un bien ne dépasse pas 10 000 : vérifiée par le
+domaine (R-MBR-11) ; le reste est au foyer. Pas d'`id` ni d'horodatages : les quotes-parts d'un bien se
+remplacent d'un bloc.
 
 
 ## Authentification — ADR-0006, ADR-0015, ADR-0023

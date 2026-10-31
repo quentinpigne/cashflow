@@ -107,8 +107,8 @@ Simuler un crédit et préparer une demande de crédit : spec 13.
 
 ## Foyer
 
-Les biens et les prêts n'ont pas de membre : ils sont au foyer, et comptent avec la case « Foyer » (R-MBR-9,
-spec 14).
+Un bien se répartit entre des membres par quotes-parts, le reste étant au foyer (R-MBR-11, R-MBR-12, spec 14).
+Les prêts n'ont pas de membre : ils sont au foyer, et comptent avec la case « Foyer » (R-MBR-9).
 
 ## Activation
 

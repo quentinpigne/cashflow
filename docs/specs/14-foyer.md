@@ -25,8 +25,9 @@ Compte joint (sans membre) ─ cantine de Léo (sans membre) → Foyer    ✔
 Livret de Claire                                           → Claire   ✘
 ```
 
-Cette première version est volontairement simple : un compte a **au plus un** membre. Il n'y a pas de compte
-joint à quotes-parts : un compte commun reste au foyer. Les biens, les prêts et les documents n'ont pas de
+Un compte a **au plus un** membre : il n'y a pas de compte joint à quotes-parts, un compte commun reste au
+foyer. Un **bien** se répartit entre des membres par quotes-parts, le reste étant au foyer (la maison à 60 % à
+Quentin, 40 % à Claire). Un **document** est affecté à un membre ou à personne. Les prêts n'ont pas de
 membre. Catégories, règles, tiers, budgets, projets, scénarios de projection et récurrences restent communs
 au foyer (Q19).
 
@@ -77,14 +78,15 @@ au foyer (Q19).
   patrimoine ; pour les comptes, d'un compte ouvert ; pour la trésorerie, d'un compte courant ouvert ; pour
   l'épargne, d'un compte d'épargne ou d'épargne de précaution ouvert ; pour les flux, d'un compte ou d'une
   ventilation ; pour le salaire, d'un emploi. « Foyer » est proposé quand un tel objet n'a pas de membre (et,
-  pour le patrimoine, quand il existe un bien ou un prêt). S'il ne reste qu'une case, il n'y a pas de choix.
+  pour le patrimoine, quand un bien n'est pas réparti en entier ou qu'il existe un prêt). Pour le patrimoine, un
+  membre qui a une quote-part d'un bien est aussi proposé. S'il ne reste qu'une case, il n'y a pas de choix.
   Une case non proposée ne compte rien : les chiffres n'en dépendent pas.
 - **R-MBR-9** — Avec un choix de membres :
   - les **flux** (revenus, dépenses, non catégorisé, épargne, par catégorie, par tiers, évolution) ne
     comptent que les ventilations dont le membre (ou « Foyer », sans membre) est coché ;
   - les **soldes**, le **patrimoine** et les **projections** (patrimoine, trésorerie, épargne) ne comptent
-    que les comptes dont le membre est coché, les comptes sans membre avec « Foyer » ; les biens et les prêts
-    comptent avec « Foyer » ;
+    que les comptes dont le membre est coché, les comptes sans membre avec « Foyer » ; d'un bien, la part de
+    chaque membre coché, et le reste avec « Foyer » (R-MBR-12) ; les prêts comptent avec « Foyer » ;
   - l'encadré **Salaire** ne montre que les emplois dont le membre est coché, ceux sans membre avec « Foyer » ;
   - l'encadré **Épargne** ne compte que les comptes dont le titulaire est coché (épargne de précaution,
     intérêts, épargne variable), et des dépenses mensuelles moyennes (R-TDB-8) que les ventilations dont le
@@ -99,6 +101,29 @@ au foyer (Q19).
 - **R-MBR-10** — Invariant : toutes les cases cochées, chaque chiffre est celui d'aujourd'hui ; et pour un
   flux, la somme des chiffres de chaque case cochée seule égale le chiffre de toutes les cases.
 
+## Biens répartis entre membres
+
+- **R-MBR-11** — Un **bien** se répartit entre **zéro, un ou plusieurs** membres, chacun avec sa **quote-part**,
+  en centièmes de pour cent (de 0,01 % à 100 %). La somme des quotes-parts ne dépasse pas 100 % ; le **reste est
+  au foyer**. Sans quote-part, le bien est entièrement au foyer, comme aujourd'hui. La quote-part se saisit en
+  pourcentage ou en **montant** : un montant est converti en quote-part d'après la valeur du bien au jour de la
+  saisie (arrondie au centième de pour cent), car c'est la quote-part qui reste quand la valeur change. Elle
+  se modifie à tout moment ; elle vaut pour toute la durée du bien (pas d'historique).
+- **R-MBR-12** — La **part d'un membre** dans la valeur d'un bien est cette valeur multipliée par sa
+  quote-part ; le foyer a le reste. Les parts sont arrondies au centime au **plus fort reste** (à reste égal,
+  le premier dans l'ordre des membres, le foyer en dernier), si bien que leur somme égale exactement la valeur
+  (ADR-0001). Supprimer un membre rend sa quote-part au foyer (R-MBR-2).
+
+## Documents d'un membre
+
+- **R-MBR-13** — Un **document** est affecté à **un membre** ou à **personne** ; il n'est jamais affecté au
+  « foyer ». Le membre se modifie à tout moment ; supprimer le membre laisse le document à personne (R-MBR-2).
+  La bibliothèque se filtre par membre (un membre, ou « Personne »).
+- **R-MBR-14** — À sa création, un **relevé de compte** est affecté au titulaire du compte auquel il est
+  rattaché (envoyé depuis le compte, ou archivé à l'import d'un relevé PDF, R-IMP-28), une **fiche de paie** au
+  membre de l'emploi ; les autres documents, à personne. Ce n'est qu'une valeur par défaut : elle ne suit pas
+  les changements de titulaire ou de membre de l'emploi.
+
 ## Features
 
 | ID | Priorité | Feature |
@@ -107,7 +132,9 @@ au foyer (Q19).
 | MBR-02 | V2 | Membre d'un compte et d'un emploi |
 | MBR-03 | V2 | Membre d'une transaction ou de chaque ventilation |
 | MBR-04 | V2 | Choix des membres affichés dans l'accueil, les analyses et les projections |
-| MBR-05 | V2 | Comptes joints à quotes-parts ; membres des biens, des prêts et des documents (à concevoir) |
+| MBR-05 | V2 | Comptes joints à quotes-parts ; membres des prêts (à concevoir) |
+| MBR-06 | V2 | Biens répartis entre membres par quotes-parts, en pourcentage ou en montant |
+| MBR-07 | V2 | Membre d'un document, par défaut celui du compte ou de l'emploi |
 
 ### MBR-01 — Critères d'acceptation
 
@@ -143,3 +170,22 @@ au foyer (Q19).
   porte « · Claire » (R-MBR-8).
 - Étant donné une case décochée dans les analyses, alors l'estimation de fin d'année n'est pas affichée
   (R-MBR-9).
+
+### MBR-06 — Critères d'acceptation
+
+- Étant donné la maison (420 000 €), quand je donne 60 % à Quentin et 30 % à Claire, alors le patrimoine de
+  Quentin compte 252 000 €, celui de Claire 126 000 €, et « Foyer » 42 000 € (R-MBR-11, R-MBR-12).
+- Étant donné la maison à 420 000 €, quand je saisis 105 000 € pour Claire, alors sa quote-part est 25 % ;
+  quand la maison vaut ensuite 440 000 €, sa part vaut 110 000 € (R-MBR-11).
+- Étant donné une valeur de 100 000,01 € à 50 / 50, alors les parts valent 50 000,01 € et 50 000,00 € (R-MBR-12).
+- Étant donné 70 % à Quentin, quand je donne 40 % à Claire, alors c'est refusé : la somme dépasse 100 %
+  (R-MBR-11).
+
+### MBR-07 — Critères d'acceptation
+
+- Étant donné le compte de Quentin, quand j'y envoie un relevé, alors il est affecté à Quentin ; une fiche de
+  paie de l'emploi de Claire est affectée à Claire ; une facture envoyée depuis la bibliothèque, à personne
+  (R-MBR-14).
+- Étant donné un relevé affecté à Quentin, quand je choisis « Personne », alors il n'a plus de membre, et le
+  filtre « Personne » de la bibliothèque le montre (R-MBR-13).
+

@@ -1184,6 +1184,14 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
   qui reste au foyer (R-MBR-9). Filtré, l'écran l'indique dans son titre (« Analyses · Claire ») et le bouton
   est mis en avant. Sur E24, le bouton Scénarios prend l'icône `insights`.
 
+- **E26 Fiche d'un bien**, formulaire du bien : section **Répartition** (MBR-06) : une ligne par membre, quote-part saisie en %
+  ou en € (bascule « % / € » ; en €, la quote-part calculée s'affiche à côté, d'après la valeur actuelle) ;
+  « Foyer : reste » affiché en dessous, en erreur au-delà de 100 % (R-MBR-11). **E25 Biens** : sous la valeur,
+  « Quentin 60 % · Claire 30 % · Foyer 10 % ».
+- **E35 Document** : champ **Membre** (« Personne », puis les membres, R-MBR-13), prérempli à l'envoi d'un
+  relevé ou d'une fiche de paie (R-MBR-14). **E34 Bibliothèque** : filtre **Membre** (un membre, ou
+  « Personne ») et l'étiquette du membre à côté du titre.
+
 ## E44 — Membres du foyer (MBR-01)
 
 Dans les réglages, comme les tiers (E31). Route `/reglages/foyer`.

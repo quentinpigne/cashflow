@@ -68,6 +68,8 @@ fichiers techniques, attachés à un lot d'import. Un relevé PDF importé est c
   emploi, transaction, bien, prêt, tiers, projet. Il est rattaché au plus une fois à un même objet. Le
   rattachement d'un document n'a aucun effet sur les montants : il n'a rien à voir avec le rattachement d'une
   ventilation (R-TRX-37).
+  Avec la rubrique Foyer, un document est aussi affecté à un membre ou à personne (R-MBR-13, R-MBR-14, spec 14) :
+  ce n'est pas un rattachement.
 - **R-DOC-10** — Un **relevé de compte** est rattaché à **un seul compte** et une **fiche de paie** à **un seul
   emploi**, en plus de ses autres rattachements éventuels. Un relevé ou une fiche dont le compte ou l'emploi a
   été supprimé (R-DOC-12) n'a plus ce rattachement : on peut le rattacher à un autre compte ou emploi, ou
