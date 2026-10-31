@@ -1,7 +1,7 @@
-# ADR-0006 — Mono-utilisateur en V1, multi-membres du foyer à terme
+# ADR-0006 — Une seule connexion ; les membres du foyer sont des personnes, sans connexion
 
 - **Statut** : Accepté
-- **Date** : 2026-10-20
+- **Date** : 2026-10-20 ; modèle des membres tranché le 2026-10-31 (spec 14)
 - **Concerne** : architecture, modèle de données, ADR-0015
 
 ## Contexte
@@ -38,19 +38,32 @@ Option 3.
 - Les services reçoivent un **contexte d'appel** (`RequestContext`, qui contient l'utilisateur
   courant), même s'ils ne s'en servent pas encore.
 
-**Modèle cible esquissé (non implémenté, à confirmer avant les travaux) :**
-- `AccountAccess(account_id, user_id, role)` avec un rôle `OWNER` ou `VIEWER` : un compte joint est
-  accessible à plusieurs membres. Un membre ne voit que les comptes auxquels il a accès, et toutes les
-  données qui en découlent (transactions, ventilations, imports, points de contrôle, valorisations).
-- Catégories, règles de catégorisation, profils d'import, barèmes de taux : **partagés par le foyer**.
-- Budgets, projets, scénarios de projection : rattachés à un membre **ou** au foyer. À trancher le
-  moment venu (questions ouvertes).
+**Membres du foyer (tranché le 2026-10-31, spec 14) :**
+- Un **membre** (`Member`) est une **personne** du foyer, pas un utilisateur : il n'a pas de connexion.
+  L'application garde **une seule connexion** (`app_user`, une ligne) ; tout ce qui est visible l'est pour
+  elle. Il n'y a ni droits par membre, ni filtrage de sécurité, ni `AccountAccess`.
+- Les membres servent à attribuer : les **comptes**, les **biens** et les **prêts** ont des propriétaires
+  avec une **quote-part** (tables `account_owner`, `asset_owner`, `loan_owner`) ; un **emploi** a au plus un
+  membre ; un **document** peut être rattaché à un membre. On en tire le patrimoine **par membre**, en plus
+  de celui du foyer.
+- Catégories, règles, tiers, profils d'import, barèmes de taux, budgets, projets, scénarios de projection et
+  récurrences restent **communs au foyer** (Q19).
+- La rubrique **Foyer** s'active dans les réglages, désactivée par défaut : sans elle, l'application reste
+  mono-personne, comme en V1.
+
+Options écartées pour les membres :
+- **Une connexion par membre, foyer transparent** — ❌ Des sessions et une gestion des mots de passe par
+  membre, sans rien gagner en confidentialité puisque tout le monde voit tout.
+- **Une connexion par membre, comptes privés** (`AccountAccess(account_id, user_id, role)`, modèle esquissé
+  en V1) — ❌ Chaque requête devrait filtrer par membre (transactions, imports, documents, analyses,
+  patrimoine) : chantier lourd et risque de fuite d'un écran à l'autre, pour un besoin qui n'existe pas.
 
 ## Conséquences
 
 - La V1 reste simple : aucun écran ni aucune règle liés aux membres.
-- La migration vers le multi-membres consistera à créer `AccountAccess` (en attribuant tous les comptes
-  existants au premier utilisateur), à ajouter un propriétaire aux entités rattachées à un membre, et à
-  appliquer le filtrage dans les repositories.
-- Le patrimoine, le taux d'épargne et les budgets devront alors exister en deux vues : par membre et
-  pour le foyer. Les définitions de la spec 08 seront à étendre.
+- Les membres n'ajoutent que des tables de propriétaires et quelques colonnes : aucune requête existante
+  n'a à filtrer par membre, et rien ne change quand la rubrique Foyer est désactivée.
+- Le patrimoine existe en deux vues, foyer et membre (R-MBR-10 à R-MBR-12). Les dépenses, revenus et
+  épargne par membre demandent de répartir les flux d'un compte joint : à concevoir (MBR-05).
+- Le contexte d'appel (`RequestContext`) prévu en V1 n'a pas été construit : sans droits par membre, il
+  n'est plus nécessaire.

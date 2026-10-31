@@ -105,6 +105,12 @@ l'interface n'en montre plus rien.
 
 Simuler un crédit et préparer une demande de crédit : spec 13.
 
+## Propriétaires
+
+Avec la rubrique Foyer, un bien a des propriétaires et un prêt des emprunteurs, chacun avec sa quote-part
+(R-MBR-4 à R-MBR-6, spec 14). La valeur d'un bien et le capital restant dû d'un prêt se répartissent selon
+ces quotes-parts dans le patrimoine d'un membre (R-MBR-10).
+
 ## Activation
 
 - **R-BIE-7** — La rubrique **Biens** s'active dans les réglages. Désactivée, l'interface ne montre aucun

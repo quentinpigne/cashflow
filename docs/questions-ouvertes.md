@@ -20,14 +20,14 @@ a été consignée (ADR, spec).
 
 | # | Question | Où |
 |---|---|---|
-| Q19 | Multi-membres : budgets, projets et scénarios sont-ils personnels, familiaux, ou les deux ? Que voit un membre `VIEWER` ? | ADR-0006 |
 | Q20 | Pension de retraite et revenus de remplacement (chômage) : un emploi de nature « pension », ou une entité à part ? | ADR-0022, spec 10 (SAL-06) |
-| Q21 | Multi-membres : un emploi appartient-il à un membre du foyer ? | ADR-0006, spec 10 |
 
 ## Tranchées
 
 | # | Question | Réponse | Où |
 |---|---|---|---|
+| Q19 | Multi-membres : budgets, projets et scénarios personnels ou familiaux ? | Familiaux seulement ; pas de droits par membre : les membres sont des personnes sans connexion (2026-10-31) | ADR-0006, spec 14 |
+| Q21 | Un emploi appartient-il à un membre du foyer ? | Oui, à au plus un membre (2026-10-31) | spec 14, R-MBR-7 |
 | Q4 | Quelles banques, et quels formats d'export ? | LCL seulement pour l'instant (CSV/Excel, PDF) ; une autre banque se recensera le jour où elle sera utilisée (2026-10-23) | spec 03, roadmap |
 | Q5 | Conserver le fichier source de chaque import ? | Oui, supprimable | spec 03, R-IMP-21 |
 | — | Formats LCL | CSV/Excel pour la période récente, PDF pour l'historique | spec 03, roadmap |

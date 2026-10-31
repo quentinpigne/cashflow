@@ -92,6 +92,17 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Récurrence | `RecurringRule` | Modèle de transaction qui se répète (salaire, loyer…), source d'échéances prévues. |
 | Échéance prévue | `ScheduledOccurrence` | Occurrence future calculée d'une récurrence. Ce n'est pas une transaction. |
 
+## Foyer
+
+| Terme | Identifiant | Définition |
+|---|---|---|
+| Foyer | `Household` | L'ensemble des membres ; la vue par défaut, qui compte tout (spec 14). |
+| Membre (du foyer) | `Member` | Personne de la famille, sans connexion, à qui appartiennent comptes, biens, prêts, emplois ou documents (R-MBR-1, ADR-0006). |
+| Propriétaire | `Owner` (`AccountOwner`, `AssetOwner`, `LoanOwner`) | Membre qui détient un compte ou un bien, ou emprunteur d'un prêt, avec sa quote-part (R-MBR-4). |
+| Quote-part | `share_bp` | Part d'un propriétaire, en centièmes de pour cent (10 000 = 100 %) ; les quotes-parts d'un objet font 100 % (R-MBR-4). |
+| Non attribué | `Unassigned` | Compte, bien ou prêt sans propriétaire : il compte pour le foyer, pour aucun membre (R-MBR-4). |
+| Patrimoine d'un membre | `MemberNetWorth` | Patrimoine restreint aux parts du membre (R-MBR-10). |
+
 ## Tiers
 
 | Terme | Identifiant | Définition |
@@ -230,3 +241,4 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Enveloppe | Ligne de budget avec report, ou projet | Le modèle « enveloppes » n'a pas été retenu (ADR-0014). |
 | Bénéficiaire, marchand, destinataire | Tiers (`Payee`) | Un tiers peut aussi me verser de l'argent (employeur) : « bénéficiaire » ne couvre qu'un sens. |
 | Enseigne (comme entité) | Groupe de tiers (`PayeeGroup`) | Un groupe peut réunir autre chose que des magasins. |
+| Utilisateur (pour une personne de la famille) | Membre (`Member`) | Un membre n'a pas de connexion ; l'utilisateur (`AppUser`) est la seule connexion de l'application (ADR-0006). |

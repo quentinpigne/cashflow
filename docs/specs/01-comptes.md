@@ -83,6 +83,11 @@ détermine sa **famille** (`AccountFamily`), qui fixe son comportement dans l'ap
   du mois du premier relevé archivé et jusqu'au mois de clôture du compte ou au mois précédant le mois
   courant, le plus tôt des deux. Il est signalé dans la liste, à titre indicatif, sans alerte.
 
+## Propriétaires
+
+Avec la rubrique Foyer, un compte a zéro, un ou plusieurs propriétaires avec leur quote-part (R-MBR-4 à
+R-MBR-6, spec 14) : un compte joint en a plusieurs. Ils n'affectent aucun solde.
+
 ## Features
 
 | ID | Priorité | Feature |

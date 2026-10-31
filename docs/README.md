@@ -54,7 +54,8 @@ docs/
 │   ├── 10-salaires.md
 │   ├── 11-tiers.md
 │   ├── 12-documents.md
-│   └── 13-credit.md
+│   ├── 13-credit.md
+│   └── 14-foyer.md
 └── adr/               ← Architecture Decision Records
     ├── README.md      ← index + processus
     ├── template.md

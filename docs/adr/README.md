@@ -24,7 +24,7 @@ retenu et ses conséquences. Il sert à comprendre plus tard *pourquoi* le proje
 | [0003](0003-ventilation-systematique.md) | Ventilation systématique des transactions | Accepté |
 | [0004](0004-virements-internes.md) | Virements internes comme lien entre deux transactions | Accepté |
 | [0005](0005-import-en-deux-temps.md) | Import en deux temps et dédoublonnage par empreinte | Accepté |
-| [0006](0006-mono-utilisateur.md) | Mono-utilisateur en V1, multi-membres du foyer à terme | Accepté |
+| [0006](0006-mono-utilisateur.md) | Une seule connexion ; les membres du foyer sont des personnes, sans connexion | Accepté |
 | [0007](0007-services-tiers-optionnels.md) | Services tiers (OCR) explicites et optionnels | Accepté |
 | [0008](0008-export-ouvert.md) | Export complet dans un format ouvert | Accepté |
 | [0009](0009-choix-de-la-stack.md) | Choix de la stack technique : Rust (axum, sqlx/SQLite) + Angular | Accepté |

@@ -181,6 +181,15 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - [x] TIE-05 — proposer des tiers à partir des libellés bancaires, avec règle optionnelle (spec 11, R-TIE-30 à
       R-TIE-35, E43)
 
+## Avancé de la V2 — foyer (2026-10-31)
+
+Conception : spec 14, ADR-0006 (membres sans connexion), écrans « foyer » et E44.
+
+- [ ] MBR-01 — membres du foyer, activation de la rubrique
+- [ ] MBR-02 — propriétaires et quotes-parts des comptes, des biens et des prêts
+- [ ] MBR-03 — membre d'un emploi, documents rattachés à un membre
+- [ ] MBR-04 — patrimoine par membre (accueil, onglet Patrimoine des projections), filtre des comptes par membre
+
 ## Phase 7 — V2 (à prioriser plus tard)
 
 - IMP-12 (PDF générique OCR), IMP-13
@@ -191,7 +200,7 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 - TRX-10, CPT-08 (TIE-05 avancée, cf. « Avancé de la V2 »)
 - DOC-05 (échéances des contrats et garanties), DOC-06 (OCR des images, ADR-0007)
 - Tableaux d'amortissement des prêts (hors périmètre V1, cf. vision)
-- Multi-membres du foyer : accès par compte, vues par membre et par foyer (ADR-0006)
+- MBR-05 — dépenses, revenus et épargne par membre (spec 14, à concevoir)
 
 > LCL exporte en CSV/Excel la période récente, et en PDF seulement l'historique : le CSV (phase 2)
 > suffit au quotidien, et IMP-10 (phase 3) sert à reprendre l'historique.

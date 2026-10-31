@@ -1148,3 +1148,39 @@ Depuis **E31 Tiers** (carte des propositions). Route `/reglages/tiers/propositio
 - En bas, repliées : **Clés ignorées (N)**, chacune avec « Rétablir » (R-TIE-35).
 - Aucune proposition : « Aucune proposition : les transactions sans tiers n'ont pas de libellés qui se
   répètent. »
+
+# Écrans — foyer (spec 14)
+
+Statut : **Revue** (2026-10-31). Rien de ce qui suit n'apparaît quand la rubrique Foyer est désactivée
+(R-MBR-3).
+
+- **E9 Réglages** : interrupteur « Foyer » dans le bloc **Rubriques**, grisé tant qu'il existe des membres
+  (« 2 membres : les supprimer pour désactiver la rubrique ») ; entrée **Membres du foyer** (E44), après
+  Tiers, quand la rubrique est activée.
+- **E4 Compte**, **E26 Bien** (formulaire), **E28 Prêt** (formulaire) : section **Propriétaires** (pour un
+  prêt : **Emprunteurs**). Une ligne par propriétaire : membre `[mat-select]` et quote-part en % (deux
+  décimales) ; « Ajouter un propriétaire » répartit à parts égales (R-MBR-5) ; « Répartir à parts égales » ;
+  total affiché, en erreur s'il ne vaut pas 100 % (R-MBR-4). Aucun propriétaire : « Non attribué (compte pour
+  le foyer seulement) ».
+- **E2 Comptes** : puces de filtre **Foyer** / un membre par membre (R-MBR-13). Filtré sur un membre : ses
+  comptes, avec le solde et, pour un compte partagé, « dont votre part : 1 000,01 € (50 %) » ; totaux de
+  famille de ses parts. Chaque ligne porte les pastilles de couleur de ses propriétaires.
+- **E1 Accueil**, encadré **Patrimoine**, et **E24 Projections**, onglet **Patrimoine** : sélecteur de vue `[mat-button-toggle]`
+  « Foyer · Quentin · Claire » (R-MBR-12), mémorisé sur l'appareil. En vue membre : montant, variation,
+  détail et courbe du membre ; une ligne partagée affiche sa part et la quote-part ; sur E24, la courbe réelle
+  du membre sans prolongement par les scénarios, avec « La projection porte sur le foyer ». En vue foyer, le détail ajoute la ligne **Non
+  attribué** dès qu'un objet n'a pas de propriétaire et qu'il existe des membres (R-MBR-11).
+- **E30 Emploi** (formulaire) : champ **Membre** (optionnel) ; **E29 Salaires** : le membre à côté de
+  l'employeur.
+- **E35 Document** et rattachement depuis une fiche : la cible **Membre** s'ajoute aux autres (R-MBR-8).
+
+## E44 — Membres du foyer (MBR-01)
+
+Dans les réglages, comme les tiers (E31). Route `/reglages/foyer`.
+
+- Liste des membres dans leur ordre, chacun avec sa pastille de couleur et ce qu'il possède (« 3 comptes,
+  1 bien, 1 prêt, 1 emploi »).
+- « Nouveau membre » et, par membre, Modifier (nom, couleur), Supprimer (confirmation qui indique les objets
+  concernés et ce qu'ils deviennent, R-MBR-2).
+- « Ordonner » : glisser-déposer `[cdkDrag]`, comme les comptes.
+
