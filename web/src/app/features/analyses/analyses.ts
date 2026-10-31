@@ -64,7 +64,7 @@ export class AnalysesPage {
   protected readonly expanded = signal<Set<string>>(new Set());
 
   /** Membres cochés sur les analyses (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('analyses');
+  protected readonly members = inject(MemberSelections).of('analyses', 'flows');
   protected readonly report = rxResource({
     params: () => ({
       month: this.month(),

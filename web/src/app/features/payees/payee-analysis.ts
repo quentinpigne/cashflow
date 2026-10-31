@@ -185,7 +185,7 @@ export class PayeeAnalysis {
   protected readonly groupBy = signal<ReportGrouping>('GROUP');
   protected readonly expanded = signal<Set<string>>(new Set());
 
-  private readonly members = inject(MemberSelections).of('analyses');
+  private readonly members = inject(MemberSelections).of('analyses', 'flows');
   protected readonly report = rxResource({
     params: () => ({
       period: this.period(),

@@ -145,7 +145,7 @@ export class HomeSavings {
 
   protected readonly year = new Date().getFullYear();
   /** Membres cochés dans cet encadré : comptes de leurs titulaires (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('home.savings');
+  protected readonly members = inject(MemberSelections).of('home.savings', 'savings');
   protected readonly overview = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) => this.api.savingsOverview({ members: params.members }),

@@ -83,7 +83,7 @@ export class HomeSalary {
   });
 
   /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('home.salary');
+  protected readonly members = inject(MemberSelections).of('home.salary', 'salary');
   /** Emplois dont le membre est coché, ceux sans membre avec « Foyer » (R-MBR-9). */
   protected readonly rows = computed(() =>
     (this.employments.value() ?? [])

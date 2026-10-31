@@ -133,9 +133,9 @@ export class HomePage {
 
   /** Choix de membres de Patrimoine, Mois en cours et Comptes, qui viennent du même appel (R-MBR-8). */
   private readonly selections = inject(MemberSelections);
-  protected readonly netWorthMembers = this.selections.of('home.net-worth');
-  protected readonly monthMembers = this.selections.of('home.month');
-  protected readonly accountsMembers = this.selections.of('home.accounts');
+  protected readonly netWorthMembers = this.selections.of('home.net-worth', 'net-worth');
+  protected readonly monthMembers = this.selections.of('home.month', 'flows');
+  protected readonly accountsMembers = this.selections.of('home.accounts', 'accounts');
   protected readonly netWorthDash = this.dashboardResource(this.netWorthMembers);
   protected readonly netWorthValue = keepValue(this.netWorthDash);
   protected readonly monthDash = this.dashboardResource(this.monthMembers);

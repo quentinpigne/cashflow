@@ -78,7 +78,7 @@ export class ProjectionsPage {
 
   protected readonly years = signal(10);
   /** Membres cochés sur les projections (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('projections');
+  protected readonly members = inject(MemberSelections).of('projections', 'net-worth');
   protected readonly worth = rxResource({
     params: () => ({
       months: this.years() * 12,

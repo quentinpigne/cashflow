@@ -50,7 +50,7 @@ export class HomeEvolution {
   private readonly version = inject(DataVersion);
 
   /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('home.evolution');
+  protected readonly members = inject(MemberSelections).of('home.evolution', 'flows');
   private readonly evolution = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) => this.api.evolutionReport({ months: 12, members: params.members }),

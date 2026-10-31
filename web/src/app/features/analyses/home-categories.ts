@@ -62,7 +62,7 @@ export class HomeCategories {
   private readonly version = inject(DataVersion);
 
   /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('home.categories');
+  protected readonly members = inject(MemberSelections).of('home.categories', 'flows');
   private readonly report = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) => this.api.categoryReport({ kind: 'EXPENSE', members: params.members }),

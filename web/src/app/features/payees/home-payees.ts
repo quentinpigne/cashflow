@@ -44,7 +44,7 @@ export class HomePayees {
   private readonly version = inject(DataVersion);
 
   /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('home.payees');
+  protected readonly members = inject(MemberSelections).of('home.payees', 'flows');
   private readonly report = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) =>

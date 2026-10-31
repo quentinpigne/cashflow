@@ -38,7 +38,7 @@ export class NetWorthChart {
   private readonly version = inject(DataVersion);
 
   /** Membres cochés sur l'accueil (R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home.net-worth');
+  private readonly members = inject(MemberSelections).of('home.net-worth', 'net-worth');
   private readonly history = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) => this.api.netWorthHistory({ months: 12, members: params.members }),

@@ -3,7 +3,11 @@
     <h1>Projections</h1>
     <a mat-button routerLink="/reglages/scenarios"><mat-icon>tune</mat-icon>Scénarios</a>
   </div>
-  <app-member-filter screen="projections" note="le salaire projeté reste celui du foyer" />
+  <app-member-filter
+    screen="projections"
+    scope="net-worth"
+    note="le salaire projeté reste celui du foyer"
+  />
   <mat-tab-group [selectedIndex]="tab()">
     <mat-tab label="Patrimoine">
       <div class="tab">

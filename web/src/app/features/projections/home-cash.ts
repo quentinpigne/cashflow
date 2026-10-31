@@ -78,7 +78,7 @@ export class HomeCash {
   private readonly plannedProjects = inject(PlannedProjects);
 
   /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
-  protected readonly members = inject(MemberSelections).of('home.cash');
+  protected readonly members = inject(MemberSelections).of('home.cash', 'cash');
   /** Premier compte courant d'un titulaire coché, sans titulaire avec « Foyer » (R-MBR-9). */
   protected readonly account = computed(() =>
     cashAccount(this.accounts.list().filter((a) => this.members.includes(a.member_id))),

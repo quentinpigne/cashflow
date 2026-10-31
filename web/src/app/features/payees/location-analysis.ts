@@ -248,7 +248,7 @@ export class LocationAnalysis {
   protected readonly groupBy = signal<LocationGrouping>('CITY');
   protected readonly expanded = signal<Set<string>>(new Set());
 
-  private readonly members = inject(MemberSelections).of('analyses');
+  private readonly members = inject(MemberSelections).of('analyses', 'flows');
   protected readonly report = rxResource({
     params: () => ({
       period: this.period(),

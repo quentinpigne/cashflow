@@ -66,6 +66,14 @@ au foyer (Q19).
   l'appareil. Il se fait **encadré par encadré** sur l'accueil, pour les encadrés concernés (R-MBR-9) : un même
   accueil peut montrer le patrimoine du foyer à côté des dépenses de Claire. Les **analyses** et les
   **projections** ont chacune un choix pour tout l'écran.
+  Ne sont proposées que les cases qui **comptent quelque chose** pour l'encadré ou l'écran : un membre sans
+  compte n'est pas proposé pour le patrimoine, « Foyer » ne l'est pas quand tous les comptes ont un titulaire
+  (et qu'il n'y a ni bien ni prêt). Pour le patrimoine, un membre est titulaire d'un compte compté dans le
+  patrimoine ; pour les comptes, d'un compte ouvert ; pour la trésorerie, d'un compte courant ouvert ; pour
+  l'épargne, d'un compte d'épargne ou d'épargne de précaution ouvert ; pour les flux, d'un compte ou d'une
+  ventilation ; pour le salaire, d'un emploi. « Foyer » est proposé quand un tel objet n'a pas de membre (et,
+  pour le patrimoine, quand il existe un bien ou un prêt). S'il ne reste qu'une case, il n'y a pas de choix.
+  Une case non proposée ne compte rien : les chiffres n'en dépendent pas.
 - **R-MBR-9** — Avec un choix de membres :
   - les **flux** (revenus, dépenses, non catégorisé, épargne, par catégorie, par tiers, évolution) ne
     comptent que les ventilations dont le membre retenu (R-MBR-6) est coché ;
