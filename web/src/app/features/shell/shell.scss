@@ -101,6 +101,8 @@
 
 .logout {
   align-self: flex-start;
+  // Sa zone tactile (48 px pour un bouton de 40 px) dépasserait du bas du menu et y ferait apparaître un ascenseur.
+  overflow: hidden;
 }
 
 .side-head {
