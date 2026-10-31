@@ -1,10 +1,12 @@
 <div class="page">
-  <div class="page-header"><h1>Analyses</h1></div>
-  <app-member-filter
-    screen="analyses"
-    scope="flows"
-    note="le prévu des mois à venir et l'estimation de fin d'année restent ceux du foyer"
-  />
+  <div class="page-header">
+    <h1>Analyses{{ members.titleSuffix() }}</h1>
+    <app-member-filter
+      screen="analyses"
+      scope="flows"
+      note="Le prévu des mois à venir et l'estimation de fin d'année restent ceux du foyer : ils ne s'affichent qu'avec toutes les cases cochées."
+    />
+  </div>
   <mat-tab-group [selectedIndex]="tab()">
     <mat-tab label="Par catégorie">
       <div class="tab">

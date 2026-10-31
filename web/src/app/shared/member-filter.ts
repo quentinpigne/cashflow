@@ -8,7 +8,11 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AccountsStore, FeaturesStore, MembersStore } from './stores';
 
@@ -212,47 +216,76 @@ export class MemberSelections {
   }
 }
 
-/** Cases à cocher « Foyer · Quentin · Claire » (R-MBR-8), seulement si le foyer a des membres. */
+/**
+ * Menu de réglage du titre d'un écran (E15, E24) : cases « Foyer · Quentin · Claire » (R-MBR-8), seulement s'il y
+ * a un choix à faire. Le menu reste ouvert pendant qu'on coche ; l'icône est mise en avant quand un filtre est
+ * actif.
+ */
 @Component({
   selector: 'app-member-filter',
-  imports: [MatCheckboxModule],
+  imports: [MatButtonModule, MatDividerModule, MatIconModule, MatMenuModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (selection().options().length > 0) {
-      <div class="members" role="group" aria-label="Membres affichés">
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="menu"
+        [class.active]="selection().partial()"
+        [attr.aria-label]="'Réglages de l’écran : membres affichés'"
+        matTooltip="Membres affichés"
+      >
+        <mat-icon>tune</mat-icon>
+      </button>
+      <mat-menu #menu xPosition="before">
+        <div class="section" role="presentation">Membres</div>
         @for (o of selection().options(); track o.token) {
-          <mat-checkbox
-            [checked]="selection().isChecked(o.token)"
+          <button
+            mat-menu-item
+            role="menuitemcheckbox"
+            [attr.aria-checked]="selection().isChecked(o.token)"
             [disabled]="selection().isChecked(o.token) && selection().checked().length === 1"
-            (change)="selection().toggle(o.token, $event.checked)"
+            (click)="
+              $event.stopPropagation(); selection().toggle(o.token, !selection().isChecked(o.token))
+            "
           >
-            @if (o.color) {
-              <span class="dot" [style.background]="o.color" aria-hidden="true"></span>
-            }
-            {{ o.name }}
-          </mat-checkbox>
+            <mat-icon>{{ selection().isChecked(o.token) ? 'check' : '' }}</mat-icon>
+            <span>
+              @if (o.color) {
+                <span class="dot" [style.background]="o.color" aria-hidden="true"></span>
+              }
+              {{ o.name }}
+            </span>
+          </button>
         }
-      </div>
-      @if (selection().partial()) {
-        <p class="muted small">{{ selection().summary() }}{{ note() ? ' : ' + note() : '' }}</p>
-      }
+        @if (note()) {
+          <mat-divider />
+          <p class="note" role="presentation">{{ note() }}</p>
+        }
+      </mat-menu>
     }
   `,
   styles: `
-    .members {
-      display: flex;
-      flex-wrap: wrap;
-      column-gap: 0.5rem;
+    .active {
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+    .section {
+      padding: 0.5rem 1rem 0.25rem;
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-label-medium);
     }
     .dot {
       display: inline-block;
       width: 0.6rem;
       height: 0.6rem;
-      margin-right: 0.25rem;
+      margin-right: 0.35rem;
       border-radius: 50%;
     }
-    .small {
-      margin: 0 0 0.5rem;
+    .note {
+      max-width: 16rem;
+      margin: 0;
+      padding: 0.5rem 1rem;
+      color: var(--mat-sys-on-surface-variant);
       font: var(--mat-sys-body-small);
     }
   `,
@@ -262,7 +295,7 @@ export class MemberFilter {
   readonly screen = input.required<MemberScreen>();
   /** Ce que compte l'écran : seules les cases qui y comptent quelque chose sont proposées (R-MBR-8). */
   readonly scope = input.required<MemberScope>();
-  /** Ce qui n'est pas réparti entre membres, rappelé quand toutes les cases ne sont pas cochées (R-MBR-9). */
+  /** Ce qui n'est pas réparti entre membres, rappelé en bas du menu (R-MBR-9). */
   readonly note = input<string>('');
   protected readonly selection = computed(() => this.selections.of(this.screen(), this.scope()));
 }

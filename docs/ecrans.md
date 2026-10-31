@@ -1178,10 +1178,11 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
 - **E1 Accueil** : dans le menu de réglages `tune` des encadrés concernés (R-MBR-9), une section
   **Membres** avec les cases « Foyer », « Quentin », « Claire » ; le menu reste ouvert pendant qu'on coche. Un
   encadré filtré l'indique dans son titre : « Patrimoine · Claire », « · 2 membres » au-delà d'un membre.
-- **E15 Analyses**, **E24 Projections** : en haut de l'écran, les cases à cocher `[mat-checkbox]` « Foyer ·
-  Quentin · Claire » (R-MBR-8), mémorisées sur l'appareil pour chaque écran. La dernière case cochée ne se
-  décoche pas. Quand toutes ne sont pas cochées, une mention rappelle le choix (« Quentin et Claire
-  seulement ») et ce qui n'est pas affiché (R-MBR-9).
+- **E15 Analyses**, **E24 Projections** : un bouton `tune` à droite de la bande du titre ouvre le menu
+  **Membres** (« Foyer », « Quentin », « Claire », R-MBR-8), mémorisé sur l'appareil pour chaque écran ; le
+  menu reste ouvert pendant qu'on coche, la dernière case cochée ne se décoche pas, et une note rappelle ce
+  qui reste au foyer (R-MBR-9). Filtré, l'écran l'indique dans son titre (« Analyses · Claire ») et le bouton
+  est mis en avant. Sur E24, le bouton Scénarios prend l'icône `insights`.
 
 ## E44 — Membres du foyer (MBR-01)
 
