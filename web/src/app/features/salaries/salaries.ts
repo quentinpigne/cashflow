@@ -114,16 +114,18 @@ export function formatChange(ppm: number | null | undefined): string {
             <header><h2>Emplois</h2></header>
             @for (e of employments(); track e.id) {
               <a class="row" [routerLink]="['/salaires', e.id]">
-                @if (e.member_id && members.byId().get(e.member_id); as m) {
-                  <app-member-chip [member]="m" />
-                }
-                <span class="name">
-                  <span>{{ e.employer }}</span>
-                  <span class="muted small"
-                    >{{ e.job_title ? e.job_title + ' · ' : ''
-                    }}{{ e.end_date ? 'du' : 'depuis le' }} {{ e.start_date | frDate
-                    }}{{ e.end_date ? ' au ' + (e.end_date | frDate) : '' }}</span
-                  >
+                <span class="lead">
+                  @if (e.member_id && members.byId().get(e.member_id); as m) {
+                    <app-member-chip [member]="m" />
+                  }
+                  <span class="name">
+                    <span>{{ e.employer }}</span>
+                    <span class="muted small"
+                      >{{ e.job_title ? e.job_title + ' · ' : ''
+                      }}{{ e.end_date ? 'du' : 'depuis le' }} {{ e.start_date | frDate
+                      }}{{ e.end_date ? ' au ' + (e.end_date | frDate) : '' }}</span
+                    >
+                  </span>
                 </span>
                 @if (!e.ended) {
                   <span class="amount">
@@ -144,6 +146,12 @@ export function formatChange(ppm: number | null | undefined): string {
   `,
   styleUrl: '../accounts/accounts.scss',
   styles: `
+    .lead {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
     .chart {
       height: 18rem;
       margin-bottom: 0.5rem;
