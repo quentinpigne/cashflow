@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { isMobile, login } from './helpers';
+import { isMobile, login, openedDialog } from './helpers';
 
 test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois (TRX-13, R-TRX-57, R-TRX-58)', async ({
   page,
@@ -20,6 +20,15 @@ test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois 
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByText('Transaction enregistrée')).toBeVisible();
 
+  // Une règle créée depuis cette transaction reprend le décalage du mois (R-IMP-20, R-IMP-29).
+  await page.getByRole('button', { name: "Plus d'actions" }).click();
+  await page.getByRole('menuitem', { name: /Créer une règle/ }).click();
+  const rule = await openedDialog(page);
+  await expect(rule.getByRole('combobox', { name: 'Compter sur le mois' })).toContainText(
+    'Mois précédent',
+  );
+  await rule.getByRole('button', { name: 'Annuler' }).click();
+
   // La liste ouverte sur septembre le montre, quelle que soit sa date (R-TRX-58).
   await page.goto('/transactions?mois=2026-09');
   await expect(
@@ -38,4 +47,15 @@ test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois 
   await expect(
     page.locator('.row', { hasText: '1 oct.' }).filter({ hasText: /SALAIRE/i }),
   ).toHaveCount(0);
+});
+
+test('E14 : sur mobile, les filtres se replient derrière « Filtres »', async ({ page }) => {
+  test.skip(!isMobile(page), 'repli propre au mobile');
+  await login(page);
+  await page.goto('/transactions');
+  await expect(page.getByLabel('Texte')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Filtres' }).click();
+  await expect(page.getByLabel('Texte')).toBeVisible();
+  await page.getByRole('button', { name: 'Filtres' }).click();
+  await expect(page.getByLabel('Texte')).toHaveCount(0);
 });

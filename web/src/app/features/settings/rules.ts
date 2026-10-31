@@ -14,6 +14,7 @@ import { RuleView } from '../../api/models/rule-view';
 import { RulesService } from '../../api/services/rules.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
+import { monthDiff } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { abs } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
@@ -21,6 +22,13 @@ import { CategoriesStore, PayeesStore } from '../../shared/stores';
 import { RuleFormData, RuleFormDialog } from './rule-form';
 
 /** E16 — Règles de catégorisation (IMP-08). */
+/** Décalage du mois d'analyse d'une transaction, pour une règle (R-IMP-20, R-IMP-29) : de −12 à 12, non nul. */
+function monthShift(own: string, analysis: string | null | undefined): number | null {
+  if (!analysis) return null;
+  const shift = monthDiff(own, analysis);
+  return shift !== 0 && Math.abs(shift) <= 12 ? shift : null;
+}
+
 @Component({
   selector: 'app-rules',
   imports: [RouterLink, DragDropModule, MatButtonModule, MatIconModule, MatSlideToggleModule],
@@ -135,6 +143,7 @@ export class RulesPage implements OnInit {
           .map((s) => ({ category_id: s.category_id, weight: abs(s.amount_minor) })),
         set_label: t.bank_label && t.label !== t.bank_label ? t.label : null,
         set_payee: t.payee_id ?? null,
+        shift_analysis_month: monthShift(t.date.slice(0, 7), t.analysis_month),
       },
     };
     this.open({ rule: null, draft });
@@ -154,6 +163,9 @@ export class RulesPage implements OnInit {
       );
     if (rule.actions.set_payee && !rule.actions.mark_transfer_to)
       parts.push(`→ tiers ${this.payees.name(rule.actions.set_payee)}`);
+    const shift = rule.actions.shift_analysis_month;
+    if (shift && !rule.actions.mark_transfer_to)
+      parts.push(`→ compte ${Math.abs(shift)} mois ${shift > 0 ? 'après' : 'avant'}`);
     return parts.join(' ');
   }
 

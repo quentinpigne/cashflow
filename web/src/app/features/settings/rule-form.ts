@@ -86,12 +86,18 @@ export class RuleFormDialog {
   protected readonly monthShift = signal<number | null>(
     this.source.actions?.shift_analysis_month ?? null,
   );
-  protected readonly shifts = [
-    { value: -2, label: 'Deux mois avant' },
-    { value: -1, label: 'Mois précédent' },
-    { value: 1, label: 'Mois suivant' },
-    { value: 2, label: 'Deux mois après' },
-  ];
+  protected readonly shifts = [...Array(25).keys()]
+    .map((i) => i - 12)
+    .filter((n) => n !== 0)
+    .map((n) => ({
+      value: n,
+      label:
+        n === -1
+          ? 'Mois précédent'
+          : n === 1
+            ? 'Mois suivant'
+            : `${Math.abs(n)} mois ${n > 0 ? 'après' : 'avant'}`,
+    }));
   /** Action `set_project` (BUD-06). */
   protected readonly project = signal<string>(this.source.actions?.set_project ?? '');
   private readonly projects = inject(ProjectsStore);

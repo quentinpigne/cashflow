@@ -238,7 +238,8 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
   création par import comme les autres actions, et à la demande (R-IMP-19) aux transactions sans mois
   d'analyse que la règle concerne. Un mois d'analyse choisi à la main n'est jamais remplacé par une règle.
 - **R-IMP-20** — Depuis une transaction, « créer une règle à partir de celle-ci » préremplit la
-  condition sur le libellé normalisé et les actions sur sa ventilation et son tiers.
+  condition sur le libellé normalisé et les actions sur sa ventilation, son tiers et son mois d'analyse (le
+  décalage entre le mois de sa date et son mois d'analyse, R-IMP-29).
 
 ## Features
 
