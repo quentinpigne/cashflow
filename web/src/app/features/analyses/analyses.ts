@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -45,6 +45,9 @@ import { PayeeAnalysis } from '../payees/payee-analysis';
   styleUrl: './analyses.scss',
 })
 export class AnalysesPage {
+  /** Onglet ouvert depuis l'adresse (`?onglet=evolution`, lien de l'accueil). */
+  readonly onglet = input<string>();
+  protected readonly tab = computed(() => (this.onglet() === 'evolution' ? 3 : 0));
   private readonly api = inject(DashboardService);
   private readonly version = inject(DataVersion);
   private readonly router = inject(Router);

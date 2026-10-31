@@ -3,7 +3,7 @@
     <h1>Projections</h1>
     <a mat-button routerLink="/reglages/scenarios"><mat-icon>tune</mat-icon>Scénarios</a>
   </div>
-  <mat-tab-group>
+  <mat-tab-group [selectedIndex]="tab()">
     <mat-tab label="Patrimoine">
       <div class="tab">
         <div class="toolbar">

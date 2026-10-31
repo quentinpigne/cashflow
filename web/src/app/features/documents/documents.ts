@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -346,7 +354,11 @@ export class DocumentsPage {
   protected readonly parts = snippetParts;
 
   protected readonly query = signal('');
-  protected readonly kind = signal<KindFilter>(null);
+  /** Filtre ouvert depuis l'adresse (`?filtre=a-classer`, lien de l'accueil). */
+  readonly filtre = input<string>();
+  protected readonly kind = linkedSignal<KindFilter>(() =>
+    this.filtre() === 'a-classer' ? 'UNSORTED' : null,
+  );
   protected readonly year = signal<number | null>(null);
   protected readonly linkKind = signal<LinkKind | 'NONE' | null>(null);
   protected readonly dragging = signal(false);

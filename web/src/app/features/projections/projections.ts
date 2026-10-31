@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  input,
   linkedSignal,
   signal,
 } from '@angular/core';
@@ -58,6 +59,10 @@ const NEGATIVE = '#c62828';
   styleUrl: './projections.scss',
 })
 export class ProjectionsPage {
+  /** Onglet et compte ouverts depuis l'adresse (`?onglet=tresorerie&compte=…`, lien de l'accueil). */
+  readonly onglet = input<string>();
+  readonly compte = input<string>();
+  protected readonly tab = computed(() => (this.onglet() === 'tresorerie' ? 1 : 0));
   private readonly api = inject(ProjectionsService);
   private readonly dashboard = inject(DashboardService);
   private readonly version = inject(DataVersion);
@@ -247,7 +252,9 @@ export class ProjectionsPage {
   protected readonly cashAccounts = computed(() =>
     this.accounts.open().filter((a) => a.family === 'CASH'),
   );
-  protected readonly cashAccount = linkedSignal(() => this.cashAccounts()[0]?.id ?? null);
+  protected readonly cashAccount = linkedSignal(
+    () => this.compte() ?? this.cashAccounts()[0]?.id ?? null,
+  );
   protected readonly days = signal(90);
   protected readonly eventKinds: Record<CashEventKind, string> = {
     PENDING: 'en attente',
