@@ -63,7 +63,7 @@ pub struct CategoryReport {
 pub struct EvolutionQuery {
     /// 12 ou 24 (12 par défaut).
     pub months: Option<u32>,
-    /// Compter les projets en projet dans les mois à venir (oui par défaut, R-BUD-72).
+    /// Compter les projets planifiés dans les mois à venir (oui par défaut, R-BUD-72).
     pub planned_projects: Option<bool>,
 }
 

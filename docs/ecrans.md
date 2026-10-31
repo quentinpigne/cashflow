@@ -452,7 +452,7 @@ Deux onglets :
   clic ouvre E14 filtré sur la catégorie et le mois.
 - **Évolution** : 12 ou 24 mois ; barres revenus / dépenses et courbe d'épargne ; taux d'épargne du mois
   et glissant sur 12 mois. Les mois à venir jusqu'à décembre affichent le prévu (barres hachurées, R-TDB-14),
-  avec l'**estimation de fin d'année** (revenus, dépenses, épargne) et l'interrupteur **Projets en projet**
+  avec l'**estimation de fin d'année** (revenus, dépenses, épargne) et l'interrupteur **Projets planifiés**
   (TDB-09).
 
 Graphiques : ECharts (ADR-0009).
@@ -504,8 +504,8 @@ Ce qui change dans les écrans existants :
   consommé sur l'année), **Épargne** : prévu, réel, reste, jauge colorée selon les seuils (R-BUD-61),
   pastille du report, icône d'une période surchargée.
 - **Projets** (BUD-14, R-BUD-74) : une ligne par projet exclu des lignes du mois et pris en compte, avec
-  son prévu du mois (« mise de côté » ou part du calendrier) et son réel du mois ; pastille « en projet » ;
-  un clic ouvre le projet (E20). Un interrupteur **Projets en projet** (activé par défaut, mémorisé sur
+  son prévu du mois (« mise de côté » ou part du calendrier) et son réel du mois ; pastille « planifié » ;
+  un clic ouvre le projet (E20). Un interrupteur **Projets planifiés** (activé par défaut, mémorisé sur
   l'appareil) les retire du budget pour voir l'effet d'un projet envisagé (R-BUD-72).
 - **Hors lignes** : dépenses hors budget par catégorie, non catégorisé ; un clic ouvre E14 filtré sur le
   mois.
@@ -531,8 +531,8 @@ cochées à partir du mois en cours.
 
 ## E20 — Projets (BUD-06)
 
-- **Liste** : en cours, en projet, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
-- **Dialogue de projet** : nom, **statut** (En projet, En cours, Terminé ; « En cours » par défaut,
+- **Liste** : en cours, planifiés, puis terminés ; réel sur prévu et jauge. « Nouveau projet ».
+- **Dialogue de projet** : nom, **statut** (Planifié, En cours, Terminé ; « En cours » par défaut,
   R-BUD-20), dates, **Postes** (BUD-11) : une ligne par poste (nom, montant,
   catégories facultatives), « Ajouter un poste », total des postes. Sans poste, un champ **Montant
   prévu** global ; il disparaît dès le premier poste (R-BUD-26) : le premier poste reprend ce montant,
@@ -625,7 +625,7 @@ prévisions (R-PRJ-3, R-PRJ-31). Dans l'en-tête, un lien **Scénarios** ouvre l
   scénario ; horizon 5, 10, 20 ou 30 ans ; valeur finale par scénario (et en euros constants si le
   scénario a une inflation) ; comptes partis d'une valorisation ancienne signalés.
 - **Trésorerie** : compte de liquidités, 30, 90 ou 180 jours, case « Dépenses courantes moyennes »
-  (R-PRJ-11), case « Projets en projet » (R-PRJ-48) ; solde du jour, solde le plus bas et sa date (avertissement sous zéro, R-PRJ-12), courbe
+  (R-PRJ-11), case « Projets planifiés » (R-PRJ-48) ; solde du jour, solde le plus bas et sa date (avertissement sous zéro, R-PRJ-12), courbe
   en escalier, liste des mouvements connus (échéances prévues, transactions en attente et dépenses de
   projets du compte de versement, « Italie 2027 · Train »).
 - **Épargne** : compte d'épargne, scénario, horizon ; valeur du jour et à l'horizon, courbe, hypothèses
@@ -636,7 +636,7 @@ prévisions (R-PRJ-3, R-PRJ-31). Dans l'en-tête, un lien **Scénarios** ouvre l
 Dans les réglages, comme les barèmes de taux (E22) : les scénarios sont des hypothèses qu'on règle de
 temps en temps, pas un résultat qu'on consulte. Un bloc par scénario (horizon, inflation, rendements par
 nature) ; « Modifier » ouvre les hypothèses : rendement et frais par nature, réglages par compte (dont le
-versement mensuel), taux futurs des barèmes (R-PRJ-21), interrupteur **Projets en projet** (R-PRJ-48) ; scénario par défaut ; suppression sauf pour le
+versement mensuel), taux futurs des barèmes (R-PRJ-21), interrupteur **Projets planifiés** (R-PRJ-48) ; scénario par défaut ; suppression sauf pour le
 scénario par défaut. Action « Nouveau » dans l'en-tête.
 
 # Écrans — biens et prêts (spec 09)

@@ -214,7 +214,7 @@ pub struct CashQuery {
     pub variable: Option<bool>,
     /// Seuil d'avertissement, en centimes (0 par défaut, R-PRJ-12).
     pub threshold_minor: Option<i64>,
-    /// Compter les projets en projet (oui par défaut, R-PRJ-48).
+    /// Compter les projets planifiés (oui par défaut, R-PRJ-48).
     pub planned_projects: Option<bool>,
 }
 

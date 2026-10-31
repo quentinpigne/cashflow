@@ -155,7 +155,7 @@
           <mat-slide-toggle
             [checked]="plannedProjects.value()"
             (change)="plannedProjects.set($event.checked)"
-            >Projets en projet</mat-slide-toggle
+            >Projets planifiés</mat-slide-toggle
           >
         </h2>
         @if (b.projects.length > 0) {
@@ -170,7 +170,7 @@
               <span class="name">
                 {{ p.name }}
                 @if (p.status === 'PLANNED') {
-                  <span class="tag">en projet</span>
+                  <span class="tag">planifié</span>
                 }
                 @if (p.provision) {
                   <span class="muted small">mise de côté</span>

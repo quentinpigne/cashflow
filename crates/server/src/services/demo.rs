@@ -1109,7 +1109,7 @@ async fn budget(
         provision_from: None,
     };
     let project = budgets::save_project(db, None, &project).await.map_err(|e| anyhow::anyhow!("{e}"))?;
-    // Un voyage envisagé, en projet : rien n'y est encore rattaché (R-BUD-20, R-BUD-24). Le train se réserve quatre
+    // Un voyage envisagé, planifié : rien n'y est encore rattaché (R-BUD-20, R-BUD-24). Le train se réserve quatre
     // mois plus tôt (R-BUD-70) et le voyage se met de côté dès ce mois-ci (R-BUD-73).
     if let Some(summer) = today.checked_add_days(Days::new(240))
         && let Some(booking) = today.checked_add_days(Days::new(120))

@@ -193,7 +193,7 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
     let refused =
         budgets::attach(&db, &AttachInput { transaction_ids: vec![other], project_id: Some(project.id) }).await;
     assert_eq!(domain_error(refused), DomainError::ProjectClosed);
-    // En projet : pas encore de rattachement non plus (R-BUD-20, R-BUD-24).
+    // Planifié : pas encore de rattachement non plus (R-BUD-20, R-BUD-24).
     let planned = budgets::save_project(
         &db,
         None,
@@ -574,7 +574,7 @@ async fn bud_14_project_in_month_budget_r_bud_70_to_74() {
     assert_eq!(planned, vec![("2026-05", 50_000), ("2026-07", 50_000)]);
     assert_eq!(line_of(&project, "Train").planned_month.as_deref(), Some("2026-05"));
 
-    // Le projet en projet compte par défaut ; l'interrupteur coupé, il disparaît du reste à budgéter (R-BUD-72).
+    // Le projet planifié compte par défaut ; l'interrupteur coupé, il disparaît du reste à budgéter (R-BUD-72).
     let may = view(&db, "2026-05").await;
     assert_eq!(may.projects.len(), 1);
     assert_eq!(may.projects[0].planned_minor, 50_000);
@@ -675,7 +675,7 @@ async fn tdb_09_r_tdb_14_upcoming_months_and_year_end() {
     assert_eq!((year.income_minor, year.expenses_minor), (3_000_000, 1_080_000));
     assert_eq!(year.savings_minor, 1_920_000);
 
-    // Sans les projets en projet, l'Italie sort de l'estimation (R-BUD-72).
+    // Sans les projets planifiés, l'Italie sort de l'estimation (R-BUD-72).
     let without = reports::evolution(&db, &query(Some(false)), d(TODAY)).await.unwrap();
     assert_eq!(without.year_end.expenses_minor, 1_000_000);
 }

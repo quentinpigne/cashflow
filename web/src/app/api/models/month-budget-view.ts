@@ -33,7 +33,7 @@ export interface MonthBudgetView {
   off_budget_income_minor: number;
 
   /**
-   * Compte des projets en projet (R-BUD-72).
+   * Compte des projets planifiés (R-BUD-72).
    */
   planned_projects: boolean;
 

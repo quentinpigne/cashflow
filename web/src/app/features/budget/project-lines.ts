@@ -17,7 +17,7 @@ export function proposedLine(
 
 /** Libellés des statuts d'un projet (R-BUD-20). */
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  PLANNED: 'En projet',
+  PLANNED: 'Planifié',
   ACTIVE: 'En cours',
   CLOSED: 'Terminé',
 };

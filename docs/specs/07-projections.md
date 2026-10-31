@@ -114,12 +114,12 @@ Répondre à trois questions :
   les comptes `CASH` gardent alors leur solde actuel, diminué des seuls versements programmés.
 - **R-PRJ-48** — **Dépenses de projets projetées** du mois m = Σ des restants prévus en m (R-BUD-71) des
   projets en cours et, si le scénario les inclut (`planned_projects`, activé par défaut, R-BUD-72), des
-  projets en projet ; qu'ils soient exclus des budgets du mois ou non (R-BUD-21). Ce sont des montants
+  projets planifiés ; qu'ils soient exclus des budgets du mois ou non (R-BUD-21). Ce sont des montants
   prévus : la hausse des dépenses ne s'y applique pas. Une mise de côté (R-BUD-73) n'y change rien :
   l'argent sort du compte au mois de la dépense. Dans la trésorerie (R-PRJ-10), la dépense d'un mois est
   datée du 1er, ou de la date de début du projet si elle tombe plus tard dans ce mois, et au plus tôt de
   demain (le restant du mois en cours est encore à dépenser) ; une case « Projets
-  en projet », cochée par défaut, y joue le rôle de l'interrupteur.
+  planifiés », cochée par défaut, y joue le rôle de l'interrupteur.
 
 ## Features
 
@@ -161,6 +161,6 @@ Répondre à trois questions :
   rattachés en moyenne au projet passé « Week-end à Lyon », et le projet « Italie 2027 » de BUD-14 (en
   projet, 500 € en février et 500 € en juillet 2027) : les dépenses projetées valent 1 800 € avant hausse ;
   la capacité d'épargne de février 2027 baisse de 500 €, celle de juillet 2027 aussi. Le scénario sans
-  « Projets en projet » ne compte pas l'Italie.
+  « Projets planifiés » ne compte pas l'Italie.
 - La trésorerie du compte de versement affiche « Italie 2027 · Train » −500 € au 1er février 2027 parmi les
-  mouvements connus, sauf si la case « Projets en projet » est décochée.
+  mouvements connus, sauf si la case « Projets planifiés » est décochée.

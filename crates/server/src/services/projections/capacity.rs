@@ -50,7 +50,7 @@ pub struct CapacityAssumptions {
     /// Compte d'épargne qui reçoit le reste de la capacité d'épargne (R-PRJ-45).
     #[serde(default)]
     pub surplus_account_id: Option<AccountId>,
-    /// Compter les projets en projet, en plus des projets en cours (R-PRJ-48) ; oui par défaut.
+    /// Compter les projets planifiés, en plus des projets en cours (R-PRJ-48) ; oui par défaut.
     #[serde(default = "yes")]
     pub planned_projects: bool,
 }
@@ -205,7 +205,7 @@ impl CapacityBase {
         self.names.get(&id).cloned()
     }
 
-    /// Dépenses de projets projetées par mois : projets en cours, et en projet selon `planned_projects` (R-PRJ-48).
+    /// Dépenses de projets projetées par mois : projets en cours, et planifiés selon `planned_projects` (R-PRJ-48).
     pub fn projects_by_month(&self, planned_projects: bool) -> BTreeMap<Month, Money> {
         let mut result: BTreeMap<Month, Money> = BTreeMap::new();
         for project in self.projects.iter().filter(|p| budgeting::counted(p.status, planned_projects)) {
@@ -355,7 +355,7 @@ pub struct CapacityPoint {
 /// Capacité d'épargne d'un scénario.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CapacitySeries {
-    /// Les projets en projet sont comptés (R-PRJ-48).
+    /// Les projets planifiés sont comptés (R-PRJ-48).
     pub planned_projects: bool,
     pub salary_growth_ppm: i64,
     pub expense_growth_ppm: i64,

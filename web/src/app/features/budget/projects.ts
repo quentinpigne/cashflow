@@ -576,7 +576,7 @@ export class ProjectsPage {
     const all = this.projects.value() ?? [];
     return [
       { title: 'En cours', projects: all.filter((p) => p.status === 'ACTIVE') },
-      { title: 'En projet', projects: all.filter((p) => p.status === 'PLANNED') },
+      { title: 'Planifiés', projects: all.filter((p) => p.status === 'PLANNED') },
       { title: 'Terminés', projects: all.filter((p) => p.status === 'CLOSED') },
     ].filter((g) => g.projects.length > 0);
   });

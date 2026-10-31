@@ -111,7 +111,7 @@ Solde du mois (réel)     : 3 245 − 816,50 − 200  = 2 228,50 €
 ### Projets
 
 - **R-BUD-20** — Un projet a un nom, une date de début, une date de fin optionnelle, un prévu (un montant
-  global, ou la somme de ses postes, R-BUD-26) et un statut : **en projet** (`PLANNED`, envisagé, rien
+  global, ou la somme de ses postes, R-BUD-26) et un statut : **planifié** (`PLANNED`, envisagé, rien
   n'est encore dépensé), **en cours** (`ACTIVE`) ou **terminé** (`CLOSED`). Le statut se choisit à la
   main, dans n'importe quel ordre ; un projet est créé en cours par défaut. Une ventilation porte **au
   plus un** projet.
@@ -164,7 +164,7 @@ On estime un projet avant de s'y engager : son prévu entre dans le budget des m
 projections et dans les analyses, aux mois où il sera dépensé, ou mis de côté avant.
 
 ```
-Projet « Italie 2027 » (en projet) — du 1er au 31 juillet 2027, 1 000 € prévus
+Projet « Italie 2027 » (planifié) — du 1er au 31 juillet 2027, 1 000 € prévus
  ├─ Train        500 €   mois prévu : février 2027 (billet pris tôt)
  ├─ Logement     300 €  ┐
  ├─ Restaurants  100 €  ├ sans mois prévu : étalés sur la période du projet (juillet 2027)
@@ -187,8 +187,8 @@ Mise de côté à partir de novembre 2026 : 1 000 € sur novembre, décembre et
   C, ou tombe en C si la période est passée. Le réel hors postes ne réduit aucun restant : c'est une
   dépense qui n'était pas prévue. Le restant sert aux projections (R-PRJ-48) et à l'estimation de fin
   d'année (R-TDB-14), qui ne doivent pas compter deux fois une dépense déjà faite.
-- **R-BUD-72** — **Projets pris en compte** : les projets en cours, toujours ; les projets **en
-  projet**, selon un interrupteur « Projets en projet », activé par défaut, du budget du mois, de
+- **R-BUD-72** — **Projets pris en compte** : les projets en cours, toujours ; les projets
+  **planifiés**, selon un interrupteur « Projets planifiés », activé par défaut, du budget du mois, de
   l'évolution (R-TDB-14) et de chaque scénario de projection (R-PRJ-48) : on mesure l'effet d'un projet
   avant de s'y engager. Les projets terminés, jamais.
 - **R-BUD-73** — **Mise de côté** (`provision_from`, un mois, facultatif) : le prévu du projet est
@@ -318,11 +318,11 @@ Mise de côté à partir de novembre 2026 : 1 000 € sur novembre, décembre et
 - Quand je supprime le poste Train, alors le billet repasse hors postes et le prévu du projet vaut 500 €.
 
 **BUD-14 / R-BUD-70 à R-BUD-74 — anticiper un projet**
-- Étant donné le projet « Italie 2027 » ci-dessus, en projet, du 1er au 31 juillet 2027, sans mise de
+- Étant donné le projet « Italie 2027 » ci-dessus, planifié, du 1er au 31 juillet 2027, sans mise de
   côté, alors son calendrier prévu vaut 500 € en février 2027 et 500 € en juillet 2027 ; avec une fin au
   31 août 2027, 500 € en février, 250 € en juillet et 250 € en août.
 - Le budget de juillet 2027 affiche le projet avec 500 € de prévu, et son reste à budgéter baisse de
-  500 € ; l'interrupteur « Projets en projet » désactivé, le projet disparaît et le reste à budgéter
+  500 € ; l'interrupteur « Projets planifiés » désactivé, le projet disparaît et le reste à budgéter
   remonte de 500 €. Passé en cours, le projet compte quel que soit l'interrupteur.
 - Avec une mise de côté à partir de novembre 2026, le budget affiche 333,33 € en novembre et en décembre,
   333,34 € en janvier 2027, et rien en février ni en juillet. Une mise de côté à partir de février 2027

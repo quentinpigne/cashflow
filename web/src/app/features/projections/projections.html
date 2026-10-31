@@ -147,7 +147,7 @@
             Dépenses courantes moyennes
           </mat-checkbox>
           <mat-checkbox [checked]="withPlanned()" (change)="withPlanned.set($event.checked)">
-            Projets en projet
+            Projets planifiés
           </mat-checkbox>
         </div>
         @if (cash.value(); as p) {

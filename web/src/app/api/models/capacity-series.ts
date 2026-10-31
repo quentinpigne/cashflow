@@ -10,7 +10,7 @@ export interface CapacitySeries {
   expense_growth_ppm: number;
 
   /**
-   * Les projets en projet sont comptés (R-PRJ-48).
+   * Les projets planifiés sont comptés (R-PRJ-48).
    */
   planned_projects: boolean;
   points: Array<CapacityPoint>;

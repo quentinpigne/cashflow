@@ -17,7 +17,7 @@ export interface EvolutionReport$Params {
   months?: number;
 
 /**
- * Compter les projets en projet dans les mois à venir (oui par défaut, R-BUD-72).
+ * Compter les projets planifiés dans les mois à venir (oui par défaut, R-BUD-72).
  */
   planned_projects?: boolean;
 }

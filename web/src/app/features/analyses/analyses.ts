@@ -48,7 +48,7 @@ export class AnalysesPage {
   private readonly api = inject(DashboardService);
   private readonly version = inject(DataVersion);
   private readonly router = inject(Router);
-  /** Interrupteur « Projets en projet » des mois à venir, partagé avec le budget (R-BUD-72). */
+  /** Interrupteur « Projets planifiés » des mois à venir, partagé avec le budget (R-BUD-72). */
   protected readonly plannedProjects = inject(PlannedProjects);
 
   protected readonly month = signal(toIsoDate(new Date()).slice(0, 7));

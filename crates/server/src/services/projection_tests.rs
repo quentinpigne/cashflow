@@ -217,7 +217,7 @@ async fn prj_11_r_prj_48_projects_in_cash_projection() {
         (d("2026-04-01"), "Italie · Train", -50_000)
     );
 
-    // Sans les projets en projet, l'Italie disparaît (R-BUD-72).
+    // Sans les projets planifiés, l'Italie disparaît (R-BUD-72).
     let without = CashQuery { planned_projects: Some(false), ..query };
     let p = projections::cash(&db, checking, &without, d(TODAY)).await.unwrap();
     assert!(p.events.iter().all(|e| e.kind != CashEventKind::Project));

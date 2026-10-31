@@ -28,7 +28,7 @@ const THRESHOLDS_SETTING: &str = "budget_alert_thresholds";
 pub struct MonthQuery {
     /// Mois, `AAAA-MM` ; le mois en cours par défaut.
     pub month: Option<String>,
-    /// Compter les projets en projet (R-BUD-72) ; oui par défaut.
+    /// Compter les projets planifiés (R-BUD-72) ; oui par défaut.
     pub planned_projects: Option<bool>,
 }
 
@@ -122,7 +122,7 @@ pub struct MonthBudgetView {
     pub excluded_projects_minor: i64,
     /// Projets exclus des lignes du mois : prévu et réel (R-BUD-74).
     pub projects: Vec<ProjectMonthView>,
-    /// Compte des projets en projet (R-BUD-72).
+    /// Compte des projets planifiés (R-BUD-72).
     pub planned_projects: bool,
     /// Reste à budgéter, prévu (R-BUD-40).
     pub to_budget_minor: i64,

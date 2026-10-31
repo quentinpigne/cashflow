@@ -11,7 +11,7 @@ function stored(): boolean {
 }
 
 /**
- * Interrupteur « Projets en projet » du budget du mois et de l'évolution (R-BUD-72) : activé par défaut,
+ * Interrupteur « Projets planifiés » du budget du mois et de l'évolution (R-BUD-72) : activé par défaut,
  * mémorisé sur l'appareil.
  */
 @Injectable({ providedIn: 'root' })

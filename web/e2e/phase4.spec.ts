@@ -129,13 +129,13 @@ test('E20 : postes d’un projet, hors postes et poste d’une transaction (BUD-
   await expect(page.getByText('Hors postes', { exact: true })).toHaveCount(0);
 });
 
-test('E5 : projet et poste à la saisie rapide, projet en projet écarté (R-BUD-20, R-BUD-27)', async ({
+test('E5 : projet et poste à la saisie rapide, projet planifié écarté (R-BUD-20, R-BUD-27)', async ({
   page,
 }) => {
   test.skip(isMobile(page), 'données partagées : créé une seule fois, sur ordinateur');
   await login(page);
   await page.goto('/budget/projets');
-  await expect(page.getByRole('heading', { name: 'En projet' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Planifiés' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Italie 2027/ })).toBeVisible();
 
   await openQuickEntry(page);
@@ -169,10 +169,10 @@ test('E18, E20 : un projet envisagé dans le budget du mois, mise de côté et c
   // La démo met l'Italie de côté dès ce mois-ci, avant le train de février (R-BUD-73, R-BUD-74).
   await expect(italy).toContainText('mise de côté');
   await expect(italy).toContainText('250,00');
-  // Interrupteur « Projets en projet » : le projet envisagé sort du budget (R-BUD-72).
-  await projects.getByRole('switch', { name: 'Projets en projet' }).click();
+  // Interrupteur « Projets planifiés » : le projet envisagé sort du budget (R-BUD-72).
+  await projects.getByRole('switch', { name: 'Projets planifiés' }).click();
   await expect(italy).toHaveCount(0);
-  await projects.getByRole('switch', { name: 'Projets en projet' }).click();
+  await projects.getByRole('switch', { name: 'Projets planifiés' }).click();
   await expect(italy).toBeVisible();
 
   // Le calendrier du projet : le train en février, le reste sur la période du voyage (R-BUD-70).
@@ -202,7 +202,7 @@ test('E15 : mois à venir et estimation de fin d’année dans l’évolution (T
   // Novembre et décembre, prévus d'après le budget ; l'interrupteur est celui du budget du mois (R-BUD-72).
   await expect(page.locator('tr.planned')).toHaveCount(2);
   await expect(page.locator('tr.planned', { hasText: '2026-12' })).toContainText('prévu');
-  await expect(page.getByRole('switch', { name: 'Projets en projet' })).toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Projets planifiés' })).toBeChecked();
 });
 
 test('E21 : centre de notifications (BUD-08)', async ({ page }) => {

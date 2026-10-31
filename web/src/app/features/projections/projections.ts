@@ -255,7 +255,7 @@ export class ProjectionsPage {
     PROJECT: 'projet',
   };
   protected readonly withVariable = signal(true);
-  /** Projets en projet comptés dans la trésorerie (R-PRJ-48). */
+  /** Projets planifiés comptés dans la trésorerie (R-PRJ-48). */
   protected readonly withPlanned = signal(true);
   protected readonly cash = rxResource({
     params: () => ({

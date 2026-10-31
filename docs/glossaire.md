@@ -171,14 +171,14 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Objectif d'épargne | `BudgetLine` `SAVINGS` | Montant mensuel de virements internes visé vers un compte d'épargne. |
 | Surcharge | `BudgetOverride` | Montant spécifique d'une ligne pour un mois (ou une année) donné. |
 | Projet | `Project` | Budget ponctuel multi-catégories (vacances, travaux), auquel on rattache explicitement des ventilations. |
-| Statut d'un projet | `ProjectStatus` | `PLANNED` « en projet » (envisagé), `ACTIVE` « en cours » (seul à recevoir des ventilations, R-BUD-24), `CLOSED` « terminé ». |
+| Statut d'un projet | `ProjectStatus` | `PLANNED` « planifié » (envisagé), `ACTIVE` « en cours » (seul à recevoir des ventilations, R-BUD-24), `CLOSED` « terminé ». |
 | Poste (d'un projet) | `ProjectLine` | Partie nommée du prévu d'un projet (« Train » 500 €), avec des catégories facultatives qui proposent le poste d'une ventilation (R-BUD-26, R-BUD-27). À ne pas confondre avec une ligne de budget. |
 | Hors postes | — | Ventilations d'un projet détaillé qui ne sont rangées dans aucun de ses postes (R-BUD-28). |
 | Mois prévu (d'un poste) | `planned_month` | Mois où la dépense d'un poste est attendue (« Train » en février) ; sans lui, le poste est étalé sur la période du projet (R-BUD-70). |
 | Calendrier prévu | `PlannedSchedule` | Répartition par mois du prévu d'un projet, d'après les mois prévus de ses postes et sa période (R-BUD-70). |
 | Restant prévu | `remaining` | Part du prévu d'un projet qui reste à dépenser, placée dans les mois à venir ; sert aux projections et à l'estimation de fin d'année (R-BUD-71). |
 | Mise de côté | `provision` | Réservation mensuelle du prévu d'un projet dans le budget, avant sa dépense, comme la quote-part d'une ligne annuelle ; ne déplace pas d'argent (R-BUD-73). |
-| Projets en projet (interrupteur) | `planned_projects` | Inclut ou non les projets en projet dans le budget du mois, l'évolution et les projections (R-BUD-72). |
+| Projets planifiés (interrupteur) | `planned_projects` | Inclut ou non les projets planifiés dans le budget du mois, l'évolution et les projections (R-BUD-72). |
 | Report | `rollover` | Reliquat (positif ou négatif) d'une ligne ajouté au disponible de la période suivante. |
 | Quote-part mensuelle | — | Montant d'une ligne annuelle / 12, affiché et pris en compte dans le reste à budgéter du mois. |
 | Reste à budgéter | — | Revenus prévus − dépenses prévues − quotes-parts annuelles − objectifs d'épargne. |

@@ -29,7 +29,7 @@ export interface CashProjection$Params {
   threshold_minor?: number;
 
 /**
- * Compter les projets en projet (oui par défaut, R-PRJ-48).
+ * Compter les projets planifiés (oui par défaut, R-PRJ-48).
  */
   planned_projects?: boolean;
 }

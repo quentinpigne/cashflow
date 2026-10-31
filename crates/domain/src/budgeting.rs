@@ -88,7 +88,7 @@ impl FromStr for Month {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ProjectStatus {
-    /// En projet : envisagé, rien n'est encore dépensé.
+    /// Planifié : envisagé, rien n'est encore dépensé.
     Planned,
     /// En cours.
     #[default]
@@ -779,7 +779,7 @@ pub fn provision<L, C>(
 }
 
 /// Le projet compte-t-il dans le budget, l'évolution et les projections (R-BUD-72) ? Toujours en cours, jamais
-/// terminé, en projet selon l'interrupteur.
+/// terminé, planifié selon l'interrupteur.
 pub fn counted(status: ProjectStatus, planned_projects: bool) -> bool {
     match status {
         ProjectStatus::Active => true,
@@ -1280,7 +1280,7 @@ mod tests {
         );
     }
 
-    /// R-BUD-72 : en cours toujours, en projet selon l'interrupteur, terminé jamais.
+    /// R-BUD-72 : en cours toujours, planifié selon l'interrupteur, terminé jamais.
     #[test]
     fn r_bud_72_counted_projects() {
         assert!(counted(ProjectStatus::Active, false));

@@ -17,7 +17,7 @@ export interface MonthBudget$Params {
   month?: string;
 
 /**
- * Compter les projets en projet (R-BUD-72) ; oui par défaut.
+ * Compter les projets planifiés (R-BUD-72) ; oui par défaut.
  */
   planned_projects?: boolean;
 }

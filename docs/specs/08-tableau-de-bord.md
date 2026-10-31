@@ -36,7 +36,7 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
   décembre, affichent des revenus et des dépenses **prévus**, distingués du réel. Revenus prévus = Σ des
   lignes de revenu du budget du mois (R-BUD-50). Dépenses prévues = Σ des lignes de dépense mensuelles et
   des quotes-parts annuelles du mois + Σ des restants prévus du mois (R-BUD-71) des projets exclus des
-  budgets du mois et pris en compte (R-BUD-72, interrupteur « Projets en projet » de l'écran) ; une mise de
+  budgets du mois et pris en compte (R-BUD-72, interrupteur « Projets planifiés » de l'écran) ; une mise de
   côté n'est pas une dépense et n'y entre pas. **Estimation de fin d'année** = réel du 1er janvier à la fin
   du mois en cours + Σ des prévus des mois suivants, pour les revenus, les dépenses et l'épargne. Sans
   ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale.

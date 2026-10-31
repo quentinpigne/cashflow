@@ -40,11 +40,11 @@ test('E24 : les projets dans la trésorerie du compte de versement (PRJ-11, R-PR
   await page.goto('/projections');
   await page.getByRole('tab', { name: 'Trésorerie' }).click();
   await page.getByRole('radio', { name: '180 j' }).click();
-  // Le train de l'Italie, en projet, sort du compte courant en février (R-BUD-70).
+  // Le train de l'Italie, planifié, sort du compte courant en février (R-BUD-70).
   const train = page.locator('.event', { hasText: 'Italie 2027 · Train' });
   await expect(train).toContainText('projet');
   await expect(train).toContainText('−500,00');
-  await page.getByRole('checkbox', { name: 'Projets en projet' }).uncheck();
+  await page.getByRole('checkbox', { name: 'Projets planifiés' }).uncheck();
   await expect(train).toHaveCount(0);
 });
 

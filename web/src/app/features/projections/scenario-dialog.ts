@@ -151,7 +151,7 @@ interface PathRow {
           <mat-hint>Après les versements programmés, dans la limite du plafond.</mat-hint>
         </mat-form-field>
         <mat-checkbox [ngModel]="plannedProjects()" (ngModelChange)="plannedProjects.set($event)">
-          Compter les projets en projet, en plus des projets en cours
+          Compter les projets planifiés, en plus des projets en cours
         </mat-checkbox>
       }
 

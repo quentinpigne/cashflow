@@ -677,7 +677,7 @@
           {
             "name": "planned_projects",
             "in": "query",
-            "description": "Compter les projets en projet (oui par défaut, R-PRJ-48).",
+            "description": "Compter les projets planifiés (oui par défaut, R-PRJ-48).",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -1550,7 +1550,7 @@
           {
             "name": "planned_projects",
             "in": "query",
-            "description": "Compter les projets en projet (R-BUD-72) ; oui par défaut.",
+            "description": "Compter les projets planifiés (R-BUD-72) ; oui par défaut.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -7273,7 +7273,7 @@
           {
             "name": "planned_projects",
             "in": "query",
-            "description": "Compter les projets en projet dans les mois à venir (oui par défaut, R-BUD-72).",
+            "description": "Compter les projets planifiés dans les mois à venir (oui par défaut, R-BUD-72).",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -11301,7 +11301,7 @@
           },
           "planned_projects": {
             "type": "boolean",
-            "description": "Compter les projets en projet, en plus des projets en cours (R-PRJ-48) ; oui par défaut."
+            "description": "Compter les projets planifiés, en plus des projets en cours (R-PRJ-48) ; oui par défaut."
           },
           "salary_growth_ppm": {
             "type": "integer",
@@ -11466,7 +11466,7 @@
           },
           "planned_projects": {
             "type": "boolean",
-            "description": "Les projets en projet sont comptés (R-PRJ-48)."
+            "description": "Les projets planifiés sont comptés (R-PRJ-48)."
           },
           "points": {
             "type": "array",
@@ -15644,7 +15644,7 @@
           },
           "planned_projects": {
             "type": "boolean",
-            "description": "Compte des projets en projet (R-BUD-72)."
+            "description": "Compte des projets planifiés (R-BUD-72)."
           },
           "projects": {
             "type": "array",
