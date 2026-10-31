@@ -19,113 +19,118 @@
       </button>
     </div>
   }
-  <div class="filters card" [hidden]="layout.mobile() && !showFilters()">
-    <mat-form-field>
-      <mat-label>Comptes</mat-label>
-      <mat-select
-        multiple
-        [ngModel]="accountIds()"
-        (ngModelChange)="accountIds.set($event); reset()"
+  @if (!layout.mobile() || showFilters()) {
+    <div class="filters card">
+      <mat-form-field>
+        <mat-label>Comptes</mat-label>
+        <mat-select
+          multiple
+          [ngModel]="accountIds()"
+          (ngModelChange)="accountIds.set($event); reset()"
+        >
+          @for (a of accounts.list(); track a.id) {
+            <mat-option [value]="a.id">{{ a.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Du</mat-label>
+        <input
+          matInput
+          [matDatepicker]="fromPicker"
+          [ngModel]="from()"
+          (ngModelChange)="from.set($event); reset()"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+        <mat-datepicker #fromPicker />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Au</mat-label>
+        <input
+          matInput
+          [matDatepicker]="toPicker"
+          [ngModel]="to()"
+          (ngModelChange)="to.set($event); reset()"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+        <mat-datepicker #toPicker />
+      </mat-form-field>
+      <app-category-picker
+        class="wide"
+        [value]="category()"
+        (valueChange)="category.set($event); reset()"
+      />
+      <mat-form-field>
+        <mat-label>Statut</mat-label>
+        <mat-select [ngModel]="status()" (ngModelChange)="status.set($event); reset()">
+          <mat-option [value]="null">Tous</mat-option>
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ statusLabels[s] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Montant min.</mat-label>
+        <input
+          matInput
+          inputmode="decimal"
+          [ngModel]="min()"
+          (ngModelChange)="min.set($event); reset()"
+        />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Montant max.</mat-label>
+        <input
+          matInput
+          inputmode="decimal"
+          [ngModel]="max()"
+          (ngModelChange)="max.set($event); reset()"
+        />
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Texte</mat-label>
+        <input matInput [ngModel]="text()" (ngModelChange)="text.set($event); reset()" />
+      </mat-form-field>
+      <app-payee-picker
+        class="wide"
+        [creatable]="false"
+        [value]="payee()"
+        (valueChange)="payee.set($event); reset()"
+      />
+      <mat-form-field>
+        <mat-label>Groupe de tiers</mat-label>
+        <mat-select [ngModel]="payeeGroup()" (ngModelChange)="payeeGroup.set($event); reset()">
+          <mat-option [value]="null">Tous</mat-option>
+          @for (g of payees.groups(); track g.id) {
+            <mat-option [value]="g.id">{{ g.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-slide-toggle
+        [checked]="uncategorized()"
+        (change)="uncategorized.set($event.checked); reset()"
       >
-        @for (a of accounts.list(); track a.id) {
-          <mat-option [value]="a.id">{{ a.name }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>Du</mat-label>
-      <input
-        matInput
-        [matDatepicker]="fromPicker"
-        [ngModel]="from()"
-        (ngModelChange)="from.set($event); reset()"
-      />
-      <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
-      <mat-datepicker #fromPicker />
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>Au</mat-label>
-      <input
-        matInput
-        [matDatepicker]="toPicker"
-        [ngModel]="to()"
-        (ngModelChange)="to.set($event); reset()"
-      />
-      <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
-      <mat-datepicker #toPicker />
-    </mat-form-field>
-    <app-category-picker
-      class="wide"
-      [value]="category()"
-      (valueChange)="category.set($event); reset()"
-    />
-    <mat-form-field>
-      <mat-label>Statut</mat-label>
-      <mat-select [ngModel]="status()" (ngModelChange)="status.set($event); reset()">
-        <mat-option [value]="null">Tous</mat-option>
-        @for (s of statuses; track s) {
-          <mat-option [value]="s">{{ statusLabels[s] }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>Montant min.</mat-label>
-      <input
-        matInput
-        inputmode="decimal"
-        [ngModel]="min()"
-        (ngModelChange)="min.set($event); reset()"
-      />
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>Montant max.</mat-label>
-      <input
-        matInput
-        inputmode="decimal"
-        [ngModel]="max()"
-        (ngModelChange)="max.set($event); reset()"
-      />
-    </mat-form-field>
-    <mat-form-field class="wide">
-      <mat-label>Texte</mat-label>
-      <input matInput [ngModel]="text()" (ngModelChange)="text.set($event); reset()" />
-    </mat-form-field>
-    <app-payee-picker
-      class="wide"
-      [creatable]="false"
-      [value]="payee()"
-      (valueChange)="payee.set($event); reset()"
-    />
-    <mat-form-field>
-      <mat-label>Groupe de tiers</mat-label>
-      <mat-select [ngModel]="payeeGroup()" (ngModelChange)="payeeGroup.set($event); reset()">
-        <mat-option [value]="null">Tous</mat-option>
-        @for (g of payees.groups(); track g.id) {
-          <mat-option [value]="g.id">{{ g.name }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-slide-toggle
-      [checked]="uncategorized()"
-      (change)="uncategorized.set($event.checked); reset()"
-    >
-      À catégoriser
-    </mat-slide-toggle>
-    <mat-slide-toggle
-      [checked]="withoutPayee()"
-      (change)="withoutPayee.set($event.checked); reset()"
-    >
-      Sans tiers
-    </mat-slide-toggle>
-    <mat-form-field>
-      <mat-label>Justificatif</mat-label>
-      <mat-select [ngModel]="withDocuments()" (ngModelChange)="withDocuments.set($event); reset()">
-        <mat-option [value]="null">Tous</mat-option>
-        <mat-option [value]="true">Avec</mat-option>
-        <mat-option [value]="false">Sans</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </div>
+        À catégoriser
+      </mat-slide-toggle>
+      <mat-slide-toggle
+        [checked]="withoutPayee()"
+        (change)="withoutPayee.set($event.checked); reset()"
+      >
+        Sans tiers
+      </mat-slide-toggle>
+      <mat-form-field>
+        <mat-label>Justificatif</mat-label>
+        <mat-select
+          [ngModel]="withDocuments()"
+          (ngModelChange)="withDocuments.set($event); reset()"
+        >
+          <mat-option [value]="null">Tous</mat-option>
+          <mat-option [value]="true">Avec</mat-option>
+          <mat-option [value]="false">Sans</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
 
   @if (selection().size > 0) {
     <div class="bulk card">
