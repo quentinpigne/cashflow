@@ -256,7 +256,7 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
     // Mois à venir jusqu'à décembre et estimation de fin d'année (R-TDB-14).
     let current = Month::of(today);
     let upcoming_months = current.next().until(Month { year: current.year, month: 12 });
-    let budget = budgets::planned_months(db, &upcoming_months).await?;
+    let budget = budgets::planned_months(db, current, &upcoming_months).await?;
     let planned_projects = query.planned_projects.unwrap_or(true);
     let mut projects: HashMap<Month, Money> = HashMap::new();
     for project in budgets::remaining(db, today)
@@ -272,13 +272,18 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
         .iter()
         .enumerate()
         .map(|(i, m)| {
-            let (income, budget_expenses) = budget.get(i).copied().unwrap_or((Money::ZERO, Money::ZERO));
+            let (income, budget_expenses) =
+                budget.as_ref().and_then(|b| b.months.get(i)).copied().unwrap_or((Money::ZERO, Money::ZERO));
             PlannedFlows { income, budget_expenses, projects: projects.get(m).copied().unwrap_or(Money::ZERO) }
         })
         .collect();
     let this_year: Vec<reporting::Flows> =
         periods.iter().zip(&flows).filter(|(p, _)| p.from.year() == today.year()).map(|(_, f)| *f).collect();
-    let (income, expenses, savings) = reporting::year_estimate(&this_year, &planned);
+    // Le mois en cours compte aussi ce qui reste à venir : lignes du budget et part du mois des projets.
+    let (income, budget_expenses) = budget.as_ref().map_or((Money::ZERO, Money::ZERO), |b| b.to_come);
+    let to_come =
+        PlannedFlows { income, budget_expenses, projects: projects.get(&current).copied().unwrap_or(Money::ZERO) };
+    let (income, expenses, savings) = reporting::year_estimate(&this_year, &to_come, &planned);
     Ok(Evolution {
         months,
         upcoming: upcoming_months
@@ -298,7 +303,7 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
             expenses_minor: expenses.minor(),
             savings_minor: savings.minor(),
         },
-        has_budget: !budget.is_empty(),
+        has_budget: budget.is_some(),
         planned_projects,
     })
 }

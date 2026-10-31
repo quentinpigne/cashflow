@@ -472,13 +472,20 @@ pub async fn remaining(db: &Db, today: Date) -> AppResult<Vec<ProjectRemaining>>
         .collect())
 }
 
-/// Revenus et dépenses prévus par les lignes du budget, pour chacun des `months` (R-TDB-14) : lignes de revenu, et
-/// lignes de dépense mensuelles avec les quotes-parts annuelles. Vide sans aucune ligne.
-pub async fn planned_months(db: &Db, months: &[Month]) -> AppResult<Vec<(Money, Money)>> {
-    let Some(last) = months.iter().max().copied() else { return Ok(Vec::new()) };
+/// Prévu du budget pour l'estimation de fin d'année (R-TDB-14) : `(revenus, dépenses)`.
+pub struct PlannedBudget {
+    /// Encore à venir du mois en cours, ligne par ligne.
+    pub to_come: (Money, Money),
+    /// Prévu de chacun des mois suivants demandés.
+    pub months: Vec<(Money, Money)>,
+}
+
+/// Prévu du budget du mois en cours et des mois suivants ; `None` sans ligne de budget.
+pub async fn planned_months(db: &Db, current: Month, months: &[Month]) -> AppResult<Option<PlannedBudget>> {
+    let last = months.iter().max().copied().unwrap_or(current).max(current);
     let loaded = Loaded::load(db, last).await?;
     if loaded.rows.is_empty() {
-        return Ok(Vec::new());
+        return Ok(None);
     }
     let versions: Vec<_> = loaded.rows.iter().map(version).collect();
     let overrides: Vec<Override<BudgetLineId>> =
@@ -492,14 +499,17 @@ pub async fn planned_months(db: &Db, months: &[Month]) -> AppResult<Vec<(Money, 
         projects: &[],
     }
     .build();
-    Ok(months
-        .iter()
-        .map(|m| {
-            let month = budget.month(*m);
-            let planned = |kind: BudgetKind| month.lines.iter().filter(|l| l.kind == kind).map(|l| l.planned).sum();
-            (planned(BudgetKind::Income), planned(BudgetKind::Expense))
-        })
-        .collect())
+    Ok(Some(PlannedBudget {
+        to_come: budget.to_come(current),
+        months: months
+            .iter()
+            .map(|m| {
+                let month = budget.month(*m);
+                let planned = |kind: BudgetKind| month.lines.iter().filter(|l| l.kind == kind).map(|l| l.planned).sum();
+                (planned(BudgetKind::Income), planned(BudgetKind::Expense))
+            })
+            .collect(),
+    }))
 }
 
 async fn compute(db: &Db, month: Month, today: Date, planned_projects: bool) -> AppResult<MonthBudgetView> {

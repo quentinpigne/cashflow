@@ -671,11 +671,12 @@ async fn tdb_09_r_tdb_14_upcoming_months_and_year_end() {
     let may = evolution.upcoming.iter().find(|m| m.month == "2026-05").unwrap();
     assert_eq!((may.income_minor, may.expenses_minor, may.projects_minor), (300_000, 150_000, 50_000));
     assert_eq!(may.savings_minor, 150_000);
+    // Mars, mois en cours : le salaire est reçu, les 1 000 de courses sont encore à venir.
     let year = &evolution.year_end;
-    assert_eq!((year.income_minor, year.expenses_minor), (3_000_000, 1_080_000));
-    assert_eq!(year.savings_minor, 1_920_000);
+    assert_eq!((year.income_minor, year.expenses_minor), (3_000_000, 1_180_000));
+    assert_eq!(year.savings_minor, 1_820_000);
 
     // Sans les projets planifiés, l'Italie sort de l'estimation (R-BUD-72).
     let without = reports::evolution(&db, &query(Some(false)), d(TODAY)).await.unwrap();
-    assert_eq!(without.year_end.expenses_minor, 1_000_000);
+    assert_eq!(without.year_end.expenses_minor, 1_100_000);
 }

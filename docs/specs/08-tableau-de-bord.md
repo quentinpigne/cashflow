@@ -37,9 +37,13 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
   lignes de revenu du budget du mois (R-BUD-50). Dépenses prévues = Σ des lignes de dépense mensuelles et
   des quotes-parts annuelles du mois + Σ des restants prévus du mois (R-BUD-71) des projets exclus des
   budgets du mois et pris en compte (R-BUD-72, interrupteur « Projets planifiés » de l'écran) ; une mise de
-  côté n'est pas une dépense et n'y entre pas. **Estimation de fin d'année** = réel du 1er janvier à la fin
-  du mois en cours + Σ des prévus des mois suivants, pour les revenus, les dépenses et l'épargne. Sans
-  ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale.
+  côté n'est pas une dépense et n'y entre pas. **Estimation de fin d'année** = réel du 1er janvier à
+  aujourd'hui + **encore à venir du mois en cours** + Σ des prévus des mois suivants, pour les revenus, les
+  dépenses et l'épargne. Encore à venir du mois en cours = Σ, ligne de revenu ou de dépense par ligne, de
+  (prévu du mois − réel du mois) quand c'est positif — chaque ligne compte ainsi le plus grand de son prévu
+  et de son réel, quel que soit le jour où tombent ses mouvements ; une ligne annuelle ne dépasse pas ce qui
+  reste de son année — + Σ des restants prévus du mois en cours des projets pris en compte comme ci-dessus.
+  Sans ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale.
 
 ## Écrans
 
@@ -62,3 +66,11 @@ rattachés au mois par leur `date` ; les soldes et le patrimoine utilisent la da
   dépenses = 1 750 €, épargne du mois = 1 250 €, taux d'épargne = 41,7 %. Le virement n'apparaît
   nulle part dans ces chiffres.
 - Le patrimoine ne change pas du fait du virement de 500 € (−500 sur le compte courant, +500 sur le livret).
+
+### TDB-09 — Critères d'acceptation
+
+- Étant donné, le 10 octobre, un salaire prévu de 3 000 € pas encore reçu, des courses prévues à 400 € dont
+  100 € faites, des restaurants prévus à 150 € et déjà dépassés (200 €), et une assurance annuelle de
+  1 200 € payée en janvier, alors l'encore à venir d'octobre est de 3 000 € de revenus et 300 € de
+  dépenses : le dépassement des restaurants ne compense rien, l'assurance n'est plus à venir. Une fois
+  le salaire reçu, il n'est plus à venir et l'estimation de fin d'année ne change pas.

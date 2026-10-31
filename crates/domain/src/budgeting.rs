@@ -516,6 +516,29 @@ where
             savings: actual_savings,
         }
     }
+
+    /// Revenus et dépenses encore à venir d'un mois (R-TDB-14) : pour chaque ligne de revenu ou de dépense, prévu du
+    /// mois − réel du mois quand il reste positif. Une ligne annuelle compte sa quote-part moins son réel du mois, sans
+    /// dépasser ce qui reste de son année (une dépense annuelle déjà payée n'est plus à venir).
+    pub fn to_come(&self, month: Month) -> (Money, Money) {
+        let mut income = Money::ZERO;
+        let mut expenses = Money::ZERO;
+        for line in self.in_force(month) {
+            let state = self.line_month(line, month);
+            let left = state.planned - self.actual(line, &[month]);
+            let left = match line.periodicity {
+                Periodicity::Monthly => left,
+                Periodicity::Yearly => left.min(state.remaining()),
+            };
+            match line.kind {
+                _ if !left.is_positive() => {}
+                BudgetKind::Income => income += left,
+                BudgetKind::Expense => expenses += left,
+                BudgetKind::Savings => {}
+            }
+        }
+        (income, expenses)
+    }
 }
 
 /// Le budget d'un mois (BUD-03).
@@ -1343,6 +1366,32 @@ mod tests {
         // Un projet non exclu des lignes du mois n'a pas de prévu propre.
         let kept = ProjectTiming { exclude_from_period_budgets: false, ..july };
         assert!(budget_forecast(&kept, &italy_dated(), true).is_empty());
+    }
+
+    /// Critère d'acceptation de TDB-09 / R-TDB-14 : le mois en cours compte, ligne par ligne, ce qui reste à venir ; un dépassement ne se compense pas.
+    #[test]
+    fn r_tdb_14_to_come_line_by_line() {
+        let mut salary = line(1, 1, 300_000, "2027-01");
+        salary.kind = BudgetKind::Income;
+        let groceries = line(2, 2, 40_000, "2027-01");
+        let restaurants = line(3, 3, 15_000, "2027-01");
+        let mut insurance = line(4, 4, 120_000, "2027-01");
+        insurance.periodicity = Periodicity::Yearly;
+        let lines = [salary, groceries, restaurants, insurance];
+        let splits =
+            [spend("2027-03-05", -10_000, 2), spend("2027-03-08", -20_000, 3), spend("2027-01-15", -120_000, 4)];
+        let parents = HashMap::new();
+        let budget =
+            BudgetData { lines: &lines, overrides: &[], splits: &splits, moves: &[], parents: &parents, projects: &[] }
+                .build();
+        // Salaire pas encore reçu : 3 000 ; courses : 300 ; restaurants dépassés : rien ; assurance payée en janvier : rien.
+        assert_eq!(budget.to_come(m("2027-03")), (eur(300_000), eur(30_000)));
+        // Assurance pas encore payée : sa quote-part de 100 ; sans dépense, les restaurants aussi.
+        let unpaid = [spend("2027-03-05", -10_000, 2)];
+        let budget =
+            BudgetData { lines: &lines, overrides: &[], splits: &unpaid, moves: &[], parents: &parents, projects: &[] }
+                .build();
+        assert_eq!(budget.to_come(m("2027-03")), (eur(300_000), eur(30_000 + 15_000 + 10_000)));
     }
 
     /// R-BUD-71, R-PRJ-48 : le restant d'un poste daté reste distinct dans la trésorerie, daté du 1er du mois, de la

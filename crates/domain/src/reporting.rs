@@ -171,12 +171,13 @@ impl PlannedFlows {
     }
 }
 
-/// Estimation de fin d'année (R-TDB-14) : le réel des mois écoulés de l'année, mois en cours compris, plus le prévu
-/// des mois suivants.
-pub fn year_estimate(actual: &[Flows], planned: &[PlannedFlows]) -> (Money, Money, Money) {
-    let income = actual.iter().map(|f| f.income).sum::<Money>() + planned.iter().map(|p| p.income).sum::<Money>();
+/// Estimation de fin d'année (R-TDB-14) : le réel des mois écoulés de l'année, mois en cours compris, plus ce qui
+/// reste à venir du mois en cours (`to_come`), plus le prévu des mois suivants.
+pub fn year_estimate(actual: &[Flows], to_come: &PlannedFlows, planned: &[PlannedFlows]) -> (Money, Money, Money) {
+    let planned = || std::iter::once(to_come).chain(planned);
+    let income = actual.iter().map(|f| f.income).sum::<Money>() + planned().map(|p| p.income).sum::<Money>();
     let expenses =
-        actual.iter().map(|f| f.expenses).sum::<Money>() + planned.iter().map(PlannedFlows::expenses).sum::<Money>();
+        actual.iter().map(|f| f.expenses).sum::<Money>() + planned().map(PlannedFlows::expenses).sum::<Money>();
     (income, expenses, income - expenses)
 }
 
@@ -369,6 +370,10 @@ mod tests {
         let planned = PlannedFlows { income: eur(3_000), budget_expenses: eur(2_000), projects: eur(500) };
         assert_eq!((planned.expenses(), planned.savings()), (eur(2_500), eur(500)));
         let actual = [month(3_000, 2_200), month(3_100, 1_900)];
-        assert_eq!(year_estimate(&actual, &[planned, planned]), (eur(12_100), eur(9_100), eur(3_000)));
+        let nothing = PlannedFlows { income: Money::ZERO, budget_expenses: Money::ZERO, projects: Money::ZERO };
+        assert_eq!(year_estimate(&actual, &nothing, &[planned, planned]), (eur(12_100), eur(9_100), eur(3_000)));
+        // Le salaire du mois en cours, pas encore reçu, et 300 de courses encore à faire comptent aussi.
+        let to_come = PlannedFlows { income: eur(3_000), budget_expenses: eur(300), projects: Money::ZERO };
+        assert_eq!(year_estimate(&actual, &to_come, &[planned, planned]), (eur(15_100), eur(9_400), eur(5_700)));
     }
 }
