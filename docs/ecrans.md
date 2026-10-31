@@ -175,7 +175,9 @@ qui ouvre un menu : les options d'affichage propres à l'encadré, puis « Masqu
 | Épargne | Épargne de précaution, Intérêts de l'année, Épargne variable (oui) |
 | Comptes | Détail des comptes (oui ; sinon les familles seules) |
 
-Les encadrés masqués se réaffichent depuis le bouton « Encadrés masqués (n) » en haut de l'accueil.
+**Menu d'affichage de l'accueil** : un bouton `tune` sur la bande du titre « Tableau de bord » ouvre un menu
+qui réaffiche chaque encadré masqué (« Afficher « Budget du mois » ») et propose « Disposition par défaut »
+quand la disposition a été modifiée. Le bouton n'apparaît que s'il y a quelque chose dans le menu.
 Réglages et encadrés masqués sont gardés dans le navigateur (`localStorage`), pour tous les nombres de
 colonnes. Tous les encadrés ont le même style de titre ; un titre qui mène à un écran (Budget, Comptes,
 Échéances) n'est souligné qu'au survol.
@@ -183,8 +185,8 @@ colonnes. Tous les encadrés ont le même style de titre ; un titre qui mène à
 **Disposition personnalisable.** Chaque encadré porte une poignée (⋮⋮, en haut à droite) : on le fait
 glisser pour le réordonner dans sa colonne, ou le changer de colonne. La disposition est gardée dans le
 navigateur (`localStorage`), séparément pour chaque nombre de colonnes (une sur mobile, jusqu'à quatre sur
-grand écran) ; « Disposition par défaut » apparaît dès que celle du nombre de colonnes affiché a été
-modifiée. Un encadré sans contenu (aucune alerte, rien à catégoriser) reste masqué à sa place.
+grand écran) ; « Disposition par défaut », dans le menu d'affichage, apparaît dès que celle du nombre de
+colonnes affiché a été modifiée. Un encadré sans contenu (aucune alerte, rien à catégoriser) reste masqué à sa place.
 
 ## E2 — Comptes (CPT-01, CPT-03, CPT-07)
 
@@ -1168,10 +1170,13 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
   ventilations ont des membres différents ; rien sans membre.
 - **E30 Emploi** (formulaire) : champ **Membre** (« Foyer » par défaut) ; **E29 Salaires** : la pastille du
   membre à côté de l'employeur.
-- **E1 Accueil**, **E15 Analyses**, **E24 Projections** : en haut de l'écran, les cases à cocher
-  `[mat-checkbox]` « Foyer · Quentin · Claire » (R-MBR-8), mémorisées sur l'appareil pour chaque écran. La
-  dernière case cochée ne se décoche pas. Quand toutes ne sont pas cochées, une mention rappelle le choix
-  (« Quentin et Claire seulement ») et ce qui n'est pas affiché (R-MBR-9).
+- **E1 Accueil** : dans le menu de réglages `tune` des encadrés concernés (R-MBR-9), une section
+  **Membres** avec les cases « Foyer », « Quentin », « Claire » ; le menu reste ouvert pendant qu'on coche. Un
+  encadré filtré l'indique dans son titre : « Patrimoine · Claire », « · 2 membres » au-delà d'un membre.
+- **E15 Analyses**, **E24 Projections** : en haut de l'écran, les cases à cocher `[mat-checkbox]` « Foyer ·
+  Quentin · Claire » (R-MBR-8), mémorisées sur l'appareil pour chaque écran. La dernière case cochée ne se
+  décoche pas. Quand toutes ne sont pas cochées, une mention rappelle le choix (« Quentin et Claire
+  seulement ») et ce qui n'est pas affiché (R-MBR-9).
 
 ## E44 — Membres du foyer (MBR-01)
 

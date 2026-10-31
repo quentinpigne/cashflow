@@ -13,7 +13,8 @@ connexion (ADR-0006).
 
 On affecte à un membre un **compte**, une **transaction** (ou chacune de ses ventilations) et un **emploi**.
 Ce qui n'est affecté à personne appartient au **foyer** lui-même, c'est-à-dire à tout le monde. On choisit
-ensuite, par des cases à cocher, les membres à afficher dans l'accueil, les analyses et les projections.
+ensuite les membres à afficher : encadré par encadré sur l'accueil, et par des cases à cocher dans les analyses
+et les projections.
 
 ```
 Cases cochées : [x] Foyer  [x] Quentin  [ ] Claire
@@ -60,20 +61,28 @@ au foyer (Q19).
 
 ## Choix des membres affichés
 
-- **R-MBR-8** — L'**accueil**, les **analyses** et les **projections** ont chacun des **cases à cocher** :
-  « Foyer » puis un membre par membre, dans leur ordre. Toutes sont cochées par défaut ; au moins une le
-  reste. Le choix est mémorisé sur l'appareil, écran par écran.
+- **R-MBR-8** — Le **choix des membres** se fait par des **cases à cocher** : « Foyer » puis un membre par
+  membre, dans leur ordre. Toutes sont cochées par défaut ; au moins une le reste. Le choix est mémorisé sur
+  l'appareil. Il se fait **encadré par encadré** sur l'accueil, pour les encadrés concernés (R-MBR-9) : un même
+  accueil peut montrer le patrimoine du foyer à côté des dépenses de Claire. Les **analyses** et les
+  **projections** ont chacune un choix pour tout l'écran.
 - **R-MBR-9** — Avec un choix de membres :
   - les **flux** (revenus, dépenses, non catégorisé, épargne, par catégorie, par tiers, évolution) ne
     comptent que les ventilations dont le membre retenu (R-MBR-6) est coché ;
   - les **soldes**, le **patrimoine** et les **projections** (patrimoine, trésorerie, épargne) ne comptent
     que les comptes dont le membre est coché, les comptes sans membre avec « Foyer » ; les biens et les prêts
     comptent avec « Foyer » ;
-  - l'encadré **Salaire** ne montre que les emplois dont le membre est coché, ceux sans membre avec « Foyer ».
-  - Ce qui vient du budget ne se répartit pas entre membres : quand toutes les cases ne sont pas cochées, les
-    mois à venir de l'évolution (R-TDB-14) et l'encadré Fin d'année ne sont pas affichés, et l'écran le dit.
-  - Les autres encadrés et écrans (budget, projets, prochaines échéances, comptes à mettre à jour,
-    documents, démarches, transactions) ne changent pas.
+  - l'encadré **Salaire** ne montre que les emplois dont le membre est coché, ceux sans membre avec « Foyer » ;
+  - l'encadré **Épargne** ne compte que les comptes dont le titulaire est coché (épargne de précaution,
+    intérêts, épargne variable), et des dépenses mensuelles moyennes (R-TDB-8) que les ventilations dont le
+    membre retenu est coché.
+  - Sur l'accueil, les encadrés concernés sont donc Patrimoine, Mois en cours, Comptes, Trésorerie à venir,
+    Dépenses par catégorie, Évolution, Tiers du mois, Salaire et Épargne. Les autres (budget, projets, fin
+    d'année, échéances, à catégoriser, biens, prêts, comptes à mettre à jour, documents, démarches…) restent
+    ceux du foyer et n'offrent pas de choix.
+  - Ce qui vient du budget ne se répartit pas entre membres : dans les analyses, quand toutes les cases ne
+    sont pas cochées, les mois à venir de l'évolution (R-TDB-14) et l'estimation de fin d'année ne sont pas
+    affichés, et l'écran le dit.
 - **R-MBR-10** — Invariant : toutes les cases cochées, chaque chiffre est celui d'aujourd'hui ; et pour un
   flux, la somme des chiffres de chaque case cochée seule égale le chiffre de toutes les cases.
 
@@ -110,6 +119,8 @@ au foyer (Q19).
 - Étant donné, sur le compte de Quentin, 50 € de courses sans membre et 30 € de cadeau affectés à Claire, et
   sur le compte joint 20 € de cantine sans membre : en ne cochant que Quentin, les dépenses valent 50 € ; que
   Claire, 30 € ; que Foyer, 20 € ; tout coché, 100 € (R-MBR-6, R-MBR-10).
-- Étant donné Claire seule cochée sur l'accueil, quand je reviens sur l'accueil, alors seule Claire est
-  toujours cochée (R-MBR-8).
-- Étant donné une case décochée, alors l'encadré Fin d'année n'est pas affiché (R-MBR-9).
+- Étant donné Claire seule cochée dans l'encadré Mois en cours, alors l'encadré Patrimoine reste celui du
+  foyer ; quand je reviens sur l'accueil, Claire seule est toujours cochée dans Mois en cours, et son titre
+  porte « · Claire » (R-MBR-8).
+- Étant donné une case décochée dans les analyses, alors l'estimation de fin d'année n'est pas affichée
+  (R-MBR-9).
