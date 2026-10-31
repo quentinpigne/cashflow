@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE split SET member_id = ?, updated_at = ?\n         WHERE transaction_id = ?\n           AND id NOT IN (SELECT outflow_split_id FROM transfer UNION ALL SELECT inflow_split_id FROM transfer)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "67e336af55d89197bc41279d022d09aee2c889b33375343f2645cb7ac202355f"
+}

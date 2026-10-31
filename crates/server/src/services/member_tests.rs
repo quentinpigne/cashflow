@@ -295,3 +295,37 @@ async fn r_mbr_9_savings_overview_counts_the_checked_titulars() {
     assert_eq!(overview(Some(claire.to_string())).await.emergency_fund_minor, 50_000);
     assert_eq!(overview(Some(HOUSEHOLD.into())).await.emergency_fund_minor, 50_000);
 }
+
+/// Affectation en masse : toutes les ventilations, même rapprochées ; les virements sont ignorés (R-MBR-5).
+#[tokio::test]
+async fn r_mbr_5_members_are_assigned_in_bulk_except_transfers() {
+    let (db, _dir) = setup().await;
+    let leo = member(&db, "Léo").await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let savings = account(&db, "Livret", AccountKind::LivretA, 0).await;
+    let food = category(&db, "Alimentation", CategoryKind::Expense, None).await;
+    let input = TransactionInput {
+        splits: Some(vec![split(-6_000, Some(food)), split(-4_000, None)]),
+        ..tx(checking, "2026-03-10", -10_000, None)
+    };
+    let spent = transactions::create(&db, &input).await.unwrap();
+    let transfer = TransferInput {
+        from_account_id: checking,
+        to_account_id: savings,
+        amount_minor: 1_000,
+        date: d("2026-03-11"),
+        label: "Épargne".into(),
+        note: None,
+    };
+    let leg = transfers::create(&db, &transfer).await.unwrap().outflow_transaction_id;
+
+    let bulk = transactions::BulkMemberInput { transaction_ids: vec![spent, leg], member_id: Some(leo) };
+    let result = transactions::set_member_many(&db, &bulk).await.unwrap();
+    assert_eq!((result.updated, result.skipped), (1, 1));
+    assert!(transactions::get(&db, spent).await.unwrap().splits.iter().all(|s| s.member_id == Some(leo)));
+    assert_eq!(transactions::get(&db, leg).await.unwrap().splits[0].member_id, None);
+
+    let back = transactions::BulkMemberInput { transaction_ids: vec![spent], member_id: None };
+    transactions::set_member_many(&db, &back).await.unwrap();
+    assert!(transactions::get(&db, spent).await.unwrap().splits.iter().all(|s| s.member_id.is_none()));
+}

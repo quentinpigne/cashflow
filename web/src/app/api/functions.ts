@@ -105,6 +105,8 @@ export type { SetTransactionsAnalysisMonth$Params as SetTransactionsAnalysisMont
 export { setTransactionsAnalysisMonth as setTransactionsAnalysisMonth } from './fn/transactions/set-transactions-analysis-month';
 export type { CategorizeTransactions$Params as CategorizeTransactions$Params } from './fn/transactions/categorize-transactions';
 export { categorizeTransactions as categorizeTransactions } from './fn/transactions/categorize-transactions';
+export type { SetTransactionsMember$Params as SetTransactionsMember$Params } from './fn/transactions/set-transactions-member';
+export { setTransactionsMember as setTransactionsMember } from './fn/transactions/set-transactions-member';
 export type { SetTransactionsPayee$Params as SetTransactionsPayee$Params } from './fn/transactions/set-transactions-payee';
 export { setTransactionsPayee as setTransactionsPayee } from './fn/transactions/set-transactions-payee';
 export type { GetTransaction$Params as GetTransaction$Params } from './fn/transactions/get-transaction';

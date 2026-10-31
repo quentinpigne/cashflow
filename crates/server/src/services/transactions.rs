@@ -212,6 +212,20 @@ pub struct BulkPayeeResult {
     pub skipped: usize,
 }
 
+/// Membre affecté en masse (R-MBR-5) ; absent, les ventilations reviennent au membre du compte, à défaut au foyer.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BulkMemberInput {
+    pub transaction_ids: Vec<TransactionId>,
+    pub member_id: Option<MemberId>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BulkMemberResult {
+    pub updated: usize,
+    /// Virements, laissés sans membre (R-MBR-5).
+    pub skipped: usize,
+}
+
 /// Mois d'analyse de plusieurs transactions (TRX-13) ; absent, ou le mois de la date : le mois de la date.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct BulkAnalysisMonthInput {
@@ -929,6 +943,29 @@ pub async fn set_payee_many(db: &Db, input: &BulkPayeeInput) -> AppResult<BulkPa
             continue;
         }
         db::transactions::set_payee(&mut *tx, *id, input.payee_id).await?;
+        result.updated += 1;
+    }
+    tx.commit().await?;
+    Ok(result)
+}
+
+/// Affecte (ou retire) un membre à toutes les ventilations de plusieurs transactions (R-MBR-5). Les virements sont
+/// laissés tels quels ; une transaction rapprochée change de membre sans déverrouillage (R-TRX-3).
+pub async fn set_member_many(db: &Db, input: &BulkMemberInput) -> AppResult<BulkMemberResult> {
+    let mut result = BulkMemberResult { updated: 0, skipped: 0 };
+    let mut tx = db.write.begin().await?;
+    super::members::check_exists(&mut tx, input.member_id).await?;
+    for id in &input.transaction_ids {
+        if db::transactions::find(&mut *tx, *id).await?.is_none() {
+            return Err(AppError::NotFound("transaction"));
+        }
+        let is_transfer = db::transactions::transfer_of(&mut *tx, *id).await?.is_some();
+        // Une ventilation de virement n'a jamais de membre (R-MBR-5) : la transaction est laissée telle quelle.
+        if is_transfer {
+            result.skipped += 1;
+            continue;
+        }
+        db::members::set_transaction_member(&mut *tx, *id, input.member_id).await?;
         result.updated += 1;
     }
     tx.commit().await?;

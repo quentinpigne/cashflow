@@ -160,6 +160,24 @@
       <button mat-button (click)="setPayeeOfSelection(true)" [disabled]="busy()">
         Retirer le tiers
       </button>
+      @if (members.active()) {
+        <mat-form-field class="bulk-project" subscriptSizing="dynamic">
+          <mat-label>Membre</mat-label>
+          <mat-select [value]="bulkMember()" (selectionChange)="bulkMember.set($event.value)">
+            @for (m of members.list(); track m.id) {
+              <mat-option [value]="m.id">{{ m.name }}</mat-option>
+            }
+            <mat-option [value]="NO_MEMBER">Aucun (retirer le membre)</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button
+          mat-stroked-button
+          (click)="setMemberOfSelection()"
+          [disabled]="!bulkMember() || busy()"
+        >
+          Affecter le membre
+        </button>
+      }
       <mat-form-field class="bulk-project" subscriptSizing="dynamic">
         <mat-label>Mois d'analyse</mat-label>
         <mat-select [value]="bulkMonth()" (selectionChange)="bulkMonth.set($event.value)">
@@ -219,13 +237,13 @@
         <button class="open" (click)="open(item)">
           <span class="text">
             <span>
+              {{ item.label }}
               @if (members.active()) {
-                @let chip = members.chip(item.splits);
-                @if (chip !== undefined) {
-                  <app-member-chip [member]="chip" />
+                @let tag = members.tag(item.splits);
+                @if (tag) {
+                  <app-member-tag [tag]="tag" />
                 }
               }
-              {{ item.label }}
               @if (item.has_documents) {
                 <mat-icon class="attached" aria-label="Avec justificatif">attach_file</mat-icon>
               }

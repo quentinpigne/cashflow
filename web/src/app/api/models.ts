@@ -68,6 +68,8 @@ export type { BulkAnalysisMonthResult } from './models/bulk-analysis-month-resul
 export type { BulkCategorizeInput } from './models/bulk-categorize-input';
 export type { BulkCategorizeResult } from './models/bulk-categorize-result';
 export type { BulkInput } from './models/bulk-input';
+export type { BulkMemberInput } from './models/bulk-member-input';
+export type { BulkMemberResult } from './models/bulk-member-result';
 export type { BulkPayeeInput } from './models/bulk-payee-input';
 export type { BulkPayeeResult } from './models/bulk-payee-result';
 export type { Candidate } from './models/candidate';

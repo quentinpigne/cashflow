@@ -9,9 +9,9 @@ use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
 use crate::services::transactions::{
-    self, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput, BulkCategorizeResult, BulkPayeeInput,
-    BulkPayeeResult, CategorizeInput, TransactionDetail, TransactionFilter, TransactionInput, TransactionPage,
-    TransactionUpdateInput,
+    self, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput, BulkCategorizeResult, BulkMemberInput,
+    BulkMemberResult, BulkPayeeInput, BulkPayeeResult, CategorizeInput, TransactionDetail, TransactionFilter,
+    TransactionInput, TransactionPage, TransactionUpdateInput,
 };
 use crate::services::transfers::{
     self, Candidate, CandidatesQuery, MarkAsTransferInput, TransferCreated, TransferInput,
@@ -185,6 +185,18 @@ pub async fn set_payee_many(
     Json(input): Json<BulkPayeeInput>,
 ) -> AppResult<Json<BulkPayeeResult>> {
     Ok(Json(transactions::set_payee_many(&state.db, &input).await?))
+}
+
+/// Affecte ou retire un membre sur plusieurs transactions (R-MBR-5) ; les virements sont ignorés.
+#[utoipa::path(
+    post, operation_id = "setTransactionsMember", path = "/transactions/member", tag = "transactions",
+    request_body = BulkMemberInput, responses((status = 200, body = BulkMemberResult), (status = 404, body = Problem))
+)]
+pub async fn set_member_many(
+    State(state): State<AppState>,
+    Json(input): Json<BulkMemberInput>,
+) -> AppResult<Json<BulkMemberResult>> {
+    Ok(Json(transactions::set_member_many(&state.db, &input).await?))
 }
 
 /// Fixe le mois d'analyse de plusieurs transactions (TRX-13, R-TRX-57).

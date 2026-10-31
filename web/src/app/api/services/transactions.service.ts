@@ -12,6 +12,7 @@ import { StrictHttpResponse } from '../strict-http-response';
 
 import { BulkAnalysisMonthResult } from '../models/bulk-analysis-month-result';
 import { BulkCategorizeResult } from '../models/bulk-categorize-result';
+import { BulkMemberResult } from '../models/bulk-member-result';
 import { BulkPayeeResult } from '../models/bulk-payee-result';
 import { Candidate } from '../models/candidate';
 import { categorizeSplit } from '../fn/transactions/categorize-split';
@@ -42,6 +43,8 @@ import { setExpectedRefund } from '../fn/transactions/set-expected-refund';
 import { SetExpectedRefund$Params } from '../fn/transactions/set-expected-refund';
 import { setTransactionsAnalysisMonth } from '../fn/transactions/set-transactions-analysis-month';
 import { SetTransactionsAnalysisMonth$Params } from '../fn/transactions/set-transactions-analysis-month';
+import { setTransactionsMember } from '../fn/transactions/set-transactions-member';
+import { SetTransactionsMember$Params } from '../fn/transactions/set-transactions-member';
 import { setTransactionsPayee } from '../fn/transactions/set-transactions-payee';
 import { SetTransactionsPayee$Params } from '../fn/transactions/set-transactions-payee';
 import { TransactionCreated } from '../models/transaction-created';
@@ -308,6 +311,41 @@ export class TransactionsService extends BaseService {
     const resp = this.categorizeTransactions$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<BulkCategorizeResult>): BulkCategorizeResult => r.body)
+    );
+  }
+
+  /** Path part for operation `setTransactionsMember()` */
+  static readonly SetTransactionsMemberPath = '/api/v1/transactions/member';
+
+  /**
+   * Affecte ou retire un membre sur plusieurs transactions (R-MBR-5) ; les virements sont ignorés.
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `setTransactionsMember()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsMember$Response(params: SetTransactionsMember$Params, context?: HttpContext): Observable<StrictHttpResponse<BulkMemberResult>> {
+    const obs = setTransactionsMember(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Affecte ou retire un membre sur plusieurs transactions (R-MBR-5) ; les virements sont ignorés.
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `setTransactionsMember$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsMember(params: SetTransactionsMember$Params, context?: HttpContext): Observable<BulkMemberResult> {
+    const resp = this.setTransactionsMember$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BulkMemberResult>): BulkMemberResult => r.body)
     );
   }
 

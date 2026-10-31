@@ -1,6 +1,6 @@
 //! Membres du foyer (spec 14).
 
-use cashflow_domain::shared::ids::MemberId;
+use cashflow_domain::shared::ids::{MemberId, TransactionId};
 use sqlx::{SqliteConnection, SqliteExecutor};
 
 use super::codec::id_from_db;
@@ -115,6 +115,29 @@ pub async fn set_display_order(db: impl SqliteExecutor<'_>, id: MemberId, order:
         .execute(db)
         .await?;
     Ok(result.rows_affected() > 0)
+}
+
+/// Affecte (ou retire) un membre à toutes les ventilations d'une transaction, sauf une ventilation de virement
+/// (R-MBR-5).
+pub async fn set_transaction_member(
+    db: impl SqliteExecutor<'_>,
+    transaction: TransactionId,
+    member: Option<MemberId>,
+) -> anyhow::Result<()> {
+    let transaction = transaction.to_string();
+    let member = member.map(|m| m.to_string());
+    let now = timestamp();
+    sqlx::query!(
+        "UPDATE split SET member_id = ?, updated_at = ?
+         WHERE transaction_id = ?
+           AND id NOT IN (SELECT outflow_split_id FROM transfer UNION ALL SELECT inflow_split_id FROM transfer)",
+        member,
+        now,
+        transaction
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 /// Remet au foyer ce qui est affecté au membre, puis le supprime (R-MBR-2). Faux s'il n'existe pas.

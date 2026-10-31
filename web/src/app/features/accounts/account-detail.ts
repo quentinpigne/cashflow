@@ -45,7 +45,7 @@ import { AccountStatements } from './statements';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
-import { MemberChip } from '../../shared/member-chip';
+import { MemberTag } from '../../shared/member-tag';
 
 interface Filters {
   from: Date | null;
@@ -72,7 +72,7 @@ const PAGE = 200;
 @Component({
   selector: 'app-account-detail',
   imports: [
-    MemberChip,
+    MemberTag,
     FormsModule,
     RouterLink,
     MatButtonModule,

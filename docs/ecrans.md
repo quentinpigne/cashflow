@@ -1166,8 +1166,10 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
   compte » ou « Foyer », selon le compte, R-MBR-6) ; il s'applique à toutes les ventilations.
 - **E6 Ventilation** et **E7 Détail d'une transaction** : un champ **Membre** par ventilation, sauf une
   ventilation de virement (R-MBR-5). Une transaction à une ventilation montre un seul champ.
-- **E3**, **E14** : la pastille du membre de la ventilation devant le libellé, « Plusieurs » si ses
-  ventilations ont des membres différents ; rien sans membre.
+- **E3**, **E14** : après le libellé, centrée sur la ligne, l'étiquette du membre (pastille de couleur et
+  nom) ; « Léo, Claire » si les ventilations ont des membres différents (« 3 membres » au-delà de deux),
+  suivi de « (en partie) » si certaines n'en ont pas ; rien sans membre. Sur **E14**, action de masse
+  **Membre** : un membre, ou « Aucun (retirer le membre) » ; les virements sont ignorés (R-MBR-5).
 - **E30 Emploi** (formulaire) : champ **Membre** (« Foyer » par défaut) ; **E29 Salaires** : la pastille du
   membre à côté de l'employeur.
 - **E1 Accueil** : dans le menu de réglages `tune` des encadrés concernés (R-MBR-9), une section

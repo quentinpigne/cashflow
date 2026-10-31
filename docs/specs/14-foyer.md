@@ -49,7 +49,8 @@ au foyer (Q19).
   transactions rapprochées : il n'affecte aucun solde (R-TRX-3).
 - **R-MBR-5** — Une **ventilation** est affectée à **au plus un** membre : celui que la dépense ou le revenu
   concerne (le cadeau pour Claire, la cantine de Léo). Affecter une **transaction** à un membre affecte toutes
-  ses ventilations ; ventilée, chaque ventilation se choisit séparément. Une **ventilation de virement** n'a
+  ses ventilations ; ventilée, chaque ventilation se choisit séparément. Plusieurs transactions s'affectent
+  d'un coup depuis la liste des transactions, les virements étant laissés tels quels. Une **ventilation de virement** n'a
   jamais de membre : un virement n'est ni une dépense ni un revenu (ADR-0004). Le membre reste modifiable sur
   une transaction rapprochée (R-TRX-3). Quand la réapplication des règles (IMP-08) recalcule les ventilations,
   les nouvelles reçoivent le membre commun aux anciennes, s'il y en a un.

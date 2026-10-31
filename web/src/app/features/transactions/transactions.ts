@@ -50,7 +50,7 @@ import {
   PayeesStore,
   ProjectsStore,
 } from '../../shared/stores';
-import { MemberChip } from '../../shared/member-chip';
+import { MemberTag } from '../../shared/member-tag';
 
 const PAGE = 200;
 
@@ -58,7 +58,7 @@ const PAGE = 200;
 @Component({
   selector: 'app-transactions',
   imports: [
-    MemberChip,
+    MemberTag,
     FormsModule,
     MatButtonModule,
     MatCheckboxModule,
@@ -134,6 +134,9 @@ export class TransactionsPage implements OnInit {
   protected readonly NO_PROJECT = 'none';
   protected readonly bulkProject = signal<string | null>(null);
   protected readonly bulkCategory = signal<string | null>(null);
+  /** Membre choisi en masse (R-MBR-5) ; `NO_MEMBER` retire le membre. */
+  protected readonly bulkMember = signal<string | null>(null);
+  protected readonly NO_MEMBER = 'none';
   protected readonly busy = signal(false);
   /** Sur mobile, les filtres sont repliés derrière un bouton (comme sur E3). */
   protected readonly showFilters = signal(false);
@@ -274,6 +277,35 @@ export class TransactionsPage implements OnInit {
       this.version.bump();
       const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
       const verb = remove ? 'sans tiers' : `affectée(s) à ${this.payees.name(payee)}`;
+      this.snack.open(`${result.updated} transaction(s) ${verb}${skipped}`, undefined, {
+        duration: 4000,
+      });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Membre affecté (ou retiré) en masse sur toutes les ventilations ; les virements sont ignorés (R-MBR-5). */
+  protected async setMemberOfSelection(): Promise<void> {
+    const choice = this.bulkMember();
+    if (!choice || this.selection().size === 0) {
+      return;
+    }
+    const member = choice === this.NO_MEMBER ? null : choice;
+    // Le nom est lu avant l'appel : la liste des membres se recharge ensuite.
+    const verb = member ? `affectée(s) à ${this.members.name(member)}` : 'sans membre';
+    this.busy.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.api.setTransactionsMember({
+          body: { transaction_ids: [...this.selection()], member_id: member },
+        }),
+      );
+      this.selection.set(new Set());
+      this.version.bump();
+      const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
       this.snack.open(`${result.updated} transaction(s) ${verb}${skipped}`, undefined, {
         duration: 4000,
       });

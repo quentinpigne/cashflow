@@ -8664,6 +8664,45 @@
         }
       }
     },
+    "/api/v1/transactions/member": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Affecte ou retire un membre sur plusieurs transactions (R-MBR-5) ; les virements sont ignorés.",
+        "operationId": "setTransactionsMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkMemberInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkMemberResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/payee": {
       "post": {
         "tags": [
@@ -11767,6 +11806,49 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "BulkMemberInput": {
+        "type": "object",
+        "description": "Membre affecté en masse (R-MBR-5) ; absent, les ventilations reviennent au membre du compte, à défaut au foyer.",
+        "required": [
+          "transaction_ids"
+        ],
+        "properties": {
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        }
+      },
+      "BulkMemberResult": {
+        "type": "object",
+        "required": [
+          "updated",
+          "skipped"
+        ],
+        "properties": {
+          "skipped": {
+            "type": "integer",
+            "description": "Virements, laissés sans membre (R-MBR-5).",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },

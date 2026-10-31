@@ -25,5 +25,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(transactions::list_all))
         .routes(routes!(transactions::categorize_many))
         .routes(routes!(transactions::set_payee_many))
+        .routes(routes!(transactions::set_member_many))
         .routes(routes!(transactions::set_analysis_month))
 }

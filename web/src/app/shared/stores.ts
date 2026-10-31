@@ -19,6 +19,7 @@ import { LoansService } from '../api/services/loans.service';
 import { PayeesService } from '../api/services/payees.service';
 import { SystemService } from '../api/services/system.service';
 import { DataVersion } from '../core/data-version';
+import { MemberTagView } from './member-tag';
 
 /** Une catégorie à plat, avec son libellé complet « Parent › Enfant ». */
 export interface FlatCategory {
@@ -206,15 +207,21 @@ export class MembersStore {
   }
 
   /**
-   * Pastille d'une transaction (E3, E14) : le membre de ses ventilations, `null` si elles en ont plusieurs,
-   * `undefined` si aucune n'en a.
+   * Étiquette d'une transaction (E3, E14) : le membre de ses ventilations, « Léo, Claire » s'il y en a plusieurs,
+   * « (en partie) » si certaines n'en ont pas ; `undefined` si aucune n'en a.
    */
-  chip(splits: { member_id?: string | null }[]): MemberView | null | undefined {
-    const ids = new Set(splits.map((s) => s.member_id ?? null));
-    if (ids.size === 1 && ids.has(null)) return undefined;
-    if (ids.size > 1) return null;
-    const [id] = [...ids];
-    return id ? this.byId().get(id) : undefined;
+  tag(splits: { member_id?: string | null }[]): MemberTagView | undefined {
+    const members = [...new Set(splits.map((s) => s.member_id).filter((id): id is string => !!id))]
+      .map((id) => this.byId().get(id))
+      .filter((m): m is MemberView => !!m);
+    if (members.length === 0) return undefined;
+    const partly = splits.some((s) => !s.member_id) ? ' (en partie)' : '';
+    const names =
+      members.length > 2 ? `${members.length} membres` : members.map((m) => m.name).join(', ');
+    return {
+      label: names + partly,
+      color: members.length === 1 ? (members[0].color ?? null) : null,
+    };
   }
 }
 
