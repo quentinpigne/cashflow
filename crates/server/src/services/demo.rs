@@ -102,6 +102,7 @@ async fn employment(
     let category = c.get("Salaires", "").context("catégorie Salaires absente")?;
     let hire = start.checked_sub_months(Months::new(48)).context("date d'embauche")?;
     let input = EmploymentInput {
+        member_id: None,
         employer: "Acme Industries".into(),
         job_title: Some("Ingénieure d'études".into()),
         start_date: hire,
@@ -175,6 +176,7 @@ async fn assets_and_loan(
             assets: Some(true),
             loans: Some(true),
             salaries: Some(true),
+            household: None,
             salary_gap_tolerance_ppm: None,
             geocoding: None,
         },
@@ -287,6 +289,7 @@ async fn account(
         None => None,
     };
     let input = accounts::AccountInput {
+        member_id: None,
         name: name.into(),
         kind,
         institution_id,

@@ -6,7 +6,7 @@ use cashflow_domain::accounts::iban::Iban;
 use cashflow_domain::accounts::{self, AccountFamily, AccountKind, AccountPeriod, ScheduleChoice};
 use cashflow_domain::ledger::balance::{self, DatedAmount, Valuation};
 use cashflow_domain::ledger::category::CategoryKind;
-use cashflow_domain::shared::ids::{AccountId, InstitutionId, RateScheduleId};
+use cashflow_domain::shared::ids::{AccountId, InstitutionId, MemberId, RateScheduleId};
 use cashflow_domain::{Currency, Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -39,6 +39,8 @@ pub struct Account {
     pub display_order: i64,
     pub color: Option<String>,
     pub notes: Option<String>,
+    /// Titulaire ; absent : compte du foyer (R-MBR-4).
+    pub member_id: Option<MemberId>,
     /// Solde (R-CPT-4) ou valeur (R-CPT-6) à `balance_date`.
     pub balance_minor: i64,
     /// Solde pointé : ouverture + transactions pointées ou rapprochées (CPT-03). Absent pour l'épargne
@@ -69,6 +71,9 @@ pub struct AccountInput {
     pub display_order: Option<i64>,
     pub color: Option<String>,
     pub notes: Option<String>,
+    /// Titulaire ; absent : compte du foyer (R-MBR-4). Modifiable même rapproché.
+    #[serde(default)]
+    pub member_id: Option<MemberId>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -155,6 +160,7 @@ fn to_view(row: AccountRow, institutions: &HashMap<InstitutionId, String>, ledge
         display_order: row.display_order,
         color: row.color,
         notes: row.notes,
+        member_id: row.member_id,
         balance_minor: value.minor(),
         cleared_balance_minor: cleared.map(Money::minor),
         balance_date: at,
@@ -343,8 +349,10 @@ pub async fn create(db: &Db, input: &AccountInput, today: Date) -> AppResult<Acc
         display_order,
         color: v.color.as_deref(),
         notes: v.notes.as_deref(),
+        member_id: input.member_id,
     };
     let mut tx = db.write.begin().await?;
+    super::members::check_exists(&mut tx, input.member_id).await?;
     db::accounts::insert(&mut *tx, id, &fields).await?;
     create_terms(&mut tx, id, input.kind, &v.name).await?;
     tx.commit().await?;
@@ -393,8 +401,10 @@ pub async fn update(db: &Db, id: AccountId, input: &AccountInput, today: Date) -
         display_order: input.display_order.unwrap_or(current.display_order),
         color: v.color.as_deref(),
         notes: v.notes.as_deref(),
+        member_id: input.member_id,
     };
     let mut tx = db.write.begin().await?;
+    super::members::check_exists(&mut tx, input.member_id).await?;
     db::accounts::update(&mut *tx, id, &fields).await?;
     if input.kind != current.kind {
         // Changement de nature sans activité : les conditions suivent la nouvelle nature (R-CPT-9).

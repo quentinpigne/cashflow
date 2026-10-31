@@ -7,6 +7,7 @@ mod auth;
 mod budgeting;
 mod credit;
 mod documents;
+mod household;
 mod import;
 mod ledger;
 mod payees;
@@ -48,6 +49,7 @@ use crate::state::AppState;
         (name = "loans", description = "Prêts : suivi, tableau d'amortissement, mensualités (spec 09)"),
         (name = "salaries", description = "Salaires : emplois, rémunérations, primes (spec 10)"),
         (name = "credit", description = "Simulations et demandes de crédit (spec 13)"),
+        (name = "household", description = "Membres du foyer (spec 14)"),
         (name = "documents", description = "Bibliothèque de documents : envoi, rattachements, recherche (spec 12)"),
         (name = "savings", description = "Épargne : intérêts, valorisations, performance (spec 06)"),
         (name = "projections", description = "Récurrences, scénarios et projections (spec 02, spec 07)"),
@@ -62,6 +64,7 @@ fn protected_routes() -> OpenApiRouter<AppState> {
         .merge(accounts::router())
         .merge(ledger::router())
         .merge(payees::router())
+        .merge(household::router())
         .merge(import::router())
         .merge(reconciliation::router())
         .merge(budgeting::router())
@@ -217,6 +220,7 @@ mod tests {
         data.ensure().unwrap();
         let category = crate::db::categories::list(&db.read).await.unwrap().into_iter().find(|c| c.name == "Salaires");
         let input = crate::services::salaries::EmploymentInput {
+            member_id: None,
             employer: "Acme".into(),
             job_title: None,
             start_date: "2025-01-01".parse().unwrap(),

@@ -17,6 +17,7 @@ pub mod features;
 pub mod imports;
 pub mod institutions;
 pub mod loans;
+pub mod members;
 pub mod payee_suggestions;
 pub mod payees;
 pub mod projections;
@@ -76,6 +77,8 @@ mod credit_tests;
 mod import_tests;
 #[cfg(test)]
 mod loan_tests;
+#[cfg(test)]
+mod member_tests;
 #[cfg(test)]
 mod payee_suggestion_tests;
 #[cfg(test)]

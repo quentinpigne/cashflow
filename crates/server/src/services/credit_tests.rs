@@ -59,6 +59,7 @@ async fn fixture(db: &Db) -> Fixture {
     let pay = category(db, "Paie", CategoryKind::Income, None).await;
     let interest = category(db, "Intérêts", CategoryKind::Expense, None).await;
     let job = EmploymentInput {
+        member_id: None,
         employer: "Acme".into(),
         job_title: None,
         start_date: d("2025-01-01"),

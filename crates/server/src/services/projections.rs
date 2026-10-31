@@ -769,6 +769,9 @@ pub async fn account(db: &Db, id: AccountId, query: &ProjectionQuery, today: Dat
 pub struct NetWorthQuery {
     /// Horizon en mois (celui du scénario par défaut sinon).
     pub months: Option<u32>,
+    /// Membres comptés : `household` et des identifiants de membres ; absent : tout. Les biens et les prêts comptent
+    /// avec `household` (R-MBR-9).
+    pub members: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -798,15 +801,16 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
     let default_horizon = all.iter().find(|s| s.is_default).map_or(240, |s| s.horizon_months);
     let months = query.months.unwrap_or(default_horizon).clamp(1, 600);
     let ctx = Context::load(db, today).await?;
+    let selection = super::members::selection(db, query.members.as_deref()).await?;
     let rows: Vec<AccountRow> = db::accounts::list(&db.read)
         .await?
         .into_iter()
         .filter(|a| a.include_in_net_worth && a.closed_on.is_none_or(|c| c > today) && a.opening_date <= today)
+        .filter(|a| super::members::includes(selection.as_ref(), a.member_id))
         .collect();
     // Biens et prêts (spec 09) : un bien garde sa dernière valeur (R-BIE-5), un prêt suit son tableau ou garde son
-    // dernier capital restant dû (R-PRE-9), sous tous les scénarios.
-    let assets = AssetBook::load(db).await?;
-    let loans = LoanBook::load(db).await?;
+    // dernier capital restant dû (R-PRE-9), sous tous les scénarios. Ils sont au foyer (R-MBR-9).
+    let (assets, loans) = household_books(db, selection.as_ref()).await?;
     let others = |at: Date, value_at: Date| -> Money {
         let goods: Money = assets
             .assets
@@ -855,11 +859,28 @@ pub async fn net_worth(db: &Db, query: &NetWorthQuery, today: Date) -> AppResult
     })
 }
 
+/// Biens et prêts, vides quand la case « Foyer » n'est pas cochée : ils n'ont pas de membre (R-MBR-9).
+async fn household_books(
+    db: &Db,
+    selection: Option<&cashflow_domain::household::MemberSelection>,
+) -> AppResult<(AssetBook, LoanBook)> {
+    let mut assets = AssetBook::load(db).await?;
+    let mut loans = LoanBook::load(db).await?;
+    if !super::members::includes(selection, None) {
+        assets.assets.clear();
+        loans.loans.clear();
+    }
+    Ok((assets, loans))
+}
+
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct HistoryQuery {
     /// Mois d'historique (24 par défaut).
     pub months: Option<u32>,
+    /// Membres comptés : `household` et des identifiants de membres ; absent : tout. Les biens et les prêts comptent
+    /// avec `household` (R-MBR-9).
+    pub members: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -879,10 +900,13 @@ pub struct NetWorthPoint {
 pub async fn history(db: &Db, query: &HistoryQuery, today: Date) -> AppResult<Vec<NetWorthPoint>> {
     let count = query.months.unwrap_or(24).clamp(1, 240);
     let ledger = Ledger::load(db).await?;
-    let assets = AssetBook::load(db).await?;
-    let loans = LoanBook::load(db).await?;
-    let rows: Vec<AccountRow> =
-        db::accounts::list(&db.read).await?.into_iter().filter(|a| a.include_in_net_worth).collect();
+    let selection = super::members::selection(db, query.members.as_deref()).await?;
+    let (assets, loans) = household_books(db, selection.as_ref()).await?;
+    let rows: Vec<AccountRow> = db::accounts::list(&db.read)
+        .await?
+        .into_iter()
+        .filter(|a| a.include_in_net_worth && super::members::includes(selection.as_ref(), a.member_id))
+        .collect();
     let first_opening = rows.iter().map(|r| r.opening_date).min();
     let mut dates: Vec<Date> =
         reporting::months_until(today, count + 1).into_iter().map(|p| p.to).filter(|d| *d < today).collect();

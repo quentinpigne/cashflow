@@ -17,6 +17,7 @@ pub const TABLES: &[&str] = &[
     "app_setting",
     "institution",
     "category",
+    "member",
     "account",
     "rate_schedule",
     "rate_period",

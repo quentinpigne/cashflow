@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, kind, institution_id, currency,\n                  opening_date AS \"opening_date: Date\", opening_balance, iban, account_number,\n                  closed_on AS \"closed_on: Date\",\n                  include_in_net_worth AS \"include_in_net_worth: bool\",\n                  include_in_emergency_fund AS \"include_in_emergency_fund: bool\",\n                  include_in_budget AS \"include_in_budget: bool\",\n                  display_order, color, notes\n           FROM account WHERE id = ?",
+  "query": "SELECT id, name, kind, institution_id, currency,\n                  opening_date AS \"opening_date: Date\", opening_balance, iban, account_number,\n                  closed_on AS \"closed_on: Date\",\n                  include_in_net_worth AS \"include_in_net_worth: bool\",\n                  include_in_emergency_fund AS \"include_in_emergency_fund: bool\",\n                  include_in_budget AS \"include_in_budget: bool\",\n                  display_order, color, notes, member_id\n           FROM account ORDER BY display_order, name COLLATE NOCASE",
   "describe": {
     "columns": [
       {
@@ -178,10 +178,21 @@
             "name": "notes"
           }
         }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 16,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "member_id"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -199,8 +210,9 @@
       false,
       false,
       true,
+      true,
       true
     ]
   },
-  "hash": "e52517a360bdf24e105c4d8ce8f188cc3dc2cbb4a1b7c25c6db4cef6f4645b19"
+  "hash": "f80dea3cc736ebcb53f04e2341e859735df7276c41ecbd84eb0cbfebe9f891e8"
 }

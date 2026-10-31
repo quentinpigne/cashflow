@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE account SET member_id = NULL, updated_at = ? WHERE member_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3471e2038d1c428df2a41a8f8746d0bcbc31e909ac4de299b17616d2162a3d89"
+}

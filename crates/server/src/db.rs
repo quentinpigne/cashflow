@@ -13,6 +13,7 @@ pub mod export;
 pub mod imports;
 pub mod institutions;
 pub mod loans;
+pub mod members;
 pub mod payees;
 pub mod projections;
 pub mod recurring;

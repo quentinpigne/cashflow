@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE employment SET member_id = NULL, updated_at = ? WHERE member_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9532f85de90878087f36ccc9155bbb9353bff946b58738a5e3640be9eff1b809"
+}

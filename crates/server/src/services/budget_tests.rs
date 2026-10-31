@@ -236,6 +236,7 @@ async fn bud_06_projects_leave_period_lines_and_r_bud_24_closed_projects() {
         month: Some("2026-03".into()),
         kind: None,
         exclude_projects: Some(exclude),
+        members: None,
     };
     let restaurants_total = |r: &reports::CategoryReport| {
         r.lines.iter().find(|l| l.category_id == Some(restaurants)).map_or(0, |l| l.amount_minor)
@@ -487,7 +488,12 @@ async fn r_trx_24_excluded_category_is_neither_income_nor_expense() {
     assert_eq!(march.uncategorized_out_minor, 0);
     assert_eq!(march.balance_minor, -6_000);
 
-    let report = reports::CategoryReportQuery { month: Some("2026-03".into()), kind: None, exclude_projects: None };
+    let report = reports::CategoryReportQuery {
+        month: Some("2026-03".into()),
+        kind: None,
+        exclude_projects: None,
+        members: None,
+    };
     let report = reports::categories(&db, &report, d(TODAY)).await.unwrap();
     assert_eq!(report.total_minor, 6_000);
     assert!(report.lines.iter().all(|l| l.category_id == Some(food)));
@@ -666,7 +672,7 @@ async fn tdb_09_r_tdb_14_upcoming_months_and_year_end() {
     };
     budgets::save_project(&db, None, &input).await.unwrap();
 
-    let query = |planned_projects| reports::EvolutionQuery { months: Some(12), planned_projects };
+    let query = |planned_projects| reports::EvolutionQuery { months: Some(12), planned_projects, members: None };
     let evolution = reports::evolution(&db, &query(None), d(TODAY)).await.unwrap();
     assert!(evolution.has_budget);
     assert_eq!(evolution.upcoming.len(), 9, "d'avril à décembre");

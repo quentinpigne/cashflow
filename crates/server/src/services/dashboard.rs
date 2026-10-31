@@ -144,12 +144,45 @@ pub(crate) fn holdings(
     accounts.chain(goods).chain(debts).collect()
 }
 
+/// Choix des membres de l'accueil (R-MBR-8).
+#[derive(Debug, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct DashboardQuery {
+    /// Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout
+    /// (R-MBR-9).
+    pub members: Option<String>,
+}
+
+/// L'accueil du foyer, toutes les cases cochées.
+#[cfg(test)]
 pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
-    let accounts = accounts::list(db, today).await?;
-    let rows = db::accounts::list(&db.read).await?;
+    get_for(db, &DashboardQuery::default(), today).await
+}
+
+/// L'accueil, limité aux membres choisis (R-MBR-9) : comptes de leurs titulaires, ventilations de leur membre
+/// retenu, biens et prêts avec le foyer, emplois de leur membre.
+pub async fn get_for(db: &Db, query: &DashboardQuery, today: Date) -> AppResult<Dashboard> {
+    let selection = super::members::selection(db, query.members.as_deref()).await?;
+    let selection = selection.as_ref();
+    let household = super::members::includes(selection, None);
+    let accounts: Vec<Account> = accounts::list(db, today)
+        .await?
+        .into_iter()
+        .filter(|a| super::members::includes(selection, a.member_id))
+        .collect();
+    let rows: Vec<db::accounts::AccountRow> = db::accounts::list(&db.read)
+        .await?
+        .into_iter()
+        .filter(|a| super::members::includes(selection, a.member_id))
+        .collect();
     let ledger = accounts::Ledger::load(db).await?;
-    let asset_book = AssetBook::load(db).await?;
-    let loan_book = LoanBook::load(db).await?;
+    let mut asset_book = AssetBook::load(db).await?;
+    let mut loan_book = LoanBook::load(db).await?;
+    // Les biens et les prêts n'ont pas de membre : ils sont au foyer (R-MBR-9).
+    if !household {
+        asset_book.assets.clear();
+        loan_book.loans.clear();
+    }
 
     let net_worth = reporting::net_worth(&holdings(&rows, &ledger, &asset_book, &loan_book, today));
     let previous_end = reporting::end_of_previous_month(today);
@@ -159,13 +192,23 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
     let loans_outstanding: Money =
         loan_book.loans.iter().filter(|l| l.include_in_net_worth).filter_map(|l| loan_book.outstanding(l, today)).sum();
     let features = super::features::get(db).await?;
-    let assets = if features.assets {
+    let assets = if features.assets && household {
         super::assets::list(db, today).await?.into_iter().filter(|a| a.value_minor.is_some()).collect()
     } else {
         Vec::new()
     };
-    let salary_gaps = if features.salaries { super::salaries::alerts(db, today).await? } else { Vec::new() };
-    let loans = if features.loans {
+    let salary_gaps = if features.salaries {
+        let jobs: std::collections::HashMap<_, _> =
+            db::salaries::list(&db.read).await?.into_iter().map(|e| (e.id, e.member_id)).collect();
+        super::salaries::alerts(db, today)
+            .await?
+            .into_iter()
+            .filter(|a| super::members::includes(selection, jobs.get(&a.employment_id).copied().flatten()))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let loans = if features.loans && household {
         super::loans::list(db, today).await?.into_iter().filter(|l| l.outstanding_minor.is_some()).collect()
     } else {
         Vec::new()
@@ -175,6 +218,7 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, previous_period.from, current.to)
         .await?
         .into_iter()
+        .filter(|f| super::members::includes_split(selection, f.member_id, f.account_member_id))
         .map(|f| SplitFact {
             date: f.date,
             amount: f.amount,

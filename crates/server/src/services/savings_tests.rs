@@ -13,6 +13,7 @@ use crate::error::AppError;
 
 async fn open(db: &Db, name: &str, kind: AccountKind, opening: &str, opening_minor: i64) -> AccountId {
     let input = AccountInput {
+        member_id: None,
         name: name.into(),
         kind,
         institution_id: None,

@@ -1,0 +1,83 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.id, m.name, m.color, m.display_order,\n                  (SELECT count(*) FROM account a WHERE a.member_id = m.id) AS \"account_count!: i64\",\n                  (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS \"split_count!: i64\",\n                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS \"employment_count!: i64\"\n           FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "member",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "member",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "color",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "member",
+            "name": "color"
+          }
+        }
+      },
+      {
+        "name": "display_order",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "member",
+            "name": "display_order"
+          }
+        }
+      },
+      {
+        "name": "account_count!: i64",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "split_count!: i64",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "employment_count!: i64",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5379d803c9bc6be416bb15e097e13ab5bfb0aa737984ac861449fee1e4effb14"
+}

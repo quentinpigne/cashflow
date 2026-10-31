@@ -8,6 +8,7 @@ pub mod assets;
 pub mod budgeting;
 pub mod credit;
 pub mod documents;
+pub mod household;
 pub mod import;
 pub mod ledger;
 pub mod loans;

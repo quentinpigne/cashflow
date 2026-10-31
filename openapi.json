@@ -2674,6 +2674,17 @@
         ],
         "summary": "Accueil (TDB-01).",
         "operationId": "getDashboard",
+        "parameters": [
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout\n(R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6118,6 +6129,164 @@
         }
       }
     },
+    "/api/v1/members": {
+      "get": {
+        "tags": [
+          "household"
+        ],
+        "summary": "Les membres du foyer, dans leur ordre (MBR-01).",
+        "operationId": "listMembers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "household"
+        ],
+        "operationId": "createMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members/order": {
+      "put": {
+        "tags": [
+          "household"
+        ],
+        "operationId": "reorderMembers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberReorderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members/{id}": {
+      "put": {
+        "tags": [
+          "household"
+        ],
+        "operationId": "updateMember",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MemberId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "household"
+        ],
+        "summary": "Supprime un membre ; ce qui lui était affecté revient au foyer (R-MBR-2).",
+        "operationId": "deleteMember",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MemberId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/notifications": {
       "get": {
         "tags": [
@@ -6705,6 +6874,15 @@
               "type": "integer",
               "format": "int32",
               "minimum": 0
+            }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout. Les biens et les prêts comptent\navec `household` (R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -7357,6 +7535,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout\n(R-MBR-8, R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -7408,6 +7595,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout\n(R-MBR-8, R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -7440,6 +7636,15 @@
               "type": "integer",
               "format": "int32",
               "minimum": 0
+            }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout. Les biens et les prêts comptent\navec `household` (R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -7510,6 +7715,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/LocationGrouping"
+            }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout (R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -7585,6 +7799,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ReportGrouping"
+            }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout (R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -9141,6 +9364,17 @@
           "kind": {
             "$ref": "#/components/schemas/AccountKind"
           },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Titulaire ; absent : compte du foyer (R-MBR-4)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "type": "string"
           },
@@ -9323,6 +9557,17 @@
           },
           "kind": {
             "$ref": "#/components/schemas/AccountKind"
+          },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Titulaire ; absent : compte du foyer (R-MBR-4). Modifiable même rapproché."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "type": "string"
@@ -13172,6 +13417,17 @@
               "null"
             ]
           },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre de l'emploi ; absent : emploi du foyer (R-MBR-7)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "notes": {
             "type": [
               "string",
@@ -13239,6 +13495,17 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre de l'emploi ; absent : emploi du foyer (R-MBR-7)."
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "start_date": {
@@ -13353,7 +13620,8 @@
           "upcoming",
           "year_end",
           "has_budget",
-          "planned_projects"
+          "planned_projects",
+          "partial_members"
         ],
         "properties": {
           "has_budget": {
@@ -13365,6 +13633,10 @@
             "items": {
               "$ref": "#/components/schemas/MonthFlows"
             }
+          },
+          "partial_members": {
+            "type": "boolean",
+            "description": "Toutes les cases ne sont pas cochées : le prévu (mois à venir, fin d'année) est celui du foyer et ne\ns'affiche pas (R-MBR-9)."
           },
           "planned_projects": {
             "type": "boolean"
@@ -13427,6 +13699,8 @@
           "asset_count",
           "loan_count",
           "employment_count",
+          "household",
+          "member_count",
           "salary_gap_tolerance_ppm",
           "geocoding"
         ],
@@ -13447,12 +13721,20 @@
             "type": "boolean",
             "description": "Recherche d'adresse des tiers par la Base Adresse Nationale, désactivée par défaut (R-TIE-26, ADR-0007)."
           },
+          "household": {
+            "type": "boolean",
+            "description": "Rubrique Foyer (R-MBR-3) ; elle ne se désactive que sans membre."
+          },
           "loan_count": {
             "type": "integer",
             "format": "int64"
           },
           "loans": {
             "type": "boolean"
+          },
+          "member_count": {
+            "type": "integer",
+            "format": "int64"
           },
           "salaries": {
             "type": "boolean"
@@ -13474,6 +13756,12 @@
             ]
           },
           "geocoding": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "household": {
             "type": [
               "boolean",
               "null"
@@ -15840,6 +16128,96 @@
           "image/jpeg",
           "image/png"
         ]
+      },
+      "MemberCreated": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/MemberId"
+          }
+        }
+      },
+      "MemberId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "MemberInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MemberReorderInput": {
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberId"
+            },
+            "description": "Tous les membres, dans l'ordre voulu."
+          }
+        }
+      },
+      "MemberView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "display_order",
+          "account_count",
+          "split_count",
+          "employment_count"
+        ],
+        "properties": {
+          "account_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Ce qui lui est affecté, et revient au foyer à sa suppression (R-MBR-2)."
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`#RRGGBB`."
+          },
+          "display_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "employment_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/MemberId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "split_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "MergeInput": {
         "type": "object",
@@ -19992,6 +20370,17 @@
               }
             ]
           },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre que la ventilation concerne ; absent : celui du compte, à défaut le foyer (R-MBR-5, R-MBR-6)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "note": {
             "type": [
               "string",
@@ -20072,6 +20461,17 @@
               {
                 "$ref": "#/components/schemas/LoanId",
                 "description": "Remboursement d'un prêt, à la place d'une catégorie (R-PRE-7)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre que la ventilation concerne (R-MBR-5) ; jamais sur une ventilation de virement."
               },
               {
                 "type": "null"
@@ -21494,6 +21894,10 @@
     {
       "name": "credit",
       "description": "Simulations et demandes de crédit (spec 13)"
+    },
+    {
+      "name": "household",
+      "description": "Membres du foyer (spec 14)"
     },
     {
       "name": "documents",

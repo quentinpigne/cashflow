@@ -42,6 +42,7 @@ async fn fixture(db: &Db) -> Fixture {
 
 fn job(f: &Fixture) -> EmploymentInput {
     EmploymentInput {
+        member_id: None,
         employer: "Acme".into(),
         job_title: None,
         start_date: d("2025-01-01"),
@@ -168,7 +169,7 @@ async fn prj_10_r_prj_42_to_r_prj_47_savings_capacity_in_the_net_worth_projectio
     employed(&db, &f).await;
     three_months(&db, &f).await;
     let today = d("2026-04-10");
-    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12) }, today).await.unwrap();
+    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12), members: None }, today).await.unwrap();
     assert_eq!(worth.capacity.months, 3, "seuls les mois complets suivis sont moyennés");
     assert_eq!((worth.capacity.other_income_minor, worth.capacity.expenses_minor), (5_000, 190_000));
     assert_eq!(worth.capacity.payroll_account_id, Some(f.checking));
@@ -196,7 +197,7 @@ async fn prj_10_r_prj_42_to_r_prj_47_savings_capacity_in_the_net_worth_projectio
     assert_eq!(code(error), "SURPLUS_NOT_SAVINGS");
     input.assumptions.capacity.surplus_account_id = Some(life);
     projections::save_scenario(&db, Some(scenario.id), &input).await.unwrap();
-    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12) }, today).await.unwrap();
+    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12), members: None }, today).await.unwrap();
     let median = worth.scenarios.iter().find(|s| s.is_default).unwrap();
     assert_eq!(median.capacity.as_ref().unwrap().points[0].moved_minor, 85_000);
     let checking = projections::account(&db, f.checking, &Default::default(), today).await.unwrap();
@@ -206,7 +207,7 @@ async fn prj_10_r_prj_42_to_r_prj_47_savings_capacity_in_the_net_worth_projectio
     scenario.assumptions.capacity.enabled = false;
     input.assumptions = scenario.assumptions;
     projections::save_scenario(&db, Some(scenario.id), &input).await.unwrap();
-    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12) }, today).await.unwrap();
+    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12), members: None }, today).await.unwrap();
     let median = worth.scenarios.iter().find(|s| s.is_default).unwrap();
     assert!(median.capacity.is_none());
     assert_eq!(median.points[0].value_minor, worth.start_minor);

@@ -124,7 +124,8 @@ async fn prj_02_04_05_projections_and_history() {
     assert_eq!(p.points[11].value_minor, 1_025_000);
 
     // Patrimoine : un virement interne ne gonfle pas le total (R-PRJ-41).
-    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(12) }, d(TODAY)).await.unwrap();
+    let worth =
+        projections::net_worth(&db, &NetWorthQuery { months: Some(12), members: None }, d(TODAY)).await.unwrap();
     assert_eq!(worth.scenarios.len(), 3);
     assert_eq!(worth.start_minor, 1_600_000);
     let first = &worth.scenarios.iter().find(|s| s.is_default).unwrap().points[0];
@@ -145,14 +146,15 @@ async fn prj_02_04_05_projections_and_history() {
         round_each_fortnight: false,
     };
     super::savings::update_terms(&db, livret, &input, d(TODAY)).await.unwrap();
-    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(24) }, d(TODAY)).await.unwrap();
+    let worth =
+        projections::net_worth(&db, &NetWorthQuery { months: Some(24), members: None }, d(TODAY)).await.unwrap();
     for series in &worth.scenarios {
         for pair in series.points.windows(2) {
             assert!(pair[1].value_minor >= pair[0].value_minor, "{} : {:?}", series.name, pair[1].date);
         }
     }
 
-    let history = projections::history(&db, &HistoryQuery { months: Some(6) }, d(TODAY)).await.unwrap();
+    let history = projections::history(&db, &HistoryQuery { months: Some(6), members: None }, d(TODAY)).await.unwrap();
     let last = history.last().unwrap();
     assert_eq!(last.date, d(TODAY));
     assert_eq!(last.total_minor, 1_600_000);

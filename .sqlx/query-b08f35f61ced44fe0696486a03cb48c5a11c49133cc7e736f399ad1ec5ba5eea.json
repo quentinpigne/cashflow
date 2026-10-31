@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id\n         FROM split WHERE transaction_id = ? ORDER BY position",
+  "query": "SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.project_line_id, s.loan_id, s.asset_id,\n                  s.refunds_transaction_id, s.member_id\n           FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id\n           WHERE t.account_id = ? ORDER BY s.transaction_id, s.position",
   "describe": {
     "columns": [
       {
@@ -112,6 +112,17 @@
             "name": "refunds_transaction_id"
           }
         }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "member_id"
+          }
+        }
       }
     ],
     "parameters": {
@@ -127,8 +138,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "7dfb639d502b8c613d39687e1228083a23987b0c741c314da618badf75c3b2b2"
+  "hash": "b08f35f61ced44fe0696486a03cb48c5a11c49133cc7e736f399ad1ec5ba5eea"
 }

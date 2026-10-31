@@ -79,6 +79,7 @@ define_id!(
     BudgetOverrideId,
     ProjectId,
     ProjectLineId,
+    MemberId,
     UserId,
     SessionId,
     AccessTokenId,

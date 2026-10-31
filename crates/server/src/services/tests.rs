@@ -27,6 +27,7 @@ pub(super) async fn setup() -> (Db, tempfile::TempDir) {
 
 pub(super) async fn account(db: &Db, name: &str, kind: AccountKind, opening_minor: i64) -> AccountId {
     let input = AccountInput {
+        member_id: None,
         name: name.into(),
         kind,
         institution_id: None,
@@ -155,6 +156,7 @@ async fn cpt_07_accounts_are_ordered_and_colored() {
     assert!(matches!(accounts::reorder(&db, &unknown).await, Err(AppError::NotFound(_))));
 
     let with_color = |color: &str| AccountInput {
+        member_id: None,
         name: "Couleur".into(),
         kind: AccountKind::Checking,
         institution_id: None,
@@ -422,7 +424,12 @@ async fn tdb_02_category_report_and_tdb_03_evolution() {
     transactions::create(&db, &tx(checking, "2026-03-06", -500, Some(market))).await.unwrap();
     transactions::create(&db, &tx(checking, "2026-03-07", 200_000, Some(salary))).await.unwrap();
 
-    let query = reports::CategoryReportQuery { month: Some("2026-03".into()), kind: None, exclude_projects: None };
+    let query = reports::CategoryReportQuery {
+        month: Some("2026-03".into()),
+        kind: None,
+        exclude_projects: None,
+        members: None,
+    };
     let report = reports::categories(&db, &query, d(TODAY)).await.unwrap();
     assert!(report.current_month);
     let line = report.lines.iter().find(|l| l.category_id == Some(food)).unwrap();
@@ -431,10 +438,13 @@ async fn tdb_02_category_report_and_tdb_03_evolution() {
     assert_eq!(line.previous_minor, 3_000);
     assert_eq!(line.average_minor, 250, "3 000 sur 12 mois complets");
 
-    let evolution =
-        reports::evolution(&db, &reports::EvolutionQuery { months: Some(12), planned_projects: None }, d(TODAY))
-            .await
-            .unwrap();
+    let evolution = reports::evolution(
+        &db,
+        &reports::EvolutionQuery { months: Some(12), planned_projects: None, members: None },
+        d(TODAY),
+    )
+    .await
+    .unwrap();
     assert_eq!(evolution.months.len(), 12);
     let march = evolution.months.last().unwrap();
     assert_eq!(march.month, "2026-03");

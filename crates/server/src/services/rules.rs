@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use cashflow_domain::household;
 use cashflow_domain::import::rules::{Actions, Conditions, Rule, Subject};
 use cashflow_domain::ledger::split;
 use cashflow_domain::shared::ids::{AccountId, CategorizationRuleId, TransactionId};
@@ -264,6 +265,10 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
         if !rule.actions.set_splits.is_empty() {
             let weights: Vec<u64> = rule.actions.set_splits.iter().map(|s| s.weight).collect();
             let amounts = split::allocate(t.amount, &weights)?;
+            // Le membre commun aux anciennes ventilations passe aux nouvelles (R-MBR-5).
+            let previous: Vec<_> =
+                db::transactions::splits_of(&mut *tx, t.id).await?.into_iter().map(|s| s.member_id).collect();
+            let member = household::common_member(&previous);
             let splits: Vec<NewSplit<'_>> = rule
                 .actions
                 .set_splits
@@ -275,6 +280,7 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
                     note: None,
                     project_id: rule.actions.set_project,
                     project_line_id: proposer.as_ref().and_then(|p| p.propose(s.category_id)),
+                    member_id: member,
                     ..Default::default()
                 })
                 .collect();

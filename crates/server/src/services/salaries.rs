@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use cashflow_domain::documents::{DocumentKind, MediaType};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::salaries::{self, Bonus, BonusKind, Expected, Job, Pay, Projector, SalaryChangeReason};
-use cashflow_domain::shared::ids::{CategoryId, DocumentId, EmploymentId, SalaryBonusId, SalaryId};
+use cashflow_domain::shared::ids::{CategoryId, DocumentId, EmploymentId, MemberId, SalaryBonusId, SalaryId};
 use cashflow_domain::{Date, Money, Rate};
 use chrono::{Datelike, Months};
 use serde::{Deserialize, Serialize};
@@ -137,6 +137,9 @@ pub struct EmploymentInput {
     #[serde(default)]
     pub paid_next_month: bool,
     pub notes: Option<String>,
+    /// Membre de l'emploi ; absent : emploi du foyer (R-MBR-7).
+    #[serde(default)]
+    pub member_id: Option<MemberId>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -176,6 +179,8 @@ pub struct EmploymentSummary {
     pub current_net_minor: Option<i64>,
     /// L'emploi est terminé.
     pub ended: bool,
+    /// Membre de l'emploi ; absent : emploi du foyer (R-MBR-7).
+    pub member_id: Option<MemberId>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -313,6 +318,7 @@ fn summary(e: &EmploymentRow, book: &SalaryBook, today: Date) -> EmploymentSumma
             .then(|| salaries::in_force(&pays, current).map(|p| p.monthly_net.minor()))
             .flatten(),
         ended: e.end_date.is_some_and(|end| end < today),
+        member_id: e.member_id,
     }
 }
 
@@ -598,7 +604,9 @@ async fn row_of(db: &Db, id: EmploymentId, input: &EmploymentInput) -> AppResult
         raise_month: input.raise_month.unwrap_or(1),
         paid_next_month: input.paid_next_month,
         notes: clean(input.notes.as_deref()),
+        member_id: input.member_id,
     };
+    super::members::check_exists(&mut *db.read.acquire().await?, input.member_id).await?;
     job(&row).validate()?;
     Ok(row)
 }

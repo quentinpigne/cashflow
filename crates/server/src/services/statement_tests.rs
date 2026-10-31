@@ -39,6 +39,7 @@ async fn setup() -> (Db, DataDir, tempfile::TempDir) {
 
 async fn checking(db: &Db) -> AccountId {
     let input = AccountInput {
+        member_id: None,
         name: "Courant".into(),
         kind: AccountKind::Checking,
         institution_id: None,

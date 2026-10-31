@@ -1158,8 +1158,8 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
   (« 2 membres : les supprimer pour désactiver la rubrique ») ; entrée **Membres du foyer** (E44), après
   Tiers, quand la rubrique est activée.
 - **E4 Compte** (formulaire) : champ **Titulaire** `[mat-select]`, « Foyer » par défaut (R-MBR-4).
-  **E2 Comptes** et **E3 Détail d'un compte** : la pastille du titulaire (initiale sur sa couleur) à côté du
-  nom.
+  **E2 Comptes** : le nom du titulaire devant l'établissement. Sur **E24**, les onglets Trésorerie et Épargne
+  ne proposent que les comptes des membres cochés.
 - **E5 Saisie rapide** : champ **Membre** `[mat-select]` en dépense ou en revenu, vide par défaut (« Membre du
   compte » ou « Foyer », selon le compte, R-MBR-6) ; il s'applique à toutes les ventilations.
 - **E6 Ventilation** et **E7 Détail d'une transaction** : un champ **Membre** par ventilation, sauf une

@@ -283,7 +283,8 @@ async fn situation(db: &Db, today: Date, months: u32) -> AppResult<Situation> {
         .collect();
     let savings: Money = accounts.iter().filter(|a| a.selected).map(|a| Money::from_minor(a.balance_minor)).sum();
 
-    let projection = projections::net_worth(db, &projections::NetWorthQuery { months: Some(months) }, today).await?;
+    let projection =
+        projections::net_worth(db, &projections::NetWorthQuery { months: Some(months), members: None }, today).await?;
     let expenses = Money::from_minor(projection.capacity.expenses_minor);
 
     // Revenus et charges comme une demande (R-CRE-13, R-CRE-14).

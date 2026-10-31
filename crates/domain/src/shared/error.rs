@@ -143,6 +143,14 @@ pub enum DomainError {
     #[error("coordonnées invalides : latitude entre -90 et 90, longitude entre -180 et 180, avec une adresse")]
     InvalidCoordinates,
 
+    // ----- Foyer (spec 14)
+    #[error("un membre de ce nom existe déjà")]
+    MemberNameTaken,
+    #[error("couleur invalide : #RRGGBB attendu")]
+    InvalidMemberColor,
+    #[error("une ventilation de virement n'a pas de membre : un virement n'est ni une dépense ni un revenu")]
+    MemberOnTransfer,
+
     // ----- Virements internes
     #[error("un virement relie deux comptes différents")]
     TransferSameAccount,
@@ -272,6 +280,9 @@ impl DomainError {
             InvalidPayeeMerge => "INVALID_PAYEE_MERGE",
             PayeeOnTransferLeg => "PAYEE_ON_TRANSFER_LEG",
             PayeeArchived => "PAYEE_ARCHIVED",
+            MemberNameTaken => "MEMBER_NAME_TAKEN",
+            InvalidMemberColor => "INVALID_MEMBER_COLOR",
+            MemberOnTransfer => "MEMBER_ON_TRANSFER",
             AddressIncomplete => "ADDRESS_INCOMPLETE",
             InvalidCountryCode => "INVALID_COUNTRY_CODE",
             InvalidPostalCode => "INVALID_POSTAL_CODE",
@@ -352,6 +363,8 @@ impl DomainError {
             InvalidPayeeMerge => "R-TIE-7",
             PayeeOnTransferLeg => "R-TIE-11",
             PayeeArchived => "R-TIE-33",
+            MemberNameTaken | InvalidMemberColor => "R-MBR-1",
+            MemberOnTransfer => "R-MBR-5",
             AddressIncomplete | InvalidCountryCode | InvalidPostalCode => "R-TIE-23",
             InvalidCoordinates => "R-TIE-25",
             TransferSameAccount | TransferCurrencyMismatch | TransferAmountsNotOpposite | AlreadyTransferLeg => {

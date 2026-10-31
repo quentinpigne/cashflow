@@ -4,14 +4,15 @@ use std::collections::{HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountPeriod;
 use cashflow_domain::budgeting::Month;
+use cashflow_domain::household;
 use cashflow_domain::ledger::balance::{self, DatedAmount};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::{self, BalanceAffectingChange, ClearingStatus, TransactionOrigin};
 use cashflow_domain::payees;
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, CategoryId, LoanId, PayeeGroupId, PayeeId, ProjectId, ProjectLineId, SplitId, TransactionId,
-    TransferId,
+    AccountId, AssetId, CategoryId, LoanId, MemberId, PayeeGroupId, PayeeId, ProjectId, ProjectLineId, SplitId,
+    TransactionId, TransferId,
 };
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
@@ -41,6 +42,8 @@ pub struct Split {
     pub asset_id: Option<AssetId>,
     /// Dépense que la ventilation rembourse (R-TRX-50).
     pub refunds_transaction_id: Option<TransactionId>,
+    /// Membre que la ventilation concerne ; absent : celui du compte, à défaut le foyer (R-MBR-5, R-MBR-6).
+    pub member_id: Option<MemberId>,
 }
 
 impl From<SplitRow> for Split {
@@ -55,6 +58,7 @@ impl From<SplitRow> for Split {
             loan_id: r.loan_id,
             asset_id: r.asset_id,
             refunds_transaction_id: r.refunds_transaction_id,
+            member_id: r.member_id,
         }
     }
 }
@@ -159,6 +163,9 @@ pub struct SplitInput {
     /// Dépense que la ventilation rembourse (R-TRX-50) : à renvoyer à chaque modification, comme la catégorie.
     #[serde(default)]
     pub refunds_transaction_id: Option<TransactionId>,
+    /// Membre que la ventilation concerne (R-MBR-5) ; jamais sur une ventilation de virement.
+    #[serde(default)]
+    pub member_id: Option<MemberId>,
 }
 
 /// Saisie d'une transaction (TRX-01). Sans `splits`, une ventilation unique sur `category_id`.
@@ -400,6 +407,7 @@ pub(crate) fn period(account: &AccountRow) -> AccountPeriod {
 async fn check_references(conn: &mut SqliteConnection, splits: &[SplitInput], kept: &[ProjectId]) -> AppResult<()> {
     for s in splits {
         split::check_attachment(s.category_id.is_some(), s.loan_id.is_some(), s.asset_id.is_some())?;
+        super::members::check_exists(conn, s.member_id).await?;
         if let Some(loan) = s.loan_id
             && db::loans::find(&mut *conn, loan).await?.is_none()
         {
@@ -453,6 +461,7 @@ fn new_splits(splits: &[SplitInput]) -> Vec<NewSplit<'_>> {
             loan_id: s.loan_id,
             asset_id: s.asset_id,
             refunds_transaction_id: s.refunds_transaction_id,
+            member_id: s.member_id,
         })
         .collect()
 }
@@ -578,6 +587,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
             loan_id: existing[0].loan_id,
             asset_id: existing[0].asset_id,
             refunds_transaction_id: existing[0].refunds_transaction_id,
+            member_id: existing[0].member_id,
         }],
         None => existing
             .iter()
@@ -590,6 +600,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
                 loan_id: s.loan_id,
                 asset_id: s.asset_id,
                 refunds_transaction_id: s.refunds_transaction_id,
+                member_id: s.member_id,
             })
             .collect(),
     };
@@ -606,6 +617,7 @@ pub async fn update(db: &Db, id: TransactionId, input: &TransactionUpdateInput) 
         if splits.len() != 1 || splits[0].category_id.is_some() {
             return Err(DomainError::TransferLegCategorized.into());
         }
+        household::check_split_member(splits[0].member_id.is_some(), true)?;
         let counterpart = db::transactions::find(&mut *tx, side.counterpart_transaction_id)
             .await?
             .ok_or(AppError::NotFound("jambe de virement"))?;

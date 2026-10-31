@@ -326,7 +326,7 @@ async fn r_prj_40_net_worth_projection_includes_assets_and_amortizing_loans() {
     let asset = assets::create(&db, &flat(), d("2026-01-31")).await.unwrap().summary.id;
     let id = create(&db, &f).await;
     let today = d("2026-01-31");
-    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(3) }, today).await.unwrap();
+    let worth = projections::net_worth(&db, &NetWorthQuery { months: Some(3), members: None }, today).await.unwrap();
     // Départ : 1 000 € sur le compte, 250 000 € de bien, la dette après la première échéance.
     let schedule = loans::get(&db, id, today).await.unwrap().schedule.unwrap().installments;
     assert_eq!(worth.start_minor, 100_000 + 25_000_000 - schedule[0].remaining_minor);

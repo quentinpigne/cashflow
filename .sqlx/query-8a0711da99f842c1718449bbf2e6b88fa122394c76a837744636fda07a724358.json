@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, employer, job_title, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\",\n                  income_category_id, raise_month, paid_next_month AS \"paid_next_month: bool\", notes\n           FROM employment ORDER BY start_date, employer",
+  "query": "SELECT id, employer, job_title, start_date AS \"start_date: Date\", end_date AS \"end_date: Date\",\n                  income_category_id, raise_month, paid_next_month AS \"paid_next_month: bool\", notes,\n                  member_id\n           FROM employment ORDER BY start_date, employer",
   "describe": {
     "columns": [
       {
@@ -101,6 +101,17 @@
             "name": "notes"
           }
         }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "employment",
+            "name": "member_id"
+          }
+        }
       }
     ],
     "parameters": {
@@ -115,8 +126,9 @@
       false,
       false,
       false,
+      true,
       true
     ]
   },
-  "hash": "ffcc76ea26e179b9f04b5e9298ce2dbef84309995666a27fee1abce15b1c8a94"
+  "hash": "8a0711da99f842c1718449bbf2e6b88fa122394c76a837744636fda07a724358"
 }

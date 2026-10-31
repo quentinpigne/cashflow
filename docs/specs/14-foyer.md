@@ -50,7 +50,8 @@ au foyer (Q19).
   concerne (le cadeau pour Claire, la cantine de Léo). Affecter une **transaction** à un membre affecte toutes
   ses ventilations ; ventilée, chaque ventilation se choisit séparément. Une **ventilation de virement** n'a
   jamais de membre : un virement n'est ni une dépense ni un revenu (ADR-0004). Le membre reste modifiable sur
-  une transaction rapprochée (R-TRX-3).
+  une transaction rapprochée (R-TRX-3). Quand la réapplication des règles (IMP-08) recalcule les ventilations,
+  les nouvelles reçoivent le membre commun aux anciennes, s'il y en a un.
 - **R-MBR-6** — Le **membre retenu** d'une ventilation est son membre ; à défaut, le membre de son compte ;
   à défaut, le foyer. Ainsi, les dépenses du compte personnel de Quentin sont à Quentin sans rien affecter,
   et celles du compte joint au foyer, sauf affectation contraire.

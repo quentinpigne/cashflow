@@ -4,8 +4,8 @@ use cashflow_domain::budgeting::Month;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
 use cashflow_domain::shared::ids::{
-    AccountId, AssetId, CategoryId, LoanId, PayeeId, ProjectId, ProjectLineId, RecurringRuleId, SplitId, TransactionId,
-    TransferId,
+    AccountId, AssetId, CategoryId, LoanId, MemberId, PayeeId, ProjectId, ProjectLineId, RecurringRuleId, SplitId,
+    TransactionId, TransferId,
 };
 use cashflow_domain::{Date, Money};
 use sqlx::{SqliteConnection, SqliteExecutor};
@@ -51,6 +51,8 @@ pub struct SplitRow {
     pub asset_id: Option<AssetId>,
     /// Dépense que la ventilation rembourse (R-TRX-50).
     pub refunds_transaction_id: Option<TransactionId>,
+    /// Membre que la ventilation concerne (R-MBR-5).
+    pub member_id: Option<MemberId>,
 }
 
 /// Le virement auquel appartient une transaction, vu depuis celle-ci (ADR-0021 : il relie deux ventilations).
@@ -93,6 +95,7 @@ pub struct NewSplit<'a> {
     pub loan_id: Option<LoanId>,
     pub asset_id: Option<AssetId>,
     pub refunds_transaction_id: Option<TransactionId>,
+    pub member_id: Option<MemberId>,
 }
 
 macro_rules! transaction_row {
@@ -132,6 +135,7 @@ macro_rules! split_row {
             loan_id: opt_id_from_db(r.loan_id.as_deref())?,
             asset_id: opt_id_from_db(r.asset_id.as_deref())?,
             refunds_transaction_id: opt_id_from_db(r.refunds_transaction_id.as_deref())?,
+            member_id: opt_id_from_db(r.member_id.as_deref())?,
         })
     }};
 }
@@ -173,7 +177,7 @@ pub async fn splits_for_account(db: impl SqliteExecutor<'_>, account: AccountId)
     let account = account.to_string();
     let rows = sqlx::query!(
         r#"SELECT s.id, s.transaction_id, s.amount, s.category_id, s.note, s.project_id, s.project_line_id, s.loan_id, s.asset_id,
-                  s.refunds_transaction_id
+                  s.refunds_transaction_id, s.member_id
            FROM split s JOIN ledger_transaction t ON t.id = s.transaction_id
            WHERE t.account_id = ? ORDER BY s.transaction_id, s.position"#,
         account
@@ -186,7 +190,7 @@ pub async fn splits_for_account(db: impl SqliteExecutor<'_>, account: AccountId)
 pub async fn splits_of(db: impl SqliteExecutor<'_>, transaction: TransactionId) -> anyhow::Result<Vec<SplitRow>> {
     let transaction = transaction.to_string();
     let rows = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id
+        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id, member_id
          FROM split WHERE transaction_id = ? ORDER BY position",
         transaction
     )
@@ -198,7 +202,7 @@ pub async fn splits_of(db: impl SqliteExecutor<'_>, transaction: TransactionId) 
 pub async fn find_split(db: impl SqliteExecutor<'_>, id: SplitId) -> anyhow::Result<Option<SplitRow>> {
     let id = id.to_string();
     let row = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id FROM split WHERE id = ?",
+        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id, member_id FROM split WHERE id = ?",
         id
     )
     .fetch_optional(db)
@@ -389,11 +393,12 @@ pub async fn replace_splits(
         let loan = split.loan_id.map(|l| l.to_string());
         let asset = split.asset_id.map(|a| a.to_string());
         let refunds = split.refunds_transaction_id.map(|t| t.to_string());
+        let member = split.member_id.map(|m| m.to_string());
         let position = i64::try_from(position)?;
         sqlx::query!(
             "INSERT INTO split (id, transaction_id, amount, category_id, note, position, project_id, project_line_id,
-                                loan_id, asset_id, refunds_transaction_id, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                loan_id, asset_id, refunds_transaction_id, member_id, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             id,
             transaction,
             amount,
@@ -405,6 +410,7 @@ pub async fn replace_splits(
             loan,
             asset,
             refunds,
+            member,
             now,
             now
         )
@@ -578,11 +584,15 @@ pub struct SplitFactRow {
     pub category_kind: Option<CategoryKind>,
     pub is_movement: bool,
     pub currency: String,
+    /// Membre de la ventilation et titulaire du compte (R-MBR-6).
+    pub member_id: Option<MemberId>,
+    pub account_member_id: Option<MemberId>,
 }
 
 pub async fn split_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<SplitFactRow>> {
     let rows = sqlx::query!(
         r#"SELECT t.analysis_date AS "date!: Date", s.amount, c.kind AS "category_kind?", a.currency,
+                  s.member_id, a.member_id AS account_member_id,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
                    OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
                    OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
@@ -605,6 +615,8 @@ pub async fn split_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> a
                 category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
                 is_movement: r.is_movement,
                 currency: r.currency,
+                member_id: opt_id_from_db(r.member_id.as_deref())?,
+                account_member_id: opt_id_from_db(r.account_member_id.as_deref())?,
             })
         })
         .collect()
@@ -696,7 +708,7 @@ pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Transac
 
 pub async fn all_splits(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<SplitRow>> {
     let rows = sqlx::query!(
-        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id
+        "SELECT id, transaction_id, amount, category_id, note, project_id, project_line_id, loan_id, asset_id, refunds_transaction_id, member_id
          FROM split ORDER BY transaction_id, position"
     )
     .fetch_all(db)
@@ -743,6 +755,9 @@ pub struct CategorizedFactRow {
     pub category_kind: Option<CategoryKind>,
     pub is_movement: bool,
     pub currency: String,
+    /// Membre de la ventilation et titulaire du compte (R-MBR-6).
+    pub member_id: Option<MemberId>,
+    pub account_member_id: Option<MemberId>,
 }
 
 pub async fn categorized_facts(
@@ -752,7 +767,7 @@ pub async fn categorized_facts(
 ) -> anyhow::Result<Vec<CategorizedFactRow>> {
     let rows = sqlx::query!(
         r#"SELECT t.analysis_date AS "date!: Date", s.amount, s.category_id, s.project_id IS NOT NULL AS "has_project!: bool",
-                  c.kind AS "category_kind?", a.currency,
+                  c.kind AS "category_kind?", a.currency, s.member_id, a.member_id AS account_member_id,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
                    OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
                    OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
@@ -777,6 +792,8 @@ pub async fn categorized_facts(
                 category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
                 is_movement: r.is_movement,
                 currency: r.currency,
+                member_id: opt_id_from_db(r.member_id.as_deref())?,
+                account_member_id: opt_id_from_db(r.account_member_id.as_deref())?,
             })
         })
         .collect()

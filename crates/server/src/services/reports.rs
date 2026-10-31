@@ -11,7 +11,7 @@ use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use super::budgets;
+use super::{budgets, members};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
 
@@ -27,6 +27,9 @@ pub struct CategoryReportQuery {
     pub kind: Option<CategoryKind>,
     /// Retire les ventilations rattachées à un projet (TDB-07) ; incluses par défaut.
     pub exclude_projects: Option<bool>,
+    /// Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout
+    /// (R-MBR-8, R-MBR-9).
+    pub members: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -65,6 +68,9 @@ pub struct EvolutionQuery {
     pub months: Option<u32>,
     /// Compter les projets planifiés dans les mois à venir (oui par défaut, R-BUD-72).
     pub planned_projects: Option<bool>,
+    /// Membres comptés : `household` et des identifiants de membres, séparés par des virgules ; absent : tout
+    /// (R-MBR-8, R-MBR-9).
+    pub members: Option<String>,
 }
 
 /// Un mois à venir de l'évolution : revenus et dépenses prévus (R-TDB-14).
@@ -114,6 +120,9 @@ pub struct Evolution {
     /// Au moins une ligne de budget : sans elle, les mois à venir ne montrent que les projets.
     pub has_budget: bool,
     pub planned_projects: bool,
+    /// Toutes les cases ne sont pas cochées : le prévu (mois à venir, fin d'année) est celui du foyer et ne
+    /// s'affiche pas (R-MBR-9).
+    pub partial_members: bool,
 }
 
 fn parse_month(month: &str) -> AppResult<Date> {
@@ -141,10 +150,12 @@ pub async fn categories(db: &Db, query: &CategoryReportQuery, today: Date) -> Ap
     };
     let averages = reporting::months_until(start.pred_opt().unwrap_or(start), AVERAGE_MONTHS);
     let earliest = averages.first().map_or(previous.from, |p| p.from.min(previous.from));
+    let selection = members::selection(db, query.members.as_deref()).await?;
     let facts: Vec<CategorizedFact<CategoryId>> = db::transactions::categorized_facts(&db.read, earliest, period.to)
         .await?
         .into_iter()
         .filter(|f| !(query.exclude_projects.unwrap_or(false) && f.has_project))
+        .filter(|f| members::includes_split(selection.as_ref(), f.member_id, f.account_member_id))
         .map(|f| CategorizedFact {
             date: f.date,
             amount: f.amount,
@@ -224,9 +235,11 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
     let first = periods.first().map_or(today, |p| p.from);
     // Jusqu'à la fin de l'année : un mois à venir peut avoir du réel, par son mois d'analyse (R-TRX-57, R-TDB-14).
     let year_end = Month { year: today.year(), month: 12 }.last_day();
+    let selection = members::selection(db, query.members.as_deref()).await?;
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, first, year_end.max(today))
         .await?
         .into_iter()
+        .filter(|f| members::includes_split(selection.as_ref(), f.member_id, f.account_member_id))
         .map(|f| SplitFact {
             date: f.date,
             amount: f.amount,
@@ -313,5 +326,6 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
         },
         has_budget: budget.is_some(),
         planned_projects,
+        partial_members: selection.is_some(),
     })
 }

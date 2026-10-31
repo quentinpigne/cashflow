@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.analysis_date AS \"date!: Date\", s.amount, s.category_id, s.project_id IS NOT NULL AS \"has_project!: bool\",\n                  c.kind AS \"category_kind?\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.analysis_date BETWEEN ? AND ?",
+  "query": "SELECT t.analysis_date AS \"date!: Date\", s.amount, c.kind AS \"category_kind?\", a.currency,\n                  s.member_id, a.member_id AS account_member_id,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.analysis_date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -26,25 +26,8 @@
         }
       },
       {
-        "name": "category_id",
-        "ordinal": 2,
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "split",
-            "name": "category_id"
-          }
-        }
-      },
-      {
-        "name": "has_project!: bool",
-        "ordinal": 3,
-        "type_info": "Integer",
-        "origin": "Expression"
-      },
-      {
         "name": "category_kind?",
-        "ordinal": 4,
+        "ordinal": 2,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -55,12 +38,34 @@
       },
       {
         "name": "currency",
-        "ordinal": 5,
+        "ordinal": 3,
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "account",
             "name": "currency"
+          }
+        }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "member_id"
+          }
+        }
+      },
+      {
+        "name": "account_member_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "member_id"
           }
         }
       },
@@ -80,9 +85,9 @@
       true,
       false,
       true,
-      false,
+      true,
       false
     ]
   },
-  "hash": "d62db3502fdaa8ada11c29a64810b746538a9de06119d8e3228362c11963989c"
+  "hash": "940fe224842f78a4b36e8fc22ec457b702bb4facec8669714a37631373da24da"
 }

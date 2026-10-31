@@ -1,7 +1,7 @@
 //! Comptes, conditions d'épargne fixe et barèmes de taux (spec 01, spec 06).
 
 use cashflow_domain::accounts::{AccountKind, Capitalization, InterestMethod};
-use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, RatePeriodId, RateScheduleId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, InstitutionId, MemberId, RatePeriodId, RateScheduleId};
 use cashflow_domain::{Currency, Date, Money, Rate};
 use sqlx::SqliteExecutor;
 
@@ -26,6 +26,8 @@ pub struct AccountRow {
     pub display_order: i64,
     pub color: Option<String>,
     pub notes: Option<String>,
+    /// Titulaire ; `None` : compte du foyer (R-MBR-4).
+    pub member_id: Option<MemberId>,
 }
 
 /// Champs écrits à la création comme à la modification.
@@ -44,6 +46,7 @@ pub struct AccountFields<'a> {
     pub display_order: i64,
     pub color: Option<&'a str>,
     pub notes: Option<&'a str>,
+    pub member_id: Option<MemberId>,
 }
 
 macro_rules! account_row {
@@ -66,6 +69,7 @@ macro_rules! account_row {
             display_order: r.display_order,
             color: r.color,
             notes: r.notes,
+            member_id: opt_id_from_db(r.member_id.as_deref())?,
         })
     }};
 }
@@ -78,7 +82,7 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<AccountRow>
                   include_in_net_worth AS "include_in_net_worth: bool",
                   include_in_emergency_fund AS "include_in_emergency_fund: bool",
                   include_in_budget AS "include_in_budget: bool",
-                  display_order, color, notes
+                  display_order, color, notes, member_id
            FROM account ORDER BY display_order, name COLLATE NOCASE"#
     )
     .fetch_all(db)
@@ -95,7 +99,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: AccountId) -> anyhow::Result<
                   include_in_net_worth AS "include_in_net_worth: bool",
                   include_in_emergency_fund AS "include_in_emergency_fund: bool",
                   include_in_budget AS "include_in_budget: bool",
-                  display_order, color, notes
+                  display_order, color, notes, member_id
            FROM account WHERE id = ?"#,
         id
     )
@@ -110,12 +114,13 @@ pub async fn insert(db: impl SqliteExecutor<'_>, id: AccountId, f: &AccountField
     let institution = f.institution_id.map(|i| i.to_string());
     let currency = f.currency.code().to_owned();
     let opening_balance = f.opening_balance.minor();
+    let member = f.member_id.map(|m| m.to_string());
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO account (id, name, kind, institution_id, currency, opening_date, opening_balance, iban,
                               account_number, include_in_net_worth, include_in_emergency_fund, include_in_budget,
-                              display_order, color, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                              display_order, color, notes, member_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         id,
         f.name,
         kind,
@@ -131,6 +136,7 @@ pub async fn insert(db: impl SqliteExecutor<'_>, id: AccountId, f: &AccountField
         f.display_order,
         f.color,
         f.notes,
+        member,
         now,
         now
     )
@@ -144,11 +150,13 @@ pub async fn update(db: impl SqliteExecutor<'_>, id: AccountId, f: &AccountField
     let kind = enum_to_db(&f.kind);
     let institution = f.institution_id.map(|i| i.to_string());
     let opening_balance = f.opening_balance.minor();
+    let member = f.member_id.map(|m| m.to_string());
     let now = timestamp();
     sqlx::query!(
         "UPDATE account SET name = ?, kind = ?, institution_id = ?, opening_date = ?, opening_balance = ?, iban = ?,
                             account_number = ?, include_in_net_worth = ?, include_in_emergency_fund = ?,
-                            include_in_budget = ?, display_order = ?, color = ?, notes = ?, updated_at = ?
+                            include_in_budget = ?, display_order = ?, color = ?, notes = ?, member_id = ?,
+                            updated_at = ?
          WHERE id = ?",
         f.name,
         kind,
@@ -163,6 +171,7 @@ pub async fn update(db: impl SqliteExecutor<'_>, id: AccountId, f: &AccountField
         f.display_order,
         f.color,
         f.notes,
+        member,
         now,
         id
     )

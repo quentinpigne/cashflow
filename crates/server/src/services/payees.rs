@@ -162,6 +162,8 @@ pub struct PayeeReportQuery {
     /// `EXPENSE` par défaut.
     pub kind: Option<CategoryKind>,
     pub group_by: Option<ReportGrouping>,
+    /// Membres comptés : `household` et des identifiants de membres ; absent : tout (R-MBR-9).
+    pub members: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -230,6 +232,8 @@ pub struct LocationReportQuery {
     pub kind: Option<CategoryKind>,
     /// `CITY` par défaut.
     pub group_by: Option<LocationGrouping>,
+    /// Membres comptés : `household` et des identifiants de membres ; absent : tout (R-MBR-9).
+    pub members: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
@@ -574,6 +578,21 @@ async fn facts(db: &Db, from: Date, to: Date) -> AppResult<Vec<db::payees::Payee
     Ok(db::payees::facts(&db.read, from, to).await?)
 }
 
+/// Ventilations des tiers dont le membre retenu est coché (R-MBR-9).
+async fn member_facts(
+    db: &Db,
+    from: Date,
+    to: Date,
+    members: Option<&str>,
+) -> AppResult<Vec<db::payees::PayeeFactRow>> {
+    let selection = super::members::selection(db, members).await?;
+    Ok(facts(db, from, to)
+        .await?
+        .into_iter()
+        .filter(|f| super::members::includes_split(selection.as_ref(), f.member_id, f.account_member_id))
+        .collect())
+}
+
 fn payee_facts(rows: &[db::payees::PayeeFactRow]) -> Vec<PayeeFact<PayeeId, TransactionId>> {
     rows.iter()
         .map(|r| PayeeFact {
@@ -675,7 +694,8 @@ fn amounts(totals: &PayeeTotals, kind: CategoryKind) -> (Money, Money) {
 pub async fn report(db: &Db, query: &PayeeReportQuery, today: Date) -> AppResult<PayeeReport> {
     let kind = query.kind.unwrap_or(CategoryKind::Expense);
     let (period, previous, current) = periods(query, today)?;
-    let rows = facts(db, previous.from.min(period.from), period.to.max(previous.to)).await?;
+    let rows =
+        member_facts(db, previous.from.min(period.from), period.to.max(previous.to), query.members.as_deref()).await?;
     let facts = payee_facts(&rows);
     let now = payees::totals(&facts, period);
     let before = payees::totals(&facts, previous);
@@ -794,9 +814,11 @@ pub async fn location_report(db: &Db, query: &LocationReportQuery, today: Date) 
         year: query.year,
         kind: query.kind,
         group_by: None,
+        members: query.members.clone(),
     };
     let (period, previous, current) = periods(&period_query, today)?;
-    let rows = facts(db, previous.from.min(period.from), period.to.max(previous.to)).await?;
+    let rows =
+        member_facts(db, previous.from.min(period.from), period.to.max(previous.to), query.members.as_deref()).await?;
     let facts = payee_facts(&rows);
     let now = payees::totals(&facts, period);
     let before = payees::totals(&facts, previous);

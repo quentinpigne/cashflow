@@ -1,7 +1,7 @@
 //! Salaires : emplois, rémunérations et primes (spec 10, ADR-0022).
 
 use cashflow_domain::salaries::{BonusKind, SalaryChangeReason};
-use cashflow_domain::shared::ids::{CategoryId, EmploymentId, SalaryBonusId, SalaryId};
+use cashflow_domain::shared::ids::{CategoryId, EmploymentId, MemberId, SalaryBonusId, SalaryId};
 use cashflow_domain::{Date, Money};
 use sqlx::SqliteExecutor;
 
@@ -19,12 +19,15 @@ pub struct EmploymentRow {
     pub raise_month: u32,
     pub paid_next_month: bool,
     pub notes: Option<String>,
+    /// Membre de l'emploi ; `None` : emploi du foyer (R-MBR-7).
+    pub member_id: Option<MemberId>,
 }
 
 pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<EmploymentRow>> {
     let rows = sqlx::query!(
         r#"SELECT id, employer, job_title, start_date AS "start_date: Date", end_date AS "end_date: Date",
-                  income_category_id, raise_month, paid_next_month AS "paid_next_month: bool", notes
+                  income_category_id, raise_month, paid_next_month AS "paid_next_month: bool", notes,
+                  member_id
            FROM employment ORDER BY start_date, employer"#
     )
     .fetch_all(db)
@@ -41,6 +44,7 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<EmploymentR
                 raise_month: u32::try_from(r.raise_month)?,
                 paid_next_month: r.paid_next_month,
                 notes: r.notes,
+                member_id: opt_id_from_db(r.member_id.as_deref())?,
             })
         })
         .collect()
@@ -53,16 +57,17 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: EmploymentId) -> anyhow::Resu
 pub async fn upsert(db: impl SqliteExecutor<'_>, row: &EmploymentRow) -> anyhow::Result<()> {
     let id = row.id.to_string();
     let category = row.income_category_id.to_string();
+    let member = row.member_id.map(|m| m.to_string());
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO employment (id, employer, job_title, start_date, end_date, income_category_id, raise_month,
-                                 paid_next_month, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 paid_next_month, notes, member_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO UPDATE SET
              employer = excluded.employer, job_title = excluded.job_title, start_date = excluded.start_date,
              end_date = excluded.end_date, income_category_id = excluded.income_category_id,
              raise_month = excluded.raise_month, paid_next_month = excluded.paid_next_month, notes = excluded.notes,
-             updated_at = excluded.updated_at",
+             member_id = excluded.member_id, updated_at = excluded.updated_at",
         id,
         row.employer,
         row.job_title,
@@ -72,6 +77,7 @@ pub async fn upsert(db: impl SqliteExecutor<'_>, row: &EmploymentRow) -> anyhow:
         row.raise_month,
         row.paid_next_month,
         row.notes,
+        member,
         now,
         now
     )

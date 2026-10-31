@@ -1,0 +1,112 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.analysis_date AS \"date!: Date\", s.amount, s.category_id, s.project_id IS NOT NULL AS \"has_project!: bool\",\n                  c.kind AS \"category_kind?\", a.currency, s.member_id, a.member_id AS account_member_id,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.analysis_date BETWEEN ? AND ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "date!: Date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "analysis_date"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "category_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "category_id"
+          }
+        }
+      },
+      {
+        "name": "has_project!: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "category_kind?",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "currency",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "member_id"
+          }
+        }
+      },
+      {
+        "name": "account_member_id",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "member_id"
+          }
+        }
+      },
+      {
+        "name": "is_movement!: bool",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "7e609e92324f31e4d8aac4132ec026a478f7a880a593ab1f0d6d1af5a6721681"
+}
