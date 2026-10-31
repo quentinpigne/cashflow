@@ -137,7 +137,7 @@ async fn epa_06_valuations_and_performance() {
     let checking = open(&db, "Courant", AccountKind::Checking, "2025-01-01", 0).await;
     assert!(savings::valuations(&db, checking).await.is_err());
 
-    let overview = savings::overview(&db, today).await.unwrap();
+    let overview = savings::overview(&db, &savings::SavingsOverviewQuery::default(), today).await.unwrap();
     assert_eq!(overview.variable.len(), 1);
     assert_eq!(overview.variable_invested_minor, 1_200_000);
 }

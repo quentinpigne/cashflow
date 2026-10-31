@@ -6,8 +6,8 @@ use cashflow_domain::shared::ids::{AccountId, RateScheduleId, ValuationId};
 
 use crate::error::{AppResult, Problem};
 use crate::services::savings::{
-    self, InterestRecorded, InterestView, PerformanceView, PeriodQuery, RatePeriodInput, SavingsOverview, ScheduleView,
-    TermsInput, TermsView, ValuationInput, ValuationView, YearQuery,
+    self, InterestRecorded, InterestView, PerformanceView, PeriodQuery, RatePeriodInput, SavingsOverview,
+    SavingsOverviewQuery, ScheduleView, TermsInput, TermsView, ValuationInput, ValuationView, YearQuery,
 };
 use crate::state::AppState;
 
@@ -142,7 +142,13 @@ pub async fn performance(
 }
 
 /// Synthèse de l'épargne pour l'accueil (TDB-05).
-#[utoipa::path(get, operation_id = "savingsOverview", path = "/savings/overview", tag = "savings", responses((status = 200, body = SavingsOverview)))]
-pub async fn overview(State(state): State<AppState>) -> AppResult<Json<SavingsOverview>> {
-    Ok(Json(savings::overview(&state.db, state.clock.today()).await?))
+#[utoipa::path(
+    get, operation_id = "savingsOverview", path = "/savings/overview", tag = "savings", params(SavingsOverviewQuery),
+    responses((status = 200, body = SavingsOverview))
+)]
+pub async fn overview(
+    State(state): State<AppState>,
+    Query(query): Query<SavingsOverviewQuery>,
+) -> AppResult<Json<SavingsOverview>> {
+    Ok(Json(savings::overview(&state.db, &query, state.clock.today()).await?))
 }

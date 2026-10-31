@@ -8097,6 +8097,17 @@
         ],
         "summary": "Synthèse de l'épargne pour l'accueil (TDB-05).",
         "operationId": "savingsOverview",
+        "parameters": [
+          {
+            "name": "members",
+            "in": "query",
+            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur\ntitulaire, les dépenses moyennes le membre retenu des ventilations (R-MBR-6, R-MBR-9).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {

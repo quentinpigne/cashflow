@@ -14,6 +14,7 @@ use super::members::{self, MemberInput};
 use super::reports::{self, EvolutionQuery};
 use super::rules::{self, ApplyInput, RuleInput};
 use super::salaries::{self, EmploymentInput};
+use super::savings::{self, SavingsOverviewQuery};
 use super::tests::{TODAY, account, category, d, domain_error, setup, split, tx};
 use super::transactions::{self, SplitInput, TransactionInput, TransactionUpdateInput};
 use super::transfers::{self, TransferInput};
@@ -277,4 +278,20 @@ async fn r_mbr_6_r_mbr_9_r_mbr_10_member_selection_filters_net_worth_and_flows()
     assert!(!evolution(None).await.unwrap().partial_members);
     let bad = members::selection(&db, Some("pas-un-membre")).await;
     assert!(matches!(bad, Err(AppError::Invalid { .. })));
+}
+
+/// L'encadré Épargne ne compte que les comptes des titulaires cochés (R-MBR-9).
+#[tokio::test]
+async fn r_mbr_9_savings_overview_counts_the_checked_titulars() {
+    let (db, _dir) = setup().await;
+    let claire = member(&db, "Claire").await;
+    accounts::create(&db, &account_input("Livret de Claire", Some(claire)), d(TODAY)).await.unwrap();
+    accounts::create(&db, &account_input("Livret du foyer", None), d(TODAY)).await.unwrap();
+    let overview = |members: Option<String>| {
+        let db = db.clone();
+        async move { savings::overview(&db, &SavingsOverviewQuery { members }, d(TODAY)).await.unwrap() }
+    };
+    assert_eq!(overview(None).await.emergency_fund_minor, 100_000);
+    assert_eq!(overview(Some(claire.to_string())).await.emergency_fund_minor, 50_000);
+    assert_eq!(overview(Some(HOUSEHOLD.into())).await.emergency_fund_minor, 50_000);
 }

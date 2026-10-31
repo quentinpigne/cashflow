@@ -671,8 +671,23 @@ pub struct SavingsOverview {
 /// Nombre de mois complets des dépenses moyennes (R-TDB-8).
 const AVERAGE_MONTHS: u32 = 12;
 
-pub async fn overview(db: &Db, today: Date) -> AppResult<SavingsOverview> {
-    let accounts = super::accounts::list(db, today).await?;
+/// Choix des membres de l'encadré Épargne (R-MBR-9).
+#[derive(Debug, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct SavingsOverviewQuery {
+    /// Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur
+    /// titulaire, les dépenses moyennes le membre retenu des ventilations (R-MBR-6, R-MBR-9).
+    pub members: Option<String>,
+}
+
+pub async fn overview(db: &Db, query: &SavingsOverviewQuery, today: Date) -> AppResult<SavingsOverview> {
+    let selection = super::members::selection(db, query.members.as_deref()).await?;
+    let selection = selection.as_ref();
+    let accounts: Vec<_> = super::accounts::list(db, today)
+        .await?
+        .into_iter()
+        .filter(|a| super::members::includes(selection, a.member_id))
+        .collect();
     let mut fixed = Vec::new();
     let mut variable = Vec::new();
     let mut global_flows: Vec<Movement> = Vec::new();
@@ -731,6 +746,7 @@ pub async fn overview(db: &Db, today: Date) -> AppResult<SavingsOverview> {
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, first, last_complete)
         .await?
         .into_iter()
+        .filter(|f| super::members::includes_split(selection, f.member_id, f.account_member_id))
         .map(|f| SplitFact {
             date: f.date,
             amount: f.amount,
