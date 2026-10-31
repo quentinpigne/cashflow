@@ -13,6 +13,10 @@ export interface WidgetMenuItem {
   checked: boolean;
   select: () => void;
   radio?: boolean;
+  /** Le menu reste ouvert après le clic, pour cocher plusieurs cases (membres, R-MBR-8). */
+  keepOpen?: boolean;
+  /** Titre de section affiché avant l'entrée, précédé d'un séparateur. */
+  section?: string;
 }
 
 /** Entrée qui bascule une option d'affichage de l'accueil. */
@@ -43,12 +47,18 @@ export function optionItem(
       <mat-icon>tune</mat-icon>
     </button>
     <mat-menu #menu xPosition="before">
-      @for (item of items(); track item.label) {
+      @for (item of items(); track item.label; let first = $first) {
+        @if (item.section) {
+          @if (!first) {
+            <mat-divider />
+          }
+          <div class="section" role="presentation">{{ item.section }}</div>
+        }
         <button
           mat-menu-item
           [role]="item.radio ? 'menuitemradio' : 'menuitemcheckbox'"
           [attr.aria-checked]="item.checked"
-          (click)="item.select()"
+          (click)="item.keepOpen && $event.stopPropagation(); item.select()"
         >
           <mat-icon>{{ item.checked ? 'check' : '' }}</mat-icon>
           <span>{{ item.label }}</span>
@@ -91,6 +101,11 @@ export function optionItem(
       &[aria-expanded='true'] {
         background: var(--mat-sys-surface-container-highest);
       }
+    }
+    .section {
+      padding: 0.5rem 1rem 0.25rem;
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-label-medium);
     }
     :host-context(.widget:hover) .trigger,
     .trigger:focus-visible,

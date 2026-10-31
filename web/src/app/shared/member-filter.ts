@@ -11,8 +11,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import { MembersStore } from './stores';
 
-/** Écrans qui ont leur choix de membres, mémorisé à part (R-MBR-8). */
-export type MemberScreen = 'home' | 'analyses' | 'projections';
+/**
+ * Choix de membres mémorisés à part (R-MBR-8) : un par écran pour les analyses et les projections, un par
+ * encadré sur l'accueil (`home.<encadré>`).
+ */
+export type MemberScreen = 'analyses' | 'projections' | `home.${string}`;
 
 /** Case « Foyer » : ce qui n'est affecté à aucun membre (R-MBR-9). */
 export const HOUSEHOLD = 'household';
@@ -66,6 +69,24 @@ export class MemberSelection {
 
   /** Paramètre `members` de l'API : absent quand tout est coché. */
   readonly param = computed(() => (this.partial() ? this.checked().join(',') : undefined));
+
+  /** Suffixe du titre d'un encadré filtré : « · Claire », « · 2 membres » ; vide quand tout est coché. */
+  readonly titleSuffix = computed(() => {
+    if (!this.partial()) return '';
+    const checked = this.options().filter((o) => this.isChecked(o.token));
+    return checked.length === 1 ? ` · ${checked[0].name}` : ` · ${checked.length} membres`;
+  });
+
+  /** Entrées « Membres » du menu de réglages d'un encadré (E1), qui laissent le menu ouvert. */
+  readonly menuItems = computed(() =>
+    this.options().map((o, i) => ({
+      label: o.name,
+      checked: this.isChecked(o.token),
+      select: () => this.toggle(o.token, !this.isChecked(o.token)),
+      keepOpen: true,
+      section: i === 0 ? 'Membres' : undefined,
+    })),
+  );
 
   /** « Quentin et Claire seulement ». */
   readonly summary = computed(() => {

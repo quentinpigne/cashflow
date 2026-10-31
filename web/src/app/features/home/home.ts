@@ -25,8 +25,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, shareReplay } from 'rxjs';
 
+import { Dashboard } from '../../api/models/dashboard';
 import { FlowsView } from '../../api/models/flows-view';
 import { UncategorizedItem } from '../../api/models/uncategorized-item';
 import { DashboardService } from '../../api/services/dashboard.service';
@@ -59,7 +60,8 @@ import { HomeSettings } from './home-settings';
 import { WidgetMenu, WidgetMenuItem, optionItem } from './widget-menu';
 import { HomeRecent } from './home-recent';
 import { NetWorthChart } from './net-worth-chart';
-import { MemberFilter, MemberSelections } from '../../shared/member-filter';
+import { MemberSelection, MemberSelections } from '../../shared/member-filter';
+import { keepValue } from '../../shared/keep-value';
 
 /** Définitions affichées dans les info-bulles « comment est-ce calculé ? » (spec 08). */
 const DEFINITIONS = {
@@ -101,7 +103,6 @@ const DEFINITIONS = {
     HomeMissed,
     HomeRefunds,
     WidgetMenu,
-    MemberFilter,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -124,12 +125,48 @@ export class HomePage {
 
   protected readonly definitions = DEFINITIONS;
   protected readonly familyLabels = FAMILY_LABELS;
-  /** Membres cochés sur l'accueil (R-MBR-8, R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home');
+  /** Accueil du foyer : les encadrés sans choix de membres (R-MBR-9). */
   protected readonly dashboard = rxResource({
-    params: () => ({ version: this.version.value(), members: this.members.param() }),
-    stream: ({ params }) => this.api.getDashboard({ members: params.members }),
+    params: () => this.version.value(),
+    stream: ({ params }) => this.dashboardFor(params, undefined),
   });
+
+  /** Choix de membres de Patrimoine, Mois en cours et Comptes, qui viennent du même appel (R-MBR-8). */
+  private readonly selections = inject(MemberSelections);
+  protected readonly netWorthMembers = this.selections.of('home.net-worth');
+  protected readonly monthMembers = this.selections.of('home.month');
+  protected readonly accountsMembers = this.selections.of('home.accounts');
+  protected readonly netWorthDash = this.dashboardResource(this.netWorthMembers);
+  protected readonly netWorthValue = keepValue(this.netWorthDash);
+  protected readonly monthDash = this.dashboardResource(this.monthMembers);
+  protected readonly monthValue = keepValue(this.monthDash);
+  protected readonly accountsDash = this.dashboardResource(this.accountsMembers);
+  protected readonly accountsValue = keepValue(this.accountsDash);
+
+  /** Un appel par choix de membres distinct, partagé par les encadrés qui ont le même (R-MBR-8). */
+  private readonly cache = new Map<string, Observable<Dashboard>>();
+  private cacheVersion = -1;
+
+  private dashboardFor(version: number, members: string | undefined): Observable<Dashboard> {
+    if (version !== this.cacheVersion) {
+      this.cache.clear();
+      this.cacheVersion = version;
+    }
+    const key = members ?? '';
+    let call = this.cache.get(key);
+    if (!call) {
+      call = this.api.getDashboard({ members }).pipe(shareReplay(1));
+      this.cache.set(key, call);
+    }
+    return call;
+  }
+
+  private dashboardResource(selection: MemberSelection) {
+    return rxResource({
+      params: () => ({ version: this.version.value(), members: selection.param() }),
+      stream: ({ params }) => this.dashboardFor(params.version, params.members),
+    });
+  }
 
   protected readonly layout = inject(HomeLayout);
   protected readonly settings = inject(HomeSettings);
@@ -173,12 +210,15 @@ export class HomePage {
   protected readonly netWorthItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'net-worth.detail', 'Détail actif brut / dettes'),
     optionItem(this.settings, 'net-worth.chart', 'Courbe des 12 derniers mois'),
+    ...this.netWorthMembers.menuItems(),
   ]);
   protected readonly monthItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'month.previous', 'Comparer au mois précédent'),
+    ...this.monthMembers.menuItems(),
   ]);
   protected readonly accountsItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'accounts.detail', 'Détail des comptes'),
+    ...this.accountsMembers.menuItems(),
   ]);
 
   protected readonly monthLabel = computed(() =>

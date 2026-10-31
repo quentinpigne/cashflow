@@ -10,11 +10,18 @@ import { RequestBuilder } from '../../request-builder';
 import { SavingsOverview } from '../../models/savings-overview';
 
 export interface SavingsOverview$Params {
+
+/**
+ * Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur
+ * titulaire, les dépenses moyennes le membre retenu des ventilations (R-MBR-6, R-MBR-9).
+ */
+  members?: string;
 }
 
 export function savingsOverview(http: HttpClient, rootUrl: string, params?: SavingsOverview$Params, context?: HttpContext): Observable<StrictHttpResponse<SavingsOverview>> {
   const rb = new RequestBuilder(rootUrl, savingsOverview.PATH, 'get');
   if (params) {
+    rb.query('members', params.members, {});
   }
 
   return http.request(

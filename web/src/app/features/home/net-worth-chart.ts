@@ -8,6 +8,7 @@ import { DataVersion } from '../../core/data-version';
 import { formatShortDate } from '../../core/dates';
 import { formatChartValue, toChartValue } from '../../core/money';
 import { MemberSelections } from '../../shared/member-filter';
+import { keepValue } from '../../shared/keep-value';
 
 /** Patrimoine à chaque fin de mois des 12 derniers mois et aujourd'hui (TDB-11, R-TDB-22). */
 @Component({
@@ -37,14 +38,15 @@ export class NetWorthChart {
   private readonly version = inject(DataVersion);
 
   /** Membres cochés sur l'accueil (R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home');
+  private readonly members = inject(MemberSelections).of('home.net-worth');
   private readonly history = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) => this.api.netWorthHistory({ months: 12, members: params.members }),
   });
+  protected readonly historyValue = keepValue(this.history);
 
   protected readonly chart = computed<EChartsCoreOption | null>(() => {
-    const points = this.history.value() ?? [];
+    const points = this.historyValue() ?? [];
     if (points.length < 2) return null;
     return {
       grid: { left: 0, right: 0, top: 4, bottom: 0 },

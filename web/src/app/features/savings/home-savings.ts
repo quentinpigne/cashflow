@@ -10,6 +10,8 @@ import { formatRate, formatRatePpm } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { HomeSettings } from '../home/home-settings';
 import { WidgetMenu, WidgetMenuItem, optionItem } from '../home/widget-menu';
+import { MemberSelections } from '../../shared/member-filter';
+import { keepValue } from '../../shared/keep-value';
 
 /**
  * Épargne sur l'accueil (TDB-05) : épargne de précaution, intérêts de l'année des livrets, valeur et
@@ -20,10 +22,13 @@ import { WidgetMenu, WidgetMenuItem, optionItem } from '../home/widget-menu';
   imports: [RouterLink, MatIconModule, MatTooltipModule, WidgetMenu, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (overview.value(); as o) {
+    @if (overviewValue(); as o) {
       <section class="card">
-        <h2 class="widget-title">Épargne</h2>
+        <h2 class="widget-title">Épargne{{ members.titleSuffix() }}</h2>
         <app-widget-menu widget="savings" [items]="menuItems()" />
+        @if (empty()) {
+          <p class="muted">Rien pour ce choix de membres.</p>
+        }
         @if (settings.option('savings.emergency') && o.emergency_fund_minor > 0) {
           <div class="row">
             <span>
@@ -139,15 +144,29 @@ export class HomeSavings {
   protected readonly settings = inject(HomeSettings);
 
   protected readonly year = new Date().getFullYear();
+  /** Membres cochés dans cet encadré : comptes de leurs titulaires (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('home.savings');
   protected readonly overview = rxResource({
-    params: () => this.version.value(),
-    stream: () => this.api.savingsOverview(),
+    params: () => ({ version: this.version.value(), members: this.members.param() }),
+    stream: ({ params }) => this.api.savingsOverview({ members: params.members }),
   });
+  protected readonly overviewValue = keepValue(this.overview);
 
+  /** Encadré filtré dont aucune section n'a de contenu : son menu reste accessible (R-MBR-8). */
+  protected readonly empty = computed(() => {
+    const o = this.overviewValue();
+    if (!o || !this.members.partial()) return false;
+    return !(
+      (this.settings.option('savings.emergency') && o.emergency_fund_minor > 0) ||
+      (this.settings.option('savings.interest') && o.fixed.length > 0) ||
+      (this.settings.option('savings.variable') && o.variable.length > 0)
+    );
+  });
   protected readonly menuItems = computed<WidgetMenuItem[]>(() => [
     optionItem(this.settings, 'savings.emergency', 'Épargne de précaution'),
     optionItem(this.settings, 'savings.interest', 'Intérêts de l’année'),
     optionItem(this.settings, 'savings.variable', 'Épargne variable'),
+    ...this.members.menuItems(),
   ]);
 
   protected months(tenths: number | null | undefined): string {

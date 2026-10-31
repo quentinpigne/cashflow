@@ -8,6 +8,7 @@ import { percentOf, sum } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { WidgetMenu } from '../home/widget-menu';
 import { MemberSelections } from '../../shared/member-filter';
+import { keepValue } from '../../shared/keep-value';
 
 /** Les 5 tiers aux plus fortes dépenses du mois, et leur part (TDB-11, R-TDB-21). */
 @Component({
@@ -15,10 +16,15 @@ import { MemberSelections } from '../../shared/member-filter';
   imports: [RouterLink, WidgetMenu, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (rows().length > 0) {
+    @if (rows().length > 0 || members.partial()) {
       <section class="card">
-        <h2 class="widget-title"><a routerLink="/analyses">Tiers du mois</a></h2>
-        <app-widget-menu widget="payees" />
+        <h2 class="widget-title">
+          <a routerLink="/analyses">Tiers du mois</a>{{ members.titleSuffix() }}
+        </h2>
+        <app-widget-menu widget="payees" [items]="members.menuItems()" />
+        @if (rows().length === 0) {
+          <p class="muted">Rien pour ce choix de membres.</p>
+        }
         @for (r of rows(); track r.id) {
           <a class="row" [routerLink]="['/tiers', r.id]">
             <span class="label"
@@ -37,8 +43,8 @@ export class HomePayees {
   private readonly api = inject(PayeesService);
   private readonly version = inject(DataVersion);
 
-  /** Membres cochés sur l'accueil (R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home');
+  /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('home.payees');
   private readonly report = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) =>
@@ -49,11 +55,10 @@ export class HomePayees {
         members: params.members,
       }),
   });
+  protected readonly reportValue = keepValue(this.report);
 
   protected readonly rows = computed(() => {
-    const lines = (this.report.value()?.lines ?? []).filter(
-      (l) => l.payee_id && l.amount_minor > 0,
-    );
+    const lines = (this.reportValue()?.lines ?? []).filter((l) => l.payee_id && l.amount_minor > 0);
     const total = sum(lines.map((l) => l.amount_minor));
     return [...lines]
       .sort((a, b) => b.amount_minor - a.amount_minor)

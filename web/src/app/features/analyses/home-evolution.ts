@@ -10,6 +10,7 @@ import { formatMonth } from '../../core/dates';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { WidgetMenu } from '../home/widget-menu';
 import { MemberSelections } from '../../shared/member-filter';
+import { keepValue } from '../../shared/keep-value';
 
 /** Épargne des 12 derniers mois et taux d'épargne glissant (TDB-11, R-TDB-20). */
 @Component({
@@ -20,9 +21,10 @@ import { MemberSelections } from '../../shared/member-filter';
     @if (chart(); as options) {
       <section class="card">
         <h2 class="widget-title">
-          <a routerLink="/analyses" [queryParams]="{ onglet: 'evolution' }">Évolution</a>
+          <a routerLink="/analyses" [queryParams]="{ onglet: 'evolution' }">Évolution</a
+          >{{ members.titleSuffix() }}
         </h2>
-        <app-widget-menu widget="evolution" />
+        <app-widget-menu widget="evolution" [items]="members.menuItems()" />
         @if (rate(); as r) {
           <p class="muted small">Taux d'épargne sur 12 mois : {{ r }}</p>
         }
@@ -47,21 +49,22 @@ export class HomeEvolution {
   private readonly api = inject(DashboardService);
   private readonly version = inject(DataVersion);
 
-  /** Membres cochés sur l'accueil (R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home');
+  /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('home.evolution');
   private readonly evolution = rxResource({
     params: () => ({ version: this.version.value(), members: this.members.param() }),
     stream: ({ params }) => this.api.evolutionReport({ months: 12, members: params.members }),
   });
+  protected readonly evolutionValue = keepValue(this.evolution);
 
   protected readonly rate = computed(() => {
-    const months = this.evolution.value()?.months ?? [];
+    const months = this.evolutionValue()?.months ?? [];
     const ppm = months[months.length - 1]?.rolling_rate_ppm;
     return ppm === null || ppm === undefined ? null : formatRatePpm(ppm);
   });
 
   protected readonly chart = computed<EChartsCoreOption | null>(() => {
-    const months = this.evolution.value()?.months ?? [];
+    const months = this.evolutionValue()?.months ?? [];
     if (months.length === 0) return null;
     return {
       grid: { left: 4, right: 4, top: 8, bottom: 4, containLabel: true },

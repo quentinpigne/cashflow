@@ -16,6 +16,7 @@ import { AccountsStore } from '../../shared/stores';
 import { cashAccount } from '../home/widget-rules';
 import { WidgetMenu } from '../home/widget-menu';
 import { MemberSelections } from '../../shared/member-filter';
+import { keepValue } from '../../shared/keep-value';
 
 /** Trésorerie à venir du compte courant sur 30 jours (TDB-10, R-TDB-15). */
 @Component({
@@ -24,14 +25,14 @@ import { MemberSelections } from '../../shared/member-filter';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (account(); as a) {
-      @if (projection.value(); as p) {
+      @if (projectionValue(); as p) {
         <section class="card">
           <h2 class="widget-title">
             <a routerLink="/projections" [queryParams]="{ onglet: 'tresorerie', compte: a.id }"
               >Trésorerie à venir</a
-            >
+            >{{ members.titleSuffix() }}
           </h2>
-          <app-widget-menu widget="cash" />
+          <app-widget-menu widget="cash" [items]="members.menuItems()" />
           <p class="muted small">{{ a.name }} · 30 prochains jours</p>
           <div class="row">
             <span>Aujourd'hui</span>
@@ -60,6 +61,12 @@ import { MemberSelections } from '../../shared/member-filter';
           }
         </section>
       }
+    } @else if (members.partial()) {
+      <section class="card">
+        <h2 class="widget-title">Trésorerie à venir{{ members.titleSuffix() }}</h2>
+        <app-widget-menu widget="cash" [items]="members.menuItems()" />
+        <p class="muted">Aucun compte courant pour ce choix de membres.</p>
+      </section>
     }
   `,
   styleUrl: '../home/widget.scss',
@@ -70,8 +77,8 @@ export class HomeCash {
   private readonly accounts = inject(AccountsStore);
   private readonly plannedProjects = inject(PlannedProjects);
 
-  /** Membres cochés sur l'accueil (R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home');
+  /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('home.cash');
   /** Premier compte courant d'un titulaire coché, sans titulaire avec « Foyer » (R-MBR-9). */
   protected readonly account = computed(() =>
     cashAccount(this.accounts.list().filter((a) => this.members.includes(a.member_id))),
@@ -88,14 +95,15 @@ export class HomeCash {
         ? this.api.cashProjection({ id: params.id, days: 30, planned_projects: params.planned })
         : of(null),
   });
+  protected readonly projectionValue = keepValue(this.projection);
 
   protected readonly end = computed(() => {
-    const days = this.projection.value()?.days ?? [];
+    const days = this.projectionValue()?.days ?? [];
     return days.length > 0 ? days[days.length - 1].balance_minor : 0;
   });
 
   protected readonly chart = computed<EChartsCoreOption | null>(() => {
-    const days = this.projection.value()?.days ?? [];
+    const days = this.projectionValue()?.days ?? [];
     if (days.length < 2) return null;
     return {
       grid: { left: 0, right: 0, top: 4, bottom: 0 },

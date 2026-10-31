@@ -18,10 +18,15 @@ import { MemberSelections } from '../../shared/member-filter';
   imports: [RouterLink, WidgetMenu, FrDatePipe, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (rows().length > 0) {
+    @if (rows().length > 0 || members.partial()) {
       <section class="card">
-        <h2 class="widget-title"><a routerLink="/salaires">Salaire</a></h2>
-        <app-widget-menu widget="salary" />
+        <h2 class="widget-title">
+          <a routerLink="/salaires">Salaire</a>{{ members.titleSuffix() }}
+        </h2>
+        <app-widget-menu widget="salary" [items]="members.menuItems()" />
+        @if (rows().length === 0) {
+          <p class="muted">Rien pour ce choix de membres.</p>
+        }
         @for (r of rows(); track r.id) {
           <a class="item" [routerLink]="['/salaires', r.id]">
             <span class="row">
@@ -77,8 +82,8 @@ export class HomeSalary {
         : of([]),
   });
 
-  /** Membres cochés sur l'accueil (R-MBR-9). */
-  private readonly members = inject(MemberSelections).of('home');
+  /** Membres cochés dans cet encadré (R-MBR-8, R-MBR-9). */
+  protected readonly members = inject(MemberSelections).of('home.salary');
   /** Emplois dont le membre est coché, ceux sans membre avec « Foyer » (R-MBR-9). */
   protected readonly rows = computed(() =>
     (this.employments.value() ?? [])
