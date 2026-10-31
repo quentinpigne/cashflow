@@ -289,6 +289,7 @@ async fn account(
         None => None,
     };
     let input = accounts::AccountInput {
+        reassign_splits: false,
         member_id: None,
         name: name.into(),
         kind,

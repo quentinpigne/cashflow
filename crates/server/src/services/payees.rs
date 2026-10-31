@@ -578,7 +578,7 @@ async fn facts(db: &Db, from: Date, to: Date) -> AppResult<Vec<db::payees::Payee
     Ok(db::payees::facts(&db.read, from, to).await?)
 }
 
-/// Ventilations des tiers dont le membre retenu est coché (R-MBR-9).
+/// Ventilations des tiers dont le membre est coché (R-MBR-9).
 async fn member_facts(
     db: &Db,
     from: Date,
@@ -589,7 +589,7 @@ async fn member_facts(
     Ok(facts(db, from, to)
         .await?
         .into_iter()
-        .filter(|f| super::members::includes_split(selection.as_ref(), f.member_id, f.account_member_id))
+        .filter(|f| super::members::includes(selection.as_ref(), f.member_id))
         .collect())
 }
 

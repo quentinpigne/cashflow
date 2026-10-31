@@ -193,7 +193,7 @@
               [value]="member() ?? ''"
               (selectionChange)="member.set($event.value || null)"
             >
-              <mat-option value="">{{ defaultMember(t) }}</mat-option>
+              <mat-option value="">Foyer</mat-option>
               @for (m of members.list(); track m.id) {
                 <mat-option [value]="m.id">{{ m.name }}</mat-option>
               }

@@ -13,7 +13,7 @@ export interface SavingsOverview$Params {
 
 /**
  * Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur
- * titulaire, les dépenses moyennes le membre retenu des ventilations (R-MBR-6, R-MBR-9).
+ * titulaire, les dépenses moyennes le membre des ventilations (R-MBR-9).
  */
   members?: string;
 }

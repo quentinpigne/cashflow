@@ -27,6 +27,7 @@ async fn member(db: &Db, name: &str) -> MemberId {
 
 fn account_input(name: &str, member: Option<MemberId>) -> AccountInput {
     AccountInput {
+        reassign_splits: false,
         name: name.into(),
         kind: AccountKind::LivretA,
         institution_id: None,
@@ -229,7 +230,7 @@ async fn r_mbr_7_an_employment_has_at_most_one_member() {
     assert_eq!(updated.summary.member_id, Some(quentin));
 }
 
-/// Critères d'acceptation de MBR-04 : patrimoine par titulaire, flux par membre retenu, somme des cases = tout.
+/// Critères d'acceptation de MBR-04 : patrimoine par titulaire, flux par membre, somme des cases = tout.
 #[tokio::test]
 async fn r_mbr_6_r_mbr_9_r_mbr_10_member_selection_filters_net_worth_and_flows() {
     let (db, _dir) = setup().await;
@@ -246,7 +247,8 @@ async fn r_mbr_6_r_mbr_9_r_mbr_10_member_selection_filters_net_worth_and_flows()
         splits: Some(vec![SplitInput { member_id: member, ..split(amount, Some(food)) }]),
         ..tx(account, "2026-03-10", amount, None)
     };
-    transactions::create(&db, &spend(checking, -5_000, None)).await.unwrap();
+    // Sans ventilation saisie, la dépense revient au titulaire du compte (R-MBR-6).
+    transactions::create(&db, &tx(checking, "2026-03-10", -5_000, Some(food))).await.unwrap();
     transactions::create(&db, &spend(checking, -3_000, Some(claire))).await.unwrap();
     transactions::create(&db, &spend(joint, -2_000, None)).await.unwrap();
 
@@ -328,4 +330,54 @@ async fn r_mbr_5_members_are_assigned_in_bulk_except_transfers() {
     let back = transactions::BulkMemberInput { transaction_ids: vec![spent], member_id: None };
     transactions::set_member_many(&db, &back).await.unwrap();
     assert!(transactions::get(&db, spent).await.unwrap().splits.iter().all(|s| s.member_id.is_none()));
+}
+
+/// Le titulaire du compte est le membre par défaut d'une dépense ; « Foyer » se choisit explicitement (R-MBR-6).
+#[tokio::test]
+async fn r_mbr_6_the_account_holder_is_the_default_member_and_household_can_be_chosen() {
+    let (db, _dir) = setup().await;
+    let quentin = member(&db, "Quentin").await;
+    let mut input = account_input("Courant de Quentin", Some(quentin));
+    input.kind = AccountKind::Checking;
+    let checking = accounts::create(&db, &input, d(TODAY)).await.unwrap().id;
+    let food = category(&db, "Alimentation", CategoryKind::Expense, None).await;
+
+    let own = transactions::create(&db, &tx(checking, "2026-03-10", -5_000, Some(food))).await.unwrap();
+    assert_eq!(transactions::get(&db, own).await.unwrap().splits[0].member_id, Some(quentin));
+    let shared =
+        TransactionInput { splits: Some(vec![split(-8_000, Some(food))]), ..tx(checking, "2026-03-11", -8_000, None) };
+    let shared = transactions::create(&db, &shared).await.unwrap();
+    assert_eq!(transactions::get(&db, shared).await.unwrap().splits[0].member_id, None, "foyer");
+    assert_eq!(features::get(&db).await.unwrap().household_split_count, 1);
+}
+
+/// Changer le titulaire d'un compte passe, sur demande, ses ventilations de l'ancien au nouveau (R-MBR-4).
+#[tokio::test]
+async fn r_mbr_4_changing_the_holder_reassigns_splits_on_request() {
+    let (db, _dir) = setup().await;
+    let claire = member(&db, "Claire").await;
+    let leo = member(&db, "Léo").await;
+    let joint = accounts::create(&db, &account_input("Joint", None), d(TODAY)).await.unwrap().id;
+    let food = category(&db, "Alimentation", CategoryKind::Expense, None).await;
+    let common = transactions::create(&db, &tx(joint, "2026-03-10", -5_000, Some(food))).await.unwrap();
+    let gift = TransactionInput {
+        splits: Some(vec![SplitInput { member_id: Some(leo), ..split(-2_000, Some(food)) }]),
+        ..tx(joint, "2026-03-11", -2_000, None)
+    };
+    let gift = transactions::create(&db, &gift).await.unwrap();
+    let member_of = |id| {
+        let db = db.clone();
+        async move { transactions::get(&db, id).await.unwrap().splits[0].member_id }
+    };
+
+    let without = AccountInput { reassign_splits: false, ..account_input("Joint", Some(claire)) };
+    accounts::update(&db, joint, &without, d(TODAY)).await.unwrap();
+    assert_eq!(member_of(common).await, None, "sans reprise, la dépense reste au foyer");
+
+    let back = account_input("Joint", None);
+    accounts::update(&db, joint, &back, d(TODAY)).await.unwrap();
+    let with = AccountInput { reassign_splits: true, ..account_input("Joint", Some(claire)) };
+    accounts::update(&db, joint, &with, d(TODAY)).await.unwrap();
+    assert_eq!(member_of(common).await, Some(claire));
+    assert_eq!(member_of(gift).await, Some(leo), "une affectation à un autre membre ne bouge pas");
 }

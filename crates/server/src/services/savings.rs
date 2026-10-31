@@ -383,7 +383,7 @@ pub async fn record_interest(db: &Db, account: AccountId, year: i32, today: Date
         project_id: None,
         ..Default::default()
     };
-    super::transactions::insert_validated(&mut tx, &new, &[split]).await?;
+    super::transactions::insert_for_holder(&mut tx, &new, &[split]).await?;
     tx.commit().await?;
     Ok(InterestRecorded { transaction_id: id, amount_minor: amount.minor() })
 }
@@ -676,7 +676,7 @@ const AVERAGE_MONTHS: u32 = 12;
 #[into_params(parameter_in = Query)]
 pub struct SavingsOverviewQuery {
     /// Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur
-    /// titulaire, les dépenses moyennes le membre retenu des ventilations (R-MBR-6, R-MBR-9).
+    /// titulaire, les dépenses moyennes le membre des ventilations (R-MBR-9).
     pub members: Option<String>,
 }
 
@@ -746,7 +746,7 @@ pub async fn overview(db: &Db, query: &SavingsOverviewQuery, today: Date) -> App
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, first, last_complete)
         .await?
         .into_iter()
-        .filter(|f| super::members::includes_split(selection, f.member_id, f.account_member_id))
+        .filter(|f| super::members::includes(selection, f.member_id))
         .map(|f| SplitFact {
             date: f.date,
             amount: f.amount,

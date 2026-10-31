@@ -489,18 +489,19 @@ pub async fn create(db: &Db, input: &TransactionInput) -> AppResult<TransactionI
     let amount = Money::from_minor(input.amount_minor);
     ledger::check_amount(amount)?;
     let label = required(&input.label, "label", 200)?;
-    let splits = input.splits.clone().unwrap_or_else(|| {
-        vec![SplitInput {
+    let mut tx = db.write.begin().await?;
+    // Sans ventilation saisie, une seule, au titulaire du compte (R-MBR-6) ; saisies, elles portent leur membre.
+    let splits = match input.splits.clone() {
+        Some(splits) => splits,
+        None => vec![SplitInput {
             amount_minor: input.amount_minor,
             category_id: input.category_id,
-            note: None,
-            project_id: None,
+            member_id: holder(&mut tx, input.account_id).await?,
             ..Default::default()
-        }]
-    });
+        }],
+    };
     split::check_splits(amount, &amounts(&splits))?;
 
-    let mut tx = db.write.begin().await?;
     let account = db::accounts::find(&mut *tx, input.account_id).await?.ok_or(AppError::NotFound("compte"))?;
     period(&account).check(input.date)?;
     reconciliation::lock(&mut tx, input.account_id).await?.check(input.date)?;
@@ -739,6 +740,39 @@ pub async fn categorize_split(db: &Db, split_id: SplitId, input: &CategorizeInpu
     }
     db::transactions::set_split_category(&db.write, split_id, input.category_id).await?;
     Ok(())
+}
+
+/// Membre par défaut d'une ventilation créée : le titulaire du compte, `None` (foyer) sans titulaire (R-MBR-6).
+pub(crate) async fn holder(conn: &mut SqliteConnection, account: AccountId) -> AppResult<Option<MemberId>> {
+    Ok(db::accounts::find(&mut *conn, account).await?.and_then(|a| a.member_id))
+}
+
+/// Membre des ventilations recalculées d'une transaction (règles, échéance de prêt) : celui commun aux anciennes,
+/// à défaut le titulaire du compte (R-MBR-5, R-MBR-6).
+pub(crate) async fn kept_member(
+    conn: &mut SqliteConnection,
+    transaction: TransactionId,
+    account: AccountId,
+) -> AppResult<Option<MemberId>> {
+    let previous: Vec<Option<MemberId>> =
+        db::transactions::splits_of(&mut *conn, transaction).await?.into_iter().map(|s| s.member_id).collect();
+    match household::common_member(&previous) {
+        Some(member) => Ok(Some(member)),
+        None => holder(conn, account).await,
+    }
+}
+
+/// Insère une transaction créée par l'application (import, récurrence, intérêts) : ses ventilations sans membre
+/// reçoivent le titulaire du compte (R-MBR-6). Pas pour une jambe de virement, qui n'a jamais de membre.
+pub(crate) async fn insert_for_holder(
+    conn: &mut SqliteConnection,
+    t: &NewTransaction<'_>,
+    splits: &[NewSplit<'_>],
+) -> AppResult<()> {
+    let member = holder(conn, t.account_id).await?;
+    let splits: Vec<NewSplit<'_>> =
+        splits.iter().map(|s| NewSplit { member_id: s.member_id.or(member), ..s.clone() }).collect();
+    insert_validated(conn, t, &splits).await
 }
 
 /// Insère une transaction déjà validée et sa ventilation, dans une transaction SQLite ouverte.

@@ -58,6 +58,7 @@ mod tests {
         seed::run(db).await.unwrap();
         let today: cashflow_domain::Date = "2026-03-15".parse().unwrap();
         let account = |name: &str, kind| accounts::AccountInput {
+            reassign_splits: false,
             member_id: None,
             name: name.into(),
             kind,

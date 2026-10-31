@@ -27,6 +27,7 @@ pub(super) async fn setup() -> (Db, tempfile::TempDir) {
 
 pub(super) async fn account(db: &Db, name: &str, kind: AccountKind, opening_minor: i64) -> AccountId {
     let input = AccountInput {
+        reassign_splits: false,
         member_id: None,
         name: name.into(),
         kind,
@@ -156,6 +157,7 @@ async fn cpt_07_accounts_are_ordered_and_colored() {
     assert!(matches!(accounts::reorder(&db, &unknown).await, Err(AppError::NotFound(_))));
 
     let with_color = |color: &str| AccountInput {
+        reassign_splits: false,
         member_id: None,
         name: "Couleur".into(),
         kind: AccountKind::Checking,

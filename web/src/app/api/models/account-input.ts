@@ -24,4 +24,9 @@ export interface AccountInput {
   notes?: (string | null);
   opening_balance_minor?: number;
   opening_date: string;
+
+  /**
+   * À un changement de titulaire, passe au nouveau les ventilations du compte affectées à l'ancien (R-MBR-4).
+   */
+  reassign_splits?: boolean;
 }

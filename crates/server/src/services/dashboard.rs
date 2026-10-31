@@ -159,8 +159,7 @@ pub async fn get(db: &Db, today: Date) -> AppResult<Dashboard> {
     get_for(db, &DashboardQuery::default(), today).await
 }
 
-/// L'accueil, limité aux membres choisis (R-MBR-9) : comptes de leurs titulaires, ventilations de leur membre
-/// retenu, biens et prêts avec le foyer, emplois de leur membre.
+/// L'accueil, limité aux membres choisis (R-MBR-9) : comptes de leurs titulaires, ventilations de leur membre, biens et prêts avec le foyer, emplois de leur membre.
 pub async fn get_for(db: &Db, query: &DashboardQuery, today: Date) -> AppResult<Dashboard> {
     let selection = super::members::selection(db, query.members.as_deref()).await?;
     let selection = selection.as_ref();
@@ -218,7 +217,7 @@ pub async fn get_for(db: &Db, query: &DashboardQuery, today: Date) -> AppResult<
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, previous_period.from, current.to)
         .await?
         .into_iter()
-        .filter(|f| super::members::includes_split(selection, f.member_id, f.account_member_id))
+        .filter(|f| super::members::includes(selection, f.member_id))
         .map(|f| SplitFact {
             date: f.date,
             amount: f.amount,

@@ -1,6 +1,6 @@
 //! Membres du foyer (spec 14).
 
-use cashflow_domain::shared::ids::{MemberId, TransactionId};
+use cashflow_domain::shared::ids::{AccountId, MemberId, TransactionId};
 use sqlx::{SqliteConnection, SqliteExecutor};
 
 use super::codec::id_from_db;
@@ -138,6 +138,45 @@ pub async fn set_transaction_member(
     .execute(db)
     .await?;
     Ok(())
+}
+
+/// Passe au nouveau titulaire les ventilations d'un compte affectées à l'ancien (au foyer pour `None`), hors
+/// virements (R-MBR-4) ; retourne leur nombre.
+pub async fn reassign_account_splits(
+    db: impl SqliteExecutor<'_>,
+    account: AccountId,
+    from: Option<MemberId>,
+    to: Option<MemberId>,
+) -> anyhow::Result<u64> {
+    let account = account.to_string();
+    let from = from.map(|m| m.to_string());
+    let to = to.map(|m| m.to_string());
+    let now = timestamp();
+    let result = sqlx::query!(
+        "UPDATE split SET member_id = ?, updated_at = ?
+         WHERE member_id IS ?
+           AND transaction_id IN (SELECT id FROM ledger_transaction WHERE account_id = ?)
+           AND id NOT IN (SELECT outflow_split_id FROM transfer UNION ALL SELECT inflow_split_id FROM transfer)",
+        to,
+        now,
+        from,
+        account
+    )
+    .execute(db)
+    .await?;
+    Ok(result.rows_affected())
+}
+
+/// Ventilations au foyer (sans membre), hors virements : la case « Foyer » des flux n'est proposée que s'il y en a
+/// (R-MBR-8).
+pub async fn household_split_count(db: impl SqliteExecutor<'_>) -> anyhow::Result<i64> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!: i64" FROM split
+           WHERE member_id IS NULL
+             AND id NOT IN (SELECT outflow_split_id FROM transfer UNION ALL SELECT inflow_split_id FROM transfer)"#
+    )
+    .fetch_one(db)
+    .await?)
 }
 
 /// Remet au foyer ce qui est affecté au membre, puis le supprime (R-MBR-2). Faux s'il n'existe pas.

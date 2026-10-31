@@ -40,6 +40,7 @@ async fn setup() -> (Db, DataDir, tempfile::TempDir) {
 
 async fn account(db: &Db, name: &str, kind: AccountKind, opening: i64) -> AccountId {
     let input = AccountInput {
+        reassign_splits: false,
         member_id: None,
         name: name.into(),
         kind,
@@ -402,6 +403,7 @@ async fn r_imp_22_loan_payment_is_proposed_after_import() {
 async fn imp_10_lcl_pdf_statement_is_imported_with_purchase_dates() {
     let (db, data, _dir) = setup().await;
     let input = AccountInput {
+        reassign_splits: false,
         member_id: None,
         name: "Courant".into(),
         kind: AccountKind::Checking,
@@ -471,6 +473,7 @@ async fn r_imp_23_a_pdf_that_is_not_an_lcl_statement_is_refused() {
 async fn r_imp_27_same_operations_from_another_format_are_probable_duplicates() {
     let (db, data, _dir) = setup().await;
     let input = AccountInput {
+        reassign_splits: false,
         member_id: None,
         name: "Courant".into(),
         kind: AccountKind::Checking,

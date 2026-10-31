@@ -19,6 +19,11 @@ export interface Features {
    * Rubrique Foyer (R-MBR-3) ; elle ne se désactive que sans membre.
    */
   household: boolean;
+
+  /**
+   * Ventilations au foyer, hors virements (R-MBR-8).
+   */
+  household_split_count: number;
   loan_count: number;
   loans: boolean;
   member_count: number;

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.payee_id AS \"payee_id!\", t.id AS \"transaction_id!\", t.analysis_date AS \"date!: Date\", s.amount,\n                  s.category_id, c.kind AS \"category_kind?\", a.currency, s.member_id,\n                  a.member_id AS account_member_id,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.payee_id IS NOT NULL AND t.analysis_date BETWEEN ? AND ?",
+  "query": "SELECT t.payee_id AS \"payee_id!\", t.id AS \"transaction_id!\", t.analysis_date AS \"date!: Date\", s.amount,\n                  s.category_id, c.kind AS \"category_kind?\", a.currency, s.member_id,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           WHERE t.payee_id IS NOT NULL AND t.analysis_date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -92,19 +92,8 @@
         }
       },
       {
-        "name": "account_member_id",
-        "ordinal": 8,
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "account",
-            "name": "member_id"
-          }
-        }
-      },
-      {
         "name": "is_movement!: bool",
-        "ordinal": 9,
+        "ordinal": 8,
         "type_info": "Integer",
         "origin": "Expression"
       }
@@ -121,9 +110,8 @@
       true,
       false,
       true,
-      true,
       false
     ]
   },
-  "hash": "fea595abc833c62d9583431631f081618ddee37c8dc5fee6a571ec09f2ddb079"
+  "hash": "e7c892c27a85a4ea4b92b8a24e6c9bf9f5fd6a0061cbdd2872bbd3fd9d27d681"
 }

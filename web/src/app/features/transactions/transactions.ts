@@ -134,7 +134,7 @@ export class TransactionsPage implements OnInit {
   protected readonly NO_PROJECT = 'none';
   protected readonly bulkProject = signal<string | null>(null);
   protected readonly bulkCategory = signal<string | null>(null);
-  /** Membre choisi en masse (R-MBR-5) ; `NO_MEMBER` retire le membre. */
+  /** Membre choisi en masse (R-MBR-5) ; `NO_MEMBER` : le foyer. */
   protected readonly bulkMember = signal<string | null>(null);
   protected readonly NO_MEMBER = 'none';
   protected readonly busy = signal(false);
@@ -295,7 +295,7 @@ export class TransactionsPage implements OnInit {
     }
     const member = choice === this.NO_MEMBER ? null : choice;
     // Le nom est lu avant l'appel : la liste des membres se recharge ensuite.
-    const verb = member ? `affectée(s) à ${this.members.name(member)}` : 'sans membre';
+    const verb = `affectée(s) à ${member ? this.members.name(member) : 'Foyer'}`;
     this.busy.set(true);
     try {
       const result = await firstValueFrom(

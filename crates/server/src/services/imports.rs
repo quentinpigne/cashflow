@@ -1234,7 +1234,13 @@ pub async fn commit(
                         ..Default::default()
                     })
                     .collect();
-                super::transactions::insert_validated(&mut tx, &new, &new_splits).await?;
+                // Une ligne qui devient une jambe de virement n'a pas de membre (R-MBR-5) ; les autres reçoivent le
+                // titulaire du compte (R-MBR-6).
+                if transfer_to.is_some() {
+                    super::transactions::insert_validated(&mut tx, &new, &new_splits).await?;
+                } else {
+                    super::transactions::insert_for_holder(&mut tx, &new, &new_splits).await?;
+                }
                 if let Some(shift) = review.month_shift.filter(|_| transfer_to.is_none()) {
                     let month = cashflow_domain::ledger::shifted_month(shown, shift)?;
                     db::transactions::set_analysis_month(&mut *tx, transaction, Some(month)).await?;

@@ -350,7 +350,7 @@ pub async fn materialize(db: &Db, id: RecurringRuleId, input: &MaterializeInput)
             })
             .collect()
     };
-    super::transactions::insert_validated(&mut tx, &new, &splits).await?;
+    super::transactions::insert_for_holder(&mut tx, &new, &splits).await?;
     check_split_sums(&mut tx, &[transaction]).await?;
     tx.commit().await?;
     Ok(Materialized { transaction_id: transaction })

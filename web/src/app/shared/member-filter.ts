@@ -63,10 +63,11 @@ export class MemberRelevance {
             a.include_in_emergency_fund),
       ),
     ),
-    // Une ventilation compte pour son membre, à défaut pour le titulaire de son compte (R-MBR-6).
+    // Une ventilation compte pour son membre, ou pour le foyer sans membre (R-MBR-5).
     flows: computed(() => {
-      const tokens = this.holders(() => true);
+      const tokens = new Set<string>();
       for (const m of this.members.list()) if (m.split_count > 0) tokens.add(m.id);
+      if ((this.features.features.value()?.household_split_count ?? 0) > 0) tokens.add(HOUSEHOLD);
       return tokens;
     }),
     salary: computed(() => {

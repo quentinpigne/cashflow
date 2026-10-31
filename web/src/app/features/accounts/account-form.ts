@@ -43,6 +43,7 @@ import {
 import { Layout } from '../../core/layout';
 import { parseMoney, toEditable } from '../../core/money';
 import { InstitutionsStore, MembersStore } from '../../shared/stores';
+import { confirm } from '../../shared/confirm-dialog';
 
 const NEW_INSTITUTION = '__new__';
 
@@ -91,6 +92,24 @@ export class AccountFormDialog {
   private readonly router = inject(Router);
   protected readonly institutions = inject(InstitutionsStore);
   protected readonly members = inject(MembersStore);
+  private readonly confirmDialog = inject(MatDialog);
+
+  /**
+   * Changer le titulaire d'un compte qui a des transactions : passer aussi au nouveau les ventilations affectées à
+   * l'ancien (R-MBR-4) ? Les ventilations ne bougent pas si l'on refuse.
+   */
+  private async askReassign(account: Account, member: string | null): Promise<boolean> {
+    const before = account.member_id ?? null;
+    if (member === before || !account.has_activity) return false;
+    const to = this.members.name(member);
+    const from = before ? `à ${this.members.name(before)}` : 'au foyer';
+    return confirm(this.confirmDialog, {
+      title: 'Transactions existantes',
+      message: `Passer aussi à ${to} les ventilations de ce compte affectées ${from} ? Celles affectées à un autre membre ne changent pas.`,
+      action: `Les passer à ${to}`,
+      cancel: 'Les laisser',
+    });
+  }
 
   protected readonly kindLabels = KIND_LABELS;
   protected readonly colors = ACCOUNT_COLORS;
@@ -228,6 +247,7 @@ export class AccountFormDialog {
       };
       if (this.account) {
         const iban = body.iban === undefined ? await this.currentIban() : body.iban;
+        const reassign = await this.askReassign(this.account, body.member_id);
         await firstValueFrom(
           this.api.updateAccount({
             id: this.account.id,
@@ -235,6 +255,7 @@ export class AccountFormDialog {
               ...body,
               iban,
               display_order: this.account.display_order,
+              reassign_splits: reassign,
             },
           }),
         );

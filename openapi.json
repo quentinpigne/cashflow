@@ -8101,7 +8101,7 @@
           {
             "name": "members",
             "in": "query",
-            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur\ntitulaire, les dépenses moyennes le membre retenu des ventilations (R-MBR-6, R-MBR-9).",
+            "description": "Membres comptés : `household` et des identifiants de membres ; absent : tout. Les comptes suivent leur\ntitulaire, les dépenses moyennes le membre des ventilations (R-MBR-9).",
             "required": false,
             "schema": {
               "type": "string"
@@ -9635,6 +9635,10 @@
           "opening_date": {
             "type": "string",
             "format": "date"
+          },
+          "reassign_splits": {
+            "type": "boolean",
+            "description": "À un changement de titulaire, passe au nouveau les ventilations du compte affectées à l'ancien (R-MBR-4)."
           }
         }
       },
@@ -13794,6 +13798,7 @@
           "employment_count",
           "household",
           "member_count",
+          "household_split_count",
           "salary_gap_tolerance_ppm",
           "geocoding"
         ],
@@ -13817,6 +13822,11 @@
           "household": {
             "type": "boolean",
             "description": "Rubrique Foyer (R-MBR-3) ; elle ne se désactive que sans membre."
+          },
+          "household_split_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Ventilations au foyer, hors virements (R-MBR-8)."
           },
           "loan_count": {
             "type": "integer",

@@ -624,7 +624,10 @@ pub async fn pay(db: &Db, id: LoanId, inputs: &[LoanPaymentInput]) -> AppResult<
             return Err(DomainError::AlreadyTransferLeg.into());
         }
         let parts = loans::payment_parts(installment, debit.amount)?;
-        db::transactions::replace_splits(&mut tx, debit.id, &payment_splits(id, s, parts)).await?;
+        let member = super::transactions::kept_member(&mut tx, debit.id, debit.account_id).await?;
+        let splits: Vec<NewSplit<'_>> =
+            payment_splits(id, s, parts).into_iter().map(|split| NewSplit { member_id: member, ..split }).collect();
+        db::transactions::replace_splits(&mut tx, debit.id, &splits).await?;
         db::loans::insert_payment(&mut *tx, id, installment.number, debit.id).await?;
         super::check_split_sums(&mut tx, &[debit.id]).await?;
         paid.push(installment.number);
@@ -650,8 +653,9 @@ fn payment_splits(loan: LoanId, s: &ScheduleRow, parts: PaymentParts) -> Vec<New
 async fn uncategorize(tx: &mut sqlx::SqliteConnection, transaction: TransactionId) -> AppResult<()> {
     let debit = db::transactions::find(&mut *tx, transaction).await?.ok_or(AppError::NotFound("transaction"))?;
     db::loans::delete_payment(&mut *tx, transaction).await?;
-    db::transactions::replace_splits(&mut *tx, transaction, &[NewSplit { amount: debit.amount, ..Default::default() }])
-        .await?;
+    let member = super::transactions::kept_member(&mut *tx, transaction, debit.account_id).await?;
+    let split = NewSplit { amount: debit.amount, member_id: member, ..Default::default() };
+    db::transactions::replace_splits(&mut *tx, transaction, &[split]).await?;
     Ok(())
 }
 

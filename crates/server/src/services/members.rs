@@ -143,12 +143,3 @@ pub async fn selection(db: &Db, raw: Option<&str>) -> AppResult<Option<MemberSel
 pub fn includes(selection: Option<&MemberSelection>, member: Option<MemberId>) -> bool {
     selection.is_none_or(|s| s.includes(member))
 }
-
-/// Une ventilation compte selon son membre retenu (R-MBR-6, R-MBR-9).
-pub fn includes_split(
-    selection: Option<&MemberSelection>,
-    split_member: Option<MemberId>,
-    account_member: Option<MemberId>,
-) -> bool {
-    includes(selection, household::effective_member(split_member, account_member))
-}

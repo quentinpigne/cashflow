@@ -209,10 +209,9 @@ export class TransactionDetailView {
     return this.categories.label(value);
   }
 
-  /** Sans membre, la ventilation est au titulaire du compte, à défaut au foyer (R-MBR-6). */
-  protected defaultMember(t: TransactionDetail): string {
-    const holder = this.accounts.byId().get(t.account_id)?.member_id;
-    return holder ? `${this.members.name(holder)} (titulaire du compte)` : 'Foyer';
+  /** Membre par défaut d'une nouvelle ventilation : le titulaire du compte (R-MBR-6). */
+  private holder(t: TransactionDetail): string | null {
+    return this.accounts.byId().get(t.account_id)?.member_id ?? null;
   }
 
   constructor() {
@@ -291,6 +290,7 @@ export class TransactionDetailView {
       kind: total < 0 ? 'EXPENSE' : 'INCOME',
       splits,
       members: true,
+      defaultMember: this.holder(t),
     };
     const ref = this.dialog.open<SplitEditor, SplitEditorData, SplitDraft[]>(SplitEditor, {
       data,

@@ -369,16 +369,14 @@ pub struct PayeeFactRow {
     pub category_kind: Option<CategoryKind>,
     pub is_movement: bool,
     pub currency: String,
-    /// Membre de la ventilation et titulaire du compte (R-MBR-6).
+    /// Membre de la ventilation ; `None` : foyer (R-MBR-5).
     pub member_id: Option<MemberId>,
-    pub account_member_id: Option<MemberId>,
 }
 
 pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<PayeeFactRow>> {
     let rows = sqlx::query!(
         r#"SELECT t.payee_id AS "payee_id!", t.id AS "transaction_id!", t.analysis_date AS "date!: Date", s.amount,
                   s.category_id, c.kind AS "category_kind?", a.currency, s.member_id,
-                  a.member_id AS account_member_id,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
                    OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
                    OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
@@ -405,7 +403,6 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
                 is_movement: r.is_movement,
                 currency: r.currency,
                 member_id: opt_id_from_db(r.member_id.as_deref())?,
-                account_member_id: opt_id_from_db(r.account_member_id.as_deref())?,
             })
         })
         .collect()

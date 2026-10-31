@@ -26,11 +26,6 @@ pub fn common_member(members: &[Option<MemberId>]) -> Option<MemberId> {
     members.iter().all(|m| *m == Some(first)).then_some(first)
 }
 
-/// Membre retenu d'une ventilation : le sien, à défaut celui de son compte ; `None` : le foyer (R-MBR-6).
-pub fn effective_member(split: Option<MemberId>, account: Option<MemberId>) -> Option<MemberId> {
-    split.or(account)
-}
-
 /// Cases cochées : « Foyer » et des membres (R-MBR-8).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MemberSelection {
@@ -81,14 +76,6 @@ mod tests {
         assert_eq!(common_member(&[Some(leo), Some(claire)]), None);
         assert_eq!(common_member(&[Some(leo), None]), None);
         assert_eq!(common_member(&[]), None);
-    }
-
-    #[test]
-    fn r_mbr_6_split_member_then_account_member_then_household() {
-        let (quentin, claire) = (MemberId::new(), MemberId::new());
-        assert_eq!(effective_member(Some(claire), Some(quentin)), Some(claire));
-        assert_eq!(effective_member(None, Some(quentin)), Some(quentin));
-        assert_eq!(effective_member(None, None), None);
     }
 
     #[test]

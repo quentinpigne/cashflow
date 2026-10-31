@@ -164,10 +164,10 @@
         <mat-form-field class="bulk-project" subscriptSizing="dynamic">
           <mat-label>Membre</mat-label>
           <mat-select [value]="bulkMember()" (selectionChange)="bulkMember.set($event.value)">
+            <mat-option [value]="NO_MEMBER">Foyer</mat-option>
             @for (m of members.list(); track m.id) {
               <mat-option [value]="m.id">{{ m.name }}</mat-option>
             }
-            <mat-option [value]="NO_MEMBER">Aucun (retirer le membre)</mat-option>
           </mat-select>
         </mat-form-field>
         <button
@@ -238,8 +238,9 @@
           <span class="text">
             <span>
               {{ item.label }}
-              @if (members.active()) {
-                @let tag = members.tag(item.splits);
+              @if (members.active() && !item.transfer) {
+                @let tag =
+                  members.tag(item.splits, accounts.byId().get(item.account_id)?.member_id);
                 @if (tag) {
                   <app-member-tag [tag]="tag" />
                 }

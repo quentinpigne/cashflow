@@ -74,6 +74,9 @@ pub struct AccountInput {
     /// Titulaire ; absent : compte du foyer (R-MBR-4). Modifiable même rapproché.
     #[serde(default)]
     pub member_id: Option<MemberId>,
+    /// À un changement de titulaire, passe au nouveau les ventilations du compte affectées à l'ancien (R-MBR-4).
+    #[serde(default)]
+    pub reassign_splits: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -406,6 +409,9 @@ pub async fn update(db: &Db, id: AccountId, input: &AccountInput, today: Date) -
     let mut tx = db.write.begin().await?;
     super::members::check_exists(&mut tx, input.member_id).await?;
     db::accounts::update(&mut *tx, id, &fields).await?;
+    if input.reassign_splits && input.member_id != current.member_id {
+        db::members::reassign_account_splits(&mut *tx, id, current.member_id, input.member_id).await?;
+    }
     if input.kind != current.kind {
         // Changement de nature sans activité : les conditions suivent la nouvelle nature (R-CPT-9).
         db::accounts::delete_terms(&mut tx, id).await?;

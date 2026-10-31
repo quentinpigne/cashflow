@@ -4,6 +4,7 @@ import {
   Injectable,
   computed,
   inject,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -136,7 +137,10 @@ export class QuickEntryForm {
   private readonly categories = inject(CategoriesStore);
   protected readonly splits = signal<SplitDraft[] | null>(null);
   /** Membre de la transaction non ventilée (R-MBR-5). */
-  protected readonly member = signal<string | null>(null);
+  /** Par défaut le titulaire du compte, qu'il suit quand on change de compte ; `null` : foyer (R-MBR-6). */
+  protected readonly member = linkedSignal<string | null>(
+    () => this.accounts.byId().get(this.accountValue())?.member_id ?? null,
+  );
   protected readonly members = inject(MembersStore);
   /** Projet en cours de la transaction (BUD-06), et son poste (BUD-11). */
   protected readonly projects = inject(ProjectsStore);
@@ -272,6 +276,7 @@ export class QuickEntryForm {
       kind: this.categoryKind(),
       splits: current,
       members: true,
+      defaultMember: this.accounts.byId().get(this.accountValue())?.member_id ?? null,
     };
     const ref = this.dialog.open<SplitEditor, SplitEditorData, SplitDraft[]>(SplitEditor, {
       data,
@@ -288,12 +293,6 @@ export class QuickEntryForm {
     }
   }
 
-  /** Sans membre, la ventilation est au titulaire du compte, à défaut au foyer (R-MBR-6). */
-  protected defaultMember(): string {
-    const holder = this.accounts.byId().get(this.accountValue())?.member_id;
-    return holder ? `${this.members.name(holder)} (titulaire du compte)` : 'Foyer';
-  }
-
   protected close(): void {
     this.sheetRef?.dismiss();
     this.dialogRef?.close();
@@ -308,7 +307,9 @@ export class QuickEntryForm {
       { amount_minor: amount, category_id: this.category(), note: null, member_id: this.member() },
     ];
     const project = this.project();
-    if (!splits && !project && !isAttachment(this.category()) && !this.member()) return null;
+    // Avec des membres, la ventilation est toujours envoyée : sans membre, elle est au foyer (R-MBR-5).
+    if (!splits && !project && !isAttachment(this.category()) && !this.members.active())
+      return null;
     const line = this.line();
     return lines.map((s) => ({
       ...s,

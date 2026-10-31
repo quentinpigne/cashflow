@@ -9,6 +9,8 @@ export interface ConfirmData {
   /** Verbe de l'action, jamais « OK » (ecrans.md, principes). */
   action: string;
   destructive?: boolean;
+  /** Libellé du refus, « Annuler » par défaut. */
+  cancel?: string;
 }
 
 @Component({
@@ -21,7 +23,7 @@ export interface ConfirmData {
       <p>{{ data.message }}</p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Annuler</button>
+      <button mat-button [mat-dialog-close]="false">{{ data.cancel ?? 'Annuler' }}</button>
       <button mat-flat-button [class.destructive]="data.destructive" [mat-dialog-close]="true">
         {{ data.action }}
       </button>

@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT count(*) AS \"count!: i64\" FROM split\n           WHERE member_id IS NULL\n             AND id NOT IN (SELECT outflow_split_id FROM transfer UNION ALL SELECT inflow_split_id FROM transfer)",
+  "describe": {
+    "columns": [
+      {
+        "name": "count!: i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a629c47dc35e6aec69c3b6584ed2bffa07026dcfcb7bc348b7a099bd3baa5108"
+}

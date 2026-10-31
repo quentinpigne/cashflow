@@ -155,7 +155,7 @@ pub async fn categories(db: &Db, query: &CategoryReportQuery, today: Date) -> Ap
         .await?
         .into_iter()
         .filter(|f| !(query.exclude_projects.unwrap_or(false) && f.has_project))
-        .filter(|f| members::includes_split(selection.as_ref(), f.member_id, f.account_member_id))
+        .filter(|f| members::includes(selection.as_ref(), f.member_id))
         .map(|f| CategorizedFact {
             date: f.date,
             amount: f.amount,
@@ -239,7 +239,7 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
     let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, first, year_end.max(today))
         .await?
         .into_iter()
-        .filter(|f| members::includes_split(selection.as_ref(), f.member_id, f.account_member_id))
+        .filter(|f| members::includes(selection.as_ref(), f.member_id))
         .map(|f| SplitFact {
             date: f.date,
             amount: f.amount,

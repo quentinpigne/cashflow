@@ -204,8 +204,8 @@
                       <mat-icon class="lock" aria-label="Rapprochée">lock</mat-icon>
                     }
                     {{ item.label }}
-                    @if (members.active()) {
-                      @let tag = members.tag(item.splits);
+                    @if (members.active() && !item.transfer) {
+                      @let tag = members.tag(item.splits, a.member_id);
                       @if (tag) {
                         <app-member-tag [tag]="tag" />
                       }

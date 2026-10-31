@@ -207,21 +207,19 @@ export class MembersStore {
   }
 
   /**
-   * Étiquette d'une transaction (E3, E14) : le membre de ses ventilations, « Léo, Claire » s'il y en a plusieurs,
-   * « (en partie) » si certaines n'en ont pas ; `undefined` si aucune n'en a.
+   * Étiquette d'une transaction (E3, E14) : le membre de ses ventilations (« Foyer » sans membre), seulement s'il
+   * diffère du titulaire du compte ; « Léo, Claire » s'il y en a plusieurs ; `undefined` sinon (R-MBR-6).
    */
-  tag(splits: { member_id?: string | null }[]): MemberTagView | undefined {
-    const members = [...new Set(splits.map((s) => s.member_id).filter((id): id is string => !!id))]
-      .map((id) => this.byId().get(id))
-      .filter((m): m is MemberView => !!m);
-    if (members.length === 0) return undefined;
-    const partly = splits.some((s) => !s.member_id) ? ' (en partie)' : '';
-    const names =
-      members.length > 2 ? `${members.length} membres` : members.map((m) => m.name).join(', ');
-    return {
-      label: names + partly,
-      color: members.length === 1 ? (members[0].color ?? null) : null,
-    };
+  tag(
+    splits: { member_id?: string | null }[],
+    holder: string | null | undefined,
+  ): MemberTagView | undefined {
+    const ids = [...new Set(splits.map((s) => s.member_id ?? null))];
+    if (ids.length === 0 || ids.every((id) => id === (holder ?? null))) return undefined;
+    const names = ids.map((id) => (id ? (this.byId().get(id)?.name ?? '—') : 'Foyer'));
+    const label = ids.length > 2 ? `${ids.length} membres` : names.join(', ');
+    const color = ids.length === 1 && ids[0] ? (this.byId().get(ids[0])?.color ?? null) : null;
+    return { label, color };
   }
 }
 

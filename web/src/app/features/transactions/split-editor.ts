@@ -31,6 +31,8 @@ export interface SplitEditorData {
   splits: SplitDraft[];
   /** Propose un membre par ventilation (R-MBR-5), si le foyer a des membres. */
   members?: boolean;
+  /** Membre d'une ligne ajoutée : le titulaire du compte (R-MBR-6). */
+  defaultMember?: string | null;
 }
 
 interface Line {
@@ -86,7 +88,7 @@ export class SplitEditor {
             category: null,
             note: '',
             refunds: null,
-            member: null,
+            member: this.data.defaultMember ?? null,
             input: toEditable(Math.abs(this.data.totalMinor), this.data.currency),
           },
         ],
@@ -147,7 +149,7 @@ export class SplitEditor {
         : '';
     this.lines.update((lines) => [
       ...lines,
-      { category: null, note: '', refunds: null, member: null, input },
+      { category: null, note: '', refunds: null, member: this.data.defaultMember ?? null, input },
     ]);
   }
 
