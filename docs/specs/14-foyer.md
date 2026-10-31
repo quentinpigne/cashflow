@@ -1,6 +1,6 @@
 # Spec 14 — Foyer
 
-Statut : **Revue** (2026-10-31)
+Statut : **Validée** (2026-10-31)
 Modèle : [Member, AccountOwner, AssetOwner, LoanOwner](../modele-de-donnees.md#foyer--spec-14)
 Décision : [ADR-0006](../adr/0006-mono-utilisateur.md) (membres sans connexion)
 
@@ -20,6 +20,10 @@ Maison de Meylan (bien, 420 000 €)     Prêt immobilier (180 000 € restant d
  └─ Claire   40 %  → 168 000 €          └─ Claire   50 %  → 90 000 €
 ```
 
+Une **transaction** peut aussi concerner un membre : les chaussures de Léo, le salaire de Claire, le forfait
+téléphone de Quentin payé depuis le compte joint. Le membre se pose sur la **ventilation**, indépendamment des
+propriétaires du compte qui paie.
+
 Ce qui reste commun au foyer ne change pas : catégories, règles, tiers, budgets, projets, scénarios de
 projection et récurrences n'ont pas de propriétaire (Q19).
 
@@ -30,8 +34,8 @@ projection et récurrences n'ont pas de propriétaire (Q19).
 - **R-MBR-2** — **Supprimer un membre** est toujours possible, après une confirmation qui indique le nombre
   d'objets concernés. Ses quotes-parts sont retirées : un objet qu'il possédait avec d'autres voit sa
   quote-part répartie entre les autres propriétaires au prorata de leurs quotes-parts (R-MBR-5) ; un objet
-  qu'il possédait seul n'a plus de propriétaire. Ses emplois n'ont plus de membre, ses documents perdent ce
-  rattachement (R-DOC-12). Aucun montant ne change.
+  qu'il possédait seul n'a plus de propriétaire. Ses emplois et ses ventilations n'ont plus de membre, ses
+  documents perdent ce rattachement (R-DOC-12). Aucun montant ne change.
 - **R-MBR-3** — La rubrique **Foyer** s'active dans les réglages, comme Biens, Prêts et Salaires (R-BIE-7) :
   désactivable seulement s'il n'existe aucun membre ; désactivée, l'interface n'en montre rien (réglages,
   formulaires, sélecteur de vue, filtres) et tout se lit comme aujourd'hui, pour le foyer. Une nouvelle
@@ -54,6 +58,24 @@ projection et récurrences n'ont pas de propriétaire (Q19).
   primes et fiches de paie le suivent.
 - **R-MBR-8** — Un **document** peut être rattaché à un ou plusieurs membres (pièce d'identité, avis
   d'imposition), comme à un compte ou à un tiers : le membre est une cible de rattachement de plus (R-DOC-9).
+
+## Transactions d'un membre
+
+- **R-MBR-14** — Une **ventilation** est affectée à **au plus un** membre : celui que la dépense ou le revenu
+  concerne. Sans membre, elle concerne le foyer. Le membre ne dépend pas des propriétaires du compte (un achat
+  pour Léo payé depuis le compte joint). Une **ventilation de virement** n'a jamais de membre : un virement
+  n'est ni une dépense ni un revenu (ADR-0004, R-TRX-32).
+- **R-MBR-15** — Affecter une **transaction** à un membre affecte toutes ses ventilations, sauf celle d'un
+  virement. Une transaction dont les ventilations ont des membres différents affiche « Plusieurs membres ».
+  Le membre se choisit à la saisie, dans le détail d'une transaction (par ventilation) et en masse depuis la
+  liste des transactions. Il reste modifiable sur une transaction rapprochée : il n'affecte aucun solde
+  (R-TRX-3).
+- **R-MBR-16** — Quand des ventilations sont recalculées sans que l'utilisateur les saisisse (réapplication des
+  règles de catégorisation, IMP-08), le membre est conservé si toutes les anciennes ventilations avaient le
+  même : les nouvelles le reçoivent.
+- **R-MBR-17** — La liste des transactions se **filtre par membre** : celles qui ont au moins une ventilation
+  affectée à ce membre ; ou « Sans membre » : celles qui ont au moins une ventilation hors virement sans
+  membre.
 
 ## Patrimoine par membre
 
@@ -84,7 +106,8 @@ projection et récurrences n'ont pas de propriétaire (Q19).
 | MBR-02 | V2 | Propriétaires et quotes-parts des comptes, des biens et des prêts |
 | MBR-03 | V2 | Membre d'un emploi ; documents rattachés à un membre |
 | MBR-04 | V2 | Patrimoine par membre (accueil, onglet Patrimoine des projections) et filtre des comptes par membre |
-| MBR-05 | V2 | Dépenses, revenus et épargne par membre (à concevoir : répartition des flux d'un compte joint) |
+| MBR-05 | V2 | Dépenses, revenus et épargne par membre dans les analyses et le budget (à concevoir : à partir des membres des ventilations, R-MBR-14) |
+| MBR-06 | V2 | Membre d'une transaction ou d'une ventilation, filtre et affectation en masse (R-MBR-14 à R-MBR-17) |
 
 ### MBR-01 — Critères d'acceptation
 
@@ -105,6 +128,22 @@ projection et récurrences n'ont pas de propriétaire (Q19).
   vaut pas 100 % (R-MBR-4).
 - Étant donné un compte rapproché, quand je change ses propriétaires, alors c'est accepté sans déverrouillage
   (R-MBR-6).
+
+### MBR-06 — Critères d'acceptation
+
+- Étant donné une dépense de 80 € sur le compte joint, quand je l'affecte à Léo, alors sa ventilation a le
+  membre Léo et le solde ne change pas (R-MBR-14).
+- Étant donné une dépense de 100 € ventilée 60 € Alimentation et 40 € Habillement, quand j'affecte 40 € à Léo,
+  alors la liste filtrée sur Léo la montre, et la liste filtrée sur « Sans membre » aussi (R-MBR-17) ; la
+  transaction affiche « Plusieurs membres » dès que les 60 € sont affectés à Claire (R-MBR-15).
+- Étant donné un virement et une dépense sélectionnés, quand je les affecte à Claire en masse, alors seule la
+  dépense est affectée ; le virement est compté comme ignoré (R-MBR-14).
+- Étant donné une dépense rapprochée, quand je change son membre, alors c'est accepté sans déverrouillage
+  (R-MBR-15).
+- Étant donné une dépense affectée à Léo, quand je réapplique les règles et qu'une règle la ventile autrement,
+  alors les nouvelles ventilations sont affectées à Léo (R-MBR-16).
+- Étant donné Léo, quand je le supprime, alors ses ventilations n'ont plus de membre et aucun montant ne change
+  (R-MBR-2).
 
 ### MBR-04 — Critères d'acceptation
 

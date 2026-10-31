@@ -101,6 +101,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Propriétaire | `Owner` (`AccountOwner`, `AssetOwner`, `LoanOwner`) | Membre qui détient un compte ou un bien, ou emprunteur d'un prêt, avec sa quote-part (R-MBR-4). |
 | Quote-part | `share_bp` | Part d'un propriétaire, en centièmes de pour cent (10 000 = 100 %) ; les quotes-parts d'un objet font 100 % (R-MBR-4). |
 | Non attribué | `Unassigned` | Compte, bien ou prêt sans propriétaire : il compte pour le foyer, pour aucun membre (R-MBR-4). |
+| Membre d'une ventilation | `Split.member_id` | Membre que la dépense ou le revenu concerne ; sans membre, la ventilation concerne le foyer (R-MBR-14). |
 | Patrimoine d'un membre | `MemberNetWorth` | Patrimoine restreint aux parts du membre (R-MBR-10). |
 
 ## Tiers

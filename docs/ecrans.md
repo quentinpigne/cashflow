@@ -1151,7 +1151,7 @@ Depuis **E31 Tiers** (carte des propositions). Route `/reglages/tiers/propositio
 
 # Écrans — foyer (spec 14)
 
-Statut : **Revue** (2026-10-31). Rien de ce qui suit n'apparaît quand la rubrique Foyer est désactivée
+Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rubrique Foyer est désactivée
 (R-MBR-3).
 
 - **E9 Réglages** : interrupteur « Foyer » dans le bloc **Rubriques**, grisé tant qu'il existe des membres
@@ -1173,6 +1173,14 @@ Statut : **Revue** (2026-10-31). Rien de ce qui suit n'apparaît quand la rubriq
 - **E30 Emploi** (formulaire) : champ **Membre** (optionnel) ; **E29 Salaires** : le membre à côté de
   l'employeur.
 - **E35 Document** et rattachement depuis une fiche : la cible **Membre** s'ajoute aux autres (R-MBR-8).
+- **E5 Saisie rapide** : champ **Membre** `[mat-select]` (« Foyer » par défaut) en dépense ou en revenu, s'il
+  existe des membres ; il s'applique à toutes les ventilations (R-MBR-15).
+- **E6 Ventilation** et **E7 Détail d'une transaction** : un champ **Membre** par ventilation, sauf une
+  ventilation de virement (R-MBR-14).
+- **E3 Détail d'un compte** et **E14 Transactions** : la pastille du membre (initiale sur sa couleur) devant le
+  libellé, « Plusieurs membres » s'ils diffèrent ; filtre **Membre** (un membre ou « Sans membre »,
+  R-MBR-17) ; sur E14, action de masse **Membre** (« Foyer » retire le membre), qui ignore les virements
+  (R-MBR-15).
 
 ## E44 — Membres du foyer (MBR-01)
 

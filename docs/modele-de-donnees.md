@@ -243,6 +243,7 @@ Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `
 | `loan_id` | `Id` → Loan | optionnel : **ventilation de remboursement** (R-PRE-7) ; alors sans catégorie ni bien |
 | `asset_id` | `Id` → Asset | optionnel : **ventilation d'acquisition** (R-BIE-8) ; alors sans catégorie ni prêt |
 | `refunds_transaction_id` | `Id` → Transaction | optionnel : **remboursement de frais** (R-TRX-50) ; ventilation positive, sur une catégorie de dépense, visant une autre transaction de montant négatif. Lien retiré si la dépense est supprimée (R-TRX-55) |
+| `member_id` | `Id` → Member | optionnel : membre que la ventilation concerne (R-MBR-14) ; `null` sur une ventilation de virement ; mis à `null` à la suppression du membre (R-MBR-2) |
 
 Invariant : pour toute transaction, Σ `split.amount` = `transaction.amount` (ADR-0003). Pour toute dépense,
 Σ des ventilations qui la remboursent ≤ −`amount` (R-TRX-52).
