@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE ledger_transaction SET payee_id = ?1, updated_at = ?2\n               WHERE id = ?3 AND payee_id IS NULL\n                 AND NOT EXISTS (SELECT 1 FROM transfer_leg tr\n                                 WHERE ?3 IN (tr.outflow_transaction_id, tr.inflow_transaction_id))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "cd76eecbbefdea3bf294be8a70233d4fad4b04f6dd21780b2855115816249d6b"
+}

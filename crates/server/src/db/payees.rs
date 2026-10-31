@@ -2,6 +2,7 @@
 
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::payees::location::{GeoPoint, PayeeAddress};
+use cashflow_domain::payees::suggestion::Unassigned;
 use cashflow_domain::shared::ids::{CategoryId, PayeeGroupId, PayeeId, TransactionId};
 use cashflow_domain::{Date, Money};
 use sqlx::{SqliteConnection, SqliteExecutor};
@@ -402,4 +403,77 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
             })
         })
         .collect()
+}
+
+// ---------------------------------------------------------------- Propositions de tiers (TIE-05)
+
+/// Transactions sans tiers, hors jambes de virement (R-TIE-31), avec leur libellé bancaire.
+pub async fn unassigned(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Unassigned<TransactionId>>> {
+    let rows = sqlx::query!(
+        r#"SELECT t.id AS "id!", t.date AS "date!: Date", coalesce(t.bank_label, t.label) AS "label!: String"
+           FROM ledger_transaction t
+           WHERE t.payee_id IS NULL
+             AND NOT EXISTS (SELECT 1 FROM transfer_leg tr
+                             WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))"#
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| Ok(Unassigned { id: id_from_db(&r.id)?, date: r.date, bank_label: r.label })).collect()
+}
+
+/// Affecte un tiers aux transactions encore sans tiers, hors jambes de virement (R-TIE-33). Rend le nombre de
+/// transactions modifiées.
+pub async fn assign_unassigned(
+    conn: &mut SqliteConnection,
+    ids: &[TransactionId],
+    payee: PayeeId,
+) -> anyhow::Result<u64> {
+    let payee = payee.to_string();
+    let now = timestamp();
+    let mut assigned = 0;
+    for id in ids {
+        let id = id.to_string();
+        assigned += sqlx::query!(
+            r#"UPDATE ledger_transaction SET payee_id = ?1, updated_at = ?2
+               WHERE id = ?3 AND payee_id IS NULL
+                 AND NOT EXISTS (SELECT 1 FROM transfer_leg tr
+                                 WHERE ?3 IN (tr.outflow_transaction_id, tr.inflow_transaction_id))"#,
+            payee,
+            now,
+            id
+        )
+        .execute(&mut *conn)
+        .await?
+        .rows_affected();
+    }
+    Ok(assigned)
+}
+
+pub struct IgnoredKeyRow {
+    pub key: String,
+    pub ignored_at: String,
+}
+
+/// Clés de tiers ignorées, par ordre alphabétique (R-TIE-35).
+pub async fn ignored_keys(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<IgnoredKeyRow>> {
+    Ok(sqlx::query_as!(IgnoredKeyRow, "SELECT key, ignored_at FROM ignored_payee_key ORDER BY key")
+        .fetch_all(db)
+        .await?)
+}
+
+pub async fn ignore_key(db: impl SqliteExecutor<'_>, key: &str) -> anyhow::Result<()> {
+    let now = timestamp();
+    sqlx::query!(
+        "INSERT INTO ignored_payee_key (key, ignored_at) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+        key,
+        now
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn restore_key(db: impl SqliteExecutor<'_>, key: &str) -> anyhow::Result<()> {
+    sqlx::query!("DELETE FROM ignored_payee_key WHERE key = ?", key).execute(db).await?;
+    Ok(())
 }

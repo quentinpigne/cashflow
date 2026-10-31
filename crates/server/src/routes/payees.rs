@@ -18,4 +18,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(payees::report))
         .routes(routes!(payees::location_report))
         .routes(routes!(payees::search_address))
+        .routes(routes!(payees::suggestions))
+        .routes(routes!(payees::accept_suggestion))
+        .routes(routes!(payees::ignore_key))
+        .routes(routes!(payees::restore_key))
 }

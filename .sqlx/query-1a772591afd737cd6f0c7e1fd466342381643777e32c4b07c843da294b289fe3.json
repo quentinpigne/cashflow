@@ -1,0 +1,45 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id AS \"id!\", t.date AS \"date!: Date\", coalesce(t.bank_label, t.label) AS \"label!: String\"\n           FROM ledger_transaction t\n           WHERE t.payee_id IS NULL\n             AND NOT EXISTS (SELECT 1 FROM transfer_leg tr\n                             WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date!: Date",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "label!: String",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1a772591afd737cd6f0c7e1fd466342381643777e32c4b07c843da294b289fe3"
+}

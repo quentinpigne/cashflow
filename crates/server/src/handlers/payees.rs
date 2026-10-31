@@ -8,6 +8,9 @@ use utoipa::{IntoParams, ToSchema};
 use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::geocoding::AddressSuggestion;
+use crate::services::payee_suggestions::{
+    self, AcceptSuggestionInput, AcceptSuggestionResult, PayeeKeyInput, PayeeSuggestionList,
+};
 use crate::services::payees::{
     self, LocationReport, LocationReportQuery, MergePayeeInput, MergePayeeResult, PayeeGroupInput, PayeeInput,
     PayeeList, PayeeReport, PayeeReportQuery, PayeeSummary, RegroupInput,
@@ -192,4 +195,46 @@ pub async fn search_address(
     Query(query): Query<AddressSearchQuery>,
 ) -> AppResult<Json<Vec<AddressSuggestion>>> {
     Ok(Json(payees::search_address(&state.db, &state.geocoder, &query.q).await?))
+}
+
+/// Propositions de tiers à partir des libellés bancaires, et clés ignorées (TIE-05, R-TIE-31, R-TIE-35).
+#[utoipa::path(
+    get, operation_id = "listPayeeSuggestions", path = "/payees/suggestions", tag = "payees",
+    responses((status = 200, body = PayeeSuggestionList))
+)]
+pub async fn suggestions(State(state): State<AppState>) -> AppResult<Json<PayeeSuggestionList>> {
+    Ok(Json(payee_suggestions::list(&state.db).await?))
+}
+
+/// Valide une proposition de tiers (R-TIE-33, R-TIE-34).
+#[utoipa::path(
+    post, operation_id = "acceptPayeeSuggestion", path = "/payees/suggestions/accept", tag = "payees",
+    request_body = AcceptSuggestionInput,
+    responses((status = 200, body = AcceptSuggestionResult), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn accept_suggestion(
+    State(state): State<AppState>,
+    Json(input): Json<AcceptSuggestionInput>,
+) -> AppResult<Json<AcceptSuggestionResult>> {
+    Ok(Json(payee_suggestions::accept(&state.db, &input).await?))
+}
+
+/// Ignore une clé de tiers : elle n'est plus proposée (R-TIE-35).
+#[utoipa::path(
+    post, operation_id = "ignorePayeeKey", path = "/payees/suggestions/ignore", tag = "payees",
+    request_body = PayeeKeyInput, responses((status = 204), (status = 422, body = Problem))
+)]
+pub async fn ignore_key(State(state): State<AppState>, Json(input): Json<PayeeKeyInput>) -> AppResult<StatusCode> {
+    payee_suggestions::ignore(&state.db, &input).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Rétablit une clé de tiers ignorée (R-TIE-35).
+#[utoipa::path(
+    post, operation_id = "restorePayeeKey", path = "/payees/suggestions/restore", tag = "payees",
+    request_body = PayeeKeyInput, responses((status = 204))
+)]
+pub async fn restore_key(State(state): State<AppState>, Json(input): Json<PayeeKeyInput>) -> AppResult<StatusCode> {
+    payee_suggestions::restore(&state.db, &input).await?;
+    Ok(StatusCode::NO_CONTENT)
 }

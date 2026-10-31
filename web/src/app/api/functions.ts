@@ -349,6 +349,14 @@ export type { CreatePayee$Params as CreatePayee$Params } from './fn/payees/creat
 export { createPayee as createPayee } from './fn/payees/create-payee';
 export type { RegroupPayees$Params as RegroupPayees$Params } from './fn/payees/regroup-payees';
 export { regroupPayees as regroupPayees } from './fn/payees/regroup-payees';
+export type { ListPayeeSuggestions$Params as ListPayeeSuggestions$Params } from './fn/payees/list-payee-suggestions';
+export { listPayeeSuggestions as listPayeeSuggestions } from './fn/payees/list-payee-suggestions';
+export type { AcceptPayeeSuggestion$Params as AcceptPayeeSuggestion$Params } from './fn/payees/accept-payee-suggestion';
+export { acceptPayeeSuggestion as acceptPayeeSuggestion } from './fn/payees/accept-payee-suggestion';
+export type { IgnorePayeeKey$Params as IgnorePayeeKey$Params } from './fn/payees/ignore-payee-key';
+export { ignorePayeeKey as ignorePayeeKey } from './fn/payees/ignore-payee-key';
+export type { RestorePayeeKey$Params as RestorePayeeKey$Params } from './fn/payees/restore-payee-key';
+export { restorePayeeKey as restorePayeeKey } from './fn/payees/restore-payee-key';
 export type { UpdatePayee$Params as UpdatePayee$Params } from './fn/payees/update-payee';
 export { updatePayee as updatePayee } from './fn/payees/update-payee';
 export type { DeletePayee$Params as DeletePayee$Params } from './fn/payees/delete-payee';

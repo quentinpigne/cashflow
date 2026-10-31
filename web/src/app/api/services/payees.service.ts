@@ -10,6 +10,9 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { acceptPayeeSuggestion } from '../fn/payees/accept-payee-suggestion';
+import { AcceptPayeeSuggestion$Params } from '../fn/payees/accept-payee-suggestion';
+import { AcceptSuggestionResult } from '../models/accept-suggestion-result';
 import { AddressSuggestion } from '../models/address-suggestion';
 import { createPayee } from '../fn/payees/create-payee';
 import { CreatePayee$Params } from '../fn/payees/create-payee';
@@ -19,8 +22,12 @@ import { deletePayee } from '../fn/payees/delete-payee';
 import { DeletePayee$Params } from '../fn/payees/delete-payee';
 import { deletePayeeGroup } from '../fn/payees/delete-payee-group';
 import { DeletePayeeGroup$Params } from '../fn/payees/delete-payee-group';
+import { ignorePayeeKey } from '../fn/payees/ignore-payee-key';
+import { IgnorePayeeKey$Params } from '../fn/payees/ignore-payee-key';
 import { listPayees } from '../fn/payees/list-payees';
 import { ListPayees$Params } from '../fn/payees/list-payees';
+import { listPayeeSuggestions } from '../fn/payees/list-payee-suggestions';
+import { ListPayeeSuggestions$Params } from '../fn/payees/list-payee-suggestions';
 import { LocationReport } from '../models/location-report';
 import { mergePayee } from '../fn/payees/merge-payee';
 import { MergePayee$Params } from '../fn/payees/merge-payee';
@@ -35,11 +42,14 @@ import { PayeeLocationReport$Params } from '../fn/payees/payee-location-report';
 import { payeeReport } from '../fn/payees/payee-report';
 import { PayeeReport } from '../models/payee-report';
 import { PayeeReport$Params } from '../fn/payees/payee-report';
+import { PayeeSuggestionList } from '../models/payee-suggestion-list';
 import { payeeSummary } from '../fn/payees/payee-summary';
 import { PayeeSummary } from '../models/payee-summary';
 import { PayeeSummary$Params } from '../fn/payees/payee-summary';
 import { regroupPayees } from '../fn/payees/regroup-payees';
 import { RegroupPayees$Params } from '../fn/payees/regroup-payees';
+import { restorePayeeKey } from '../fn/payees/restore-payee-key';
+import { RestorePayeeKey$Params } from '../fn/payees/restore-payee-key';
 import { searchAddress } from '../fn/payees/search-address';
 import { SearchAddress$Params } from '../fn/payees/search-address';
 import { updatePayee } from '../fn/payees/update-payee';
@@ -308,6 +318,146 @@ export class PayeesService extends BaseService {
    */
   regroupPayees(params: RegroupPayees$Params, context?: HttpContext): Observable<void> {
     const resp = this.regroupPayees$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `listPayeeSuggestions()` */
+  static readonly ListPayeeSuggestionsPath = '/api/v1/payees/suggestions';
+
+  /**
+   * Propositions de tiers à partir des libellés bancaires, et clés ignorées (TIE-05, R-TIE-31, R-TIE-35).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `listPayeeSuggestions()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listPayeeSuggestions$Response(params?: ListPayeeSuggestions$Params, context?: HttpContext): Observable<StrictHttpResponse<PayeeSuggestionList>> {
+    const obs = listPayeeSuggestions(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Propositions de tiers à partir des libellés bancaires, et clés ignorées (TIE-05, R-TIE-31, R-TIE-35).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `listPayeeSuggestions$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  listPayeeSuggestions(params?: ListPayeeSuggestions$Params, context?: HttpContext): Observable<PayeeSuggestionList> {
+    const resp = this.listPayeeSuggestions$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<PayeeSuggestionList>): PayeeSuggestionList => r.body)
+    );
+  }
+
+  /** Path part for operation `acceptPayeeSuggestion()` */
+  static readonly AcceptPayeeSuggestionPath = '/api/v1/payees/suggestions/accept';
+
+  /**
+   * Valide une proposition de tiers (R-TIE-33, R-TIE-34).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `acceptPayeeSuggestion()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  acceptPayeeSuggestion$Response(params: AcceptPayeeSuggestion$Params, context?: HttpContext): Observable<StrictHttpResponse<AcceptSuggestionResult>> {
+    const obs = acceptPayeeSuggestion(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Valide une proposition de tiers (R-TIE-33, R-TIE-34).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `acceptPayeeSuggestion$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  acceptPayeeSuggestion(params: AcceptPayeeSuggestion$Params, context?: HttpContext): Observable<AcceptSuggestionResult> {
+    const resp = this.acceptPayeeSuggestion$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<AcceptSuggestionResult>): AcceptSuggestionResult => r.body)
+    );
+  }
+
+  /** Path part for operation `ignorePayeeKey()` */
+  static readonly IgnorePayeeKeyPath = '/api/v1/payees/suggestions/ignore';
+
+  /**
+   * Ignore une clé de tiers : elle n'est plus proposée (R-TIE-35).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `ignorePayeeKey()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  ignorePayeeKey$Response(params: IgnorePayeeKey$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = ignorePayeeKey(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Ignore une clé de tiers : elle n'est plus proposée (R-TIE-35).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `ignorePayeeKey$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  ignorePayeeKey(params: IgnorePayeeKey$Params, context?: HttpContext): Observable<void> {
+    const resp = this.ignorePayeeKey$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `restorePayeeKey()` */
+  static readonly RestorePayeeKeyPath = '/api/v1/payees/suggestions/restore';
+
+  /**
+   * Rétablit une clé de tiers ignorée (R-TIE-35).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `restorePayeeKey()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  restorePayeeKey$Response(params: RestorePayeeKey$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = restorePayeeKey(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Rétablit une clé de tiers ignorée (R-TIE-35).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `restorePayeeKey$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  restorePayeeKey(params: RestorePayeeKey$Params, context?: HttpContext): Observable<void> {
+    const resp = this.restorePayeeKey$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

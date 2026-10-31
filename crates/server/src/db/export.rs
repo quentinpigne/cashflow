@@ -32,6 +32,7 @@ pub const TABLES: &[&str] = &[
     "document",
     "payee_group",
     "payee",
+    "ignored_payee_key",
     "recurring_rule",
     "project",
     "ledger_transaction",

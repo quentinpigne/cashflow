@@ -132,6 +132,8 @@ pub enum DomainError {
     InvalidPayeeMerge,
     #[error("une jambe de virement interne n'a pas de tiers")]
     PayeeOnTransferLeg,
+    #[error("un tiers archivé ne reçoit plus de transactions : le désarchiver d'abord")]
+    PayeeArchived,
     #[error("une adresse a au moins une ville et un pays")]
     AddressIncomplete,
     #[error("code pays invalide : deux lettres attendues (ISO 3166-1)")]
@@ -269,6 +271,7 @@ impl DomainError {
             PayeeInUse => "PAYEE_IN_USE",
             InvalidPayeeMerge => "INVALID_PAYEE_MERGE",
             PayeeOnTransferLeg => "PAYEE_ON_TRANSFER_LEG",
+            PayeeArchived => "PAYEE_ARCHIVED",
             AddressIncomplete => "ADDRESS_INCOMPLETE",
             InvalidCountryCode => "INVALID_COUNTRY_CODE",
             InvalidPostalCode => "INVALID_POSTAL_CODE",
@@ -348,6 +351,7 @@ impl DomainError {
             PayeeInUse => "R-TIE-5",
             InvalidPayeeMerge => "R-TIE-7",
             PayeeOnTransferLeg => "R-TIE-11",
+            PayeeArchived => "R-TIE-33",
             AddressIncomplete | InvalidCountryCode | InvalidPostalCode => "R-TIE-23",
             InvalidCoordinates => "R-TIE-25",
             TransferSameAccount | TransferCurrencyMismatch | TransferAmountsNotOpposite | AlreadyTransferLeg => {

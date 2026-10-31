@@ -95,7 +95,7 @@ pub fn suggestions<T: Copy + Ord, P: Copy + Eq + Hash>(
         .into_iter()
         .filter(|(_, transactions)| transactions.len() >= 2)
         .filter_map(|(key, mut transactions)| {
-            transactions.sort_by(|a, b| (b.date, b.id).cmp(&(a.date, a.id)));
+            transactions.sort_by_key(|t| std::cmp::Reverse((t.date, t.id)));
             let first_date = transactions.iter().map(|t| t.date).min()?;
             let last_date = transactions.iter().map(|t| t.date).max()?;
             let mut labels: Vec<String> = Vec::new();
@@ -120,6 +120,11 @@ pub fn suggestions<T: Copy + Ord, P: Copy + Eq + Hash>(
         .collect();
     result.sort_by(|a, b| b.transactions.len().cmp(&a.transactions.len()).then_with(|| a.key.cmp(&b.key)));
     result
+}
+
+/// Transactions sans tiers d'une clé, que la validation d'une proposition affecte (R-TIE-33).
+pub fn with_key<T: Copy>(unassigned: &[Unassigned<T>], key: &str) -> Vec<T> {
+    unassigned.iter().filter(|t| payee_key(&t.bank_label).as_deref() == Some(key)).map(|t| t.id).collect()
 }
 
 /// Tiers de la dernière transaction de même clé qui en a un ; à défaut, le tiers qui porte le nom suggéré, sans
@@ -254,6 +259,17 @@ mod tests {
         assert!(conditions.matches(&subject("CB AMAZON.FR*ZZ99XX 03/05")));
         assert!(conditions.matches(&subject("PRLV SEPA Amazon Fr")));
         assert!(!conditions.matches(&subject("CB AMAZON PRIME")));
+    }
+
+    #[test]
+    fn r_tie_33_validation_targets_every_unassigned_transaction_of_the_key() {
+        let lines = [
+            line(1, "2026-03-14", "CB CARREFOUR MEYLAN 14/03"),
+            line(2, "2026-03-20", "PRLV SEPA CARREFOUR MEYLAN"),
+            line(3, "2026-03-21", "CB CARREFOUR GRENOBLE 21/03"),
+        ];
+        assert_eq!(with_key(&lines, "CARREFOUR MEYLAN"), vec![1, 2]);
+        assert!(with_key(&lines, "LIDL").is_empty());
     }
 
     #[test]

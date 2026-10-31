@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO ignored_payee_key (key, ignored_at) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "cd78a0f88aa0bfb70f5d54654da2d8ffd762e5254f60ab09bad11637d4b16e45"
+}

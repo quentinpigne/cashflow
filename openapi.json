@@ -6400,6 +6400,127 @@
         }
       }
     },
+    "/api/v1/payees/suggestions": {
+      "get": {
+        "tags": [
+          "payees"
+        ],
+        "summary": "Propositions de tiers à partir des libellés bancaires, et clés ignorées (TIE-05, R-TIE-31, R-TIE-35).",
+        "operationId": "listPayeeSuggestions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayeeSuggestionList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payees/suggestions/accept": {
+      "post": {
+        "tags": [
+          "payees"
+        ],
+        "summary": "Valide une proposition de tiers (R-TIE-33, R-TIE-34).",
+        "operationId": "acceptPayeeSuggestion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptSuggestionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptSuggestionResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payees/suggestions/ignore": {
+      "post": {
+        "tags": [
+          "payees"
+        ],
+        "summary": "Ignore une clé de tiers : elle n'est plus proposée (R-TIE-35).",
+        "operationId": "ignorePayeeKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayeeKeyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payees/suggestions/restore": {
+      "post": {
+        "tags": [
+          "payees"
+        ],
+        "summary": "Rétablit une clé de tiers ignorée (R-TIE-35).",
+        "operationId": "restorePayeeKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayeeKeyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {}
+        }
+      }
+    },
     "/api/v1/payees/{id}": {
       "put": {
         "tags": [
@@ -8850,6 +8971,68 @@
   },
   "components": {
     "schemas": {
+      "AcceptSuggestionInput": {
+        "type": "object",
+        "description": "Validation d'une proposition (R-TIE-33, R-TIE-34) : un tiers existant, ou un nom pour en créer un.",
+        "required": [
+          "key",
+          "create_rule"
+        ],
+        "properties": {
+          "create_rule": {
+            "type": "boolean",
+            "description": "Crée aussi une règle qui affecte ce tiers aux imports suivants (R-TIE-34)."
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payee_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PayeeId",
+                "description": "Tiers existant, non archivé. Absent : un tiers est créé sous `name`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AcceptSuggestionResult": {
+        "type": "object",
+        "required": [
+          "payee_id",
+          "assigned"
+        ],
+        "properties": {
+          "assigned": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Transactions qui ont reçu le tiers.",
+            "minimum": 0
+          },
+          "payee_id": {
+            "$ref": "#/components/schemas/PayeeId"
+          },
+          "rule_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategorizationRuleId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "Account": {
         "type": "object",
         "description": "Un compte, avec sa valeur à la date demandée.",
@@ -13789,6 +13972,22 @@
           }
         }
       },
+      "IgnoredPayeeKeyView": {
+        "type": "object",
+        "description": "Clé de tiers ignorée (R-TIE-35).",
+        "required": [
+          "key",
+          "ignored_at"
+        ],
+        "properties": {
+          "ignored_at": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          }
+        }
+      },
       "ImportBatchId": {
         "type": "string",
         "format": "uuid"
@@ -16371,6 +16570,18 @@
           }
         }
       },
+      "PayeeKeyInput": {
+        "type": "object",
+        "description": "Clé de tiers à ignorer ou à rétablir (R-TIE-35).",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          }
+        }
+      },
       "PayeeLine": {
         "type": "object",
         "required": [
@@ -16595,6 +16806,86 @@
           "uncategorized_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "PayeeSuggestionList": {
+        "type": "object",
+        "description": "Propositions de tiers et clés ignorées (E43).",
+        "required": [
+          "suggestions",
+          "ignored"
+        ],
+        "properties": {
+          "ignored": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IgnoredPayeeKeyView"
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayeeSuggestionView"
+            }
+          }
+        }
+      },
+      "PayeeSuggestionView": {
+        "type": "object",
+        "description": "Proposition de tiers (R-TIE-31, R-TIE-32).",
+        "required": [
+          "key",
+          "name",
+          "transaction_count",
+          "first_date",
+          "last_date",
+          "labels"
+        ],
+        "properties": {
+          "first_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "key": {
+            "type": "string",
+            "description": "Clé de tiers (R-TIE-30) : identifie la proposition."
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Jusqu'à trois libellés bancaires distincts, les plus récents d'abord."
+          },
+          "last_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nom suggéré pour un tiers à créer."
+          },
+          "payee_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PayeeId",
+                "description": "Tiers existant suggéré à la place d'une création."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payee_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transaction_count": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },

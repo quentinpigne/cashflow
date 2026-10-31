@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT key, ignored_at FROM ignored_payee_key ORDER BY key",
+  "describe": {
+    "columns": [
+      {
+        "name": "key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ignored_payee_key",
+            "name": "key"
+          }
+        }
+      },
+      {
+        "name": "ignored_at",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ignored_payee_key",
+            "name": "ignored_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "32a5a583c93a17cded3ef2c793da0ffb83f164423f3bc30abd5d4a04a5732f7e"
+}
