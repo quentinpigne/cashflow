@@ -160,7 +160,8 @@ Rien ne change avant validation.
   catégorisation pour les imports suivants : condition « libellé bancaire correspond à `*MOT1*MOT2*…*` »
   (opérateur `regex` de spec 03, où `*` remplace toute suite de caractères :
   les mots de la clé, dans l'ordre), action `set_payee` seule, sans arrêt du traitement, priorité
-  après les règles existantes : les règles de catégorie gardent la main, celle-ci complète le tiers (R-IMP-12).
+  avant les règles existantes : elle n'affecte que le tiers et laisse les suivantes compléter la catégorie
+  (R-IMP-12), même celles qui arrêtent le traitement.
   Elle s'appelle « Tiers : <nom du tiers> ». Sans règle, la suggestion apprise (R-TIE-17) prend déjà le
   relais sur les libellés de même clé d'apprentissage.
 - **R-TIE-35** — **Ignorer** une proposition mémorise sa clé : elle n'est plus proposée (« FRAIS TENUE COMPTE »,

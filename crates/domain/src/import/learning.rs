@@ -3,7 +3,7 @@
 use super::fingerprint::normalize_label;
 
 /// Mots qui décrivent le type d'opération, pas sa contrepartie : à eux seuls, ils ne désignent rien.
-const OPERATION_WORDS: &[&str] = &[
+pub(crate) const OPERATION_WORDS: &[&str] = &[
     "CARTE",
     "CB",
     "DAB",
