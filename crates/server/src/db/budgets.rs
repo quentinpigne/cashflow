@@ -469,7 +469,7 @@ pub struct BudgetFactRow {
 /// Ventilations datées de `from` à `to` ; celles d'un projet, quelle que soit leur date si `project` est donné.
 pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<BudgetFactRow>> {
     let rows = sqlx::query!(
-        r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, s.project_id,
+        r#"SELECT t.analysis_date AS "date!: Date", s.amount, s.category_id, s.project_id,
                   coalesce(p.exclude_from_period_budgets, 0) AS "project_excluded!: bool",
                   a.include_in_budget AS "in_budget!: bool", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
@@ -480,7 +480,7 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
            LEFT JOIN project p ON p.id = s.project_id
-           WHERE t.date BETWEEN ? AND ?"#,
+           WHERE t.analysis_date BETWEEN ? AND ?"#,
         from,
         to
     )
@@ -555,23 +555,23 @@ pub struct SavingsMoveRow {
 pub async fn savings_moves(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<SavingsMoveRow>> {
     // Le montant d'une jambe est celui de sa ventilation de virement (ADR-0021).
     let rows = sqlx::query!(
-        r#"SELECT t_in.date AS "date!: Date", t_in.account_id AS "account_id!", s_in.amount AS "amount!: i64"
+        r#"SELECT t_in.analysis_date AS "date!: Date", t_in.account_id AS "account_id!", s_in.amount AS "amount!: i64"
            FROM transfer tr
            JOIN split s_in ON s_in.id = tr.inflow_split_id
            JOIN split s_out ON s_out.id = tr.outflow_split_id
            JOIN ledger_transaction t_in ON t_in.id = s_in.transaction_id
            JOIN ledger_transaction t_out ON t_out.id = s_out.transaction_id
            JOIN account a_out ON a_out.id = t_out.account_id
-           WHERE a_out.include_in_budget = 1 AND t_in.date BETWEEN ?1 AND ?2
+           WHERE a_out.include_in_budget = 1 AND t_in.analysis_date BETWEEN ?1 AND ?2
            UNION ALL
-           SELECT t_out.date, t_out.account_id, s_out.amount
+           SELECT t_out.analysis_date, t_out.account_id, s_out.amount
            FROM transfer tr
            JOIN split s_in ON s_in.id = tr.inflow_split_id
            JOIN split s_out ON s_out.id = tr.outflow_split_id
            JOIN ledger_transaction t_in ON t_in.id = s_in.transaction_id
            JOIN ledger_transaction t_out ON t_out.id = s_out.transaction_id
            JOIN account a_in ON a_in.id = t_in.account_id
-           WHERE a_in.include_in_budget = 1 AND t_out.date BETWEEN ?1 AND ?2"#,
+           WHERE a_in.include_in_budget = 1 AND t_out.analysis_date BETWEEN ?1 AND ?2"#,
         from,
         to
     )

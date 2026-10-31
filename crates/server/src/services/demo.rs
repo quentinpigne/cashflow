@@ -915,7 +915,9 @@ async fn payees(db: &Db) -> anyhow::Result<()> {
     };
     let rule = rules::save(db, None, &station).await.map_err(err)?;
     let matches =
-        rules::preview(db, &station.conditions, &rules::PreviewQuery { sets_payee: Some(true) }).await.map_err(err)?;
+        rules::preview(db, &station.conditions, &rules::PreviewQuery { sets_payee: Some(true), shifts_month: None })
+            .await
+            .map_err(err)?;
     let apply = rules::ApplyInput { transaction_ids: matches.into_iter().map(|m| m.transaction_id).collect() };
     rules::apply(db, rule.id, &apply).await.map_err(err)?;
     Ok(())

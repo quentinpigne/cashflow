@@ -45,8 +45,9 @@ le patrimoine utilisent la date de solde (R-TRX-7).
   et de son réel, quel que soit le jour où tombent ses mouvements ; une ligne annuelle ne dépasse pas ce qui
   reste de son année — + Σ des restants prévus du mois en cours des projets pris en compte comme ci-dessus.
   Sans ligne de budget, les mois à venir ne montrent que les projets, et l'écran le signale. Un mois à
-  venir peut avoir du réel, par des transactions dont le mois d'analyse est futur (R-TRX-57) : il compte
-  alors, comme le mois en cours, son réel + son encore à venir.
+  venir peut avoir du réel, par des transactions dont le mois d'analyse est futur (R-TRX-57) : chaque mois
+  à venir compte donc, comme le mois en cours, son réel + son encore à venir (pour un mois sans réel, c'est
+  son prévu, sauf la quote-part d'une ligne annuelle, qui ne dépasse pas ce qui reste de son année).
 
 ## Écrans
 

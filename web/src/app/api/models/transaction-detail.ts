@@ -14,6 +14,11 @@ export interface TransactionDetail {
   account_id: AccountId;
   account_name: string;
   amount_minor: number;
+
+  /**
+   * Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date ; modifiable même rapprochée (R-TRX-57, R-TRX-3).
+   */
+  analysis_month?: (string | null);
   balance_date: string;
   bank_date?: (string | null);
   bank_label?: (string | null);

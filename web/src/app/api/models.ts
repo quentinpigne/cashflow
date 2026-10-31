@@ -61,6 +61,8 @@ export type { BudgetLineInput } from './models/budget-line-input';
 export type { BudgetLineMonth } from './models/budget-line-month';
 export type { BudgetLineVersion } from './models/budget-line-version';
 export type { BudgetSuggestion } from './models/budget-suggestion';
+export type { BulkAnalysisMonthInput } from './models/bulk-analysis-month-input';
+export type { BulkAnalysisMonthResult } from './models/bulk-analysis-month-result';
 export type { BulkCategorizeInput } from './models/bulk-categorize-input';
 export type { BulkCategorizeResult } from './models/bulk-categorize-result';
 export type { BulkInput } from './models/bulk-input';

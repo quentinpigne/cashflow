@@ -206,6 +206,8 @@ pub enum DomainError {
     // ----- Import (spec 03)
     #[error("une règle doit avoir au moins une condition")]
     RuleWithoutCondition,
+    #[error("une règle décale le mois d'analyse de −12 à 12 mois, et pas de zéro")]
+    InvalidMonthShift,
 }
 
 impl DomainError {
@@ -297,6 +299,7 @@ impl DomainError {
             ProjectLineMismatch => "PROJECT_LINE_MISMATCH",
             InvalidProvision => "INVALID_PROVISION",
             RuleWithoutCondition => "RULE_WITHOUT_CONDITION",
+            InvalidMonthShift => "INVALID_MONTH_SHIFT",
         }
     }
 
@@ -368,6 +371,7 @@ impl DomainError {
             ProjectLineCategoryTaken | ProjectLineMismatch => "R-BUD-27",
             InvalidProvision => "R-BUD-73",
             RuleWithoutCondition => "R-IMP-12",
+            InvalidMonthShift => "R-IMP-29",
         })
     }
 }

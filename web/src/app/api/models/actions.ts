@@ -20,4 +20,9 @@ export interface Actions {
    * Ventilation proposée : parts en pourcentage (poids), l'arrondi allant sur la dernière.
    */
   set_splits?: Array<SplitShare>;
+
+  /**
+   * Mois d'analyse = mois de la date + n, de −12 à 12 (R-IMP-29).
+   */
+  shift_analysis_month?: (number | null);
 }

@@ -69,6 +69,11 @@ export interface ListTransactions$Params {
  * Avec (`true`) ou sans (`false`) justificatif (DOC-04).
  */
   with_documents?: boolean;
+
+/**
+ * Mois d'analyse `AAAA-MM` : les transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58).
+ */
+  analysis_month?: string;
   cursor?: string;
 
 /**
@@ -94,6 +99,7 @@ export function listTransactions(http: HttpClient, rootUrl: string, params: List
     rb.query('payee_group_id', params.payee_group_id, {});
     rb.query('without_payee', params.without_payee, {});
     rb.query('with_documents', params.with_documents, {});
+    rb.query('analysis_month', params.analysis_month, {});
     rb.query('cursor', params.cursor, {});
     rb.query('limit', params.limit, {});
   }

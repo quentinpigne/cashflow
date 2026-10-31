@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\", payee_id AS \"payee_id?\", expected_refund AS \"expected_refund?\"\n           FROM ledger_transaction t\n           WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?\n             AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))\n           ORDER BY balance_date",
+  "query": "SELECT id AS \"id!\", account_id AS \"account_id!\", date AS \"date!: Date\", bank_date AS \"bank_date?: Date\",\n                  balance_date AS \"balance_date!: Date\", value_date AS \"value_date?: Date\", amount AS \"amount!\",\n                  bank_label AS \"bank_label?\", label AS \"label!\", note AS \"note?\", clearing_status AS \"clearing_status!\",\n                  origin AS \"origin!\", payee_id AS \"payee_id?\", expected_refund AS \"expected_refund?\",\n                  analysis_month AS \"analysis_month?\"\n           FROM ledger_transaction WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -156,10 +156,21 @@
             "name": "expected_refund"
           }
         }
+      },
+      {
+        "name": "analysis_month?",
+        "ordinal": 14,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "analysis_month"
+          }
+        }
       }
     ],
     "parameters": {
-      "Right": 4
+      "Right": 1
     },
     "nullable": [
       false,
@@ -175,8 +186,9 @@
       false,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "4b172598c9db5e28c2593ee494f5b8b3710668737f1ee3965f176726fa1bf15e"
+  "hash": "df8fd276257e00d8a58b41466a903efc476155ecd930409e010125894e311381"
 }

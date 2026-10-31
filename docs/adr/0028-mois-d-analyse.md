@@ -34,7 +34,7 @@ Contraintes :
 ## Décision
 
 Option 3. Une transaction a un **mois d'analyse** facultatif (`analysis_month`, `AAAA-MM`, n'importe quel
-mois). Le budget, les analyses, l'accueil, les objectifs d'épargne, les moyennes des projections, le contrôle
+mois). Le budget, les analyses, l'accueil, les objectifs d'épargne, la capacité d'épargne des projections, le contrôle
 des salaires et l'analyse par tiers et par lieu rangent une ventilation par la **date d'analyse** de sa
 transaction (`analysis_date`, colonne générée) au lieu de sa `date`. Les soldes, le rapprochement, les
 intérêts, la trésorerie projetée et l'affichage gardent leurs dates.

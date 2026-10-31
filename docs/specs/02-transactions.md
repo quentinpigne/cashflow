@@ -68,8 +68,8 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   mois sur lequel la transaction compte, entière. La **date d'analyse** (`analysis_date`, générée) vaut la
   `date` si le mois d'analyse est vide ou égal au mois de la `date`, sinon le 1er du mois d'analyse. Elle
   remplace la `date` partout où une ventilation est rangée dans un mois ou une période : budget (R-BUD-3),
-  objectifs d'épargne (R-BUD-31), indicateurs et analyses (spec 08), moyennes des projections (R-PRJ-11,
-  R-PRJ-44), contrôle des salaires (R-SAL-9), analyses par tiers et par lieu (spec 11). Les soldes, le
+  objectifs d'épargne (R-BUD-31), indicateurs et analyses (spec 08), capacité d'épargne des projections
+  (R-PRJ-43, R-PRJ-44), contrôle des salaires (R-SAL-9), analyses par tiers et par lieu (spec 11). Les soldes, le
   rapprochement, les intérêts, la trésorerie projetée, les dates d'un projet (R-BUD-23) et le tri des listes
   gardent leurs dates. Choisir le mois de la `date` revient à vider le mois d'analyse (ADR-0028).
 - **R-TRX-58** — Le mois d'analyse se modifie sur une transaction (E7) ou sur une sélection (E14, TRX-13),

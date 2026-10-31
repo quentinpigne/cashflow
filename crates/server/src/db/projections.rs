@@ -160,7 +160,7 @@ pub async fn capacity_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
            LEFT JOIN category c ON c.id = s.category_id
-           WHERE t.date BETWEEN ? AND ?"#,
+           WHERE t.analysis_date BETWEEN ? AND ?"#,
         from,
         to
     )

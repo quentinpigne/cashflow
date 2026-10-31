@@ -443,7 +443,9 @@ async fn r_tie_19_rules_on_demand_fill_missing_payees_only() {
     };
     let without = rules::preview(&db, &rule.conditions, &PreviewQuery::default()).await.unwrap();
     assert_eq!(without.len(), 1, "sans set_payee, seules les transactions non catégorisées");
-    let matches = rules::preview(&db, &rule.conditions, &PreviewQuery { sets_payee: Some(true) }).await.unwrap();
+    let matches = rules::preview(&db, &rule.conditions, &PreviewQuery { sets_payee: Some(true), shifts_month: None })
+        .await
+        .unwrap();
     assert_eq!(matches.len(), 2, "la transaction qui a déjà un tiers est exclue");
     let only_payee = matches.iter().find(|m| m.transaction_id == categorized).unwrap();
     assert!(only_payee.sets_payee && !only_payee.sets_category);

@@ -472,11 +472,12 @@ pub async fn remaining(db: &Db, today: Date) -> AppResult<Vec<ProjectRemaining>>
         .collect())
 }
 
-/// Prévu du budget pour l'estimation de fin d'année (R-TDB-14) : `(revenus, dépenses)`.
+/// Prévu du budget pour l'estimation de fin d'année (R-TDB-14) : `(revenus, dépenses)` encore à venir, ligne par
+/// ligne (un mois futur peut avoir du réel, par son mois d'analyse, R-TRX-57).
 pub struct PlannedBudget {
-    /// Encore à venir du mois en cours, ligne par ligne.
+    /// Encore à venir du mois en cours.
     pub to_come: (Money, Money),
-    /// Prévu de chacun des mois suivants demandés.
+    /// Encore à venir de chacun des mois suivants demandés.
     pub months: Vec<(Money, Money)>,
 }
 
@@ -501,14 +502,7 @@ pub async fn planned_months(db: &Db, current: Month, months: &[Month]) -> AppRes
     .build();
     Ok(Some(PlannedBudget {
         to_come: budget.to_come(current),
-        months: months
-            .iter()
-            .map(|m| {
-                let month = budget.month(*m);
-                let planned = |kind: BudgetKind| month.lines.iter().filter(|l| l.kind == kind).map(|l| l.planned).sum();
-                (planned(BudgetKind::Income), planned(BudgetKind::Expense))
-            })
-            .collect(),
+        months: months.iter().map(|m| budget.to_come(*m)).collect(),
     }))
 }
 

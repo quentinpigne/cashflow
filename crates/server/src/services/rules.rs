@@ -58,6 +58,8 @@ pub struct RuleMatch {
     pub sets_category: bool,
     /// Sans tiers, pour une règle qui en affecte un : le tiers changera.
     pub sets_payee: bool,
+    /// Sans mois d'analyse, pour une règle qui le décale : le mois d'analyse changera (R-IMP-29).
+    pub sets_month: bool,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -65,6 +67,8 @@ pub struct RuleMatch {
 pub struct PreviewQuery {
     /// La règle affecte un tiers : l'aperçu inclut aussi les transactions sans tiers, même catégorisées (R-TIE-19).
     pub sets_payee: Option<bool>,
+    /// La règle décale le mois d'analyse : l'aperçu inclut aussi les transactions sans mois d'analyse (R-IMP-29).
+    pub shifts_month: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -108,6 +112,9 @@ pub async fn active(db: &Db) -> AppResult<Vec<Rule<CategorizationRuleId>>> {
 pub async fn save(db: &Db, id: Option<CategorizationRuleId>, input: &RuleInput) -> AppResult<RuleView> {
     let name = required(&input.name, "name", 120)?;
     input.conditions.check()?;
+    if let Some(shift) = input.actions.shift_analysis_month {
+        cashflow_domain::ledger::check_month_shift(shift)?;
+    }
     let hit_count = match id {
         Some(id) => {
             db::rules::list(&db.read)
@@ -139,10 +146,12 @@ pub async fn delete(db: &Db, id: CategorizationRuleId) -> AppResult<()> {
 }
 
 /// Transactions auxquelles s'appliqueraient ces conditions (R-IMP-19) : non catégorisées (ventilation unique sans
-/// catégorie, hors virements) et, pour une règle qui affecte un tiers, sans tiers (hors virements, R-TIE-19).
+/// catégorie, hors virements) et, pour une règle qui affecte un tiers, sans tiers (hors virements, R-TIE-19) ; pour
+/// une règle qui décale le mois d'analyse, sans mois d'analyse (hors virements, R-IMP-29).
 pub async fn preview(db: &Db, conditions: &Conditions, query: &PreviewQuery) -> AppResult<Vec<RuleMatch>> {
     conditions.check()?;
     let sets_payee = query.sets_payee.unwrap_or(false);
+    let shifts_month = query.shifts_month.unwrap_or(false);
     let (items, _) = db::transactions::uncategorized(&db.read, i64::MAX).await?;
     let uncategorized: HashMap<TransactionId, ()> =
         items.into_iter().filter(|i| i.split_count == 1).map(|i| (i.transaction_id, ())).collect();
@@ -157,7 +166,8 @@ pub async fn preview(db: &Db, conditions: &Conditions, query: &PreviewQuery) -> 
     for t in db::transactions::list_all(&db.read).await?.into_iter().rev() {
         let sets_category = uncategorized.contains_key(&t.id);
         let sets_payee = sets_payee && t.payee_id.is_none() && !transfers.contains_key(&t.id);
-        if !sets_category && !sets_payee {
+        let sets_month = shifts_month && t.analysis_month.is_none() && !transfers.contains_key(&t.id);
+        if !sets_category && !sets_payee && !sets_month {
             continue;
         }
         let subject = Subject {
@@ -176,6 +186,7 @@ pub async fn preview(db: &Db, conditions: &Conditions, query: &PreviewQuery) -> 
                 amount_minor: t.amount.minor(),
                 sets_category,
                 sets_payee,
+                sets_month,
             });
         }
     }
@@ -183,10 +194,14 @@ pub async fn preview(db: &Db, conditions: &Conditions, query: &PreviewQuery) -> 
 }
 
 /// Applique une règle à des transactions existantes choisies dans l'aperçu (R-IMP-19). Une transaction déjà
-/// catégorisée ne reçoit que le tiers ; un tiers existant n'est jamais remplacé (R-TIE-19).
+/// catégorisée ne reçoit que le tiers et le mois d'analyse ; un tiers ou un mois d'analyse existant n'est jamais
+/// remplacé (R-TIE-19, R-IMP-29).
 pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> AppResult<ApplyResult> {
     let rule = list(db).await?.into_iter().find(|r| r.id == id).ok_or(AppError::NotFound("règle"))?;
-    let query = PreviewQuery { sets_payee: Some(rule.actions.set_payee.is_some()) };
+    let query = PreviewQuery {
+        sets_payee: Some(rule.actions.set_payee.is_some()),
+        shifts_month: Some(rule.actions.shift_analysis_month.is_some()),
+    };
     let eligible: HashMap<TransactionId, RuleMatch> =
         preview(db, &rule.conditions, &query).await?.into_iter().map(|m| (m.transaction_id, m)).collect();
     let mut applied = 0;
@@ -206,6 +221,11 @@ pub async fn apply(db: &Db, id: CategorizationRuleId, input: &ApplyInput) -> App
         }
         let mut tx = db.write.begin().await?;
         let t = db::transactions::find(&mut *tx, *transaction).await?.ok_or(AppError::NotFound("transaction"))?;
+        // Un mois d'analyse choisi n'est jamais remplacé (R-IMP-29).
+        if let Some(shift) = rule.actions.shift_analysis_month.filter(|_| target.sets_month) {
+            let month = cashflow_domain::ledger::shifted_month(t.date, shift)?;
+            db::transactions::set_analysis_month(&mut *tx, t.id, Some(month)).await?;
+        }
         let payee = match (t.payee_id, rule.actions.set_payee) {
             (None, Some(payee)) => {
                 super::transactions::check_payee(&mut tx, Some(payee)).await?;

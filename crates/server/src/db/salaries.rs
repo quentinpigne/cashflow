@@ -261,13 +261,13 @@ pub struct ReceivedRow {
 
 pub async fn received(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<ReceivedRow>> {
     let rows = sqlx::query!(
-        r#"SELECT c.id AS "category_id!", c.parent_id, strftime('%Y-%m', t.date) AS "month!: String",
+        r#"SELECT c.id AS "category_id!", c.parent_id, strftime('%Y-%m', t.analysis_date) AS "month!: String",
                   sum(s.amount) AS "amount!: i64"
            FROM split s
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN category c ON c.id = s.category_id
-           WHERE t.date BETWEEN ? AND ? AND c.kind = 'INCOME'
-           GROUP BY c.id, strftime('%Y-%m', t.date)"#,
+           WHERE t.analysis_date BETWEEN ? AND ? AND c.kind = 'INCOME'
+           GROUP BY c.id, strftime('%Y-%m', t.analysis_date)"#,
         from,
         to
     )

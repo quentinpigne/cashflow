@@ -16,6 +16,11 @@ export interface PreviewRule$Params {
  * La règle affecte un tiers : l'aperçu inclut aussi les transactions sans tiers, même catégorisées (R-TIE-19).
  */
   sets_payee?: boolean;
+
+/**
+ * La règle décale le mois d'analyse : l'aperçu inclut aussi les transactions sans mois d'analyse (R-IMP-29).
+ */
+  shifts_month?: boolean;
       body: Conditions
 }
 
@@ -23,6 +28,7 @@ export function previewRule(http: HttpClient, rootUrl: string, params: PreviewRu
   const rb = new RequestBuilder(rootUrl, previewRule.PATH, 'post');
   if (params) {
     rb.query('sets_payee', params.sets_payee, {});
+    rb.query('shifts_month', params.shifts_month, {});
     rb.body(params.body, 'application/json');
   }
 

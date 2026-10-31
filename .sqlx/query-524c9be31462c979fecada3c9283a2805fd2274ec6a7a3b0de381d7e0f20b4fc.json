@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.date AS \"date!: Date\", s.amount, s.category_id, s.project_id,\n                  coalesce(p.exclude_from_period_budgets, 0) AS \"project_excluded!: bool\",\n                  a.include_in_budget AS \"in_budget!: bool\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN project p ON p.id = s.project_id\n           WHERE t.date BETWEEN ? AND ?",
+  "query": "SELECT t.analysis_date AS \"date!: Date\", s.amount, s.category_id, s.project_id,\n                  coalesce(p.exclude_from_period_budgets, 0) AS \"project_excluded!: bool\",\n                  a.include_in_budget AS \"in_budget!: bool\", a.currency,\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN project p ON p.id = s.project_id\n           WHERE t.analysis_date BETWEEN ? AND ?",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
         "origin": {
           "Table": {
             "table": "ledger_transaction",
-            "name": "date"
+            "name": "analysis_date"
           }
         }
       },
@@ -86,7 +86,7 @@
       "Right": 2
     },
     "nullable": [
-      false,
+      true,
       false,
       true,
       true,
@@ -96,5 +96,5 @@
       false
     ]
   },
-  "hash": "f5790988417f351fe80bd040a9e54e01b7b8edf578881aacbeeec148a44a7d53"
+  "hash": "524c9be31462c979fecada3c9283a2805fd2274ec6a7a3b0de381d7e0f20b4fc"
 }

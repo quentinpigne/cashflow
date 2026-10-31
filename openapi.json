@@ -995,6 +995,15 @@
             }
           },
           {
+            "name": "analysis_month",
+            "in": "query",
+            "description": "Mois d'analyse `AAAA-MM` : les transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -7555,6 +7564,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "shifts_month",
+            "in": "query",
+            "description": "La règle décale le mois d'analyse : l'aperçu inclut aussi les transactions sans mois d'analyse (R-IMP-29).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "requestBody": {
@@ -8127,6 +8145,15 @@
             }
           },
           {
+            "name": "analysis_month",
+            "in": "query",
+            "description": "Mois d'analyse `AAAA-MM` : les transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -8179,6 +8206,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TransactionCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/analysis-month": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Fixe le mois d'analyse de plusieurs transactions (TRX-13, R-TRX-57).",
+        "operationId": "setTransactionsAnalysisMonth",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAnalysisMonthInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkAnalysisMonthResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -9314,6 +9389,14 @@
               "$ref": "#/components/schemas/SplitShare"
             },
             "description": "Ventilation proposée : parts en pourcentage (poids), l'arrondi allant sur la dernière."
+          },
+          "shift_analysis_month": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Mois d'analyse = mois de la date + n, de −12 à 12 (R-IMP-29)."
           }
         }
       },
@@ -11128,6 +11211,40 @@
           "suggested_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "BulkAnalysisMonthInput": {
+        "type": "object",
+        "description": "Mois d'analyse de plusieurs transactions (TRX-13) ; absent, ou le mois de la date : le mois de la date.",
+        "required": [
+          "transaction_ids"
+        ],
+        "properties": {
+          "analysis_month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`AAAA-MM`."
+          },
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        }
+      },
+      "BulkAnalysisMonthResult": {
+        "type": "object",
+        "required": [
+          "updated"
+        ],
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },
@@ -18554,7 +18671,8 @@
           "label",
           "amount_minor",
           "sets_category",
-          "sets_payee"
+          "sets_payee",
+          "sets_month"
         ],
         "properties": {
           "account_id": {
@@ -18577,6 +18695,10 @@
           "sets_category": {
             "type": "boolean",
             "description": "Non catégorisée : la catégorie (et le reste des actions) changera."
+          },
+          "sets_month": {
+            "type": "boolean",
+            "description": "Sans mois d'analyse, pour une règle qui le décale : le mois d'analyse changera (R-IMP-29)."
           },
           "sets_payee": {
             "type": "boolean",
@@ -20135,6 +20257,13 @@
             "type": "integer",
             "format": "int64"
           },
+          "analysis_month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date ; modifiable même rapprochée (R-TRX-57, R-TRX-3)."
+          },
           "balance_date": {
             "type": "string",
             "format": "date"
@@ -20323,6 +20452,13 @@
           "amount_minor": {
             "type": "integer",
             "format": "int64"
+          },
+          "analysis_month": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date (R-TRX-57)."
           },
           "balance_after_minor": {
             "type": [

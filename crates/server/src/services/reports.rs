@@ -222,7 +222,9 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
     // Onze mois de plus, pour le taux glissant du premier mois affiché.
     let periods = reporting::months_until(today, count + 11);
     let first = periods.first().map_or(today, |p| p.from);
-    let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, first, today)
+    // Jusqu'à la fin de l'année : un mois à venir peut avoir du réel, par son mois d'analyse (R-TRX-57, R-TDB-14).
+    let year_end = Month { year: today.year(), month: 12 }.last_day();
+    let facts: Vec<SplitFact> = db::transactions::split_facts(&db.read, first, year_end.max(today))
         .await?
         .into_iter()
         .map(|f| SplitFact {
@@ -272,9 +274,15 @@ pub async fn evolution(db: &Db, query: &EvolutionQuery, today: Date) -> AppResul
         .iter()
         .enumerate()
         .map(|(i, m)| {
+            // Réel déjà rangé dans le mois + encore à venir de son budget, comme le mois en cours.
+            let actual = reporting::flows(&facts, m.first_day(), m.last_day());
             let (income, budget_expenses) =
                 budget.as_ref().and_then(|b| b.months.get(i)).copied().unwrap_or((Money::ZERO, Money::ZERO));
-            PlannedFlows { income, budget_expenses, projects: projects.get(m).copied().unwrap_or(Money::ZERO) }
+            PlannedFlows {
+                income: income + actual.income,
+                budget_expenses: budget_expenses + actual.expenses,
+                projects: projects.get(m).copied().unwrap_or(Money::ZERO),
+            }
         })
         .collect();
     let this_year: Vec<reporting::Flows> =

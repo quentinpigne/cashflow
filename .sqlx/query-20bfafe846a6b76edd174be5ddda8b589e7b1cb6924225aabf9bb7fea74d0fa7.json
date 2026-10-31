@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE ledger_transaction SET analysis_month = CASE WHEN ?1 = substr(date, 1, 7) THEN NULL ELSE ?1 END,\n                                       updated_at = ?2\n         WHERE id = ?3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "20bfafe846a6b76edd174be5ddda8b589e7b1cb6924225aabf9bb7fea74d0fa7"
+}

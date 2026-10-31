@@ -96,6 +96,9 @@ pub struct Actions {
     /// Tiers existant de la transaction (R-TIE-16).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub set_payee: Option<PayeeId>,
+    /// Mois d'analyse = mois de la date + n, de −12 à 12 (R-IMP-29).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shift_analysis_month: Option<i32>,
 }
 
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -133,6 +136,8 @@ pub struct Suggestion<Id> {
     pub transfer_to: Option<AccountId>,
     pub note: Option<String>,
     pub payee: Option<PayeeId>,
+    /// Décalage du mois d'analyse (R-IMP-29).
+    pub month_shift: Option<i32>,
     /// Règles appliquées, dans l'ordre.
     pub rules: Vec<Id>,
 }
@@ -227,6 +232,7 @@ pub fn evaluate<Id: Copy>(rules: &[Rule<Id>], subject: &Subject<'_>) -> Suggesti
         transfer_to: None,
         note: None,
         payee: None,
+        month_shift: None,
         rules: Vec::new(),
     };
     for rule in rules {
@@ -251,6 +257,9 @@ pub fn evaluate<Id: Copy>(rules: &[Rule<Id>], subject: &Subject<'_>) -> Suggesti
         }
         if suggestion.payee.is_none() {
             suggestion.payee = a.set_payee;
+        }
+        if suggestion.month_shift.is_none() {
+            suggestion.month_shift = a.shift_analysis_month;
         }
         suggestion.rules.push(rule.id);
         if rule.stop_processing {
@@ -325,6 +334,17 @@ mod tests {
         second.actions.set_payee = Some(other);
         let s = evaluate(&[first, second], &subject("CB CARREFOUR MEYLAN 14/03", -4_250));
         assert_eq!(s.payee, Some(carrefour));
+        assert_eq!(s.splits.len(), 1);
+    }
+
+    #[test]
+    fn r_imp_29_month_shift_follows_r_imp_12() {
+        let mut first = rule(1, "salaire", None, false, None);
+        first.actions.shift_analysis_month = Some(1);
+        let mut second = rule(2, "salaire", Some(CategoryId::new()), true, None);
+        second.actions.shift_analysis_month = Some(-1);
+        let s = evaluate(&[first, second], &subject("VIREMENT SALAIRE ACME", 300_000));
+        assert_eq!(s.month_shift, Some(1));
         assert_eq!(s.splits.len(), 1);
     }
 

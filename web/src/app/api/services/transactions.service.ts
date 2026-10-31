@@ -10,6 +10,7 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { BulkAnalysisMonthResult } from '../models/bulk-analysis-month-result';
 import { BulkCategorizeResult } from '../models/bulk-categorize-result';
 import { BulkPayeeResult } from '../models/bulk-payee-result';
 import { Candidate } from '../models/candidate';
@@ -39,6 +40,8 @@ import { refundCandidates } from '../fn/transactions/refund-candidates';
 import { RefundCandidates$Params } from '../fn/transactions/refund-candidates';
 import { setExpectedRefund } from '../fn/transactions/set-expected-refund';
 import { SetExpectedRefund$Params } from '../fn/transactions/set-expected-refund';
+import { setTransactionsAnalysisMonth } from '../fn/transactions/set-transactions-analysis-month';
+import { SetTransactionsAnalysisMonth$Params } from '../fn/transactions/set-transactions-analysis-month';
 import { setTransactionsPayee } from '../fn/transactions/set-transactions-payee';
 import { SetTransactionsPayee$Params } from '../fn/transactions/set-transactions-payee';
 import { TransactionCreated } from '../models/transaction-created';
@@ -235,6 +238,41 @@ export class TransactionsService extends BaseService {
     const resp = this.createTransaction$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<TransactionCreated>): TransactionCreated => r.body)
+    );
+  }
+
+  /** Path part for operation `setTransactionsAnalysisMonth()` */
+  static readonly SetTransactionsAnalysisMonthPath = '/api/v1/transactions/analysis-month';
+
+  /**
+   * Fixe le mois d'analyse de plusieurs transactions (TRX-13, R-TRX-57).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `setTransactionsAnalysisMonth()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsAnalysisMonth$Response(params: SetTransactionsAnalysisMonth$Params, context?: HttpContext): Observable<StrictHttpResponse<BulkAnalysisMonthResult>> {
+    const obs = setTransactionsAnalysisMonth(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Fixe le mois d'analyse de plusieurs transactions (TRX-13, R-TRX-57).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `setTransactionsAnalysisMonth$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsAnalysisMonth(params: SetTransactionsAnalysisMonth$Params, context?: HttpContext): Observable<BulkAnalysisMonthResult> {
+    const resp = this.setTransactionsAnalysisMonth$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BulkAnalysisMonthResult>): BulkAnalysisMonthResult => r.body)
     );
   }
 

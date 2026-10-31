@@ -9,8 +9,9 @@ use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
 use crate::services::transactions::{
-    self, BulkCategorizeInput, BulkCategorizeResult, BulkPayeeInput, BulkPayeeResult, CategorizeInput,
-    TransactionDetail, TransactionFilter, TransactionInput, TransactionPage, TransactionUpdateInput,
+    self, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput, BulkCategorizeResult, BulkPayeeInput,
+    BulkPayeeResult, CategorizeInput, TransactionDetail, TransactionFilter, TransactionInput, TransactionPage,
+    TransactionUpdateInput,
 };
 use crate::services::transfers::{
     self, Candidate, CandidatesQuery, MarkAsTransferInput, TransferCreated, TransferInput,
@@ -184,6 +185,19 @@ pub async fn set_payee_many(
     Json(input): Json<BulkPayeeInput>,
 ) -> AppResult<Json<BulkPayeeResult>> {
     Ok(Json(transactions::set_payee_many(&state.db, &input).await?))
+}
+
+/// Fixe le mois d'analyse de plusieurs transactions (TRX-13, R-TRX-57).
+#[utoipa::path(
+    post, operation_id = "setTransactionsAnalysisMonth", path = "/transactions/analysis-month", tag = "transactions",
+    request_body = BulkAnalysisMonthInput,
+    responses((status = 200, body = BulkAnalysisMonthResult), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn set_analysis_month(
+    State(state): State<AppState>,
+    Json(input): Json<BulkAnalysisMonthInput>,
+) -> AppResult<Json<BulkAnalysisMonthResult>> {
+    Ok(Json(transactions::set_analysis_month(&state.db, &input).await?))
 }
 
 /// Fixe ou retire le remboursement attendu d'une dépense (R-TRX-53).

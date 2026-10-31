@@ -372,7 +372,7 @@ pub struct PayeeFactRow {
 
 pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<PayeeFactRow>> {
     let rows = sqlx::query!(
-        r#"SELECT t.payee_id AS "payee_id!", t.id AS "transaction_id!", t.date AS "date!: Date", s.amount,
+        r#"SELECT t.payee_id AS "payee_id!", t.id AS "transaction_id!", t.analysis_date AS "date!: Date", s.amount,
                   s.category_id, c.kind AS "category_kind?", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
                    OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
@@ -382,7 +382,7 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
            LEFT JOIN category c ON c.id = s.category_id
-           WHERE t.payee_id IS NOT NULL AND t.date BETWEEN ? AND ?"#,
+           WHERE t.payee_id IS NOT NULL AND t.analysis_date BETWEEN ? AND ?"#,
         from,
         to
     )

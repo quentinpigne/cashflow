@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use cashflow_domain::accounts::AccountPeriod;
+use cashflow_domain::budgeting::Month;
 use cashflow_domain::ledger::balance::{self, DatedAmount};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::split;
@@ -87,6 +88,8 @@ pub struct TransactionListItem {
     pub transfer: Option<TransferSummary>,
     /// A au moins un justificatif (DOC-04).
     pub has_documents: bool,
+    /// Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date (R-TRX-57).
+    pub analysis_month: Option<String>,
     /// Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
     pub balance_after_minor: Option<i64>,
 }
@@ -119,6 +122,8 @@ pub struct TransactionDetail {
     pub origin: TransactionOrigin,
     /// Tiers (spec 11), modifiable même rapprochée (R-TIE-12).
     pub payee_id: Option<PayeeId>,
+    /// Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date ; modifiable même rapprochée (R-TRX-57, R-TRX-3).
+    pub analysis_month: Option<String>,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
     /// Échéance de prêt payée par cette transaction (R-PRE-6).
@@ -200,6 +205,19 @@ pub struct BulkPayeeResult {
     pub skipped: usize,
 }
 
+/// Mois d'analyse de plusieurs transactions (TRX-13) ; absent, ou le mois de la date : le mois de la date.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BulkAnalysisMonthInput {
+    pub transaction_ids: Vec<TransactionId>,
+    /// `AAAA-MM`.
+    pub analysis_month: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BulkAnalysisMonthResult {
+    pub updated: usize,
+}
+
 /// Catégorisation en masse (TRX-06).
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct BulkCategorizeInput {
@@ -245,6 +263,8 @@ pub struct TransactionFilter {
     pub without_payee: Option<bool>,
     /// Avec (`true`) ou sans (`false`) justificatif (DOC-04).
     pub with_documents: Option<bool>,
+    /// Mois d'analyse `AAAA-MM` : les transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58).
+    pub analysis_month: Option<String>,
     pub cursor: Option<String>,
     /// 200 par défaut.
     pub limit: Option<usize>,
@@ -309,6 +329,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
                 payee_id: t.payee_id,
                 splits: tx_splits,
                 has_documents: selection.documented.contains(&t.id),
+                analysis_month: t.analysis_month.map(|m| m.to_string()),
                 transfer: transfers.get(&t.id).map(|side| transfer_summary(side, &names)),
                 balance_after_minor: Some(balance_after.minor()),
             })
@@ -360,6 +381,7 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
         clearing_status: t.clearing_status,
         origin: t.origin,
         payee_id: t.payee_id,
+        analysis_month: t.analysis_month.map(|m| m.to_string()),
         splits,
         transfer,
         loan_payment,
@@ -712,6 +734,7 @@ struct Selection {
     payee_ids: Option<HashSet<PayeeId>>,
     text: Option<String>,
     documented: HashSet<TransactionId>,
+    analysis_month: Option<Month>,
 }
 
 async fn selection(db: &Db, filter: &TransactionFilter) -> AppResult<Selection> {
@@ -721,6 +744,7 @@ async fn selection(db: &Db, filter: &TransactionFilter) -> AppResult<Selection> 
         payee_ids: payee_selection(db, filter).await?,
         text: clean(filter.text.as_deref()).map(|t| t.to_lowercase()),
         documented: documented.iter().filter_map(|id| id.parse().ok()).collect(),
+        analysis_month: filter.analysis_month.as_deref().map(parse_month).transpose()?,
     })
 }
 
@@ -745,6 +769,7 @@ fn matches_filter(
         && payee_ids.is_none_or(|ids| t.payee_id.is_some_and(|p| ids.contains(&p)))
         && (!filter.without_payee.unwrap_or(false) || (!is_transfer && t.payee_id.is_none()))
         && filter.with_documents.is_none_or(|wanted| has_documents == wanted)
+        && selection.analysis_month.is_none_or(|month| ledger::analysis_month(t.date, t.analysis_month) == month)
         && text.is_none_or(|text| {
             [Some(&t.label), t.bank_label.as_ref(), t.note.as_ref()]
                 .into_iter()
@@ -834,6 +859,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
                 payee_id: t.payee_id,
                 splits: tx_splits,
                 has_documents: selection.documented.contains(&t.id),
+                analysis_month: t.analysis_month.map(|m| m.to_string()),
                 transfer: side.map(|s| transfer_summary(s, &accounts)),
                 balance_after_minor: None,
             })
@@ -895,4 +921,24 @@ pub async fn set_payee_many(db: &Db, input: &BulkPayeeInput) -> AppResult<BulkPa
     }
     tx.commit().await?;
     Ok(result)
+}
+
+fn parse_month(value: &str) -> AppResult<Month> {
+    value
+        .parse()
+        .map_err(|_| AppError::invalid_field("INVALID_MONTH", "analysis_month", "mois attendu au format AAAA-MM"))
+}
+
+/// Fixe le mois d'analyse de transactions (TRX-13, R-TRX-57) ; il ne touche pas au solde, même rapprochées (R-TRX-3).
+pub async fn set_analysis_month(db: &Db, input: &BulkAnalysisMonthInput) -> AppResult<BulkAnalysisMonthResult> {
+    let month = input.analysis_month.as_deref().map(parse_month).transpose()?;
+    let mut tx = db.write.begin().await?;
+    for id in &input.transaction_ids {
+        if db::transactions::find(&mut *tx, *id).await?.is_none() {
+            return Err(AppError::NotFound("transaction"));
+        }
+        db::transactions::set_analysis_month(&mut *tx, *id, month).await?;
+    }
+    tx.commit().await?;
+    Ok(BulkAnalysisMonthResult { updated: input.transaction_ids.len() })
 }

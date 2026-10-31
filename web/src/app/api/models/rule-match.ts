@@ -20,6 +20,11 @@ export interface RuleMatch {
   sets_category: boolean;
 
   /**
+   * Sans mois d'analyse, pour une règle qui le décale : le mois d'analyse changera (R-IMP-29).
+   */
+  sets_month: boolean;
+
+  /**
    * Sans tiers, pour une règle qui en affecte un : le tiers changera.
    */
   sets_payee: boolean;

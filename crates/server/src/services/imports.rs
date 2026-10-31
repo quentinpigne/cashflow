@@ -163,6 +163,9 @@ struct Review {
     /// Tiers de la transaction créée : règle (R-TIE-16), appris (R-TIE-17) ou choisi en revue.
     #[serde(default)]
     payee: Option<PayeeId>,
+    /// Décalage du mois d'analyse de la transaction créée, donné par une règle (R-IMP-29).
+    #[serde(default)]
+    month_shift: Option<i32>,
     #[serde(default)]
     payee_learned: bool,
     /// État de la transaction pointée avant validation, pour l'annulation (R-IMP-17).
@@ -579,6 +582,7 @@ impl Suggester {
             note: suggestion.note.clone(),
             rules: suggestion.rules.clone(),
             project: suggestion.project,
+            month_shift: suggestion.month_shift,
             ..Default::default()
         };
         if let Some(to) = suggestion.transfer_to {
@@ -1231,6 +1235,10 @@ pub async fn commit(
                     })
                     .collect();
                 super::transactions::insert_validated(&mut tx, &new, &new_splits).await?;
+                if let Some(shift) = review.month_shift.filter(|_| transfer_to.is_none()) {
+                    let month = cashflow_domain::ledger::shifted_month(shown, shift)?;
+                    db::transactions::set_analysis_month(&mut *tx, transaction, Some(month)).await?;
+                }
                 touched.push(transaction);
                 result.created += 1;
 

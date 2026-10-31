@@ -32,8 +32,7 @@ Répondre à trois questions :
   fois. Les mensualités déjà ventilées (R-PRE-6) n'entrent pas dans la dépense variable moyenne
   (R-PRJ-11).
 - **R-PRJ-11** — Une dépense variable moyenne est **incluse par défaut**, et désactivable : moyenne
-  des dépenses **non récurrentes** des 3 derniers mois complets (par date d'analyse, R-TRX-57), hors
-  ventilations rattachées à un projet
+  des dépenses **non récurrentes** des 3 derniers mois complets, hors ventilations rattachées à un projet
   (projetées à part, R-PRJ-48), répartie uniformément sur les jours.
   Elle est affichée séparément des échéances connues.
 - **R-PRJ-12** — Le solde minimum projeté et sa date sont mis en évidence ; un passage sous 0 (ou sous
@@ -93,7 +92,8 @@ Répondre à trois questions :
   `INCOME` des comptes `CASH`, hors catégories reliées à un emploi (et leurs sous-catégories). Les intérêts
   des comptes d'épargne n'y entrent pas : leur projection les compte déjà (R-PRJ-20). Les autres revenus
   restent constants. Sans emploi déclaré, les revenus projetés sont donc la moyenne des revenus passés.
-- **R-PRJ-44** — **Dépenses projetées** = dépenses mensuelles moyennes (R-TDB-8, sur les mêmes mois que
+- **R-PRJ-44** — **Dépenses projetées** = dépenses mensuelles moyennes (R-TDB-8, par date d'analyse,
+  R-TRX-57, sur les mêmes mois que
   R-PRJ-43), hors intérêts et assurance des mensualités ventilées (R-PRE-6) et hors ventilations
   rattachées à un projet (un voyage passé ne revient pas chaque mois ; les projets sont projetés à part,
   R-PRJ-48), augmentées chaque 1er janvier

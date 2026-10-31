@@ -14,6 +14,11 @@ export interface TransactionListItem {
   amount_minor: number;
 
   /**
+   * Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date (R-TRX-57).
+   */
+  analysis_month?: (string | null);
+
+  /**
    * Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
    */
   balance_after_minor?: (number | null);

@@ -1,5 +1,6 @@
 //! Transactions, ventilations et virements (spec 02).
 
+use cashflow_domain::budgeting::Month;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
 use cashflow_domain::shared::ids::{
@@ -30,6 +31,8 @@ pub struct TransactionRow {
     pub payee_id: Option<PayeeId>,
     /// Remboursement attendu d'une dépense (R-TRX-53).
     pub expected_refund: Option<Money>,
+    /// Mois d'analyse, s'il est choisi (R-TRX-57).
+    pub analysis_month: Option<Month>,
 }
 
 #[derive(Debug, Clone)]
@@ -110,6 +113,7 @@ macro_rules! transaction_row {
             origin: enum_from_db(&r.origin)?,
             payee_id: opt_id_from_db(r.payee_id.as_deref())?,
             expected_refund: r.expected_refund.map(Money::from_minor),
+            analysis_month: opt_id_from_db(r.analysis_month.as_deref())?,
         })
     }};
 }
@@ -139,7 +143,8 @@ pub async fn list_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?",
+                  analysis_month AS "analysis_month?"
            FROM ledger_transaction WHERE account_id = ? ORDER BY balance_date, id"#,
         account
     )
@@ -154,7 +159,8 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::Res
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?",
+                  analysis_month AS "analysis_month?"
            FROM ledger_transaction WHERE id = ?"#,
         id
     )
@@ -518,7 +524,8 @@ pub async fn transfer_candidates(
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?",
+                  analysis_month AS "analysis_month?"
            FROM ledger_transaction t
            WHERE account_id = ? AND amount = ? AND balance_date BETWEEN ? AND ?
              AND NOT EXISTS (SELECT 1 FROM transfer_leg tr WHERE t.id IN (tr.outflow_transaction_id, tr.inflow_transaction_id))
@@ -575,7 +582,7 @@ pub struct SplitFactRow {
 
 pub async fn split_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<SplitFactRow>> {
     let rows = sqlx::query!(
-        r#"SELECT t.date AS "date: Date", s.amount, c.kind AS "category_kind?", a.currency,
+        r#"SELECT t.analysis_date AS "date!: Date", s.amount, c.kind AS "category_kind?", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
                    OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
                    OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
@@ -584,7 +591,7 @@ pub async fn split_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> a
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
            LEFT JOIN category c ON c.id = s.category_id
-           WHERE t.date BETWEEN ? AND ?"#,
+           WHERE t.analysis_date BETWEEN ? AND ?"#,
         from,
         to
     )
@@ -678,7 +685,8 @@ pub async fn list_all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Transac
         r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
                   balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
                   bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
-                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?"
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?",
+                  analysis_month AS "analysis_month?"
            FROM ledger_transaction ORDER BY date, id"#
     )
     .fetch_all(db)
@@ -743,7 +751,7 @@ pub async fn categorized_facts(
     to: Date,
 ) -> anyhow::Result<Vec<CategorizedFactRow>> {
     let rows = sqlx::query!(
-        r#"SELECT t.date AS "date!: Date", s.amount, s.category_id, s.project_id IS NOT NULL AS "has_project!: bool",
+        r#"SELECT t.analysis_date AS "date!: Date", s.amount, s.category_id, s.project_id IS NOT NULL AS "has_project!: bool",
                   c.kind AS "category_kind?", a.currency,
                   (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
                    OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
@@ -753,7 +761,7 @@ pub async fn categorized_facts(
            JOIN ledger_transaction t ON t.id = s.transaction_id
            JOIN account a ON a.id = t.account_id
            LEFT JOIN category c ON c.id = s.category_id
-           WHERE t.date BETWEEN ? AND ?"#,
+           WHERE t.analysis_date BETWEEN ? AND ?"#,
         from,
         to
     )
@@ -880,6 +888,30 @@ pub async fn detach_asset(db: impl SqliteExecutor<'_>, asset: AssetId) -> anyhow
     let asset = asset.to_string();
     let now = timestamp();
     sqlx::query!("UPDATE split SET asset_id = NULL, updated_at = ? WHERE asset_id = ?", now, asset).execute(db).await?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------- Mois d'analyse (TRX-13)
+
+/// Fixe ou vide le mois d'analyse d'une transaction (R-TRX-57) ; vide aussi quand c'est le mois de sa date.
+pub async fn set_analysis_month(
+    db: impl SqliteExecutor<'_>,
+    id: TransactionId,
+    month: Option<Month>,
+) -> anyhow::Result<()> {
+    let id = id.to_string();
+    let month = month.map(|m| m.to_string());
+    let now = timestamp();
+    sqlx::query!(
+        "UPDATE ledger_transaction SET analysis_month = CASE WHEN ?1 = substr(date, 1, 7) THEN NULL ELSE ?1 END,
+                                       updated_at = ?2
+         WHERE id = ?3",
+        month,
+        now,
+        id
+    )
+    .execute(db)
+    .await?;
     Ok(())
 }
 
