@@ -8,12 +8,14 @@ export interface MemberView {
    * Ce qui lui est affecté, et revient au foyer à sa suppression (R-MBR-2).
    */
   account_count: number;
+  asset_count: number;
 
   /**
    * `#RRGGBB`.
    */
   color?: (string | null);
   display_order: number;
+  document_count: number;
   employment_count: number;
   id: MemberId;
   name: string;

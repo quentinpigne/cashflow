@@ -5,6 +5,7 @@ import { DocumentId } from '../models/document-id';
 import { DocumentKind } from '../models/document-kind';
 import { LinkView } from '../models/link-view';
 import { MediaType } from '../models/media-type';
+import { MemberId } from '../models/member-id';
 
 /**
  * Un document de la bibliothèque (R-DOC-4 à R-DOC-8).
@@ -21,6 +22,7 @@ export interface DocumentView {
   kind?: (DocumentKind | null);
   links: Array<LinkView>;
   media_type: MediaType;
+  member_id?: (MemberId | null);
 
   /**
    * Premier jour du mois d'un relevé ou d'une fiche de paie (R-DOC-7).

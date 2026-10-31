@@ -189,8 +189,8 @@ Conception : spec 14, ADR-0006 (membres sans connexion), écrans « foyer » et 
 - [x] MBR-02 — membre d'un compte et d'un emploi
 - [x] MBR-03 — membre d'une transaction ou de chaque ventilation
 - [x] MBR-04 — choix des membres affichés dans l'accueil, les analyses et les projections
-- [ ] MBR-06 — biens répartis entre membres par quotes-parts (pourcentage ou montant)
-- [ ] MBR-07 — membre d'un document, par défaut celui du compte ou de l'emploi
+- [x] MBR-06 — biens répartis entre membres par quotes-parts (pourcentage ou montant)
+- [x] MBR-07 — membre d'un document, par défaut celui du compte ou de l'emploi
 
 ## Phase 7 — V2 (à prioriser plus tard)
 

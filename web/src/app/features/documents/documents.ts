@@ -41,6 +41,8 @@ import {
   linkLabel,
   snippetParts,
 } from './document-labels';
+import { MemberTag, MemberTagView } from '../../shared/member-tag';
+import { MembersStore } from '../../shared/stores';
 
 /** Valeur du filtre de type : un type, les documents à classer, ou tous. */
 type KindFilter = DocumentKind | 'UNSORTED' | null;
@@ -61,6 +63,7 @@ interface Refusal {
 @Component({
   selector: 'app-documents',
   imports: [
+    MemberTag,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -145,6 +148,18 @@ interface Refusal {
             }
           </mat-select>
         </mat-form-field>
+        @if (members.active()) {
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Membre</mat-label>
+            <mat-select [ngModel]="member()" (ngModelChange)="member.set($event)">
+              <mat-option [value]="null">Tous</mat-option>
+              <mat-option [value]="NOBODY">Personne</mat-option>
+              @for (m of members.list(); track m.id) {
+                <mat-option [value]="m.id">{{ m.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
         @if (filtered()) {
           <button mat-button (click)="clear()">Effacer les filtres</button>
         }
@@ -172,7 +187,12 @@ interface Refusal {
                 d.kind ? icons[d.kind] : 'inbox'
               }}</mat-icon>
               <a class="main" [routerLink]="['/documents', d.id]">
-                <span class="title">{{ d.title }}</span>
+                <span class="title"
+                  >{{ d.title }}
+                  @if (members.active() && d.member_id) {
+                    <app-member-tag [tag]="memberTag(d.member_id)" />
+                  }
+                </span>
                 <span class="muted small">
                   {{ d.kind ? kindLabels[d.kind] : 'À classer' }} ·
                   {{ d.reference_date | frDate }} · {{ size(d.size_bytes) }}
@@ -361,6 +381,10 @@ export class DocumentsPage {
   );
   protected readonly year = signal<number | null>(null);
   protected readonly linkKind = signal<LinkKind | 'NONE' | null>(null);
+  /** Filtre par membre (R-MBR-13) : un membre, `NOBODY` pour les documents à personne. */
+  protected readonly member = signal<string | null>(null);
+  protected readonly NOBODY = 'nobody';
+  protected readonly members = inject(MembersStore);
   protected readonly dragging = signal(false);
   protected readonly uploading = signal<{ name: string; index: number; total: number } | null>(
     null,
@@ -376,6 +400,7 @@ export class DocumentsPage {
       kind: this.kind(),
       year: this.year(),
       linkKind: this.linkKind(),
+      member: this.member(),
       version: this.version.value(),
     }),
     stream: ({ params }) =>
@@ -386,6 +411,8 @@ export class DocumentsPage {
         year: params.year ?? undefined,
         link_kind: params.linkKind && params.linkKind !== 'NONE' ? params.linkKind : undefined,
         unlinked: params.linkKind === 'NONE' || undefined,
+        member_id: params.member && params.member !== this.NOBODY ? params.member : undefined,
+        without_member: params.member === this.NOBODY || undefined,
       }),
   });
 
@@ -405,7 +432,12 @@ export class DocumentsPage {
   );
 
   protected readonly filtered = computed(
-    () => !!this.query().trim() || !!this.kind() || !!this.year() || !!this.linkKind(),
+    () =>
+      !!this.query().trim() ||
+      !!this.kind() ||
+      !!this.year() ||
+      !!this.linkKind() ||
+      !!this.member(),
   );
 
   /** Sans recherche, par année de la date de référence ; avec une recherche, par pertinence (R-DOC-20). */
@@ -435,6 +467,12 @@ export class DocumentsPage {
     this.kind.set(null);
     this.year.set(null);
     this.linkKind.set(null);
+    this.member.set(null);
+  }
+
+  protected memberTag(id: string): MemberTagView {
+    const m = this.members.byId().get(id);
+    return { label: m?.name ?? '—', color: m?.color ?? null };
   }
 
   protected choose(event: Event): void {

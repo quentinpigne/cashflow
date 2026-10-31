@@ -137,6 +137,8 @@ export type { UpdateAsset$Params as UpdateAsset$Params } from './fn/assets/updat
 export { updateAsset as updateAsset } from './fn/assets/update-asset';
 export type { DeleteAsset$Params as DeleteAsset$Params } from './fn/assets/delete-asset';
 export { deleteAsset as deleteAsset } from './fn/assets/delete-asset';
+export type { SetAssetShares$Params as SetAssetShares$Params } from './fn/assets/set-asset-shares';
+export { setAssetShares as setAssetShares } from './fn/assets/set-asset-shares';
 export type { SaveAssetValuation$Params as SaveAssetValuation$Params } from './fn/assets/save-asset-valuation';
 export { saveAssetValuation as saveAssetValuation } from './fn/assets/save-asset-valuation';
 export type { DeleteAssetValuation$Params as DeleteAssetValuation$Params } from './fn/assets/delete-asset-valuation';

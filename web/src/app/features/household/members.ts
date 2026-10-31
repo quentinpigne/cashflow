@@ -33,6 +33,8 @@ export function assignments(m: MemberView): string {
     [m.account_count, 'compte', 'comptes'],
     [m.split_count, 'ventilation', 'ventilations'],
     [m.employment_count, 'emploi', 'emplois'],
+    [m.asset_count, 'bien', 'biens'],
+    [m.document_count, 'document', 'documents'],
   ] as const;
   const text = parts
     .filter(([count]) => count > 0)
@@ -269,7 +271,7 @@ export class MembersPage {
     const message =
       assigned === 'rien d’affecté'
         ? `${member.name} n'a rien d'affecté.`
-        : `${assigned} reviendront au foyer. Aucun montant ne change.`;
+        : `${assigned} reviendront au foyer (les documents, à personne). Aucun montant ne change.`;
     const ok = await confirm(this.dialog, {
       title: `Supprimer ${member.name}`,
       message,

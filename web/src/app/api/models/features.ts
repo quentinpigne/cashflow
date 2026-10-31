@@ -21,6 +21,11 @@ export interface Features {
   household: boolean;
 
   /**
+   * Biens qui gardent une part au foyer (R-MBR-11).
+   */
+  household_asset_count: number;
+
+  /**
    * Ventilations au foyer, hors virements (R-MBR-8).
    */
   household_split_count: number;

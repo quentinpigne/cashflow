@@ -230,3 +230,24 @@ export function parseRatePpm(input: string): number | null {
   const [units, decimals = ''] = text.split('.');
   return Number(units) * 10_000 + Number(decimals.padEnd(4, '0'));
 }
+
+/** Quote-part en centièmes de pour cent, affichée « 60 % » ou « 33,34 % » (R-MBR-11). */
+export function formatShare(bp: number): string {
+  const units = Math.trunc(bp / 100);
+  const hundredths = bp % 100;
+  return hundredths === 0
+    ? `${units}\u00a0%`
+    : `${units},${String(hundredths).padStart(2, '0')}\u00a0%`;
+}
+
+/**
+ * Quote-part équivalente à un montant, d'après la valeur du bien, au centième de pour cent le plus proche
+ * (R-MBR-11). Même calcul que le domaine (`household::share_of_amount`) ; `null` hors de (0, valeur].
+ */
+export function shareOfAmount(amountMinor: number, valueMinor: number): number | null {
+  if (valueMinor <= 0 || amountMinor <= 0 || amountMinor > valueMinor) return null;
+  const amount = BigInt(amountMinor);
+  const value = BigInt(valueMinor);
+  const bp = Number((amount * 10_000n * 2n + value) / (value * 2n));
+  return Math.max(bp, 1);
+}

@@ -28,7 +28,10 @@ import { DataVersion } from '../../core/data-version';
 import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { ASSET_KIND_LABELS } from '../../core/labels';
-import { parseMoney, sum, toEditable } from '../../core/money';
+import { formatShare, parseMoney, sum, toEditable } from '../../core/money';
+import { MembersStore } from '../../shared/stores';
+import { AssetSharesDialog } from './asset-shares';
+import { AssetSummary } from '../../api/models/asset-summary';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { DocumentsService } from '../../api/services/documents.service';
@@ -341,6 +344,9 @@ export class AssetValuationDialog {
                   >{{ kindLabels[a.kind] }} · acheté le
                   {{ a.purchase_date | frDate: 'short' }}</span
                 >
+                @if (members.active() && a.shares.length > 0) {
+                  <span class="muted small">{{ sharesText(a) }}</span>
+                }
               </span>
               <span class="amount">{{ a.value_minor ?? 0 | money }}</span>
             </a>
@@ -367,6 +373,17 @@ export class AssetValuationDialog {
   styleUrl: '../accounts/accounts.scss',
 })
 export class AssetsPage {
+  protected readonly members = inject(MembersStore);
+
+  /** « Quentin 60 % · Claire 30 % · Foyer 10 % » (E25, R-MBR-11). */
+  protected sharesText(a: AssetSummary): string {
+    const parts = a.shares.map(
+      (s) => `${this.members.name(s.member_id)} ${formatShare(s.share_bp)}`,
+    );
+    if (a.household_share_bp > 0) parts.push(`Foyer ${formatShare(a.household_share_bp)}`);
+    return parts.join(' · ');
+  }
+
   private readonly api = inject(AssetsService);
   private readonly version = inject(DataVersion);
   private readonly dialog = inject(MatDialog);
@@ -464,6 +481,31 @@ export class AssetsPage {
           }
         </section>
 
+        @if (members.active()) {
+          <section class="card panel">
+            <header>
+              <h2>Répartition</h2>
+              <button mat-stroked-button (click)="editShares(a)">
+                <mat-icon>edit</mat-icon>Modifier
+              </button>
+            </header>
+            @for (s of a.summary.shares; track s.member_id) {
+              <div class="row">
+                <span>{{ members.name(s.member_id) }}</span>
+                <span class="muted small">{{ share(s.share_bp) }}</span>
+                <span class="amount">{{ s.value_minor ?? 0 | money }}</span>
+              </div>
+            }
+            @if (a.summary.household_share_bp > 0) {
+              <div class="row">
+                <span>Foyer</span>
+                <span class="muted small">{{ share(a.summary.household_share_bp) }}</span>
+                <span class="amount">{{ a.summary.household_value_minor ?? 0 | money }}</span>
+              </div>
+            }
+          </section>
+        }
+
         <section class="card panel">
           <header>
             <h2>Estimations</h2>
@@ -525,6 +567,7 @@ export class AssetPage {
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
   protected readonly kindLabels = ASSET_KIND_LABELS;
+  protected readonly members = inject(MembersStore);
 
   readonly id = input.required<string>();
 
@@ -556,6 +599,16 @@ export class AssetPage {
     } catch (e) {
       this.snack.open(errorMessage(e), undefined, { duration: 4000 });
     }
+  }
+
+  /** Répartition entre membres (MBR-06). */
+  protected async editShares(a: AssetView): Promise<void> {
+    const ref = this.dialog.open(AssetSharesDialog, { data: a, maxWidth: '100vw' });
+    if (await firstValueFrom(ref.afterClosed())) this.version.bump();
+  }
+
+  protected share(bp: number): string {
+    return formatShare(bp);
   }
 
   protected async addValuation(): Promise<void> {

@@ -1184,7 +1184,8 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
   qui reste au foyer (R-MBR-9). Filtré, l'écran l'indique dans son titre (« Analyses · Claire ») et le bouton
   est mis en avant. Sur E24, le bouton Scénarios prend l'icône `insights`.
 
-- **E26 Fiche d'un bien**, formulaire du bien : section **Répartition** (MBR-06) : une ligne par membre, quote-part saisie en %
+- **E26 Fiche d'un bien** : section **Répartition** (MBR-06), chaque membre avec sa quote-part et sa part de la valeur,
+  puis « Foyer » pour le reste ; « Modifier » ouvre un dialogue : une ligne par membre, quote-part saisie en %
   ou en € (bascule « % / € » ; en €, la quote-part calculée s'affiche à côté, d'après la valeur actuelle) ;
   « Foyer : reste » affiché en dessous, en erreur au-delà de 100 % (R-MBR-11). **E25 Biens** : sous la valeur,
   « Quentin 60 % · Claire 30 % · Foyer 10 % ».

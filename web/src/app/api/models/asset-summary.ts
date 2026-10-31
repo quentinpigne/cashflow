@@ -3,17 +3,33 @@
 
 import { AssetId } from '../models/asset-id';
 import { AssetKind } from '../models/asset-kind';
+import { AssetShareView } from '../models/asset-share-view';
 
 /**
  * Un bien dans la liste (E25) et sur l'accueil.
  */
 export interface AssetSummary {
+
+  /**
+   * Quote-part du foyer : le reste, en centièmes de pour cent.
+   */
+  household_share_bp: number;
+
+  /**
+   * Part du foyer dans la valeur d'aujourd'hui (R-MBR-12).
+   */
+  household_value_minor?: (number | null);
   id: AssetId;
   include_in_net_worth: boolean;
   kind: AssetKind;
   name: string;
   purchase_date: string;
   purchase_price_minor: number;
+
+  /**
+   * Quotes-parts des membres, dans leur ordre (R-MBR-11).
+   */
+  shares: Array<AssetShareView>;
   sold_on?: (string | null);
 
   /**

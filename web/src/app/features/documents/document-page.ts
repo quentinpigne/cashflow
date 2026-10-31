@@ -44,6 +44,7 @@ import {
   linkRoute,
 } from './document-labels';
 import { pickLinkTarget } from './link-dialogs';
+import { MembersStore } from '../../shared/stores';
 
 /** E35 — Fiche d'un document (DOC-01, DOC-02). */
 @Component({
@@ -176,6 +177,21 @@ import { pickLinkTarget } from './link-dialogs';
                   <mat-hint>Durée d'un contrat, validité d'une garantie…</mat-hint>
                 </mat-form-field>
               </div>
+              @if (members.active()) {
+                <mat-form-field>
+                  <mat-label>Membre</mat-label>
+                  <mat-select
+                    [ngModel]="member() ?? ''"
+                    (ngModelChange)="member.set($event || null)"
+                  >
+                    <mat-option value="">Personne</mat-option>
+                    @for (m of members.list(); track m.id) {
+                      <mat-option [value]="m.id">{{ m.name }}</mat-option>
+                    }
+                  </mat-select>
+                  <mat-hint>La personne que le document concerne (R-MBR-13).</mat-hint>
+                </mat-form-field>
+              }
               <mat-form-field>
                 <mat-label>Note</mat-label>
                 <textarea
@@ -362,6 +378,9 @@ export class DocumentPage {
   protected readonly start = signal<Date | null>(null);
   protected readonly end = signal<Date | null>(null);
   protected readonly note = signal('');
+  /** Membre que le document concerne ; `null` : personne (R-MBR-13). */
+  protected readonly member = signal<string | null>(null);
+  protected readonly members = inject(MembersStore);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
 
@@ -386,6 +405,7 @@ export class DocumentPage {
       this.start.set(d.period_start ? fromIsoDate(d.period_start) : null);
       this.end.set(d.period_end ? fromIsoDate(d.period_end) : null);
       this.note.set(d.note ?? '');
+      this.member.set(d.member_id ?? null);
       this.error.set(null);
     });
   }
@@ -405,6 +425,7 @@ export class DocumentPage {
       period_start: iso(this.start()),
       period_end: iso(this.end()),
       note: this.note().trim() || null,
+      member_id: this.member(),
     };
   });
 
@@ -419,7 +440,8 @@ export class DocumentPage {
       i.document_date !== (d.document_date ?? null) ||
       i.period_start !== (d.period_start ?? null) ||
       i.period_end !== (d.period_end ?? null) ||
-      i.note !== (d.note ?? null)
+      i.note !== (d.note ?? null) ||
+      i.member_id !== (d.member_id ?? null)
     );
   });
 

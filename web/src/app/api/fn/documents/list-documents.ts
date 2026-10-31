@@ -10,6 +10,7 @@ import { RequestBuilder } from '../../request-builder';
 import { DocumentKind } from '../../models/document-kind';
 import { DocumentView } from '../../models/document-view';
 import { LinkKind } from '../../models/link-kind';
+import { MemberId } from '../../models/member-id';
 
 export interface ListDocuments$Params {
 
@@ -43,6 +44,16 @@ export interface ListDocuments$Params {
  * Seulement les documents sans rattachement.
  */
   unlinked?: boolean;
+
+/**
+ * Seulement les documents de ce membre (R-MBR-13).
+ */
+  member_id?: MemberId;
+
+/**
+ * Seulement les documents affectés à personne.
+ */
+  without_member?: boolean;
 }
 
 export function listDocuments(http: HttpClient, rootUrl: string, params?: ListDocuments$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<DocumentView>>> {
@@ -55,6 +66,8 @@ export function listDocuments(http: HttpClient, rootUrl: string, params?: ListDo
     rb.query('link_kind', params.link_kind, {});
     rb.query('link_id', params.link_id, {});
     rb.query('unlinked', params.unlinked, {});
+    rb.query('member_id', params.member_id, {});
+    rb.query('without_member', params.without_member, {});
   }
 
   return http.request(

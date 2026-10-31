@@ -52,8 +52,12 @@ export class MemberRelevance {
     'net-worth': computed(() => {
       const tokens = this.holders((a) => a.include_in_net_worth);
       const f = this.features.features.value();
-      // Les biens et les prêts n'ont pas de membre : ils comptent avec « Foyer » (R-MBR-9).
-      if ((f?.assets && f.asset_count > 0) || (f?.loans && f.loan_count > 0)) tokens.add(HOUSEHOLD);
+      // Un bien compte pour les membres qui en ont une quote-part, et son reste pour « Foyer » ; les prêts
+      // n'ont pas de membre (R-MBR-9, R-MBR-12).
+      if (f?.assets) for (const m of this.members.list()) if (m.asset_count > 0) tokens.add(m.id);
+      if ((f?.assets && f.household_asset_count > 0) || (f?.loans && f.loan_count > 0)) {
+        tokens.add(HOUSEHOLD);
+      }
       return tokens;
     }),
     accounts: computed(() => this.holders((a) => !a.closed_on)),

@@ -24,6 +24,8 @@ import { listAssets } from '../fn/assets/list-assets';
 import { ListAssets$Params } from '../fn/assets/list-assets';
 import { saveAssetValuation } from '../fn/assets/save-asset-valuation';
 import { SaveAssetValuation$Params } from '../fn/assets/save-asset-valuation';
+import { setAssetShares } from '../fn/assets/set-asset-shares';
+import { SetAssetShares$Params } from '../fn/assets/set-asset-shares';
 import { updateAsset } from '../fn/assets/update-asset';
 import { UpdateAsset$Params } from '../fn/assets/update-asset';
 
@@ -185,6 +187,41 @@ export class AssetsService extends BaseService {
     const resp = this.deleteAsset$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `setAssetShares()` */
+  static readonly SetAssetSharesPath = '/api/v1/assets/{id}/shares';
+
+  /**
+   * Répartit un bien entre membres, en pourcentage ou en montant ; le reste est au foyer (R-MBR-11).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `setAssetShares()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setAssetShares$Response(params: SetAssetShares$Params, context?: HttpContext): Observable<StrictHttpResponse<AssetView>> {
+    const obs = setAssetShares(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Répartit un bien entre membres, en pourcentage ou en montant ; le reste est au foyer (R-MBR-11).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `setAssetShares$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setAssetShares(params: SetAssetShares$Params, context?: HttpContext): Observable<AssetView> {
+    const resp = this.setAssetShares$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<AssetView>): AssetView => r.body)
     );
   }
 

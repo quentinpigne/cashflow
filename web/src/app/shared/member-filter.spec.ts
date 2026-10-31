@@ -12,6 +12,8 @@ const member = (id: string, name: string): MemberView => ({
   account_count: 0,
   split_count: 0,
   employment_count: 0,
+  asset_count: 0,
+  document_count: 0,
 });
 
 function make(relevant: string[], screen: `home.${string}` = `home.test-${Math.random()}`) {
