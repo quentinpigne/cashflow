@@ -216,7 +216,9 @@ avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriq
 
 **Transactions** (TRX-02), les plus récentes en haut :
 - colonnes : date, libellé, catégorie (ou « Ventilée » s'il y a plusieurs ventilations, ou « Virement
-  vers / depuis <compte> »), montant, **solde après opération** ;
+  vers / depuis <compte> »), montant, **solde après opération** ; un libellé modifié montre en info-bulle le
+  libellé de la banque (aussi en E14) ;
+- 100 transactions à la fois, « Voir plus » charge les 100 suivantes ;
 - `PENDING` en italique avec une pastille « en attente » ; `RECONCILED` avec un cadenas. Comme le solde
   pointé, ces marques n'apparaissent qu'en phase 2 ;
 - **filtres** : période, catégorie, statut, montant (min, max), texte (libellé et note). Sur mobile, ils

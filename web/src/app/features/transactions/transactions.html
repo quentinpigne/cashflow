@@ -237,7 +237,10 @@
         <button class="open" (click)="open(item)">
           <span class="text">
             <span>
-              {{ item.label }}
+              <span
+                [matTooltip]="item.bank_label ? 'Libellé de la banque : ' + item.bank_label : ''"
+                >{{ item.label }}</span
+              >
               @if (members.active() && !item.transfer) {
                 @let tag =
                   members.tag(item.splits, accounts.byId().get(item.account_id)?.member_id);

@@ -25,6 +25,11 @@ export interface TransactionListItem {
   balance_after_minor?: (number | null);
   balance_date: string;
   bank_date?: (string | null);
+
+  /**
+   * Libellé de la banque, seulement quand le libellé affiché a été modifié.
+   */
+  bank_label?: (string | null);
   clearing_status: ClearingStatus;
   date: string;
 

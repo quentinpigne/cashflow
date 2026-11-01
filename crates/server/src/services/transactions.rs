@@ -84,6 +84,8 @@ pub struct TransactionListItem {
     pub bank_date: Option<Date>,
     pub balance_date: Date,
     pub label: String,
+    /// Libellé de la banque, seulement quand le libellé affiché a été modifié.
+    pub bank_label: Option<String>,
     pub note: Option<String>,
     pub amount_minor: i64,
     pub clearing_status: ClearingStatus,
@@ -400,6 +402,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
             let keep = matches_filter(&t, &tx_splits, transfers.contains_key(&t.id), filter, &selection);
             keep.then(|| TransactionListItem {
                 refund: refund_badge(&t, &mut links),
+                bank_label: t.bank_label.clone().filter(|b| b.trim() != t.label.trim()),
                 id: t.id,
                 account_name: row.name.clone(),
                 account_id: t.account_id,
@@ -971,6 +974,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
             let keep = matches_filter(&t, &tx_splits, side.is_some(), filter, &selection);
             keep.then(|| TransactionListItem {
                 refund: refund_badge(&t, &mut links),
+                bank_label: t.bank_label.clone().filter(|b| b.trim() != t.label.trim()),
                 id: t.id,
                 account_name: accounts.get(&t.account_id).cloned().unwrap_or_default(),
                 account_id: t.account_id,

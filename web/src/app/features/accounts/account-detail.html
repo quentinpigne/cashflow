@@ -203,7 +203,12 @@
                     @if (item.clearing_status === 'RECONCILED') {
                       <mat-icon class="lock" aria-label="Rapprochée">lock</mat-icon>
                     }
-                    {{ item.label }}
+                    <span
+                      [matTooltip]="
+                        item.bank_label ? 'Libellé de la banque : ' + item.bank_label : ''
+                      "
+                      >{{ item.label }}</span
+                    >
                     @if (members.active() && !item.transfer) {
                       @let tag = members.tag(item.splits, a.member_id);
                       @if (tag) {
@@ -271,7 +276,9 @@
             <ng-container matColumnDef="label">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
               <td mat-cell *matCellDef="let t" [class.pending]="t.clearing_status === 'PENDING'">
-                {{ t.label }}
+                <span [matTooltip]="t.bank_label ? 'Libellé de la banque : ' + t.bank_label : ''">{{
+                  t.label
+                }}</span>
                 <app-refund-mark [item]="t" />
               </td>
             </ng-container>
@@ -319,7 +326,7 @@
         }
         @if (p.next_cursor) {
           <div class="more">
-            <button mat-stroked-button (click)="limit.set(limit() + 200)">
+            <button mat-stroked-button (click)="limit.set(limit() + pageSize)">
               Voir plus ({{ p.items.length }} sur {{ p.total }})
             </button>
           </div>

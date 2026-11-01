@@ -126,6 +126,11 @@ async fn imp_05_manual_transaction_is_pointed_and_keeps_its_date() {
     assert_eq!(pointed.label, "Boulangerie");
     assert_eq!(pointed.bank_date, Some(d("2026-03-11")));
     assert_eq!(pointed.bank_label.as_deref(), Some("CB BOULANGERIE DUPONT 10/03"));
+    // La liste donne le libellé de la banque d'une transaction au libellé modifié, et pas des autres.
+    let page = transactions::list(&db, checking, &Default::default()).await.unwrap();
+    let row = page.items.iter().find(|i| i.id == manual).unwrap();
+    assert_eq!(row.bank_label.as_deref(), Some("CB BOULANGERIE DUPONT 10/03"));
+    assert!(page.items.iter().filter(|i| i.id != manual).all(|i| i.bank_label.is_none()));
     // Un point de contrôle au soir du 10 ne l'inclut pas : sa date de solde est le 11 (R-TRX-7).
     // Seul le prélèvement Netflix du 5 compte à cette date.
     assert_eq!(accounts::get(&db, checking, d("2026-03-10")).await.unwrap().balance_minor, -1_399);

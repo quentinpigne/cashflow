@@ -21516,6 +21516,13 @@
             ],
             "format": "date"
           },
+          "bank_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Libellé de la banque, seulement quand le libellé affiché a été modifié."
+          },
           "clearing_status": {
             "$ref": "#/components/schemas/ClearingStatus"
           },

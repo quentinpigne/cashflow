@@ -67,7 +67,8 @@ const NO_FILTERS: Filters = {
   max: '',
   text: '',
 };
-const PAGE = 200;
+/** Transactions chargées à la fois. */
+const PAGE = 100;
 
 /** E3 — Détail d'un compte (CPT-03, TRX-02). */
 @Component({
@@ -129,6 +130,7 @@ export class AccountDetailPage {
   protected readonly balanceDate = signal<Date | null>(null);
   protected readonly filters = signal<Filters>(NO_FILTERS);
   protected readonly showFilters = signal(false);
+  protected readonly pageSize = PAGE;
   protected readonly limit = signal(PAGE);
   protected readonly selected = signal<string | null>(null);
   protected readonly sort = signal<Sort>({ active: 'date', direction: 'desc' });
