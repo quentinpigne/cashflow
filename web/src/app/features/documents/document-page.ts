@@ -179,17 +179,18 @@ import { MembersStore } from '../../shared/stores';
               </div>
               @if (members.active()) {
                 <mat-form-field>
-                  <mat-label>Membre</mat-label>
+                  <mat-label>Membres</mat-label>
                   <mat-select
-                    [ngModel]="member() ?? ''"
-                    (ngModelChange)="member.set($event || null)"
+                    multiple
+                    placeholder="Personne"
+                    [ngModel]="memberIds()"
+                    (ngModelChange)="memberIds.set($event)"
                   >
-                    <mat-option value="">Personne</mat-option>
                     @for (m of members.list(); track m.id) {
                       <mat-option [value]="m.id">{{ m.name }}</mat-option>
                     }
                   </mat-select>
-                  <mat-hint>La personne que le document concerne.</mat-hint>
+                  <mat-hint>Les personnes que le document concerne ; aucune : personne.</mat-hint>
                 </mat-form-field>
               }
               <mat-form-field>
@@ -378,8 +379,8 @@ export class DocumentPage {
   protected readonly start = signal<Date | null>(null);
   protected readonly end = signal<Date | null>(null);
   protected readonly note = signal('');
-  /** Membre que le document concerne ; `null` : personne (R-MBR-13). */
-  protected readonly member = signal<string | null>(null);
+  /** Membres que le document concerne ; aucun : personne (R-MBR-13). */
+  protected readonly memberIds = signal<string[]>([]);
   protected readonly members = inject(MembersStore);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
@@ -405,7 +406,7 @@ export class DocumentPage {
       this.start.set(d.period_start ? fromIsoDate(d.period_start) : null);
       this.end.set(d.period_end ? fromIsoDate(d.period_end) : null);
       this.note.set(d.note ?? '');
-      this.member.set(d.member_id ?? null);
+      this.memberIds.set([...d.member_ids]);
       this.error.set(null);
     });
   }
@@ -425,7 +426,11 @@ export class DocumentPage {
       period_start: iso(this.start()),
       period_end: iso(this.end()),
       note: this.note().trim() || null,
-      member_id: this.member(),
+      // Dans l'ordre des membres, pour comparer avec le document.
+      member_ids: this.members
+        .list()
+        .map((m) => m.id)
+        .filter((id) => this.memberIds().includes(id)),
     };
   });
 
@@ -441,7 +446,7 @@ export class DocumentPage {
       i.period_start !== (d.period_start ?? null) ||
       i.period_end !== (d.period_end ?? null) ||
       i.note !== (d.note ?? null) ||
-      i.member_id !== (d.member_id ?? null)
+      i.member_ids.join() !== d.member_ids.join()
     );
   });
 

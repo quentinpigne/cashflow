@@ -22,7 +22,11 @@ export interface DocumentView {
   kind?: (DocumentKind | null);
   links: Array<LinkView>;
   media_type: MediaType;
-  member_id?: (MemberId | null);
+
+  /**
+   * Membres que le document concerne, dans leur ordre ; aucun : personne (R-MBR-13).
+   */
+  member_ids: Array<MemberId>;
 
   /**
    * Premier jour du mois d'un relevé ou d'une fiche de paie (R-DOC-7).

@@ -10,7 +10,11 @@ import { MemberId } from '../models/member-id';
 export interface DocumentInput {
   document_date?: (string | null);
   kind?: (DocumentKind | null);
-  member_id?: (MemberId | null);
+
+  /**
+   * Membres que le document concerne ; aucun : personne (R-MBR-13).
+   */
+  member_ids?: Array<MemberId>;
 
   /**
    * Premier jour du mois, pour un relevé ou une fiche de paie.

@@ -189,8 +189,8 @@ interface Refusal {
               <a class="main" [routerLink]="['/documents', d.id]">
                 <span class="title"
                   >{{ d.title }}
-                  @if (members.active() && d.member_id) {
-                    <app-member-tag [tag]="memberTag(d.member_id)" />
+                  @if (members.active() && d.member_ids.length > 0) {
+                    <app-member-tag [tag]="memberTag(d.member_ids)" />
                   }
                 </span>
                 <span class="muted small">
@@ -470,9 +470,12 @@ export class DocumentsPage {
     this.member.set(null);
   }
 
-  protected memberTag(id: string): MemberTagView {
-    const m = this.members.byId().get(id);
-    return { label: m?.name ?? '—', color: m?.color ?? null };
+  /** Étiquette des membres d'un document : « Claire », « Quentin, Claire », « 3 membres ». */
+  protected memberTag(ids: string[]): MemberTagView {
+    const names = ids.map((id) => this.members.name(id));
+    const label = ids.length > 2 ? `${ids.length} membres` : names.join(', ');
+    const color = ids.length === 1 ? (this.members.byId().get(ids[0])?.color ?? null) : null;
+    return { label, color };
   }
 
   protected choose(event: Event): void {
