@@ -66,6 +66,11 @@ Le moteur est une fonction pure :
 - **R-EPA-12** — Aucune valeur de taux n'est codée en dur : l'historique des taux réglementés est
   fourni en **données initiales** modifiables et doit être vérifié à la source officielle lors de sa
   saisie.
+- **R-EPA-26** — Un barème **propre à un compte** (non partagé) se renomme librement, même s'il est utilisé
+  par un compte ; le nom reste unique. Un barème réglementé (partagé) ne se renomme pas.
+- **R-EPA-27** — Un barème propre à un compte se supprime, avec ses taux, quand plus aucun compte ne
+  l'utilise (après avoir choisi un autre barème dans les conditions du compte). Un barème réglementé ne se
+  supprime pas.
 
 ### Cas de test de référence
 
@@ -111,7 +116,7 @@ La performance se déduit de ces deux séries.
 
 | ID | Priorité | Feature |
 |---|---|---|
-| EPA-01 | V1 | Barèmes de taux : création, historique daté, barèmes réglementés préremplis |
+| EPA-01 | V1 | Barèmes de taux : création, historique daté, barèmes réglementés préremplis ; renommer et supprimer un barème propre à un compte |
 | EPA-02 | V1 | Moteur d'intérêts `FORTNIGHTLY`, avec intérêts courus de l'année en cours |
 | EPA-03 | V1 | Proposition de la transaction d'intérêts annuelle et contrôle avec le montant versé |
 | EPA-04 | V1 | Alerte de plafond |

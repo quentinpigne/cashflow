@@ -67,6 +67,11 @@ pub struct ScheduleView {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+pub struct RateScheduleInput {
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct RatePeriodInput {
     pub effective_from: Date,
     pub rate_ppm: i64,
@@ -174,6 +179,39 @@ pub async fn set_rate(db: &Db, schedule: RateScheduleId, input: &RatePeriodInput
         PeriodRow { schedule_id: schedule, effective_from: input.effective_from, rate: Rate::from_ppm(input.rate_ppm) };
     db::savings::set_period(&db.write, &period).await?;
     schedules(db).await
+}
+
+/// Un barème propre à un compte, qu'on peut renommer ou supprimer : jamais un barème réglementé (R-EPA-26).
+async fn own_schedule(db: &Db, id: RateScheduleId) -> AppResult<ScheduleView> {
+    let schedule = schedules(db).await?.into_iter().find(|s| s.id == id).ok_or(AppError::NotFound("barème"))?;
+    if schedule.shared {
+        return Err(AppError::invalid("SCHEDULE_REGULATED", "un barème réglementé ne se renomme ni ne se supprime"));
+    }
+    Ok(schedule)
+}
+
+/// Renomme un barème propre à un compte, sous un nom libre (R-EPA-26).
+pub async fn rename_schedule(db: &Db, id: RateScheduleId, input: &RateScheduleInput) -> AppResult<Vec<ScheduleView>> {
+    let schedule = own_schedule(db, id).await?;
+    let name = super::required(&input.name, "name", 80)?;
+    if name != schedule.name && db::accounts::schedule_name_taken(&db.read, &name).await? {
+        return Err(AppError::invalid_field("SCHEDULE_NAME_TAKEN", "name", "un barème porte déjà ce nom"));
+    }
+    db::savings::rename_schedule(&db.write, id, &name).await?;
+    schedules(db).await
+}
+
+/// Supprime un barème propre à un compte, avec ses taux, quand plus aucun compte ne l'utilise (R-EPA-27).
+pub async fn delete_schedule(db: &Db, id: RateScheduleId) -> AppResult<()> {
+    let schedule = own_schedule(db, id).await?;
+    if let Some(account) = schedule.accounts.first() {
+        return Err(AppError::invalid(
+            "SCHEDULE_IN_USE",
+            format!("ce barème est utilisé par « {account} » : choisir d'abord un autre barème pour ce compte"),
+        ));
+    }
+    db::savings::delete_schedule(&db.write, id).await?;
+    Ok(())
 }
 
 pub async fn delete_rate(db: &Db, schedule: RateScheduleId, from: Date) -> AppResult<Vec<ScheduleView>> {

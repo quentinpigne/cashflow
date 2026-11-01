@@ -5,7 +5,9 @@ use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::shared::ids::AccountId;
 
 use super::accounts::{self, AccountInput};
-use super::savings::{self, InterestProposal, PeriodQuery, RatePeriodInput, TermsInput, ValuationInput, YearQuery};
+use super::savings::{
+    self, InterestProposal, PeriodQuery, RatePeriodInput, RateScheduleInput, TermsInput, ValuationInput, YearQuery,
+};
 use super::tests::{d, setup, tx};
 use super::transactions;
 use crate::db::Db;
@@ -141,4 +143,47 @@ async fn epa_06_valuations_and_performance() {
     let overview = savings::overview(&db, &savings::SavingsOverviewQuery::default(), today).await.unwrap();
     assert_eq!(overview.variable.len(), 1);
     assert_eq!(overview.variable_invested_minor, 1_200_000);
+}
+
+fn invalid_code(error: AppError) -> &'static str {
+    match error {
+        AppError::Invalid { code, .. } => code,
+        other => panic!("erreur inattendue : {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn epa_01_r_epa_26_r_epa_27_own_schedules_are_renamed_and_deleted_regulated_ones_are_not() {
+    let (db, _dir) = setup().await;
+    let own = livret(&db, "2026-01-01", 0).await;
+    let regulated = open(&db, "Livret A", AccountKind::LivretA, "2026-01-01", 0).await;
+    let own_schedule = savings::terms(&db, own, d("2026-01-01")).await.unwrap().rate_schedule_id;
+    let livret_a = savings::terms(&db, regulated, d("2026-01-01")).await.unwrap().rate_schedule_id;
+    let name = |s: &str| RateScheduleInput { name: s.into() };
+
+    // R-EPA-26 : un barème propre se renomme, même utilisé par un compte ; un réglementé, jamais.
+    let renamed = savings::rename_schedule(&db, own_schedule, &name("  Livret maison 3 %  ")).await.unwrap();
+    assert!(renamed.iter().any(|s| s.id == own_schedule && s.name == "Livret maison 3 %"));
+    let livret_a_name = renamed.iter().find(|s| s.id == livret_a).unwrap().name.clone();
+    let taken = savings::rename_schedule(&db, own_schedule, &name(&livret_a_name)).await;
+    assert_eq!(invalid_code(taken.unwrap_err()), "SCHEDULE_NAME_TAKEN");
+    let regulated_rename = savings::rename_schedule(&db, livret_a, &name("Mon livret")).await;
+    assert_eq!(invalid_code(regulated_rename.unwrap_err()), "SCHEDULE_REGULATED");
+
+    // R-EPA-27 : supprimé seulement quand plus aucun compte ne l'utilise, avec ses taux.
+    assert_eq!(invalid_code(savings::delete_schedule(&db, own_schedule).await.unwrap_err()), "SCHEDULE_IN_USE");
+    let terms = savings::terms(&db, own, d("2026-01-01")).await.unwrap();
+    let moved = TermsInput {
+        rate_schedule_id: livret_a,
+        interest_method: terms.interest_method,
+        capitalization: terms.capitalization,
+        deposit_cap_minor: None,
+        maturity_date: None,
+        interest_category_id: terms.interest_category_id,
+        round_each_fortnight: false,
+    };
+    savings::update_terms(&db, own, &moved, d("2026-01-01")).await.unwrap();
+    savings::delete_schedule(&db, own_schedule).await.unwrap();
+    assert!(savings::schedules(&db).await.unwrap().iter().all(|s| s.id != own_schedule));
+    assert_eq!(invalid_code(savings::delete_schedule(&db, livret_a).await.unwrap_err()), "SCHEDULE_REGULATED");
 }

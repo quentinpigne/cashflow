@@ -57,6 +57,10 @@ export type { DeleteValuation$Params as DeleteValuation$Params } from './fn/savi
 export { deleteValuation as deleteValuation } from './fn/savings/delete-valuation';
 export type { ListRateSchedules$Params as ListRateSchedules$Params } from './fn/savings/list-rate-schedules';
 export { listRateSchedules as listRateSchedules } from './fn/savings/list-rate-schedules';
+export type { RenameRateSchedule$Params as RenameRateSchedule$Params } from './fn/savings/rename-rate-schedule';
+export { renameRateSchedule as renameRateSchedule } from './fn/savings/rename-rate-schedule';
+export type { DeleteRateSchedule$Params as DeleteRateSchedule$Params } from './fn/savings/delete-rate-schedule';
+export { deleteRateSchedule as deleteRateSchedule } from './fn/savings/delete-rate-schedule';
 export type { SetRate$Params as SetRate$Params } from './fn/savings/set-rate';
 export { setRate as setRate } from './fn/savings/set-rate';
 export type { DeleteRate$Params as DeleteRate$Params } from './fn/savings/delete-rate';

@@ -291,6 +291,7 @@ export type { PurchaseView } from './models/purchase-view';
 export type { RatePeriodInput } from './models/rate-period-input';
 export type { RatePeriodView } from './models/rate-period-view';
 export type { RateScheduleId } from './models/rate-schedule-id';
+export type { RateScheduleInput } from './models/rate-schedule-input';
 export type { RateStep } from './models/rate-step';
 export type { ReadInput } from './models/read-input';
 export type { RecentTransaction } from './models/recent-transaction';

@@ -6,8 +6,9 @@ use cashflow_domain::shared::ids::{AccountId, RateScheduleId, ValuationId};
 
 use crate::error::{AppResult, Problem};
 use crate::services::savings::{
-    self, InterestRecorded, InterestView, PerformanceView, PeriodQuery, RatePeriodInput, SavingsOverview,
-    SavingsOverviewQuery, ScheduleView, TermsInput, TermsView, ValuationInput, ValuationView, YearQuery,
+    self, InterestRecorded, InterestView, PerformanceView, PeriodQuery, RatePeriodInput, RateScheduleInput,
+    SavingsOverview, SavingsOverviewQuery, ScheduleView, TermsInput, TermsView, ValuationInput, ValuationView,
+    YearQuery,
 };
 use crate::state::AppState;
 
@@ -37,6 +38,31 @@ pub async fn update_terms(
 #[utoipa::path(get, operation_id = "listRateSchedules", path = "/rate-schedules", tag = "savings", responses((status = 200, body = Vec<ScheduleView>)))]
 pub async fn schedules(State(state): State<AppState>) -> AppResult<Json<Vec<ScheduleView>>> {
     Ok(Json(savings::schedules(&state.db).await?))
+}
+
+/// Renomme un barème propre à un compte (R-EPA-26).
+#[utoipa::path(
+    put, operation_id = "renameRateSchedule", path = "/rate-schedules/{id}", tag = "savings",
+    params(("id" = RateScheduleId, Path)), request_body = RateScheduleInput,
+    responses((status = 200, body = Vec<ScheduleView>), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn rename_schedule(
+    State(state): State<AppState>,
+    Path(id): Path<RateScheduleId>,
+    Json(input): Json<RateScheduleInput>,
+) -> AppResult<Json<Vec<ScheduleView>>> {
+    Ok(Json(savings::rename_schedule(&state.db, id, &input).await?))
+}
+
+/// Supprime un barème propre à un compte que plus aucun compte n'utilise (R-EPA-27).
+#[utoipa::path(
+    delete, operation_id = "deleteRateSchedule", path = "/rate-schedules/{id}", tag = "savings",
+    params(("id" = RateScheduleId, Path)),
+    responses((status = 204), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn delete_schedule(State(state): State<AppState>, Path(id): Path<RateScheduleId>) -> AppResult<StatusCode> {
+    savings::delete_schedule(&state.db, id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Ajoute un taux daté à un barème, ou corrige celui de la même date (R-EPA-11).

@@ -9,6 +9,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(savings::get_terms, savings::update_terms))
         .routes(routes!(savings::schedules))
+        .routes(routes!(savings::rename_schedule, savings::delete_schedule))
         .routes(routes!(savings::set_rate))
         .routes(routes!(savings::delete_rate))
         .routes(routes!(savings::interest))

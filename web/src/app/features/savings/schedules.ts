@@ -7,7 +7,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -19,6 +21,7 @@ import { errorMessage } from '../../core/http-errors';
 import { formatRate, parseRatePpm } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
+import { CategoryNameDialog, NameData } from '../settings/category-dialogs';
 
 interface Draft {
   date: Date | null;
@@ -39,6 +42,8 @@ interface Draft {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatMenuModule,
+    MatTooltipModule,
     FrDatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +66,35 @@ interface Draft {
             <h2>{{ s.name }}</h2>
             @if (s.shared) {
               <span class="tag">réglementé</span>
+            } @else {
+              <button
+                mat-icon-button
+                class="actions"
+                [matMenuTriggerFor]="menu"
+                [attr.aria-label]="'Actions sur le barème ' + s.name"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #menu>
+                <button mat-menu-item (click)="rename(s)"><mat-icon>edit</mat-icon>Renommer</button>
+                <span
+                  [matTooltip]="
+                    s.accounts.length
+                      ? 'Utilisé par ' +
+                        s.accounts.join(', ') +
+                        ' : choisir d’abord un autre barème dans les conditions du compte'
+                      : ''
+                  "
+                >
+                  <button
+                    mat-menu-item
+                    [disabled]="s.accounts.length > 0"
+                    (click)="removeSchedule(s)"
+                  >
+                    <mat-icon>delete</mat-icon>Supprimer
+                  </button>
+                </span>
+              </mat-menu>
             }
           </header>
           <p class="muted small">
@@ -120,6 +154,9 @@ interface Draft {
       h2 {
         margin: 0;
         font: var(--mat-sys-title-medium);
+      }
+      .actions {
+        margin-left: auto;
       }
     }
     .tag {
@@ -192,6 +229,39 @@ export class SchedulesPage {
         this.api.setRate({ id: s.id, body: { effective_from: toIsoDate(d.date), rate_ppm: ppm } }),
       );
       this.drafts.update((all) => ({ ...all, [s.id]: { date: null, rate: '' } }));
+      this.version.bump();
+    } catch (e) {
+      this.snack.open(errorMessage(e), undefined, { duration: 5000 });
+    }
+  }
+
+  /** Renomme un barème propre à un compte, même utilisé (R-EPA-26). */
+  protected async rename(s: ScheduleView): Promise<void> {
+    const ref = this.dialog.open<CategoryNameDialog, NameData, string>(CategoryNameDialog, {
+      data: { title: 'Renommer le barème', name: s.name, action: 'Renommer' },
+      width: '24rem',
+    });
+    const name = await firstValueFrom(ref.afterClosed());
+    if (!name || name === s.name) return;
+    try {
+      await firstValueFrom(this.api.renameRateSchedule({ id: s.id, body: { name } }));
+      this.version.bump();
+    } catch (e) {
+      this.snack.open(errorMessage(e), undefined, { duration: 5000 });
+    }
+  }
+
+  /** Supprime un barème propre que plus aucun compte n'utilise, avec ses taux (R-EPA-27). */
+  protected async removeSchedule(s: ScheduleView): Promise<void> {
+    const ok = await confirm(this.dialog, {
+      title: 'Supprimer ce barème ?',
+      message: `« ${s.name} » et ses ${s.periods.length} taux seront supprimés.`,
+      action: 'Supprimer',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await firstValueFrom(this.api.deleteRateSchedule({ id: s.id }));
       this.version.bump();
     } catch (e) {
       this.snack.open(errorMessage(e), undefined, { duration: 5000 });

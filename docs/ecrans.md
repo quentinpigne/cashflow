@@ -634,7 +634,9 @@ Ce qui change dans les écrans existants :
 
 Dans les réglages. Un bloc par barème (réglementé ou propre à un compte) : comptes qui l'utilisent,
 taux successifs datés (le plus récent en premier, supprimables), ajout d'un taux à une date d'effet. Un
-rappel invite à vérifier les taux réglementés à la source officielle (R-EPA-12).
+rappel invite à vérifier les taux réglementés à la source officielle (R-EPA-12). Un barème propre à un
+compte a un menu ⋮ : « Renommer », et « Supprimer » (avec confirmation) seulement quand aucun compte ne
+l'utilise ; sinon l'entrée est désactivée et son info-bulle explique pourquoi (R-EPA-26, R-EPA-27).
 
 # Écrans — phase 6 (récurrences et projections)
 

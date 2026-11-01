@@ -168,7 +168,7 @@ erDiagram
 | RateSchedule | Type | Contraintes |
 |---|---|---|
 | `name` | texte | requis, unique (ex. « Livret A (réglementé) ») |
-| `shared` | booléen | `true` si plusieurs comptes peuvent l'utiliser (taux réglementés) |
+| `shared` | booléen | `true` si plusieurs comptes peuvent l'utiliser (taux réglementés) ; un barème non partagé se renomme, et se supprime quand aucun compte ne l'utilise (R-EPA-26, R-EPA-27) |
 
 | RatePeriod | Type | Contraintes |
 |---|---|---|

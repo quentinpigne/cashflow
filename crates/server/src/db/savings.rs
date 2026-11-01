@@ -96,6 +96,23 @@ pub async fn schedules(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<Schedu
     rows.into_iter().map(|r| Ok(ScheduleRow { id: id_from_db(&r.id)?, name: r.name, shared: r.shared })).collect()
 }
 
+/// Renomme un barème ; renvoie le nombre de lignes modifiées.
+pub async fn rename_schedule(db: impl SqliteExecutor<'_>, id: RateScheduleId, name: &str) -> anyhow::Result<u64> {
+    let id = id.to_string();
+    let now = timestamp();
+    let result = sqlx::query!("UPDATE rate_schedule SET name = ?, updated_at = ? WHERE id = ?", name, now, id)
+        .execute(db)
+        .await?;
+    Ok(result.rows_affected())
+}
+
+/// Supprime un barème et ses taux (`ON DELETE CASCADE`) ; renvoie le nombre de barèmes supprimés.
+pub async fn delete_schedule(db: impl SqliteExecutor<'_>, id: RateScheduleId) -> anyhow::Result<u64> {
+    let id = id.to_string();
+    let result = sqlx::query!("DELETE FROM rate_schedule WHERE id = ?", id).execute(db).await?;
+    Ok(result.rows_affected())
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct PeriodRow {
     pub schedule_id: RateScheduleId,

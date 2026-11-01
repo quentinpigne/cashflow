@@ -12,6 +12,8 @@ import { StrictHttpResponse } from '../strict-http-response';
 
 import { deleteRate } from '../fn/savings/delete-rate';
 import { DeleteRate$Params } from '../fn/savings/delete-rate';
+import { deleteRateSchedule } from '../fn/savings/delete-rate-schedule';
+import { DeleteRateSchedule$Params } from '../fn/savings/delete-rate-schedule';
 import { deleteValuation } from '../fn/savings/delete-valuation';
 import { DeleteValuation$Params } from '../fn/savings/delete-valuation';
 import { getInterest } from '../fn/savings/get-interest';
@@ -29,6 +31,8 @@ import { ListValuations$Params } from '../fn/savings/list-valuations';
 import { PerformanceView } from '../models/performance-view';
 import { recordInterest } from '../fn/savings/record-interest';
 import { RecordInterest$Params } from '../fn/savings/record-interest';
+import { renameRateSchedule } from '../fn/savings/rename-rate-schedule';
+import { RenameRateSchedule$Params } from '../fn/savings/rename-rate-schedule';
 import { saveValuation } from '../fn/savings/save-valuation';
 import { SaveValuation$Params } from '../fn/savings/save-valuation';
 import { savingsOverview } from '../fn/savings/savings-overview';
@@ -340,6 +344,76 @@ export class SavingsService extends BaseService {
     const resp = this.listRateSchedules$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<Array<ScheduleView>>): Array<ScheduleView> => r.body)
+    );
+  }
+
+  /** Path part for operation `renameRateSchedule()` */
+  static readonly RenameRateSchedulePath = '/api/v1/rate-schedules/{id}';
+
+  /**
+   * Renomme un barème propre à un compte (R-EPA-26).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `renameRateSchedule()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  renameRateSchedule$Response(params: RenameRateSchedule$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ScheduleView>>> {
+    const obs = renameRateSchedule(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Renomme un barème propre à un compte (R-EPA-26).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `renameRateSchedule$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  renameRateSchedule(params: RenameRateSchedule$Params, context?: HttpContext): Observable<Array<ScheduleView>> {
+    const resp = this.renameRateSchedule$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<Array<ScheduleView>>): Array<ScheduleView> => r.body)
+    );
+  }
+
+  /** Path part for operation `deleteRateSchedule()` */
+  static readonly DeleteRateSchedulePath = '/api/v1/rate-schedules/{id}';
+
+  /**
+   * Supprime un barème propre à un compte que plus aucun compte n'utilise (R-EPA-27).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `deleteRateSchedule()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteRateSchedule$Response(params: DeleteRateSchedule$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = deleteRateSchedule(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Supprime un barème propre à un compte que plus aucun compte n'utilise (R-EPA-27).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `deleteRateSchedule$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  deleteRateSchedule(params: DeleteRateSchedule$Params, context?: HttpContext): Observable<void> {
+    const resp = this.deleteRateSchedule$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
     );
   }
 
