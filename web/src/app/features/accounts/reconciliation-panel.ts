@@ -26,7 +26,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconciliation-dialogs';
 
 /** Nombre de points de contrôle affichés avant « Afficher les points plus anciens ». */
-const RECENT_POINTS = 10;
+const RECENT_POINTS = 5;
 
 /** E13 — Rapprochement d'un compte (RAP-01 à RAP-06). */
 @Component({
