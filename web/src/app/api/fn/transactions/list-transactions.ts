@@ -12,7 +12,9 @@ import { CategoryId } from '../../models/category-id';
 import { ClearingStatus } from '../../models/clearing-status';
 import { PayeeGroupId } from '../../models/payee-group-id';
 import { PayeeId } from '../../models/payee-id';
+import { SortDirection } from '../../models/sort-direction';
 import { TransactionPage } from '../../models/transaction-page';
+import { TransactionSort } from '../../models/transaction-sort';
 
 export interface ListTransactions$Params {
   id: AccountId;
@@ -74,12 +76,26 @@ export interface ListTransactions$Params {
  * Mois d'analyse `AAAA-MM` : les transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58).
  */
   analysis_month?: string;
-  cursor?: string;
 
 /**
- * 200 par défaut.
+ * Page demandée, à partir de 1.
+ */
+  page?: number;
+
+/**
+ * Taille de la page : 100 par défaut, 1 000 au plus.
  */
   limit?: number;
+
+/**
+ * Tri de toute la sélection, avant découpage : par date par défaut.
+ */
+  sort?: TransactionSort;
+
+/**
+ * Décroissant par défaut.
+ */
+  direction?: SortDirection;
 }
 
 export function listTransactions(http: HttpClient, rootUrl: string, params: ListTransactions$Params, context?: HttpContext): Observable<StrictHttpResponse<TransactionPage>> {
@@ -100,8 +116,10 @@ export function listTransactions(http: HttpClient, rootUrl: string, params: List
     rb.query('without_payee', params.without_payee, {});
     rb.query('with_documents', params.with_documents, {});
     rb.query('analysis_month', params.analysis_month, {});
-    rb.query('cursor', params.cursor, {});
+    rb.query('page', params.page, {});
     rb.query('limit', params.limit, {});
+    rb.query('sort', params.sort, {});
+    rb.query('direction', params.direction, {});
   }
 
   return http.request(

@@ -3,13 +3,16 @@ import {
   Component,
   OnInit,
   computed,
+  ElementRef,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -53,14 +56,17 @@ import {
 } from '../../shared/stores';
 import { MemberTag } from '../../shared/member-tag';
 import { RefundMark } from '../../shared/refund-mark';
+import { loadPageSize, PAGE_SIZES, savePageSize } from '../../core/page-size';
 
-const PAGE = 200;
+/** Taille de page par défaut de la liste transverse. */
+const PAGE = 100;
 
 /** E14 — Transactions, tous comptes confondus (TRX-08, TRX-06). */
 @Component({
   selector: 'app-transactions',
   imports: [
     RefundMark,
+    MatPaginatorModule,
     MatTooltipModule,
     MemberTag,
     FormsModule,
@@ -131,7 +137,11 @@ export class TransactionsPage implements OnInit {
   );
   protected readonly monthLabel = formatMonthKey;
   protected readonly bulkPayee = signal<string | null>(null);
-  protected readonly limit = signal(PAGE);
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly pageSize = signal(loadPageSize('transactions', PAGE));
+  /** Page affichée, à partir de 0 ; revient à la première à chaque changement de filtre. */
+  protected readonly pageIndex = signal(0);
+  private readonly listTop = viewChild<ElementRef<HTMLElement>>('listTop');
   protected readonly selection = signal<Set<string>>(new Set());
   protected readonly projects = inject(ProjectsStore);
   private readonly budgets = inject(BudgetsService);
@@ -162,7 +172,8 @@ export class TransactionsPage implements OnInit {
         without_payee: this.withoutPayee() || undefined,
         with_documents: this.withDocuments() ?? undefined,
         analysis_month: this.analysisMonth() ?? undefined,
-        limit: this.limit(),
+        page: this.pageIndex() + 1,
+        limit: this.pageSize(),
         version: this.version.value(),
       };
     },
@@ -225,8 +236,21 @@ export class TransactionsPage implements OnInit {
     this.selection.set(new Set());
   }
 
+  /** Change de page, ou de taille de page (retenue dans ce navigateur), et remonte en tête de liste. */
+  protected changePage(event: PageEvent): void {
+    if (event.pageSize !== this.pageSize()) {
+      savePageSize('transactions', event.pageSize);
+      this.pageSize.set(event.pageSize);
+      this.pageIndex.set(0);
+    } else {
+      this.pageIndex.set(event.pageIndex);
+    }
+    this.selection.set(new Set());
+    this.listTop()?.nativeElement.scrollIntoView({ block: 'start' });
+  }
+
   protected reset(): void {
-    this.limit.set(PAGE);
+    this.pageIndex.set(0);
     this.selection.set(new Set());
   }
 

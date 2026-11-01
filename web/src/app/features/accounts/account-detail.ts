@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -47,6 +58,9 @@ import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
 import { MemberTag } from '../../shared/member-tag';
 import { RefundMark } from '../../shared/refund-mark';
+import { loadPageSize, PAGE_SIZES, savePageSize } from '../../core/page-size';
+import { SortDirection } from '../../api/models/sort-direction';
+import { TransactionSort } from '../../api/models/transaction-sort';
 
 interface Filters {
   from: Date | null;
@@ -67,14 +81,17 @@ const NO_FILTERS: Filters = {
   max: '',
   text: '',
 };
-/** Transactions chargées à la fois. */
-const PAGE = 100;
+/** Taille de page par défaut de la liste d'un compte. */
+const PAGE = 50;
+
+const SORTS: Record<string, TransactionSort> = { date: 'DATE', label: 'LABEL', amount: 'AMOUNT' };
 
 /** E3 — Détail d'un compte (CPT-03, TRX-02). */
 @Component({
   selector: 'app-account-detail',
   imports: [
     RefundMark,
+    MatPaginatorModule,
     MemberTag,
     FormsModule,
     RouterLink,
@@ -130,8 +147,11 @@ export class AccountDetailPage {
   protected readonly balanceDate = signal<Date | null>(null);
   protected readonly filters = signal<Filters>(NO_FILTERS);
   protected readonly showFilters = signal(false);
-  protected readonly pageSize = PAGE;
-  protected readonly limit = signal(PAGE);
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly pageSize = signal(loadPageSize('account', PAGE));
+  /** Page affichée, à partir de 0 ; revient à la première en changeant de compte, de filtre ou de tri. */
+  protected readonly pageIndex = linkedSignal({ source: this.id, computation: () => 0 });
+  private readonly listTop = viewChild<ElementRef<HTMLElement>>('listTop');
   protected readonly selected = signal<string | null>(null);
   protected readonly sort = signal<Sort>({ active: 'date', direction: 'desc' });
   protected readonly iban = signal<string | null>(null);
@@ -150,7 +170,9 @@ export class AccountDetailPage {
     params: () => ({
       id: this.id(),
       filters: this.filters(),
-      limit: this.limit(),
+      page: this.pageIndex() + 1,
+      limit: this.pageSize(),
+      sort: this.sort(),
       version: this.version.value(),
     }),
     stream: ({ params }) => {
@@ -164,7 +186,13 @@ export class AccountDetailPage {
         min_amount_minor: parseMoney(f.min) ?? undefined,
         max_amount_minor: parseMoney(f.max) ?? undefined,
         text: f.text.trim() || undefined,
+        page: params.page,
         limit: params.limit,
+        // Le tri porte sur toute la sélection : il se fait côté serveur, avant découpage en pages.
+        sort: params.sort.direction ? SORTS[params.sort.active] : undefined,
+        direction: params.sort.direction
+          ? (params.sort.direction.toUpperCase() as SortDirection)
+          : undefined,
       });
     },
   });
@@ -173,17 +201,25 @@ export class AccountDetailPage {
   protected readonly current = keptValue(this.account, this.id);
   protected readonly currentPage = keptValue(this.page, this.id);
 
-  protected readonly items = computed<TransactionListItem[]>(() => {
-    const items = this.currentPage()?.items ?? [];
-    const { active, direction } = this.sort();
-    if (!direction || active === 'date') {
-      return direction === 'asc' ? [...items].reverse() : items;
+  /** Transactions de la page, dans l'ordre choisi (trié par le serveur). */
+  protected readonly items = computed<TransactionListItem[]>(() => this.currentPage()?.items ?? []);
+
+  protected sortBy(sort: Sort): void {
+    this.sort.set(sort);
+    this.pageIndex.set(0);
+  }
+
+  /** Change de page, ou de taille de page (retenue dans ce navigateur), et remonte en tête de liste. */
+  protected changePage(event: PageEvent): void {
+    if (event.pageSize !== this.pageSize()) {
+      savePageSize('account', event.pageSize);
+      this.pageSize.set(event.pageSize);
+      this.pageIndex.set(0);
+    } else {
+      this.pageIndex.set(event.pageIndex);
     }
-    const factor = direction === 'asc' ? 1 : -1;
-    const key = (t: TransactionListItem): string | number =>
-      active === 'amount' ? t.amount_minor : active === 'label' ? t.label.toLowerCase() : '';
-    return [...items].sort((a, b) => (key(a) > key(b) ? factor : key(a) < key(b) ? -factor : 0));
-  });
+    this.listTop()?.nativeElement.scrollIntoView({ block: 'start' });
+  }
 
   /** Liste mobile groupée par jour, dans l'ordre affiché. */
   protected readonly days = computed(() => {
@@ -217,7 +253,7 @@ export class AccountDetailPage {
 
   protected setFilter<K extends keyof Filters>(key: K, value: Filters[K]): void {
     this.filters.update((f) => ({ ...f, [key]: value }));
-    this.limit.set(PAGE);
+    this.pageIndex.set(0);
   }
 
   protected clearFilter(key: keyof Filters): void {

@@ -4,6 +4,7 @@ import localeFr from '@angular/common/locales/fr';
 import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { DateAdapter, MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { MatPaginatorIntl } from '@angular/material/paginator';
 import {
   provideRouter,
   withComponentInputBinding,
@@ -14,6 +15,7 @@ import { provideEchartsCore } from 'ngx-echarts';
 import { routes } from './app.routes';
 import { FrDateAdapter } from './core/fr-date-adapter';
 import { sessionInterceptor } from './core/http-errors';
+import { FrPaginatorIntl } from './core/paginator-intl';
 import { reloadOnStaleBuild } from './core/stale-build';
 
 registerLocaleData(localeFr);
@@ -35,6 +37,7 @@ export const appConfig: ApplicationConfig = {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
       useValue: { appearance: 'outline', subscriptSizing: 'dynamic' },
     },
+    { provide: MatPaginatorIntl, useClass: FrPaginatorIntl },
     // Graphiques (ADR-0009) : ECharts n'est chargé qu'à l'ouverture d'un écran qui en affiche.
     provideEchartsCore({ echarts: () => import('echarts') }),
   ],

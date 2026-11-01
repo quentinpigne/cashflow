@@ -1004,21 +1004,41 @@
             }
           },
           {
-            "name": "cursor",
+            "name": "page",
             "in": "query",
+            "description": "Page demandée, à partir de 1.",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 0
             }
           },
           {
             "name": "limit",
             "in": "query",
-            "description": "200 par défaut.",
+            "description": "Taille de la page : 100 par défaut, 1 000 au plus.",
             "required": false,
             "schema": {
               "type": "integer",
               "minimum": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Tri de toute la sélection, avant découpage : par date par défaut.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionSort"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Décroissant par défaut.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDirection"
             }
           }
         ],
@@ -8576,21 +8596,41 @@
             }
           },
           {
-            "name": "cursor",
+            "name": "page",
             "in": "query",
+            "description": "Page demandée, à partir de 1.",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 0
             }
           },
           {
             "name": "limit",
             "in": "query",
-            "description": "200 par défaut.",
+            "description": "Taille de la page : 100 par défaut, 1 000 au plus.",
             "required": false,
             "schema": {
               "type": "integer",
               "minimum": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Tri de toute la sélection, avant découpage : par date par défaut.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionSort"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Décroissant par défaut.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDirection"
             }
           }
         ],
@@ -20670,6 +20710,14 @@
           }
         }
       },
+      "SortDirection": {
+        "type": "string",
+        "description": "Sens du tri.",
+        "enum": [
+          "ASC",
+          "DESC"
+        ]
+      },
       "Split": {
         "type": "object",
         "required": [
@@ -21600,9 +21648,12 @@
       },
       "TransactionPage": {
         "type": "object",
+        "description": "Une page de transactions (TRX-02, TRX-08).",
         "required": [
           "items",
-          "total"
+          "total",
+          "page",
+          "page_size"
         ],
         "properties": {
           "items": {
@@ -21610,14 +21661,16 @@
             "items": {
               "$ref": "#/components/schemas/TransactionListItem"
             },
-            "description": "Les plus récentes d'abord."
+            "description": "Dans l'ordre demandé : les plus récentes d'abord par défaut."
           },
-          "next_cursor": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "À repasser dans `cursor` pour la page suivante ; absent à la dernière page."
+          "page": {
+            "type": "integer",
+            "description": "Page renvoyée, à partir de 1 : la dernière si la page demandée n'existe plus.",
+            "minimum": 0
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 0
           },
           "total": {
             "type": "integer",
@@ -21625,6 +21678,15 @@
             "minimum": 0
           }
         }
+      },
+      "TransactionSort": {
+        "type": "string",
+        "description": "Colonne de tri d'une liste de transactions.",
+        "enum": [
+          "DATE",
+          "LABEL",
+          "AMOUNT"
+        ]
       },
       "TransactionUpdateInput": {
         "type": "object",

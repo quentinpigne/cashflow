@@ -217,7 +217,7 @@
   }
 
   @if (page.value(); as p) {
-    <div class="list-head">
+    <div class="list-head" #listTop>
       <mat-checkbox
         [checked]="allSelected()"
         [indeterminate]="selection().size > 0 && !allSelected()"
@@ -271,12 +271,15 @@
     } @empty {
       <p class="empty">Aucune transaction ne correspond aux filtres.</p>
     }
-    @if (p.next_cursor) {
-      <div class="more">
-        <button mat-stroked-button (click)="limit.set(limit() + 200)">
-          Voir plus ({{ p.items.length }} sur {{ p.total }})
-        </button>
-      </div>
+    @if (p.total > pageSizes[0]) {
+      <mat-paginator
+        [length]="p.total"
+        [pageIndex]="p.page - 1"
+        [pageSize]="p.page_size"
+        [pageSizeOptions]="pageSizes"
+        [showFirstLastButtons]="true"
+        (page)="changePage($event)"
+      />
     }
   } @else if (page.isLoading()) {
     <mat-progress-bar mode="indeterminate" />

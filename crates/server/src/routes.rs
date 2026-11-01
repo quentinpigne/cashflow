@@ -28,12 +28,14 @@ use utoipa_axum::router::OpenApiRouter;
 
 use crate::error::Problem;
 use crate::middleware::{evaluate_alerts, require_authentication};
+use crate::services::transactions::{SortDirection, TransactionSort};
 use crate::state::AppState;
 
 #[derive(OpenApi)]
 #[openapi(
     info(title = "Cashflow", description = "API de gestion de finances personnelles (ADR-0016)."),
-    components(schemas(Problem)),
+    // Les énumérations qui ne servent qu'en paramètres de requête ne sont pas enregistrées d'elles-mêmes.
+    components(schemas(Problem, SortDirection, TransactionSort)),
     tags(
         (name = "auth", description = "Session (ADR-0015)"),
         (name = "accounts", description = "Comptes (spec 01)"),

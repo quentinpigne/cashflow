@@ -162,14 +162,59 @@ fn refund_badge(t: &db::transactions::TransactionRow, links: &mut RefundLinks) -
     })
 }
 
+/// Une page de transactions (TRX-02, TRX-08).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TransactionPage {
-    /// Les plus récentes d'abord.
+    /// Dans l'ordre demandé : les plus récentes d'abord par défaut.
     pub items: Vec<TransactionListItem>,
-    /// À repasser dans `cursor` pour la page suivante ; absent à la dernière page.
-    pub next_cursor: Option<String>,
     /// Nombre total de transactions qui correspondent aux filtres.
     pub total: usize,
+    /// Page renvoyée, à partir de 1 : la dernière si la page demandée n'existe plus.
+    pub page: usize,
+    pub page_size: usize,
+}
+
+/// Colonne de tri d'une liste de transactions.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, ToSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum TransactionSort {
+    #[default]
+    Date,
+    Label,
+    Amount,
+}
+
+/// Sens du tri.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, ToSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SortDirection {
+    Asc,
+    #[default]
+    Desc,
+}
+
+const DEFAULT_PAGE_SIZE: usize = 100;
+const MAX_PAGE_SIZE: usize = 1000;
+
+/// Trie toute la sélection, puis en découpe la page demandée. `items` arrive les plus récentes d'abord ; à
+/// libellé ou montant égal, cet ordre est gardé.
+fn paginate(mut items: Vec<TransactionListItem>, filter: &TransactionFilter) -> TransactionPage {
+    let ascending = filter.direction.unwrap_or_default() == SortDirection::Asc;
+    let oriented = |order: std::cmp::Ordering| if ascending { order } else { order.reverse() };
+    match filter.sort.unwrap_or_default() {
+        TransactionSort::Date if ascending => items.reverse(),
+        TransactionSort::Date => {}
+        TransactionSort::Label => {
+            items.sort_by(|a, b| oriented(a.label.to_lowercase().cmp(&b.label.to_lowercase())));
+        }
+        TransactionSort::Amount => items.sort_by(|a, b| oriented(a.amount_minor.cmp(&b.amount_minor))),
+    }
+    let total = items.len();
+    let page_size = filter.limit.unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE);
+    let last = total.div_ceil(page_size).max(1);
+    let page = filter.page.unwrap_or(1).clamp(1, last);
+    let items = items.into_iter().skip((page - 1) * page_size).take(page_size).collect();
+    TransactionPage { items, total, page, page_size }
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -350,9 +395,14 @@ pub struct TransactionFilter {
     pub with_documents: Option<bool>,
     /// Mois d'analyse `AAAA-MM` : les transactions qui comptent dans ce mois, quelle que soit leur date (R-TRX-58).
     pub analysis_month: Option<String>,
-    pub cursor: Option<String>,
-    /// 200 par défaut.
+    /// Page demandée, à partir de 1.
+    pub page: Option<usize>,
+    /// Taille de la page : 100 par défaut, 1 000 au plus.
     pub limit: Option<usize>,
+    /// Tri de toute la sélection, avant découpage : par date par défaut.
+    pub sort: Option<TransactionSort>,
+    /// Décroissant par défaut.
+    pub direction: Option<SortDirection>,
 }
 
 // ---------------------------------------------------------------- Lecture
@@ -424,17 +474,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
         })
         .collect();
     items.reverse();
-
-    let total = items.len();
-    let start = match &filter.cursor {
-        Some(cursor) => items.iter().position(|i| i.id.to_string() == *cursor).map_or(total, |p| p + 1),
-        None => 0,
-    };
-    let limit = filter.limit.unwrap_or(200).clamp(1, 1000);
-    let mut page: Vec<TransactionListItem> = items.into_iter().skip(start).collect();
-    let next_cursor = (page.len() > limit).then(|| page[limit - 1].id.to_string());
-    page.truncate(limit);
-    Ok(TransactionPage { items: page, next_cursor, total })
+    Ok(paginate(items, filter))
 }
 
 pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
@@ -996,16 +1036,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
         })
         .collect();
     items.reverse();
-    let total = items.len();
-    let start = match &filter.cursor {
-        Some(cursor) => items.iter().position(|i| i.id.to_string() == *cursor).map_or(total, |p| p + 1),
-        None => 0,
-    };
-    let limit = filter.limit.unwrap_or(200).clamp(1, 1000);
-    let mut page: Vec<TransactionListItem> = items.into_iter().skip(start).collect();
-    let next_cursor = (page.len() > limit).then(|| page[limit - 1].id.to_string());
-    page.truncate(limit);
-    Ok(TransactionPage { items: page, next_cursor, total })
+    Ok(paginate(items, filter))
 }
 
 /// Catégorise plusieurs transactions d'un coup (TRX-06) : seules les transactions à ventilation unique,

@@ -242,6 +242,53 @@ async fn trx_02_running_balance_and_filters() {
 }
 
 #[tokio::test]
+async fn trx_02_trx_08_pages_are_cut_after_sorting_the_whole_selection() {
+    use super::transactions::{SortDirection, TransactionSort};
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    for (date, amount, label) in [
+        ("2026-03-01", -300, "café"),
+        ("2026-03-02", -100, "Boulangerie"),
+        ("2026-03-03", 900, "Salaire"),
+        ("2026-03-04", -500, "Amazon"),
+        ("2026-03-05", -200, "Dentiste"),
+    ] {
+        transactions::create(&db, &TransactionInput { label: label.into(), ..tx(checking, date, amount, None) })
+            .await
+            .unwrap();
+    }
+    let labels = |page: &transactions::TransactionPage| page.items.iter().map(|i| i.label.clone()).collect::<Vec<_>>();
+
+    // Par défaut : les plus récentes d'abord, page 1.
+    let filter = TransactionFilter { limit: Some(2), ..Default::default() };
+    let page = transactions::list(&db, checking, &filter).await.unwrap();
+    assert_eq!(
+        (labels(&page), page.total, page.page, page.page_size),
+        (vec!["Dentiste".into(), "Amazon".into()], 5, 1, 2)
+    );
+
+    // Le tri porte sur toute la sélection, avant découpage ; le solde après opération reste celui de la ligne.
+    let by_amount = TransactionFilter {
+        limit: Some(2),
+        page: Some(2),
+        sort: Some(TransactionSort::Amount),
+        direction: Some(SortDirection::Asc),
+        ..Default::default()
+    };
+    let page = transactions::list(&db, checking, &by_amount).await.unwrap();
+    assert_eq!(labels(&page), ["Dentiste", "Boulangerie"]);
+    assert_eq!(page.items[0].balance_after_minor, Some(-200));
+    let by_label =
+        TransactionFilter { sort: Some(TransactionSort::Label), direction: Some(SortDirection::Asc), ..filter };
+    assert_eq!(labels(&transactions::list_all(&db, &by_label).await.unwrap()), ["Amazon", "Boulangerie"]);
+
+    // Une page qui n'existe plus renvoie la dernière.
+    let beyond = TransactionFilter { limit: Some(2), page: Some(9), ..Default::default() };
+    let page = transactions::list(&db, checking, &beyond).await.unwrap();
+    assert_eq!((labels(&page), page.page), (vec!["café".to_owned()], 3));
+}
+
+#[tokio::test]
 async fn trx_05_transfer_moves_money_without_changing_net_worth() {
     let (db, _dir) = setup().await;
     let checking = account(&db, "Courant", AccountKind::Checking, 100_000).await;

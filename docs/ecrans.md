@@ -218,7 +218,10 @@ avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriq
 - colonnes : date, libellé, catégorie (ou « Ventilée » s'il y a plusieurs ventilations, ou « Virement
   vers / depuis <compte> »), montant, **solde après opération** ; un libellé modifié montre en info-bulle le
   libellé de la banque (aussi en E14) ;
-- 100 transactions à la fois, « Voir plus » charge les 100 suivantes ;
+- **pagination** sous la liste : 50, 100 ou 200 transactions par page (50 par défaut, choix retenu dans le
+  navigateur), « 51 – 100 sur 233 », première, précédente, suivante, dernière page. Le tri d'une colonne
+  porte sur toutes les transactions du compte, pas seulement sur la page ; changer de filtre ou de tri revient
+  à la première page ;
 - `PENDING` en italique avec une pastille « en attente » ; `RECONCILED` avec un cadenas. Comme le solde
   pointé, ces marques n'apparaissent qu'en phase 2 ;
 - **filtres** : période, catégorie, statut, montant (min, max), texte (libellé et note). Sur mobile, ils
@@ -473,7 +476,8 @@ Toutes les transactions, tous comptes confondus, avec les filtres d'E3 plus le c
 catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Catégoriser » (TRX-06) et « Mois
 d'analyse » (TRX-13). Une transaction dont le mois d'analyse diffère de sa date affiche « compte en
 novembre 2026 » (aussi en E3). Ouverte depuis le budget ou les analyses, la liste filtre sur le mois
-d'analyse (R-TRX-58). Pas de solde après opération : il n'a de sens que par compte.
+d'analyse (R-TRX-58). Pas de solde après opération : il n'a de sens que par compte. Même pagination qu'en
+E3, 100 transactions par page par défaut ; changer de page vide la sélection.
 
 Remboursements de frais (TRX-12), en E14 comme en E3 : une icône à côté du libellé, détaillée dans son
 info-bulle. Sur une entrée d'argent qui rembourse : « Rembourse : Restaurant du 2 mars ». Sur une dépense :
