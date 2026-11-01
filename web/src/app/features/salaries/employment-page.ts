@@ -33,7 +33,13 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { documentUrl, formatSize } from '../documents/document-labels';
 import { uploadDocument } from '../documents/upload-dialog';
 import { formatChange } from './salaries';
-import { BonusDialog, EmploymentDialog, MONTH_NAMES, SalaryDialog } from './salary-dialogs';
+import {
+  BonusDialog,
+  EmploymentDialog,
+  MONTH_NAMES,
+  periodOf,
+  SalaryDialog,
+} from './salary-dialogs';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
 
@@ -522,13 +528,18 @@ export class EmploymentPage {
 
   /** Nouvelle rémunération, préremplie avec la dernière (R-SAL-2). */
   protected async addSalary(j: EmploymentView): Promise<void> {
-    const data = { employmentId: j.summary.id, salary: j.salaries[0] ?? null, editing: false };
+    const data = {
+      employmentId: j.summary.id,
+      period: periodOf(j),
+      salary: j.salaries[0] ?? null,
+      editing: false,
+    };
     const ref = this.dialog.open(SalaryDialog, { data, maxWidth: '100vw' });
     if (await firstValueFrom(ref.afterClosed())) this.version.bump();
   }
 
   protected async editSalary(j: EmploymentView, salary: SalaryView): Promise<void> {
-    const data = { employmentId: j.summary.id, salary, editing: true };
+    const data = { employmentId: j.summary.id, period: periodOf(j), salary, editing: true };
     const ref = this.dialog.open(SalaryDialog, { data, maxWidth: '100vw' });
     if (await firstValueFrom(ref.afterClosed())) this.version.bump();
   }
@@ -544,7 +555,7 @@ export class EmploymentPage {
 
   protected async editBonus(j: EmploymentView, bonus: BonusView | null): Promise<void> {
     const ref = this.dialog.open(BonusDialog, {
-      data: { employmentId: j.summary.id, bonus },
+      data: { employmentId: j.summary.id, period: periodOf(j), bonus },
       maxWidth: '100vw',
     });
     if (await firstValueFrom(ref.afterClosed())) this.version.bump();

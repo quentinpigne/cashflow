@@ -2,6 +2,7 @@
 
 use super::ids::DocumentId;
 use super::{Date, Money};
+use crate::salaries::{BonusIssue, EmploymentIssue, PayIssue, PayslipIssue};
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum DomainError {
@@ -50,14 +51,14 @@ pub enum DomainError {
     AccountFieldLocked,
 
     // ----- Salaires (spec 10)
-    #[error("emploi invalide : fin postérieure au début, mois des augmentations de 1 à 12")]
-    InvalidEmployment,
-    #[error("rémunération invalide : un premier du mois pendant l'emploi, brut et net positifs")]
-    InvalidSalary,
-    #[error("prime invalide : versée pendant l'emploi, net positif, brut positif s'il est connu")]
-    InvalidBonus,
-    #[error("le mois de paie d'une fiche tombe pendant l'emploi")]
-    InvalidPayslipMonth,
+    #[error("emploi invalide : {0}")]
+    InvalidEmployment(EmploymentIssue),
+    #[error("rémunération invalide : {0}")]
+    InvalidSalary(PayIssue),
+    #[error("prime invalide : {0}")]
+    InvalidBonus(BonusIssue),
+    #[error("fiche de paie invalide : {0}")]
+    InvalidPayslipMonth(PayslipIssue),
 
     // ----- Crédit (spec 13)
     #[error("simulation invalide : capital positif, durée de 1 à 600 mois, taux et frais positifs ou nuls")]
@@ -247,10 +248,10 @@ impl DomainError {
             InstallmentAlreadyPaid => "INSTALLMENT_ALREADY_PAID",
             InstallmentPaymentLocked => "INSTALLMENT_PAYMENT_LOCKED",
             AccountFieldLocked => "ACCOUNT_FIELD_LOCKED",
-            InvalidEmployment => "INVALID_EMPLOYMENT",
-            InvalidSalary => "INVALID_SALARY",
-            InvalidBonus => "INVALID_BONUS",
-            InvalidPayslipMonth => "INVALID_PAYSLIP_MONTH",
+            InvalidEmployment(_) => "INVALID_EMPLOYMENT",
+            InvalidSalary(_) => "INVALID_SALARY",
+            InvalidBonus(_) => "INVALID_BONUS",
+            InvalidPayslipMonth(_) => "INVALID_PAYSLIP_MONTH",
             InvalidSimulation => "INVALID_SIMULATION",
             TargetPaymentTooLow => "TARGET_PAYMENT_TOO_LOW",
             InvalidFinancingPlan => "INVALID_FINANCING_PLAN",
@@ -339,10 +340,10 @@ impl DomainError {
             SplitAttachmentConflict => "R-TRX-37",
             InstallmentMismatch | InstallmentAlreadyPaid => "R-PRE-6",
             InstallmentPaymentLocked => "R-PRE-8",
-            InvalidEmployment => "R-SAL-1",
-            InvalidSalary => "R-SAL-2",
-            InvalidBonus => "R-SAL-5",
-            InvalidPayslipMonth => "R-SAL-15",
+            InvalidEmployment(_) => "R-SAL-1",
+            InvalidSalary(_) => "R-SAL-2",
+            InvalidBonus(_) => "R-SAL-5",
+            InvalidPayslipMonth(_) => "R-SAL-15",
             InvalidSimulation => "R-CRE-1",
             TargetPaymentTooLow => "R-CRE-5",
             InvalidFinancingPlan => "R-CRE-11",

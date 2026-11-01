@@ -6,6 +6,7 @@ use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 
+use crate::documents::month_label;
 use crate::recurrence::end_of_month;
 use crate::shared::{Date, DomainError, Money, Rate};
 
@@ -55,6 +56,77 @@ fn grown(amount: Money, growth: Rate, times: u32) -> Decimal {
     (0..times).fold(Decimal::from(amount.minor()), |value, _| value * factor)
 }
 
+/// Dates d'un emploi, citées par les messages d'erreur.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Period {
+    pub start: Date,
+    pub end: Option<Date>,
+}
+
+fn day_label(date: Date) -> String {
+    let day = if date.day() == 1 { "1er".to_owned() } else { date.day().to_string() };
+    format!("{day} {}", month_label(date))
+}
+
+impl Period {
+    /// « qui commence en mai 2026 », « qui court de mai 2026 à juin 2027 ».
+    fn in_months(&self) -> String {
+        let start = month_label(self.start);
+        match self.end.map(month_label) {
+            None => format!("qui commence en {start}"),
+            Some(end) if end == start => format!("qui ne couvre que {start}"),
+            Some(end) => format!("qui court de {start} à {end}"),
+        }
+    }
+
+    /// « qui commence le 15 mai 2026 », « qui court du 15 mai 2026 au 30 juin 2027 ».
+    fn in_days(&self) -> String {
+        let start = day_label(self.start);
+        match self.end.map(day_label) {
+            None => format!("qui commence le {start}"),
+            Some(end) => format!("qui court du {start} au {end}"),
+        }
+    }
+}
+
+/// Ce qui rend un emploi invalide (R-SAL-1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum EmploymentIssue {
+    #[error("la date de fin précède la date de début")]
+    EndBeforeStart,
+    #[error("le mois des augmentations doit être compris entre 1 et 12")]
+    RaiseMonth,
+}
+
+/// Ce qui rend une rémunération invalide (R-SAL-2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum PayIssue {
+    #[error("une rémunération prend effet le premier du mois")]
+    NotFirstOfMonth,
+    #[error("le mois d'effet tombe hors de l'emploi, {}", .0.in_months())]
+    OutsideEmployment(Period),
+    #[error("le brut annuel et le net mensuel doivent être positifs")]
+    NotPositive,
+}
+
+/// Ce qui rend une prime invalide (R-SAL-5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum BonusIssue {
+    #[error("la date de versement tombe hors de l'emploi, {}", .0.in_days())]
+    OutsideEmployment(Period),
+    #[error("le net, et le brut s'il est renseigné, doivent être positifs")]
+    NotPositive,
+}
+
+/// Ce qui rend invalide le mois de paie d'une fiche (R-SAL-15).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum PayslipIssue {
+    #[error("le mois de paie est désigné par son premier jour")]
+    NotFirstOfMonth,
+    #[error("le mois de paie tombe hors de l'emploi, {}", .0.in_months())]
+    OutsideEmployment(Period),
+}
+
 /// Les dates et rythmes d'un emploi (R-SAL-1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Job {
@@ -86,10 +158,17 @@ pub struct Bonus {
 
 impl Job {
     pub fn validate(&self) -> Result<(), DomainError> {
-        if self.end_date.is_some_and(|end| end < self.start_date) || !(1..=12).contains(&self.raise_month) {
-            return Err(DomainError::InvalidEmployment);
+        if self.end_date.is_some_and(|end| end < self.start_date) {
+            return Err(DomainError::InvalidEmployment(EmploymentIssue::EndBeforeStart));
+        }
+        if !(1..=12).contains(&self.raise_month) {
+            return Err(DomainError::InvalidEmployment(EmploymentIssue::RaiseMonth));
         }
         Ok(())
+    }
+
+    fn period(&self) -> Period {
+        Period { start: self.start_date, end: self.end_date }
     }
 
     /// L'emploi couvre-t-il au moins un jour de ce mois ?
@@ -105,32 +184,37 @@ impl Job {
 
     /// Une rémunération prend effet un premier du mois, pendant l'emploi, avec des montants positifs (R-SAL-2).
     pub fn check_pay(&self, pay: &Pay) -> Result<(), DomainError> {
-        if pay.effective_month.day() != 1
-            || !self.covers(pay.effective_month)
-            || !pay.annual_gross.is_positive()
-            || !pay.monthly_net.is_positive()
-        {
-            return Err(DomainError::InvalidSalary);
-        }
-        Ok(())
+        let issue = if pay.effective_month.day() != 1 {
+            PayIssue::NotFirstOfMonth
+        } else if !self.covers(pay.effective_month) {
+            PayIssue::OutsideEmployment(self.period())
+        } else if !pay.annual_gross.is_positive() || !pay.monthly_net.is_positive() {
+            PayIssue::NotPositive
+        } else {
+            return Ok(());
+        };
+        Err(DomainError::InvalidSalary(issue))
     }
 
     /// Une prime est versée pendant l'emploi, avec un net positif et un brut positif s'il est connu (R-SAL-5).
     pub fn check_bonus(&self, bonus: &Bonus) -> Result<(), DomainError> {
-        if !bonus.net.is_positive()
-            || bonus.gross.is_some_and(|g| !g.is_positive())
-            || bonus.paid_on < self.start_date
-            || self.end_date.is_some_and(|end| bonus.paid_on > end)
-        {
-            return Err(DomainError::InvalidBonus);
-        }
-        Ok(())
+        let issue = if bonus.paid_on < self.start_date || self.end_date.is_some_and(|end| bonus.paid_on > end) {
+            BonusIssue::OutsideEmployment(self.period())
+        } else if !bonus.net.is_positive() || bonus.gross.is_some_and(|g| !g.is_positive()) {
+            BonusIssue::NotPositive
+        } else {
+            return Ok(());
+        };
+        Err(DomainError::InvalidBonus(issue))
     }
 
     /// Le mois de paie d'une fiche est un premier du mois pendant l'emploi (R-SAL-15).
     pub fn check_payslip(&self, pay_month: Date) -> Result<(), DomainError> {
-        if pay_month.day() != 1 || !self.covers(pay_month) {
-            return Err(DomainError::InvalidPayslipMonth);
+        if pay_month.day() != 1 {
+            return Err(DomainError::InvalidPayslipMonth(PayslipIssue::NotFirstOfMonth));
+        }
+        if !self.covers(pay_month) {
+            return Err(DomainError::InvalidPayslipMonth(PayslipIssue::OutsideEmployment(self.period())));
         }
         Ok(())
     }
@@ -454,17 +538,39 @@ mod tests {
     fn r_sal_1_r_sal_2_r_sal_5_employment_pay_and_bonus_are_checked() {
         let (job, pays, bonuses) = acme();
         assert!(job.validate().is_ok());
-        assert_eq!(Job { raise_month: 13, ..job }.validate(), Err(DomainError::InvalidEmployment));
-        assert_eq!(Job { end_date: Some(d("2022-08-31")), ..job }.validate(), Err(DomainError::InvalidEmployment));
+        let message = |e: DomainError| e.to_string();
+        assert_eq!(
+            Job { raise_month: 13, ..job }.validate(),
+            Err(DomainError::InvalidEmployment(EmploymentIssue::RaiseMonth))
+        );
+        let reversed = Job { end_date: Some(d("2022-08-31")), ..job }.validate().unwrap_err();
+        assert_eq!(message(reversed), "emploi invalide : la date de fin précède la date de début");
         assert!(job.check_pay(&pays[0]).is_ok());
         let mid_month = Pay { effective_month: d("2024-01-15"), ..pays[1] };
-        assert_eq!(job.check_pay(&mid_month), Err(DomainError::InvalidSalary));
+        assert_eq!(job.check_pay(&mid_month), Err(DomainError::InvalidSalary(PayIssue::NotFirstOfMonth)));
         let before = Pay { effective_month: d("2022-08-01"), ..pays[0] };
-        assert_eq!(job.check_pay(&before), Err(DomainError::InvalidSalary));
-        assert_eq!(job.check_pay(&Pay { monthly_net: Money::ZERO, ..pays[0] }), Err(DomainError::InvalidSalary));
+        assert_eq!(
+            message(job.check_pay(&before).unwrap_err()),
+            "rémunération invalide : le mois d'effet tombe hors de l'emploi, qui commence en septembre 2022"
+        );
+        let ended = Job { end_date: Some(d("2026-06-30")), ..job };
+        let after = Pay { effective_month: d("2026-07-01"), ..pays[0] };
+        assert_eq!(
+            message(ended.check_pay(&after).unwrap_err()),
+            "rémunération invalide : le mois d'effet tombe hors de l'emploi, qui court de septembre 2022 à juin 2026"
+        );
+        assert_eq!(
+            job.check_pay(&Pay { monthly_net: Money::ZERO, ..pays[0] }),
+            Err(DomainError::InvalidSalary(PayIssue::NotPositive))
+        );
         assert!(job.check_bonus(&bonuses[0]).is_ok());
         let early = Bonus { paid_on: d("2022-08-31"), ..bonuses[0].clone() };
-        assert_eq!(job.check_bonus(&early), Err(DomainError::InvalidBonus));
+        assert_eq!(
+            message(ended.check_bonus(&early).unwrap_err()),
+            "prime invalide : la date de versement tombe hors de l'emploi, qui court du 1er septembre 2022 au 30 juin 2026"
+        );
+        let unpaid = Bonus { net: Money::ZERO, ..bonuses[0].clone() };
+        assert_eq!(job.check_bonus(&unpaid), Err(DomainError::InvalidBonus(BonusIssue::NotPositive)));
     }
 
     #[test]
@@ -586,11 +692,17 @@ mod tests {
     fn r_sal_15_payslip_month_falls_within_the_employment() {
         let (job, _, _) = acme();
         assert_eq!(job.check_payslip(d("2022-09-01")), Ok(()));
-        assert_eq!(job.check_payslip(d("2022-08-01")), Err(DomainError::InvalidPayslipMonth));
-        assert_eq!(job.check_payslip(d("2026-08-15")), Err(DomainError::InvalidPayslipMonth));
+        assert!(matches!(
+            job.check_payslip(d("2022-08-01")),
+            Err(DomainError::InvalidPayslipMonth(PayslipIssue::OutsideEmployment(_)))
+        ));
+        assert_eq!(
+            job.check_payslip(d("2026-08-15")),
+            Err(DomainError::InvalidPayslipMonth(PayslipIssue::NotFirstOfMonth))
+        );
         let ended = Job { end_date: Some(d("2026-06-15")), ..job };
         assert_eq!(ended.check_payslip(d("2026-06-01")), Ok(()));
-        assert_eq!(ended.check_payslip(d("2026-07-01")), Err(DomainError::InvalidPayslipMonth));
+        assert!(ended.check_payslip(d("2026-07-01")).is_err());
     }
 
     #[test]

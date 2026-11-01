@@ -45,7 +45,12 @@ test('E30 : une augmentation prévue, préremplie avec la dernière rémunérati
   await page.getByRole('button', { name: 'Ajouter' }).first().click();
   const dialog = await openedDialog(page);
   await expect(dialog.getByLabel('Net mensuel versé')).toHaveValue('3400,00');
+  // Un mois hors des dates de l'emploi est refusé avant l'envoi.
+  await dialog.getByLabel('Année').fill('1990');
+  await expect(dialog.getByText(/Le mois d'effet doit tomber pendant l'emploi, qui/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Enregistrer' })).toBeDisabled();
   await dialog.getByLabel('Année').fill('2027');
+  await expect(dialog.getByText(/Le mois d'effet doit tomber/)).toHaveCount(0);
   await dialog.getByLabel("Mois d'effet").click();
   await page.getByRole('option', { name: 'Mars' }).click();
   await dialog.getByLabel('Net mensuel versé').fill('3600');

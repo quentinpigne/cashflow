@@ -22,7 +22,7 @@ import { EmploymentView } from '../../api/models/employment-view';
 import { SalaryChangeReason } from '../../api/models/salary-change-reason';
 import { SalaryView } from '../../api/models/salary-view';
 import { SalariesService } from '../../api/services/salaries.service';
-import { fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
+import { formatDate, formatMonth, fromIsoDate, todayIso, toIsoDate } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { BONUS_KIND_LABELS, SALARY_REASON_LABELS } from '../../core/labels';
 import { parseMoney, toEditable } from '../../core/money';
@@ -248,8 +248,44 @@ export class EmploymentDialog {
   }
 }
 
+/** Dates d'un emploi, qui bornent ses rémunérations et ses primes (R-SAL-2, R-SAL-5). */
+export interface EmploymentPeriod {
+  start: string;
+  end: string | null;
+}
+
+export function periodOf(j: EmploymentView): EmploymentPeriod {
+  return { start: j.summary.start_date, end: j.summary.end_date ?? null };
+}
+
+function firstOfMonth(iso: string): string {
+  return `${iso.slice(0, 8)}01`;
+}
+
+/** `iso` ramené entre `min` et `max` (dates ou mois `AAAA-MM-JJ`). */
+function clampIso(iso: string, min: string, max: string | null): string {
+  if (iso < min) return min;
+  return max && iso > max ? max : iso;
+}
+
+/** « qui commence en mai 2026 », « qui court de mai 2026 à juin 2027 ». */
+function periodInMonths(p: EmploymentPeriod): string {
+  const start = formatMonth(p.start).toLowerCase();
+  if (!p.end) return `qui commence en ${start}`;
+  const end = formatMonth(p.end).toLowerCase();
+  return end === start ? `qui ne couvre que ${start}` : `qui court de ${start} à ${end}`;
+}
+
+/** « qui commence le 15 mai 2026 », « qui court du 15 mai 2026 au 30 juin 2027 ». */
+function periodInDays(p: EmploymentPeriod): string {
+  return p.end
+    ? `qui court du ${formatDate(p.start)} au ${formatDate(p.end)}`
+    : `qui commence le ${formatDate(p.start)}`;
+}
+
 export interface SalaryDialogData {
   employmentId: string;
+  period: EmploymentPeriod;
   /** Rémunération modifiée, ou la dernière pour préremplir une nouvelle (R-SAL-2). */
   salary: SalaryView | null;
   editing: boolean;
@@ -286,13 +322,18 @@ export interface SalaryDialogData {
           <input
             matInput
             type="number"
-            min="1950"
-            max="2100"
+            [min]="firstYear"
+            [max]="lastYear"
             [ngModel]="year()"
             (ngModelChange)="year.set($event)"
           />
         </mat-form-field>
       </div>
+      @if (outside()) {
+        <p class="error" role="alert">
+          Le mois d'effet doit tomber pendant l'emploi, {{ periodLabel }}.
+        </p>
+      }
       <mat-form-field>
         <mat-label>Motif</mat-label>
         <mat-select [ngModel]="reason()" (ngModelChange)="reason.set($event)">
@@ -350,7 +391,16 @@ export class SalaryDialog {
   ];
   protected readonly reasonLabels = SALARY_REASON_LABELS;
   private readonly s = this.data.salary;
-  private readonly initial = this.data.editing && this.s ? this.s.effective_month : todayIso();
+  private readonly firstMonth = firstOfMonth(this.data.period.start);
+  private readonly lastMonth = this.data.period.end ? firstOfMonth(this.data.period.end) : null;
+  protected readonly firstYear = Number(this.firstMonth.slice(0, 4));
+  protected readonly lastYear = this.lastMonth ? Number(this.lastMonth.slice(0, 4)) : 2100;
+  protected readonly periodLabel = periodInMonths(this.data.period);
+  /** Une nouvelle rémunération part du mois en cours, ramené dans les dates de l'emploi. */
+  private readonly initial =
+    this.data.editing && this.s
+      ? this.s.effective_month
+      : clampIso(firstOfMonth(todayIso()), this.firstMonth, this.lastMonth);
   protected readonly month = signal(Number(this.initial.slice(5, 7)));
   protected readonly year = signal(Number(this.initial.slice(0, 4)));
   protected readonly reason = signal<SalaryChangeReason>(
@@ -361,14 +411,25 @@ export class SalaryDialog {
   protected readonly note = signal(this.data.editing ? (this.s?.note ?? '') : '');
   protected readonly error = signal<string | null>(null);
 
+  private readonly effectiveMonth = computed(() => {
+    const year = Number(this.year());
+    if (!Number.isInteger(year) || year < 1950 || year > 2100) return null;
+    return `${year}-${String(this.month()).padStart(2, '0')}-01`;
+  });
+  /** Le mois d'effet tombe hors des dates de l'emploi (R-SAL-2). */
+  protected readonly outside = computed(() => {
+    const month = this.effectiveMonth();
+    return month !== null && clampIso(month, this.firstMonth, this.lastMonth) !== month;
+  });
+
   protected readonly body = computed(() => {
     const gross = parseMoney(this.gross());
     const net = parseMoney(this.net());
-    const year = Number(this.year());
+    const month = this.effectiveMonth();
     if (gross === null || gross <= 0 || net === null || net <= 0) return null;
-    if (!Number.isInteger(year) || year < 1950 || year > 2100) return null;
+    if (month === null || this.outside()) return null;
     return {
-      effective_month: `${year}-${String(this.month()).padStart(2, '0')}-01`,
+      effective_month: month,
       annual_gross_minor: gross,
       monthly_net_minor: net,
       reason: this.reason(),
@@ -395,6 +456,7 @@ export class SalaryDialog {
 
 export interface BonusDialogData {
   employmentId: string;
+  period: EmploymentPeriod;
   bonus: BonusView | null;
 }
 
@@ -434,11 +496,14 @@ export interface BonusDialogData {
         <input
           matInput
           [matDatepicker]="picker"
+          [min]="minDate"
+          [max]="maxDate"
           [ngModel]="paidOn()"
           (ngModelChange)="paidOn.set($event)"
         />
         <mat-datepicker-toggle matIconSuffix [for]="picker" />
         <mat-datepicker #picker />
+        <mat-error>La date doit tomber pendant l'emploi, {{ periodLabel }}.</mat-error>
       </mat-form-field>
       <div class="pair">
         <mat-form-field>
@@ -486,7 +551,14 @@ export class BonusDialog {
   private readonly b = this.data.bonus;
   protected readonly kind = signal<BonusKind>(this.b?.kind ?? 'THIRTEENTH_MONTH');
   protected readonly label = signal(this.b?.label ?? BONUS_KIND_LABELS.THIRTEENTH_MONTH);
-  protected readonly paidOn = signal<Date | null>(fromIsoDate(this.b?.paid_on ?? todayIso()));
+  protected readonly minDate = fromIsoDate(this.data.period.start);
+  protected readonly maxDate = this.data.period.end ? fromIsoDate(this.data.period.end) : null;
+  protected readonly periodLabel = periodInDays(this.data.period);
+  protected readonly paidOn = signal<Date | null>(
+    fromIsoDate(
+      this.b?.paid_on ?? clampIso(todayIso(), this.data.period.start, this.data.period.end),
+    ),
+  );
   protected readonly net = signal(this.b ? toEditable(this.b.net_amount_minor) : '');
   protected readonly gross = signal(
     this.b?.gross_amount_minor != null ? toEditable(this.b.gross_amount_minor) : '',
@@ -511,6 +583,7 @@ export class BonusDialog {
     const net = parseMoney(this.net());
     const gross = this.gross().trim() ? parseMoney(this.gross()) : null;
     if (!label || !date || net === null || net <= 0) return null;
+    if (date < this.minDate || (this.maxDate && date > this.maxDate)) return null;
     if (this.gross().trim() && (gross === null || gross <= 0)) return null;
     return {
       label,
