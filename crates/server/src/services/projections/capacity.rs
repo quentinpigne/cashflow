@@ -82,7 +82,7 @@ pub(super) async fn validate(db: &Db, assumptions: &CapacityAssumptions) -> AppR
             return Err(AppError::invalid_field(
                 "SURPLUS_NOT_SAVINGS",
                 "surplus_account_id",
-                "le reste de la capacité d'épargne va sur un compte d'épargne (R-PRJ-45)",
+                "le reste de la capacité d'épargne va sur un compte d'épargne",
             ));
         }
     }

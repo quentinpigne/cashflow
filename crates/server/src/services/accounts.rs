@@ -461,7 +461,7 @@ pub async fn delete(db: &Db, data: &DataDir, id: AccountId, delete_documents: bo
     if db::loans::is_payer(&db.read, id).await? {
         return Err(AppError::invalid(
             "ACCOUNT_IS_LOAN_PAYER",
-            "ce compte paie les mensualités d'un prêt : changer d'abord le compte payeur du prêt (R-CPT-15)",
+            "ce compte paie les mensualités d'un prêt : changer d'abord le compte payeur du prêt",
         ));
     }
     let mut tx = db.write.begin().await?;

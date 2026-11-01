@@ -35,7 +35,7 @@ import { keepValue } from '../../shared/keep-value';
               Épargne de précaution
               <mat-icon
                 class="info"
-                matTooltip="Comptes marqués « épargne de précaution », rapportés aux dépenses mensuelles moyennes des 12 derniers mois complets (R-TDB-9)."
+                matTooltip="Comptes marqués « épargne de précaution », rapportés aux dépenses mensuelles moyennes des 12 derniers mois complets."
                 >info</mat-icon
               >
             </span>

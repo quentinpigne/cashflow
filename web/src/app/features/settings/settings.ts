@@ -148,7 +148,7 @@ import { confirm } from '../../shared/confirm-dialog';
                 (change)="saveTolerance($any($event.target).value)"
               />
               <span matTextSuffix>%</span>
-              <mat-hint>Écart signalé entre le net attendu et le reçu (R-SAL-9).</mat-hint>
+              <mat-hint>Écart signalé entre le net attendu et le reçu.</mat-hint>
             </mat-form-field>
           }
         }
@@ -156,24 +156,22 @@ import { confirm } from '../../shared/confirm-dialog';
 
       <section class="card section">
         <h2>Services externes</h2>
-        <p class="muted">
-          Désactivés par défaut : rien ne quitte le serveur sans votre accord (ADR-0007).
-        </p>
+        <p class="muted">Désactivés par défaut : rien ne quitte le serveur sans votre accord.</p>
         @if (features.value(); as f) {
           <mat-slide-toggle [checked]="f.geocoding" (change)="toggle({ geocoding: $event.checked })"
             >Recherche d'adresse (Base Adresse Nationale)</mat-slide-toggle
           >
           <p class="muted small">
             Le texte saisi dans la recherche d'adresse d'un tiers est envoyé à
-            api-adresse.data.gouv.fr, pour proposer l'adresse et la placer sur la carte des analyses
-            (R-TIE-26).
+            api-adresse.data.gouv.fr, pour proposer l'adresse et la placer sur la carte des
+            analyses.
           </p>
         }
       </section>
 
       <section class="card section">
         <h2>Export</h2>
-        <p class="muted">Toutes les données, au format JSON ouvert (ADR-0008).</p>
+        <p class="muted">Toutes les données, au format JSON ouvert.</p>
         <a mat-stroked-button href="/api/v1/export" download>
           <mat-icon>download</mat-icon>
           Télécharger l'export complet

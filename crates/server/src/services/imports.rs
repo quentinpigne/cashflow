@@ -1011,7 +1011,7 @@ pub async fn review_line(
         .find(|l| l.id == line_id)
         .ok_or(AppError::NotFound("ligne d'import"))?;
     if !line.errors.is_empty() && input.decision != ImportDecision::Skip {
-        return Err(AppError::invalid("LINE_INVALID", "une ligne en erreur ne peut pas être importée (R-IMP-3)"));
+        return Err(AppError::invalid("LINE_INVALID", "une ligne en erreur ne peut pas être importée"));
     }
     let amount = line.amount.unwrap_or_default();
     if input.decision == ImportDecision::Match {

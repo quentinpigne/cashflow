@@ -72,25 +72,25 @@ pub async fn update(db: &Db, input: &FeaturesInput) -> AppResult<Features> {
     if input.assets == Some(false) && current.asset_count > 0 {
         return Err(AppError::invalid(
             "FEATURE_IN_USE",
-            "la rubrique Biens ne se désactive qu'une fois vide : supprimer d'abord les biens (R-BIE-7)",
+            "la rubrique Biens ne se désactive qu'une fois vide : supprimer d'abord les biens",
         ));
     }
     if input.loans == Some(false) && current.loan_count > 0 {
         return Err(AppError::invalid(
             "FEATURE_IN_USE",
-            "la rubrique Prêts ne se désactive qu'une fois vide : supprimer d'abord les prêts (R-PRE-12)",
+            "la rubrique Prêts ne se désactive qu'une fois vide : supprimer d'abord les prêts",
         ));
     }
     if input.salaries == Some(false) && current.employment_count > 0 {
         return Err(AppError::invalid(
             "FEATURE_IN_USE",
-            "la rubrique Salaires ne se désactive qu'une fois vide : supprimer d'abord les emplois (R-SAL-14)",
+            "la rubrique Salaires ne se désactive qu'une fois vide : supprimer d'abord les emplois",
         ));
     }
     if input.household == Some(false) && current.member_count > 0 {
         return Err(AppError::invalid(
             "FEATURE_IN_USE",
-            "la rubrique Foyer ne se désactive qu'une fois vide : supprimer d'abord les membres (R-MBR-3)",
+            "la rubrique Foyer ne se désactive qu'une fois vide : supprimer d'abord les membres",
         ));
     }
     if input.salary_gap_tolerance_ppm.is_some_and(|t| !(0..=1_000_000).contains(&t)) {

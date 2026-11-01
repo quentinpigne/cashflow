@@ -90,6 +90,8 @@ front dans `web/`.
   (non vérifié) seulement si c'est inévitable, et couvert par un test d'intégration. Tables `STRICT`
   avec les `CHECK` du modèle de données. Une migration qui recrée une table suit la procédure de
   l'ADR-0017.
+- Aucun texte vu par l'utilisateur (gabarit, aide, info-bulle, message d'erreur renvoyé par l'API) ne cite une
+  règle `R-*`, une feature ou un ADR : ces références restent dans les commentaires, les tests et la doc.
 - Côté TS : ne jamais écrire à la main un type ou un service d'API (utiliser le client généré dans `web/src/app/api/`), ne jamais faire
   d'arithmétique sur des montants hors de `money.ts`.
 

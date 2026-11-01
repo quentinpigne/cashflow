@@ -364,7 +364,7 @@ async fn row_of(db: &Db, id: LoanId, input: &LoanInput) -> AppResult<LoanRow> {
                 return Err(AppError::invalid_field(
                     "INVALID_PAYER",
                     "payer_account_id",
-                    "le compte payeur est un compte de liquidités en euros (R-PRE-2)",
+                    "le compte payeur est un compte de liquidités en euros",
                 ));
             }
             expense_category(db, s.interest_category_id, "interest_category_id").await?;
@@ -374,7 +374,7 @@ async fn row_of(db: &Db, id: LoanId, input: &LoanInput) -> AppResult<LoanRow> {
                     return Err(AppError::invalid_field(
                         "INSURANCE_CATEGORY_REQUIRED",
                         "insurance_category_id",
-                        "une catégorie est requise pour l'assurance (R-PRE-2)",
+                        "une catégorie est requise pour l'assurance",
                     ));
                 }
                 None => {}
@@ -444,14 +444,14 @@ pub async fn save_balance(db: &Db, id: LoanId, input: &BalanceInput, today: Date
     if loan.schedule.is_some() {
         return Err(AppError::invalid(
             "LOAN_FOLLOWS_SCHEDULE",
-            "le capital restant dû d'un prêt avec tableau suit le tableau (R-PRE-4)",
+            "le capital restant dû d'un prêt avec tableau suit le tableau",
         ));
     }
     if input.outstanding_minor < 0 || input.date < loan.start_date {
         return Err(AppError::invalid_field(
             "INVALID_BALANCE",
             "outstanding_minor",
-            "un capital restant dû est positif ou nul, daté après le déblocage (R-PRE-5)",
+            "un capital restant dû est positif ou nul, daté après le déblocage",
         ));
     }
     let row = BalanceRow {
@@ -597,9 +597,10 @@ pub async fn proposals_among(db: &Db, transactions: &[TransactionId]) -> AppResu
 pub async fn pay(db: &Db, id: LoanId, inputs: &[LoanPaymentInput]) -> AppResult<LoanPaymentResult> {
     let book = LoanBook::load(db).await?;
     let loan = book.loans.iter().find(|l| l.id == id).ok_or(AppError::NotFound("prêt"))?;
-    let s = loan.schedule.as_ref().ok_or_else(|| {
-        AppError::invalid("LOAN_WITHOUT_SCHEDULE", "seul un prêt avec tableau a des échéances (R-PRE-6)")
-    })?;
+    let s = loan
+        .schedule
+        .as_ref()
+        .ok_or_else(|| AppError::invalid("LOAN_WITHOUT_SCHEDULE", "seul un prêt avec tableau a des échéances"))?;
     let schedule = book.schedule(id);
     let mut paid: Vec<u32> =
         db::loans::payments(&db.read).await?.iter().filter(|p| p.loan_id == id).map(|p| p.installment_number).collect();
@@ -613,10 +614,7 @@ pub async fn pay(db: &Db, id: LoanId, inputs: &[LoanPaymentInput]) -> AppResult<
         let debit =
             db::transactions::find(&mut *tx, input.transaction_id).await?.ok_or(AppError::NotFound("transaction"))?;
         if debit.account_id != s.payer_account_id || !debit.amount.is_negative() {
-            return Err(AppError::invalid(
-                "NOT_A_PAYER_DEBIT",
-                "une mensualité est un débit du compte payeur du prêt (R-PRE-6)",
-            ));
+            return Err(AppError::invalid("NOT_A_PAYER_DEBIT", "une mensualité est un débit du compte payeur du prêt"));
         }
         if db::transactions::transfer_of(&mut *tx, debit.id).await?.is_some()
             || db::loans::payment_of(&mut *tx, debit.id).await?.is_some()

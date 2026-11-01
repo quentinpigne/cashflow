@@ -28,6 +28,8 @@ composant visé, pour guider l'implémentation.
   `fr-FR`, semaine commençant le lundi.
 - **Erreurs métier** : le message de l'API (ADR-0016) s'affiche sous le champ concerné, ou dans une
   `[mat-snack-bar]` s'il ne concerne aucun champ. Le code de règle (`R-TRX-10`…) n'est pas montré.
+  Plus généralement, aucun texte de l'interface (libellé, aide, info-bulle, message d'erreur) ne cite une
+  règle, une feature ou un ADR : ce sont des repères de conception, pas des informations pour l'utilisateur.
 - **Confirmation** avant toute action destructrice ou irréversible (`[mat-dialog]`), avec le verbe de
   l'action sur le bouton (« Supprimer », jamais « OK »).
 - **Annuler plutôt que confirmer** quand c'est possible : après une suppression simple, une snack-bar

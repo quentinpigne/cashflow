@@ -77,7 +77,7 @@ async fn terms_of(db: &Db, account: AccountId) -> AppResult<TermsRow> {
         .await?
         .into_iter()
         .find(|t| t.account_id == account)
-        .ok_or_else(|| AppError::invalid("NO_SAVINGS_TERMS", "ce compte n'a pas de conditions d'épargne (R-CPT-9)"))
+        .ok_or_else(|| AppError::invalid("NO_SAVINGS_TERMS", "ce compte n'a pas de conditions d'épargne"))
 }
 
 async fn rates_of(db: &Db, schedule: RateScheduleId) -> AppResult<Vec<RatePoint>> {
@@ -343,10 +343,7 @@ pub async fn record_interest(db: &Db, account: AccountId, year: i32, today: Date
             ));
         }
         InterestProposal::NotYet => {
-            return Err(AppError::invalid(
-                "YEAR_NOT_OVER",
-                "les intérêts s'inscrivent une fois l'année finie (R-EPA-5)",
-            ));
+            return Err(AppError::invalid("YEAR_NOT_OVER", "les intérêts s'inscrivent une fois l'année finie"));
         }
         InterestProposal::Available => {}
     }
@@ -414,7 +411,7 @@ async fn valued_account(db: &Db, account: AccountId) -> AppResult<AccountRow> {
     if row.kind.family().has_computed_balance() {
         return Err(AppError::invalid(
             "NO_VALUATION_FOR_FAMILY",
-            "ce compte a un solde calculé : il ne se suit pas par valorisations (R-CPT-6)",
+            "ce compte a un solde calculé : il ne se suit pas par valorisations",
         ));
     }
     Ok(row)

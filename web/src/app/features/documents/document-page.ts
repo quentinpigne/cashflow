@@ -189,7 +189,7 @@ import { MembersStore } from '../../shared/stores';
                       <mat-option [value]="m.id">{{ m.name }}</mat-option>
                     }
                   </mat-select>
-                  <mat-hint>La personne que le document concerne (R-MBR-13).</mat-hint>
+                  <mat-hint>La personne que le document concerne.</mat-hint>
                 </mat-form-field>
               }
               <mat-form-field>

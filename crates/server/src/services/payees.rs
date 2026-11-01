@@ -492,7 +492,7 @@ pub async fn search_address(db: &Db, geocoder: &Geocoder, query: &str) -> AppRes
     if !super::features::geocoding_enabled(db).await? {
         return Err(AppError::invalid(
             "GEOCODING_DISABLED",
-            "la recherche d'adresse est désactivée : l'activer dans les réglages (R-TIE-26)",
+            "la recherche d'adresse est désactivée : l'activer dans les réglages",
         ));
     }
     let query = query.trim();

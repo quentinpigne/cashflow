@@ -91,11 +91,11 @@ export class BudgetPage {
 
   protected readonly definitions = {
     toBudget:
-      'Revenus prévus − dépenses mensuelles prévues − quotes-parts annuelles − objectifs d’épargne − projets du mois (R-BUD-40).',
+      'Revenus prévus − dépenses mensuelles prévues − quotes-parts annuelles − objectifs d’épargne − projets du mois.',
     projects:
-      'Projets dont les dépenses sont retirées des lignes du mois : leur mise de côté, ou leur part du calendrier prévu, et leur réel du mois (R-BUD-74).',
+      'Projets dont les dépenses sont retirées des lignes du mois : leur mise de côté, ou leur part du calendrier prévu, et leur réel du mois.',
     balance:
-      'Revenus réels − dépenses réelles (lignes, hors budget, non catégorisées, projets) − épargne versée (R-BUD-41).',
+      'Revenus réels − dépenses réelles (lignes, hors budget, non catégorisées, projets) − épargne versée.',
   };
 
   protected previousMonth(): void {

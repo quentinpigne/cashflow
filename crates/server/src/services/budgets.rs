@@ -745,7 +745,7 @@ pub async fn create_line(db: &Db, input: &BudgetLineInput) -> AppResult<BudgetLi
             return Err(AppError::invalid_field(
                 "SAVINGS_TARGET_NOT_SAVINGS",
                 "target_account_id",
-                "un objectif d'épargne vise un compte d'épargne (R-BUD-30)",
+                "un objectif d'épargne vise un compte d'épargne",
             ));
         }
     }
