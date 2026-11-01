@@ -334,6 +334,41 @@ async fn r_imp_17_revert_restores_previous_state() {
 }
 
 #[tokio::test]
+async fn r_imp_30_committed_or_reverted_batch_leaves_history_keeping_its_transactions() {
+    let (db, data, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let reviewing = import(&db, &data, checking, MARCH).await;
+    let err = imports::remove(&db, &data, reviewing.summary.id).await.unwrap_err();
+    assert!(matches!(err, AppError::Invalid { code: "BATCH_REVIEWING", .. }), "{err:?}");
+
+    imports::commit(&db, &data, reviewing.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
+    let created = transactions::list(&db, checking, &Default::default()).await.unwrap().total;
+    assert!(created > 0);
+    imports::delete_file(&db, &data, reviewing.summary.id).await.unwrap();
+    imports::remove(&db, &data, reviewing.summary.id).await.unwrap();
+    assert!(imports::list(&db, &data).await.unwrap().is_empty(), "le lot quitte l'historique");
+    assert_eq!(
+        transactions::list(&db, checking, &Default::default()).await.unwrap().total,
+        created,
+        "les transactions créées restent"
+    );
+    let again = import(&db, &data, checking, MARCH).await;
+    assert!(
+        again.lines.iter().all(|l| l.match_kind == MatchKind::Duplicate),
+        "réimporter le même relevé ne crée pas de doublon"
+    );
+    imports::cancel(&db, &data, again.summary.id).await.unwrap();
+
+    let joint = account(&db, "Joint", AccountKind::Checking, 0).await;
+    let reverted = import(&db, &data, joint, MARCH).await;
+    imports::commit(&db, &data, reverted.summary.id, &CommitInput::default(), d(TODAY)).await.unwrap();
+    imports::revert(&db, reverted.summary.id).await.unwrap();
+    imports::remove(&db, &data, reverted.summary.id).await.unwrap();
+    assert!(imports::list(&db, &data).await.unwrap().is_empty());
+    assert!(matches!(imports::remove(&db, &data, reverted.summary.id).await.unwrap_err(), AppError::NotFound(_)));
+}
+
+#[tokio::test]
 async fn r_imp_1_cancel_review_changes_nothing() {
     let (db, data, _dir) = setup().await;
     let checking = account(&db, "Courant", AccountKind::Checking, 0).await;

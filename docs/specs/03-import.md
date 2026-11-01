@@ -179,6 +179,11 @@ Un profil est créé la première fois via un **assistant avec aperçu**, puis r
 - **R-IMP-21** — Le **fichier source** de chaque lot est conservé sur le serveur (`/data/imports`),
   référencé par le lot, et supprimable à la main (le lot et ses lignes restent). Il peut être inclus
   dans l'export (ADR-0008).
+- **R-IMP-30** — Un lot `COMMITTED` ou `REVERTED` peut être **retiré de l'historique** (avec confirmation) : le
+  lot, ses lignes et son fichier source sont supprimés. Les transactions créées ou pointées, les points de
+  contrôle (qui perdent leur lien au lot) et le relevé archivé (R-IMP-28) restent ; l'anti-doublon, porté
+  par l'empreinte des transactions (R-IMP-6), joue toujours. Un lot validé retiré ne peut plus être annulé
+  (R-IMP-17). Un lot `REVIEWING` ne se retire pas : il s'annule depuis sa revue (R-IMP-1).
 - **R-IMP-28** — À la validation d'un lot dont le fichier source est un **PDF**, ce fichier est aussi archivé
   dans la bibliothèque comme **relevé du compte** (R-CPT-18, R-DOC-17), avec la période du lot, au mois qui couvre le plus de jours de cette
   période (un relevé LCL du 3 septembre au 2 octobre est celui de septembre ; à égalité, le plus ancien) ; sans

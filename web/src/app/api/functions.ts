@@ -401,6 +401,8 @@ export type { DownloadImportFile$Params as DownloadImportFile$Params } from './f
 export { downloadImportFile as downloadImportFile } from './fn/imports/download-import-file';
 export type { DeleteImportFile$Params as DeleteImportFile$Params } from './fn/imports/delete-import-file';
 export { deleteImportFile as deleteImportFile } from './fn/imports/delete-import-file';
+export type { RemoveImportFromHistory$Params as RemoveImportFromHistory$Params } from './fn/imports/remove-import-from-history';
+export { removeImportFromHistory as removeImportFromHistory } from './fn/imports/remove-import-from-history';
 export type { BulkReviewImport$Params as BulkReviewImport$Params } from './fn/imports/bulk-review-import';
 export { bulkReviewImport as bulkReviewImport } from './fn/imports/bulk-review-import';
 export type { ReviewImportLine$Params as ReviewImportLine$Params } from './fn/imports/review-import-line';

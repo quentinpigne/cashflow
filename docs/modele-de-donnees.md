@@ -629,6 +629,9 @@ contraintes `STRICT` (une table virtuelle ne l'est pas), reconstruite par `cashf
 | `statement_closing_balance` | `Money` | optionnel (relevé) |
 | `committed_at` | `Timestamp` | optionnel |
 
+Un lot `COMMITTED` ou `REVERTED` peut être supprimé (retiré de l'historique, R-IMP-30) : ses lignes suivent
+en cascade, le lien des points de contrôle passe à vide, les transactions restent.
+
 ### ImportLine
 
 | Champ | Type | Contraintes |

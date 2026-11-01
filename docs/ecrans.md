@@ -454,7 +454,8 @@ Conçu pour l'ordinateur, utilisable sur mobile. Étapes `[mat-stepper]` :
 
 Liste des lots : date, compte, fichier, période, statut, nombre de transactions créées et pointées.
 Actions : reprendre la revue (lot en revue), **annuler un lot validé** (R-IMP-17, avec confirmation),
-télécharger ou supprimer le fichier source (R-IMP-21). Un relevé PDF validé est aussi archivé sur le compte
+télécharger ou supprimer le fichier source (R-IMP-21), **retirer de l'historique** un lot validé ou annulé
+(R-IMP-30, avec confirmation : les transactions restent, un lot validé ne pourra plus être annulé). Un relevé PDF validé est aussi archivé sur le compte
 (R-IMP-28) : le supprimer de l'historique ne le retire pas des relevés du compte.
 
 ## E13 — Rapprochement d'un compte (RAP-01 à RAP-06)

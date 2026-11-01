@@ -4225,6 +4225,46 @@
         }
       }
     },
+    "/api/v1/imports/{id}/history": {
+      "delete": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Retire un lot validé ou annulé de l'historique ; ses transactions restent (R-IMP-30).",
+        "operationId": "removeImportFromHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ImportBatchId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/imports/{id}/lines/bulk": {
       "post": {
         "tags": [

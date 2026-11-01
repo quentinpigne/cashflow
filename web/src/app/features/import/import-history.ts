@@ -87,6 +87,11 @@ import { FrDatePipe } from '../../shared/date.pipe';
                   <mat-icon>undo</mat-icon>Annuler ce lot
                 </button>
               }
+              @if (b.status === 'COMMITTED' || b.status === 'REVERTED') {
+                <button mat-menu-item (click)="remove(b)">
+                  <mat-icon>delete</mat-icon>Retirer de l'historique
+                </button>
+              }
             </mat-menu>
           </div>
         } @empty {
@@ -135,6 +140,27 @@ export class ImportHistoryPage {
     });
     if (ok) {
       await this.run(() => firstValueFrom(this.api.revertImport({ id: b.id })), 'Lot annulé');
+    }
+  }
+
+  protected async remove(b: BatchSummary): Promise<void> {
+    const committed = b.status === 'COMMITTED';
+    const gone = b.has_file
+      ? "L'import disparaît de la liste avec son fichier source."
+      : "L'import disparaît de la liste.";
+    const ok = await confirm(this.dialog, {
+      title: "Retirer de l'historique",
+      message: committed
+        ? `${gone} Ses transactions et les points de contrôle du relevé restent, mais il ne pourra plus être annulé.`
+        : gone,
+      action: 'Retirer',
+      destructive: committed,
+    });
+    if (ok) {
+      await this.run(
+        () => firstValueFrom(this.api.removeImportFromHistory({ id: b.id })),
+        "Import retiré de l'historique",
+      );
     }
   }
 

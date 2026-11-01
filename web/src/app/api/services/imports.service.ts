@@ -38,6 +38,8 @@ import { ListImports$Params } from '../fn/imports/list-imports';
 import { previewImport } from '../fn/imports/preview-import';
 import { PreviewImport$Params } from '../fn/imports/preview-import';
 import { Profile } from '../models/profile';
+import { removeImportFromHistory } from '../fn/imports/remove-import-from-history';
+import { RemoveImportFromHistory$Params } from '../fn/imports/remove-import-from-history';
 import { revertImport } from '../fn/imports/revert-import';
 import { RevertImport$Params } from '../fn/imports/revert-import';
 import { reviewImportLine } from '../fn/imports/review-import-line';
@@ -448,6 +450,41 @@ export class ImportsService extends BaseService {
    */
   deleteImportFile(params: DeleteImportFile$Params, context?: HttpContext): Observable<void> {
     const resp = this.deleteImportFile$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `removeImportFromHistory()` */
+  static readonly RemoveImportFromHistoryPath = '/api/v1/imports/{id}/history';
+
+  /**
+   * Retire un lot validé ou annulé de l'historique ; ses transactions restent (R-IMP-30).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `removeImportFromHistory()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  removeImportFromHistory$Response(params: RemoveImportFromHistory$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = removeImportFromHistory(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Retire un lot validé ou annulé de l'historique ; ses transactions restent (R-IMP-30).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `removeImportFromHistory$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  removeImportFromHistory(params: RemoveImportFromHistory$Params, context?: HttpContext): Observable<void> {
+    const resp = this.removeImportFromHistory$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

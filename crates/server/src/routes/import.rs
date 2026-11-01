@@ -14,6 +14,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(imports::bulk))
         .routes(routes!(imports::commit))
         .routes(routes!(imports::revert))
+        .routes(routes!(imports::remove))
         .routes(routes!(imports::download_file, imports::delete_file))
         .routes(routes!(imports::list_profiles, imports::create_profile))
         .routes(routes!(imports::update_profile, imports::delete_profile))

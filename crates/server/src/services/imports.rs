@@ -1460,6 +1460,23 @@ pub async fn revert(db: &Db, id: ImportBatchId) -> AppResult<()> {
     Ok(())
 }
 
+/// Retire de l'historique un lot validé ou annulé, avec ses lignes et son fichier source (R-IMP-30) : les
+/// transactions, les points de contrôle et le relevé archivé restent ; le lot ne peut plus être annulé.
+pub async fn remove(db: &Db, data: &DataDir, id: ImportBatchId) -> AppResult<()> {
+    let batch = db::imports::find_batch(&db.read, id).await?.ok_or(AppError::NotFound("lot d'import"))?;
+    if !matches!(batch.status, BatchStatus::Committed | BatchStatus::Reverted) {
+        return Err(AppError::invalid(
+            "BATCH_REVIEWING",
+            "un lot en revue s'annule depuis sa revue, il ne se retire pas de l'historique",
+        ));
+    }
+    db::imports::delete_batch(&db.write, id).await?;
+    if let Some(path) = find_stored_file(data, id) {
+        let _ = std::fs::remove_file(path);
+    }
+    Ok(())
+}
+
 /// Supprime le fichier source conservé ; le lot et ses lignes restent (R-IMP-21).
 pub async fn delete_file(db: &Db, data: &DataDir, id: ImportBatchId) -> AppResult<()> {
     db::imports::find_batch(&db.read, id).await?.ok_or(AppError::NotFound("lot d'import"))?;

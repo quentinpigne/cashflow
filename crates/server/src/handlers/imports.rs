@@ -179,6 +179,16 @@ pub async fn revert(State(state): State<AppState>, Path(id): Path<ImportBatchId>
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Retire un lot validé ou annulé de l'historique ; ses transactions restent (R-IMP-30).
+#[utoipa::path(
+    delete, operation_id = "removeImportFromHistory", path = "/imports/{id}/history", tag = "imports",
+    params(("id" = ImportBatchId, Path)), responses((status = 204), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn remove(State(state): State<AppState>, Path(id): Path<ImportBatchId>) -> AppResult<StatusCode> {
+    imports::remove(&state.db, &state.data, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 /// Télécharge le fichier source conservé (R-IMP-21).
 #[utoipa::path(
     get, operation_id = "downloadImportFile", path = "/imports/{id}/file", tag = "imports", params(("id" = ImportBatchId, Path)),
