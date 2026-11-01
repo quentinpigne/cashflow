@@ -29,7 +29,8 @@ Option 2 :
   - montants en **centimes entiers** (`amount_minor`), taux en **millionièmes** (`rate_ppm`) ;
   - dates en `YYYY-MM-DD`, identifiants en chaînes UUID ;
   - erreurs au format `application/problem+json` (RFC 9457), avec un champ `code` stable
-    (ex. `SPLIT_SUM_MISMATCH`, `TRANSACTION_LOCKED`) et, si pertinent, la règle `R-*` concernée ;
+    (ex. `SPLIT_SUM_MISMATCH`, `TRANSACTION_LOCKED`), sans référence de conception (la règle `R-*`
+    reste dans le code) ;
   - pagination par curseur pour les listes de transactions.
 - Les DTO de l'API sont **distincts** des entités du cœur : le crate `server` fait la conversion.
 

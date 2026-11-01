@@ -26,11 +26,6 @@ export interface Problem {
    * Pour `TOO_MANY_ATTEMPTS` : délai d'attente en secondes.
    */
   retry_after?: (number | null);
-
-  /**
-   * Règle métier concernée (ex. `R-TRX-10`).
-   */
-  rule?: (string | null);
   status: number;
 
   /**

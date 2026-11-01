@@ -61,9 +61,6 @@ pub struct Problem {
     pub status: u16,
     /// Code stable de l'erreur (ex. `SPLIT_SUM_MISMATCH`).
     pub code: &'static str,
-    /// Règle métier concernée (ex. `R-TRX-10`).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rule: Option<&'static str>,
     /// Champ de la requête concerné, si l'erreur en vise un.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub field: Option<&'static str>,
@@ -77,21 +74,21 @@ pub struct Problem {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        let (status, code, rule, field, retry_after) = match &self {
-            AppError::Domain(error) => (StatusCode::UNPROCESSABLE_ENTITY, error.code(), error.rule(), None, None),
-            AppError::NotFound(_) => (StatusCode::NOT_FOUND, "NOT_FOUND", None, None, None),
-            AppError::Invalid { code, field, .. } => (StatusCode::UNPROCESSABLE_ENTITY, *code, None, *field, None),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", None, None, None),
-            AppError::Forbidden => (StatusCode::FORBIDDEN, "FORBIDDEN", None, None, None),
-            AppError::WrongPassword => (StatusCode::UNAUTHORIZED, "WRONG_PASSWORD", None, None, None),
+        let (status, code, field, retry_after) = match &self {
+            AppError::Domain(error) => (StatusCode::UNPROCESSABLE_ENTITY, error.code(), None, None),
+            AppError::NotFound(_) => (StatusCode::NOT_FOUND, "NOT_FOUND", None, None),
+            AppError::Invalid { code, field, .. } => (StatusCode::UNPROCESSABLE_ENTITY, *code, *field, None),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", None, None),
+            AppError::Forbidden => (StatusCode::FORBIDDEN, "FORBIDDEN", None, None),
+            AppError::WrongPassword => (StatusCode::UNAUTHORIZED, "WRONG_PASSWORD", None, None),
             AppError::TooManyAttempts { retry_after_secs } => {
-                (StatusCode::TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS", None, None, Some(*retry_after_secs))
+                (StatusCode::TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS", None, Some(*retry_after_secs))
             }
-            AppError::NoPassword => (StatusCode::CONFLICT, "NO_PASSWORD", None, None, None),
-            AppError::Upstream(_) => (StatusCode::BAD_GATEWAY, "UPSTREAM_UNAVAILABLE", None, None, None),
+            AppError::NoPassword => (StatusCode::CONFLICT, "NO_PASSWORD", None, None),
+            AppError::Upstream(_) => (StatusCode::BAD_GATEWAY, "UPSTREAM_UNAVAILABLE", None, None),
             AppError::Internal(error) => {
                 tracing::error!(error = format!("{error:#}"), "erreur interne");
-                (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL", None, None, None)
+                (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL", None, None)
             }
         };
         let title = match &self {
@@ -102,16 +99,8 @@ impl IntoResponse for AppError {
             AppError::Domain(DomainError::DocumentAlreadyArchived { id, .. }) => Some(id.to_string()),
             _ => None,
         };
-        let problem = Problem {
-            kind: "about:blank",
-            title,
-            status: status.as_u16(),
-            code,
-            rule,
-            field,
-            retry_after,
-            document_id,
-        };
+        let problem =
+            Problem { kind: "about:blank", title, status: status.as_u16(), code, field, retry_after, document_id };
         let mut response = (status, Json(problem)).into_response();
         response.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("application/problem+json"));
         response
