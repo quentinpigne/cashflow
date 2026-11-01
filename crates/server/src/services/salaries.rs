@@ -265,8 +265,8 @@ pub struct EmploymentView {
     pub bonuses: Vec<BonusView>,
     /// Revenu annuel, la plus récente année d'abord.
     pub years: Vec<AnnualView>,
-    /// Les 12 derniers mois, mois en cours compris, le plus récent d'abord. L'attendu cumule les emplois de la
-    /// même catégorie.
+    /// Les 12 derniers mois de l'emploi (jusqu'à sa fin, au plus tard le mois en cours), le plus récent d'abord.
+    /// L'attendu cumule les emplois de la même catégorie.
     pub checks: Vec<MonthCheck>,
     /// Fiches de paie, la plus récente d'abord (R-SAL-18).
     pub payslips: Vec<PayslipView>,
@@ -380,19 +380,21 @@ fn month_back(month: Date, count: u32) -> Date {
     month.checked_sub_months(Months::new(count)).unwrap_or(month)
 }
 
-/// Attendu et reçu d'une catégorie de revenu sur les `count` derniers mois, mois en cours compris, le plus récent
-/// d'abord (R-SAL-9). L'attendu cumule les emplois reliés à la catégorie ; le reçu compte ses sous-catégories.
+/// Attendu et reçu d'une catégorie de revenu sur les mois donnés, du plus récent au plus ancien (R-SAL-9).
+/// L'attendu cumule les emplois reliés à la catégorie ; le reçu compte ses sous-catégories.
 async fn checks(
     db: &Db,
     book: &SalaryBook,
     category: CategoryId,
-    count: u32,
+    months: &[Date],
     today: Date,
 ) -> AppResult<Vec<MonthCheck>> {
+    let (Some(&last), Some(&first)) = (months.first(), months.last()) else {
+        return Ok(Vec::new());
+    };
     let current = salaries::month_of(today);
-    let first = month_back(current, count.saturating_sub(1));
     let mut received: HashMap<String, Money> = HashMap::new();
-    for r in db::salaries::received(&db.read, first, cashflow_domain::recurrence::end_of_month(current)).await? {
+    for r in db::salaries::received(&db.read, first, cashflow_domain::recurrence::end_of_month(last)).await? {
         if r.category_id == category || r.parent_id == Some(category) {
             *received.entry(r.month).or_default() += r.amount;
         }
@@ -400,9 +402,9 @@ async fn checks(
     let payrolls: Vec<Payroll> =
         book.employments.iter().filter(|e| e.income_category_id == category).map(|e| book.payroll(e)).collect();
     let tolerance = tolerance(db).await?;
-    Ok((0..count)
-        .map(|back| {
-            let month = month_back(current, back);
+    Ok(months
+        .iter()
+        .map(|&month| {
             let expected = payrolls
                 .iter()
                 .map(|p| salaries::expected(&p.job, &p.pays, &p.bonuses, month))
@@ -448,7 +450,7 @@ pub async fn alerts(db: &Db, today: Date) -> AppResult<Vec<SalaryGapAlert>> {
             continue;
         }
         seen.push(e.income_category_id);
-        let checks = checks(db, &book, e.income_category_id, 2, today).await?;
+        let checks = checks(db, &book, e.income_category_id, &[last], today).await?;
         if let Some(c) = checks.into_iter().find(|c| c.month == last && c.flagged) {
             result.push(SalaryGapAlert {
                 employment_id: e.id,
@@ -576,7 +578,14 @@ pub async fn get(db: &Db, id: EmploymentId, today: Date) -> AppResult<Employment
         salaries,
         bonuses,
         years,
-        checks: checks(db, &book, e.income_category_id, CHECKED_MONTHS, today).await?,
+        checks: checks(
+            db,
+            &book,
+            e.income_category_id,
+            &salaries::checked_months(&p.job, today, CHECKED_MONTHS),
+            today,
+        )
+        .await?,
         missing_payslip_months: salaries::missing_payslip_months(&p.job, &months, today),
         payslips,
     })

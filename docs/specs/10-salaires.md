@@ -147,6 +147,8 @@ janvier. Rémunérations : 2022-09 (embauche) 38 000 € brut, 2 400 € net ; 2
 - Septembre 2026 : 2 702,15 € reçus sur « Salaires » ; écart +2,15 €, non signalé.
 - Si rien n'est reçu en septembre, l'écart de −2 700,00 € est signalé et apparaît dans les alertes de l'accueil.
 - En versement décalé, le salaire de septembre est attendu en octobre.
+- La fiche d'un emploi terminé en juin 2023 compare ses derniers mois d'emploi (jusqu'à juin 2023), pas les
+  12 derniers mois du calendrier.
 
 ### SAL-04 — Projection
 

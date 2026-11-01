@@ -19,8 +19,8 @@ export interface EmploymentView {
   bonuses: Array<BonusView>;
 
   /**
-   * Les 12 derniers mois, mois en cours compris, le plus récent d'abord. L'attendu cumule les emplois de la
-   * même catégorie.
+   * Les 12 derniers mois de l'emploi (jusqu'à sa fin, au plus tard le mois en cours), le plus récent d'abord.
+   * L'attendu cumule les emplois de la même catégorie.
    */
   checks: Array<MonthCheck>;
   income_category_name: string;

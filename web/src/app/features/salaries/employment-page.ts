@@ -284,7 +284,7 @@ interface PayslipYear {
               } @empty {
                 <tr>
                   <td colspan="4" class="muted">
-                    Rien d'attendu ni de reçu sur les 12 derniers mois.
+                    Rien d'attendu ni de reçu sur les 12 derniers mois de l'emploi.
                   </td>
                 </tr>
               }

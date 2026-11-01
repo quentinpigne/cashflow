@@ -13811,7 +13811,7 @@
             "items": {
               "$ref": "#/components/schemas/MonthCheck"
             },
-            "description": "Les 12 derniers mois, mois en cours compris, le plus récent d'abord. L'attendu cumule les emplois de la\nmême catégorie."
+            "description": "Les 12 derniers mois de l'emploi (jusqu'à sa fin, au plus tard le mois en cours), le plus récent d'abord.\nL'attendu cumule les emplois de la même catégorie."
           },
           "income_category_name": {
             "type": "string"

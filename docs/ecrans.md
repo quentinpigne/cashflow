@@ -764,7 +764,8 @@ Ce qui change dans les écrans existants :
   formulaire prérempli avec la dernière (R-SAL-2).
 - **Primes** : liste datée (libellé, nature, net, brut, récurrente) ; « Ajouter ».
 - **Revenu annuel** : tableau par année, net et brut, variation (R-SAL-7).
-- **Reçu** : les 12 derniers mois, attendu, reçu, écart ; les écarts signalés en rouge ; un clic sur un mois
+- **Reçu** : les 12 derniers mois de l'emploi (jusqu'à sa date de fin, au plus tard le mois en cours ; décalés
+  d'un mois en versement décalé), attendu, reçu, écart ; les écarts signalés en rouge ; un clic sur un mois
   ouvre les transactions de la catégorie sur ce mois (E14 filtrée).
 - **Fiches de paie** (SAL-09) : par année, du plus récent au plus ancien, un groupe replié par année sauf la
   dernière ; chaque ligne montre le mois de paie, le nom du fichier, sa taille et la note, avec les actions

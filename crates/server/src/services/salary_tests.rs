@@ -137,6 +137,23 @@ async fn sal_03_r_sal_9_expected_received_and_home_alert() {
     assert_eq!(home.salary_gaps.len(), 1);
     assert_eq!(home.salary_gaps[0].month, d("2026-02-01"));
     assert!(dashboard::get(&db, d("2026-04-10")).await.unwrap().salary_gaps.is_empty());
+
+    // Un emploi terminé est comparé sur ses propres mois, pas sur les 12 derniers mois du calendrier.
+    let ended = EmploymentInput {
+        start_date: d("2026-01-01"),
+        end_date: Some(d("2026-02-28")),
+        income_category_id: f.other,
+        ..job(&f)
+    };
+    let later = d("2027-06-10");
+    let old = salaries::create(&db, &ended, later).await.unwrap().summary.id;
+    salaries::save_salary(&db, old, None, &pay("2026-01-01", 200_000), later).await.unwrap();
+    transactions::create(&db, &tx(f.checking, "2026-01-27", 200_000, Some(f.other))).await.unwrap();
+    let view = salaries::get(&db, old, later).await.unwrap();
+    let months: Vec<_> = view.checks.iter().map(|c| c.month).collect();
+    assert_eq!(months, [d("2026-02-01"), d("2026-01-01")]);
+    assert_eq!(view.checks[1].gap_minor, 0);
+    assert!(view.checks[0].flagged && !view.checks[0].in_progress);
 }
 
 #[tokio::test]

@@ -290,6 +290,19 @@ pub fn expected(job: &Job, pays: &[Pay], bonuses: &[Bonus], month: Date) -> Expe
     }
 }
 
+/// Mois de versement comparés au reçu sur la fiche d'un emploi : au plus `count`, le plus récent d'abord, dans la
+/// plage de l'emploi (décalée d'un mois en versement décalé) et jamais après le mois en cours (R-SAL-9).
+pub fn checked_months(job: &Job, today: Date, count: u32) -> Vec<Date> {
+    let shift = u32::from(job.paid_next_month);
+    let first = add_months(month_of(job.start_date), shift);
+    let current = month_of(today);
+    let last = job.end_date.map_or(current, |end| add_months(month_of(end), shift).min(current));
+    (0..count)
+        .filter_map(|back| last.checked_sub_months(Months::new(back)))
+        .take_while(|month| *month >= first)
+        .collect()
+}
+
 /// L'écart dépasse-t-il la tolérance, en part de l'attendu (R-SAL-9) ?
 pub fn gap_exceeds(expected: Money, received: Money, tolerance: Rate) -> bool {
     let gap = Decimal::from((received - expected).abs().minor()) * Decimal::from(Rate::ONE.ppm());
@@ -587,6 +600,22 @@ mod tests {
         let months = [d("2026-07-01"), d("2026-08-01"), d("2026-08-01"), d("2026-10-01")];
         assert_eq!(missing_payslip_months(&job, &months, d(TODAY)), vec![d("2026-09-01")]);
         assert!(missing_payslip_months(&job, &[], d(TODAY)).is_empty());
+    }
+
+    #[test]
+    fn r_sal_9_checked_months_follow_the_employment_dates() {
+        let (job, _, _) = acme();
+        let months = checked_months(&job, d(TODAY), 12);
+        assert_eq!((months.len(), months[0], months[11]), (12, month_of(d(TODAY)), d("2025-11-01")));
+        let ended = Job { start_date: d("2023-03-15"), end_date: Some(d("2023-06-30")), ..job };
+        let months = checked_months(&ended, d(TODAY), 12);
+        assert_eq!(months, vec![d("2023-06-01"), d("2023-05-01"), d("2023-04-01"), d("2023-03-01")]);
+        // Versement décalé : le salaire de juin est reçu en juillet, celui de mars n'est pas reçu en mars.
+        let shifted = Job { paid_next_month: true, ..ended };
+        let months = checked_months(&shifted, d(TODAY), 12);
+        assert_eq!((months[0], months[3], months.len()), (d("2023-07-01"), d("2023-04-01"), 4));
+        let future = Job { start_date: d("2027-01-01"), end_date: None, ..job };
+        assert!(checked_months(&future, d(TODAY), 12).is_empty());
     }
 
     #[test]
