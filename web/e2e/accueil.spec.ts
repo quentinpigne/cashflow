@@ -34,9 +34,12 @@ test('E1 : réorganiser les encadrés de l’accueil, gardé après rechargement
   await page.reload();
   await expect(page.locator('.grid > .column').nth(1).locator('section.net-worth')).toBeVisible();
 
-  await page.getByRole('button', { name: /Disposition par défaut/ }).click();
+  // Le menu d'affichage du titre ramène la disposition par défaut, puis disparaît : plus rien à régler.
+  const display = page.getByRole('button', { name: 'Affichage du tableau de bord' });
+  await display.click();
+  await page.getByRole('menuitem', { name: 'Disposition par défaut' }).click();
   await expect(page.locator('.grid > .column').first().locator('section.net-worth')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Disposition par défaut/ })).toBeHidden();
+  await expect(display).toBeHidden();
 });
 
 test('E1 : dernières saisies, la plus récente en tête (TDB-01)', async ({ page }) => {
@@ -70,7 +73,7 @@ test('E1 : réglages d’un encadré, masquer puis réafficher (TDB-01)', async 
   await expect(accounts).toHaveCount(0);
   await page.reload();
   await expect(page.locator('section.accounts')).toHaveCount(0);
-  await page.getByRole('button', { name: /Encadrés masqués \(1\)/ }).click();
+  await page.getByRole('button', { name: 'Affichage du tableau de bord' }).click();
   await page.getByRole('menuitem', { name: 'Afficher « Comptes »' }).click();
   await expect(accounts.locator('.family').first()).toBeVisible();
   await expect(accounts.locator('a.account')).toHaveCount(0);
