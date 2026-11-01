@@ -114,12 +114,14 @@ export const MONTH_NAMES = [
           <input
             matInput
             [matDatepicker]="endPicker"
+            [min]="start()"
             [ngModel]="end()"
             (ngModelChange)="end.set($event)"
           />
           <mat-datepicker-toggle matIconSuffix [for]="endPicker" />
           <mat-datepicker #endPicker />
           <mat-hint>Changement d'emploi ou fin d'activité, même prévus.</mat-hint>
+          <mat-error>La fin ne peut pas précéder le début.</mat-error>
         </mat-form-field>
       </div>
       <div class="pair">
@@ -218,6 +220,7 @@ export class EmploymentDialog {
     const category = this.category();
     if (!employer || !start || !category) return null;
     const end = this.end();
+    if (end && end < start) return null;
     return {
       employer,
       job_title: this.title().trim() || null,
