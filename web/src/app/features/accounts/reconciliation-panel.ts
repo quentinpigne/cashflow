@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -18,6 +25,9 @@ import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconciliation-dialogs';
 
+/** Nombre de points de contrôle affichés avant « Afficher les points plus anciens ». */
+const RECENT_POINTS = 10;
+
 /** E13 — Rapprochement d'un compte (RAP-01 à RAP-06). */
 @Component({
   selector: 'app-reconciliation-panel',
@@ -31,7 +41,16 @@ import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconci
           <mat-icon>add</mat-icon>Point de contrôle
         </button>
       </header>
-      @for (c of currentPoints() ?? []; track c.id) {
+      @if (hiddenCount() > 0) {
+        <button mat-button class="older" (click)="showAll.set(true)">
+          {{
+            hiddenCount() === 1
+              ? 'Afficher le point plus ancien'
+              : 'Afficher les ' + hiddenCount() + ' points plus anciens'
+          }}
+        </button>
+      }
+      @for (c of shownPoints(); track c.id) {
         <div class="row">
           <span
             class="state"
@@ -94,6 +113,9 @@ import { CheckpointFormDialog, GapHintsDialog, ReconcileDialog } from './reconci
     .panel {
       margin-bottom: 1rem;
     }
+    .older {
+      margin-bottom: 0.25rem;
+    }
     header {
       display: flex;
       justify-content: space-between;
@@ -148,6 +170,16 @@ export class ReconciliationPanel {
     stream: ({ params }) => this.api.listCheckpoints({ id: params.id }),
   });
   protected readonly currentPoints = keptValue(this.points, this.accountId);
+  /** Tous les points, ou seulement les plus récents ; revient aux plus récents en changeant de compte. */
+  protected readonly showAll = linkedSignal({ source: this.accountId, computation: () => false });
+  /** Points affichés, du plus ancien au plus récent : les {@link RECENT_POINTS} derniers par défaut. */
+  protected readonly shownPoints = computed(() => {
+    const points = this.currentPoints() ?? [];
+    return this.showAll() ? points : points.slice(-RECENT_POINTS);
+  });
+  protected readonly hiddenCount = computed(
+    () => (this.currentPoints()?.length ?? 0) - this.shownPoints().length,
+  );
 
   protected stateLabel(c: Checkpoint): string {
     if (c.reconciled) return 'Rapproché';

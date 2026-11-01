@@ -456,7 +456,8 @@ télécharger ou supprimer le fichier source (R-IMP-21). Un relevé PDF validé 
 
 Panneau de la fiche compte (E3), pour les comptes de liquidités et d'épargne à taux fixe (R-RAP-10) :
 - liste des points de contrôle : date, solde annoncé, solde calculé, **écart**, état (rapproché ✓,
-  écart figé, à rapprocher) ;
+  écart figé, à rapprocher) ; seuls les 10 plus récents s'affichent, « Afficher les N points plus anciens »
+  déroule le reste ;
 - « Ajouter un point de contrôle » : date et solde lu sur la banque ;
 - sur un point à écart nul : « Rapprocher » → dialogue qui liste les transactions encore en attente et les
   points dont l'écart sera figé (R-RAP-4, R-RAP-5) ;
