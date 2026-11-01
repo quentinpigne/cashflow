@@ -488,14 +488,14 @@ async fn r_mbr_13_r_mbr_14_documents_get_the_account_or_employment_member_by_def
     )
     .await
     .unwrap();
-    assert_eq!(statement.member_id, Some(quentin));
+    assert_eq!(statement.member_ids, vec![quentin]);
     let payslip =
         documents::create(&db, &data, upload("fiche.pdf", Some(DocumentKind::Payslip), Some(on_job)), d(TODAY))
             .await
             .unwrap();
-    assert_eq!(payslip.member_id, Some(claire));
+    assert_eq!(payslip.member_ids, vec![claire]);
     let invoice = documents::create(&db, &data, upload("facture.pdf", None, None), d(TODAY)).await.unwrap();
-    assert_eq!(invoice.member_id, None);
+    assert!(invoice.member_ids.is_empty());
 
     let to_nobody = documents::DocumentInput {
         kind: statement.kind,
@@ -505,11 +505,25 @@ async fn r_mbr_13_r_mbr_14_documents_get_the_account_or_employment_member_by_def
         period_end: None,
         month: statement.month,
         note: None,
-        member_id: None,
+        member_ids: vec![],
     };
-    assert_eq!(documents::update(&db, statement.id, &to_nobody, d(TODAY)).await.unwrap().member_id, None);
+    assert!(documents::update(&db, statement.id, &to_nobody, d(TODAY)).await.unwrap().member_ids.is_empty());
     let nobody = documents::DocumentFilter { without_member: true, ..Default::default() };
     assert_eq!(documents::list(&db, &nobody, d(TODAY)).await.unwrap().len(), 2);
     let of_claire = documents::DocumentFilter { member_id: Some(claire), ..Default::default() };
     assert_eq!(documents::list(&db, &of_claire, d(TODAY)).await.unwrap()[0].id, payslip.id);
+
+    // Un document concerne plusieurs membres : l'avis d'imposition du couple (R-MBR-13).
+    let both = documents::DocumentInput {
+        kind: None,
+        title: invoice.title.clone(),
+        month: None,
+        member_ids: vec![quentin, claire],
+        ..to_nobody
+    };
+    let tax = documents::update(&db, invoice.id, &both, d(TODAY)).await.unwrap();
+    assert_eq!(tax.member_ids, vec![quentin, claire]);
+    let of_quentin = documents::DocumentFilter { member_id: Some(quentin), ..Default::default() };
+    assert_eq!(documents::list(&db, &of_quentin, d(TODAY)).await.unwrap().len(), 1);
+    assert_eq!(members::list(&db).await.unwrap().iter().map(|m| m.document_count).collect::<Vec<_>>(), vec![1, 2]);
 }

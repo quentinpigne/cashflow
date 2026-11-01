@@ -8,7 +8,7 @@ use cashflow_domain::documents::{Description, DocumentKind, LinkKind, LinkTarget
 use cashflow_domain::shared::ids::{DocumentId, MemberId};
 use sqlx::{SqliteConnection, SqliteExecutor};
 
-use super::codec::{id_from_db, opt_id_from_db};
+use super::codec::id_from_db;
 use crate::clock::timestamp;
 
 #[derive(Debug, Clone)]
@@ -27,8 +27,6 @@ pub struct DocumentRow {
     pub sha256: String,
     pub content_indexed: bool,
     pub created_at: String,
-    /// Membre que le document concerne ; `None` : personne (R-MBR-13).
-    pub member_id: Option<MemberId>,
 }
 
 impl DocumentRow {
@@ -78,7 +76,6 @@ macro_rules! document_row {
             sha256: r.sha256,
             content_indexed: r.content_indexed,
             created_at: r.created_at,
-            member_id: opt_id_from_db(r.member_id.as_deref())?,
         })
     }};
 }
@@ -87,12 +84,11 @@ pub async fn insert(db: impl SqliteExecutor<'_>, row: &DocumentRow) -> anyhow::R
     let id = row.id.to_string();
     let kind = row.kind.map(DocumentKind::as_str);
     let media_type = row.media_type.as_str();
-    let member = row.member_id.map(|m| m.to_string());
     let now = timestamp();
     sqlx::query!(
         "INSERT INTO document (id, kind, title, document_date, period_start, period_end, month, note, file_name,
-                               media_type, size_bytes, sha256, content_indexed, member_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                               media_type, size_bytes, sha256, content_indexed, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         id,
         kind,
         row.title,
@@ -106,7 +102,6 @@ pub async fn insert(db: impl SqliteExecutor<'_>, row: &DocumentRow) -> anyhow::R
         row.size_bytes,
         row.sha256,
         row.content_indexed,
-        member,
         row.created_at,
         now
     )
@@ -120,7 +115,7 @@ pub async fn find(db: impl SqliteExecutor<'_>, id: DocumentId) -> anyhow::Result
     let row = sqlx::query!(
         r#"SELECT id, kind, title, document_date AS "document_date: Date", period_start AS "period_start: Date",
                   period_end AS "period_end: Date", month AS "month: Date", note, file_name, media_type, size_bytes,
-                  sha256, content_indexed AS "content_indexed: bool", created_at, member_id
+                  sha256, content_indexed AS "content_indexed: bool", created_at
            FROM document WHERE id = ?"#,
         id
     )
@@ -134,7 +129,7 @@ pub async fn all(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<DocumentRow>
     let rows = sqlx::query!(
         r#"SELECT id, kind, title, document_date AS "document_date: Date", period_start AS "period_start: Date",
                   period_end AS "period_end: Date", month AS "month: Date", note, file_name, media_type, size_bytes,
-                  sha256, content_indexed AS "content_indexed: bool", created_at, member_id
+                  sha256, content_indexed AS "content_indexed: bool", created_at
            FROM document ORDER BY created_at DESC, id DESC"#
     )
     .fetch_all(db)
@@ -153,7 +148,7 @@ pub async fn owned(
         r#"SELECT d.id, d.kind, d.title, d.document_date AS "document_date: Date",
                   d.period_start AS "period_start: Date", d.period_end AS "period_end: Date", d.month AS "month: Date",
                   d.note, d.file_name, d.media_type, d.size_bytes, d.sha256,
-                  d.content_indexed AS "content_indexed: bool", d.created_at, d.member_id
+                  d.content_indexed AS "content_indexed: bool", d.created_at
            FROM document d
            WHERE d.kind = ?1 AND EXISTS (SELECT 1 FROM document_link l WHERE l.document_id = d.id
                                          AND (l.account_id = ?2 OR l.employment_id = ?2))
@@ -173,12 +168,31 @@ pub async fn with_sha256(db: impl SqliteExecutor<'_>, sha256: &str) -> anyhow::R
 }
 
 /// Modifie la description ; le fichier ne change pas (R-DOC-2).
-/// Membre d'un document, ou personne (R-MBR-13).
-pub async fn set_member(db: impl SqliteExecutor<'_>, id: DocumentId, member: Option<MemberId>) -> anyhow::Result<()> {
+/// Membres de chaque document qui en a, dans l'ordre des membres (R-MBR-13).
+pub async fn members(db: impl SqliteExecutor<'_>) -> anyhow::Result<HashMap<DocumentId, Vec<MemberId>>> {
+    let rows = sqlx::query!(
+        "SELECT dm.document_id, dm.member_id FROM document_member dm JOIN member m ON m.id = dm.member_id
+         ORDER BY m.display_order, m.name COLLATE NOCASE"
+    )
+    .fetch_all(db)
+    .await?;
+    let mut members: HashMap<DocumentId, Vec<MemberId>> = HashMap::new();
+    for r in rows {
+        members.entry(id_from_db(&r.document_id)?).or_default().push(id_from_db(&r.member_id)?);
+    }
+    Ok(members)
+}
+
+/// Remplace les membres d'un document ; aucun : il ne concerne personne (R-MBR-13).
+pub async fn set_members(conn: &mut SqliteConnection, id: DocumentId, members: &[MemberId]) -> anyhow::Result<()> {
     let id = id.to_string();
-    let member = member.map(|m| m.to_string());
-    let now = timestamp();
-    sqlx::query!("UPDATE document SET member_id = ?, updated_at = ? WHERE id = ?", member, now, id).execute(db).await?;
+    sqlx::query!("DELETE FROM document_member WHERE document_id = ?", id).execute(&mut *conn).await?;
+    for member in members {
+        let member = member.to_string();
+        sqlx::query!("INSERT OR IGNORE INTO document_member (document_id, member_id) VALUES (?, ?)", id, member)
+            .execute(&mut *conn)
+            .await?;
+    }
     Ok(())
 }
 

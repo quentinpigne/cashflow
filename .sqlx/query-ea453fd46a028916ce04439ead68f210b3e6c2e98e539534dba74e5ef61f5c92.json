@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT dm.document_id, dm.member_id FROM document_member dm JOIN member m ON m.id = dm.member_id\n         ORDER BY m.display_order, m.name COLLATE NOCASE",
+  "describe": {
+    "columns": [
+      {
+        "name": "document_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_member",
+            "name": "document_id"
+          }
+        }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "document_member",
+            "name": "member_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "ea453fd46a028916ce04439ead68f210b3e6c2e98e539534dba74e5ef61f5c92"
+}

@@ -52,6 +52,7 @@ pub const TABLES: &[&str] = &[
     "budget_override",
     "notification",
     "document_link",
+    "document_member",
     "loan_application",
     "loan_simulation",
     "lender_request",

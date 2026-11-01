@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT m.id, m.name, m.color, m.display_order,\n                  (SELECT count(*) FROM account a WHERE a.member_id = m.id) AS \"account_count!: i64\",\n                  (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS \"split_count!: i64\",\n                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS \"employment_count!: i64\",\n                  (SELECT count(*) FROM asset_share a WHERE a.member_id = m.id) AS \"asset_count!: i64\",\n                  (SELECT count(*) FROM document d WHERE d.member_id = m.id) AS \"document_count!: i64\"\n           FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE",
+  "query": "SELECT m.id, m.name, m.color, m.display_order,\n                  (SELECT count(*) FROM account a WHERE a.member_id = m.id) AS \"account_count!: i64\",\n                  (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS \"split_count!: i64\",\n                  (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS \"employment_count!: i64\",\n                  (SELECT count(*) FROM asset_share a WHERE a.member_id = m.id) AS \"asset_count!: i64\",\n                  (SELECT count(*) FROM document_member d WHERE d.member_id = m.id) AS \"document_count!: i64\"\n           FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE",
   "describe": {
     "columns": [
       {
@@ -93,5 +93,5 @@
       false
     ]
   },
-  "hash": "3aa21056389042be65209292a70642f299ede65505a3d44f2cfd8de9fb281561"
+  "hash": "0ce8839edc9556c8b84ce8e9763a2576686b7aad363cb6c428c82a763f0872ca"
 }

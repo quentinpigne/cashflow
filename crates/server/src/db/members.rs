@@ -29,7 +29,7 @@ pub async fn list(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<MemberRow>>
                   (SELECT count(*) FROM split s WHERE s.member_id = m.id) AS "split_count!: i64",
                   (SELECT count(*) FROM employment e WHERE e.member_id = m.id) AS "employment_count!: i64",
                   (SELECT count(*) FROM asset_share a WHERE a.member_id = m.id) AS "asset_count!: i64",
-                  (SELECT count(*) FROM document d WHERE d.member_id = m.id) AS "document_count!: i64"
+                  (SELECT count(*) FROM document_member d WHERE d.member_id = m.id) AS "document_count!: i64"
            FROM member m ORDER BY m.display_order, m.name COLLATE NOCASE"#
     )
     .fetch_all(db)
@@ -210,9 +210,7 @@ pub async fn delete(conn: &mut SqliteConnection, id: MemberId) -> anyhow::Result
     sqlx::query!("UPDATE employment SET member_id = NULL, updated_at = ? WHERE member_id = ?", now, id)
         .execute(&mut *conn)
         .await?;
-    sqlx::query!("UPDATE document SET member_id = NULL, updated_at = ? WHERE member_id = ?", now, id)
-        .execute(&mut *conn)
-        .await?;
+    sqlx::query!("DELETE FROM document_member WHERE member_id = ?", id).execute(&mut *conn).await?;
     sqlx::query!("DELETE FROM asset_share WHERE member_id = ?", id).execute(&mut *conn).await?;
     let result = sqlx::query!("DELETE FROM member WHERE id = ?", id).execute(&mut *conn).await?;
     Ok(result.rows_affected() > 0)

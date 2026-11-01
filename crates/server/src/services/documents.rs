@@ -64,8 +64,8 @@ pub struct DocumentView {
     /// Date qui classe le document (R-DOC-8).
     pub reference_date: Date,
     pub links: Vec<LinkView>,
-    /// Membre que le document concerne ; absent : personne (R-MBR-13).
-    pub member_id: Option<MemberId>,
+    /// Membres que le document concerne, dans leur ordre ; aucun : personne (R-MBR-13).
+    pub member_ids: Vec<MemberId>,
     /// Dans une recherche : extrait du contenu où le texte est trouvé, mots trouvés entre U+0002 et U+0003.
     pub snippet: Option<String>,
 }
@@ -108,9 +108,9 @@ pub struct DocumentInput {
     /// Premier jour du mois, pour un relevé ou une fiche de paie.
     pub month: Option<Date>,
     pub note: Option<String>,
-    /// Membre que le document concerne ; absent : personne (R-MBR-13).
+    /// Membres que le document concerne ; aucun : personne (R-MBR-13).
     #[serde(default)]
-    pub member_id: Option<MemberId>,
+    pub member_ids: Vec<MemberId>,
 }
 
 /// Document envoyé, avec sa description éventuelle et l'objet depuis lequel il l'est (R-DOC-14, R-DOC-15).
@@ -144,7 +144,13 @@ fn link_view(link: &LinkRow) -> LinkView {
     }
 }
 
-fn view(row: DocumentRow, links: &[LinkRow], snippet: Option<String>, today: Date) -> DocumentView {
+fn view(
+    row: DocumentRow,
+    links: &[LinkRow],
+    members: Vec<MemberId>,
+    snippet: Option<String>,
+    today: Date,
+) -> DocumentView {
     let description = row.description();
     let sent_on = row.sent_on().unwrap_or(today);
     DocumentView {
@@ -163,7 +169,7 @@ fn view(row: DocumentRow, links: &[LinkRow], snippet: Option<String>, today: Dat
         content_indexed: row.content_indexed,
         sent_on,
         links: links.iter().map(link_view).collect(),
-        member_id: row.member_id,
+        member_ids: members,
         snippet,
     }
 }
@@ -177,6 +183,7 @@ pub async fn list(db: &Db, filter: &DocumentFilter, today: Date) -> AppResult<Ve
         links.entry(link.document_id).or_default().push(link);
     }
     let no_links = Vec::new();
+    let mut members = db::documents::members(&db.read).await?;
     let words = filter.q.as_deref().map(documents::search_words).unwrap_or_default();
 
     // Un document répond si chacun des mots est dans sa description, son contenu ou le nom d'un rattachement.
@@ -207,18 +214,20 @@ pub async fn list(db: &Db, filter: &DocumentFilter, today: Date) -> AppResult<Ve
             continue;
         }
         let doc_links = links.get(&row.id).unwrap_or(&no_links);
+        let doc_members = members.get(&row.id).map(Vec::as_slice).unwrap_or_default();
         let keep = filter.kind.is_none_or(|kind| row.kind == Some(kind))
             && (!filter.unsorted || row.kind.is_none())
             && (!filter.unlinked || doc_links.is_empty())
             && filter.link_kind.is_none_or(|kind| doc_links.iter().any(|l| l.target.kind == kind))
             && filter.link_id.is_none_or(|id| doc_links.iter().any(|l| l.target.id == id))
-            && filter.member_id.is_none_or(|member| row.member_id == Some(member))
-            && (!filter.without_member || row.member_id.is_none());
+            && filter.member_id.is_none_or(|member| doc_members.contains(&member))
+            && (!filter.without_member || doc_members.is_empty());
         if !keep {
             continue;
         }
         let (rank, snippet) = ranked.get(&row.id).cloned().unwrap_or((usize::MAX, None));
-        let view = view(row, doc_links, snippet, today);
+        let doc_members = members.remove(&row.id).unwrap_or_default();
+        let view = view(row, doc_links, doc_members, snippet, today);
         if filter.year.is_some_and(|year| view.reference_date.year() != year) {
             continue;
         }
@@ -234,7 +243,8 @@ pub async fn list(db: &Db, filter: &DocumentFilter, today: Date) -> AppResult<Ve
 pub async fn get(db: &Db, id: DocumentId, today: Date) -> AppResult<DocumentView> {
     let row = db::documents::find(&db.read, id).await?.ok_or(AppError::NotFound("document"))?;
     let links = db::documents::links_of(&mut *db.read.acquire().await?, id).await?;
-    Ok(view(row, &links, None, today))
+    let members = db::documents::members(&db.read).await?.remove(&id).unwrap_or_default();
+    Ok(view(row, &links, members, None, today))
 }
 
 /// Relevés d'un compte ou fiches de paie d'un emploi, du mois le plus ancien au plus récent.
@@ -346,9 +356,10 @@ pub async fn create(db: &Db, data: &DataDir, upload: Upload, today: Date) -> App
     let text = extract_text(row.media_type, upload.content).await;
     row.content_indexed = text.is_some();
     let mut tx = db.write.begin().await?;
-    row.member_id = default_member(&mut tx, row.kind, upload.target).await?;
+    let member = default_member(&mut tx, row.kind, upload.target).await?;
     check_payslip_month(&mut tx, &description, &targets).await?;
     insert(&mut tx, &staged.row, &targets, text.as_deref()).await?;
+    db::documents::set_members(&mut tx, staged.row.id, &member.into_iter().collect::<Vec<_>>()).await?;
     tx.commit().await?;
     let id = staged.row.id;
     staged.publish()?;
@@ -386,9 +397,10 @@ pub async fn archive_import(
     row.title = documents::owned_title(DocumentKind::BankStatement, &import.account_name, import.month);
     (row.period_start, row.period_end) = import.period.unzip();
     row.content_indexed = text.is_some();
-    row.member_id = db::accounts::find(&mut *conn, import.account).await?.and_then(|a| a.member_id);
+    let member = db::accounts::find(&mut *conn, import.account).await?.and_then(|a| a.member_id);
     let target = LinkTarget { kind: LinkKind::Account, id: *import.account.as_uuid() };
     insert(conn, &staged.row, &[target], text.as_deref()).await?;
+    db::documents::set_members(conn, staged.row.id, &member.into_iter().collect::<Vec<_>>()).await?;
     Ok(Some(staged))
 }
 
@@ -412,8 +424,10 @@ pub async fn update(db: &Db, id: DocumentId, input: &DocumentInput, today: Date)
     let mut tx = db.write.begin().await?;
     check_payslip_month(&mut tx, &description, &targets).await?;
     db::documents::update_description(&mut *tx, id, &description).await?;
-    super::members::check_exists(&mut tx, input.member_id).await?;
-    db::documents::set_member(&mut *tx, id, input.member_id).await?;
+    for member in &input.member_ids {
+        super::members::check_exists(&mut tx, Some(*member)).await?;
+    }
+    db::documents::set_members(&mut tx, id, &input.member_ids).await?;
     db::documents::reindex_description(&mut *tx, id, &description).await?;
     tx.commit().await?;
     get(db, id, today).await
@@ -534,7 +548,6 @@ pub fn stage(data: &DataDir, name: &str, content: &[u8]) -> AppResult<Staged> {
         sha256: hex::encode(Sha256::digest(content)),
         content_indexed: false,
         created_at: timestamp(),
-        member_id: None,
     };
     std::fs::create_dir_all(data.documents()).with_context(|| format!("création de {}", data.documents().display()))?;
     let temp = data.documents().join(format!(".{id}.tmp"));

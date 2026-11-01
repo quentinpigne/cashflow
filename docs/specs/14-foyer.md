@@ -27,7 +27,7 @@ Livret de Claire                                           → Claire   ✘
 
 Un compte a **au plus un** membre : il n'y a pas de compte joint à quotes-parts, un compte commun reste au
 foyer. Un **bien** se répartit entre des membres par quotes-parts, le reste étant au foyer (la maison à 60 % à
-Quentin, 40 % à Claire). Un **document** est affecté à un membre ou à personne. Les prêts n'ont pas de
+Quentin, 40 % à Claire). Un **document** est affecté à un ou plusieurs membres, ou à personne. Les prêts n'ont pas de
 membre. Catégories, règles, tiers, budgets, projets, scénarios de projection et récurrences restent communs
 au foyer (Q19).
 
@@ -116,9 +116,10 @@ au foyer (Q19).
 
 ## Documents d'un membre
 
-- **R-MBR-13** — Un **document** est affecté à **un membre** ou à **personne** ; il n'est jamais affecté au
-  « foyer ». Le membre se modifie à tout moment ; supprimer le membre laisse le document à personne (R-MBR-2).
-  La bibliothèque se filtre par membre (un membre, ou « Personne »).
+- **R-MBR-13** — Un **document** est affecté à **zéro, un ou plusieurs** membres (l'avis d'imposition du
+  couple) ; sans membre, il ne concerne **personne** ; il n'est jamais affecté au « foyer ». Ses membres se
+  modifient à tout moment ; supprimer un membre le retire de ses documents (R-MBR-2). La bibliothèque se filtre
+  par membre (les documents de ce membre, ou « Personne »).
 - **R-MBR-14** — À sa création, un **relevé de compte** est affecté au titulaire du compte auquel il est
   rattaché (envoyé depuis le compte, ou archivé à l'import d'un relevé PDF, R-IMP-28), une **fiche de paie** au
   membre de l'emploi ; les autres documents, à personne. Ce n'est qu'une valeur par défaut : elle ne suit pas
@@ -134,7 +135,7 @@ au foyer (Q19).
 | MBR-04 | V2 | Choix des membres affichés dans l'accueil, les analyses et les projections |
 | MBR-05 | V2 | Comptes joints à quotes-parts ; membres des prêts (à concevoir) |
 | MBR-06 | V2 | Biens répartis entre membres par quotes-parts, en pourcentage ou en montant |
-| MBR-07 | V2 | Membre d'un document, par défaut celui du compte ou de l'emploi |
+| MBR-07 | V2 | Membres d'un document, par défaut celui du compte ou de l'emploi |
 
 ### MBR-01 — Critères d'acceptation
 
@@ -186,6 +187,8 @@ au foyer (Q19).
 - Étant donné le compte de Quentin, quand j'y envoie un relevé, alors il est affecté à Quentin ; une fiche de
   paie de l'emploi de Claire est affectée à Claire ; une facture envoyée depuis la bibliothèque, à personne
   (R-MBR-14).
-- Étant donné un relevé affecté à Quentin, quand je choisis « Personne », alors il n'a plus de membre, et le
-  filtre « Personne » de la bibliothèque le montre (R-MBR-13).
+- Étant donné un relevé affecté à Quentin, quand je retire Quentin, alors il n'a plus de membre, et le filtre
+  « Personne » de la bibliothèque le montre (R-MBR-13).
+- Étant donné l'avis d'imposition, quand je l'affecte à Quentin et à Claire, alors il apparaît avec le filtre
+  Quentin comme avec le filtre Claire (R-MBR-13).
 

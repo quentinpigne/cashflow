@@ -1191,9 +1191,9 @@ Statut : **Validée** (2026-10-31). Rien de ce qui suit n'apparaît quand la rub
   ou en € (bascule « % / € » ; en €, la quote-part calculée s'affiche à côté, d'après la valeur actuelle) ;
   « Foyer : reste » affiché en dessous, en erreur au-delà de 100 % (R-MBR-11). **E25 Biens** : sous la valeur,
   « Quentin 60 % · Claire 30 % · Foyer 10 % ».
-- **E35 Document** : champ **Membre** (« Personne », puis les membres, R-MBR-13), prérempli à l'envoi d'un
-  relevé ou d'une fiche de paie (R-MBR-14). **E34 Bibliothèque** : filtre **Membre** (un membre, ou
-  « Personne ») et l'étiquette du membre à côté du titre.
+- **E35 Document** : champ **Membres** à choix multiple `[mat-select multiple]` (aucun : « Personne »,
+  R-MBR-13), prérempli à l'envoi d'un relevé ou d'une fiche de paie (R-MBR-14). **E34 Bibliothèque** : filtre
+  **Membre** (un membre, ou « Personne ») et l'étiquette des membres à côté du titre.
 
 ## E44 — Membres du foyer (MBR-01)
 

@@ -62,7 +62,8 @@ erDiagram
     Member |o--o{ Employment : "occupe"
     Member ||--o{ AssetShare : "possède (quote-part)"
     Asset ||--o{ AssetShare : "réparti entre"
-    Member |o--o{ Document : "concerne"
+    Member ||--o{ DocumentMember : "concerné par"
+    Document ||--o{ DocumentMember : "concerne"
     Document ||--o{ DocumentLink : "rattaché par"
     DocumentLink }o--o| Account : "compte (relevés)"
     DocumentLink }o--o| Employment : "emploi (fiches de paie)"
@@ -555,7 +556,6 @@ Décision : ADR-0024.
 | `size_bytes` | entier | requis, > 0 et ≤ 10 Mo |
 | `sha256` | texte | requis, **unique** : empreinte du contenu, 64 caractères hexadécimaux (R-DOC-3) |
 | `content_indexed` | booléen | `true` si du texte a été extrait du fichier et indexé (R-DOC-19) |
-| `member_id` | `Id` → Member | optionnel : membre que le document concerne, `null` = personne (R-MBR-13) ; par défaut le titulaire du compte d'un relevé, le membre de l'emploi d'une fiche de paie (R-MBR-14) ; mis à `null` à la suppression du membre |
 
 `DocumentKind` : `BANK_STATEMENT` (relevé de compte), `PAYSLIP` (fiche de paie), `CONTRACT` (contrat),
 `RECEIPT` (ticket de caisse), `INVOICE` (facture), `TAX` (document fiscal), `CERTIFICATE` (attestation),
@@ -780,7 +780,17 @@ Catégories qui proposent un poste (R-BUD-27).
 Une personne, pas un utilisateur : aucune connexion (ADR-0006). Lui sont affectés des comptes
 (`Account.member_id`), des ventilations (`Split.member_id`) et des emplois (`Employment.member_id`) ; ce qui
 n'a pas de membre est au foyer (R-MBR-4 à R-MBR-7). Un bien se répartit par quotes-parts (`AssetShare`) ; un
-document est affecté à un membre ou à personne (`Document.member_id`, R-MBR-13).
+document est affecté à des membres, ou à personne (`DocumentMember`, R-MBR-13).
+
+### DocumentMember (membre d'un document)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `document_id` | `Id` → Document | requis, suppression en cascade |
+| `member_id` | `Id` → Member | requis, suppression en cascade (R-MBR-2) |
+
+Clé primaire `(document_id, member_id)`. Aucune ligne : le document ne concerne personne (R-MBR-13). À la création,
+le titulaire du compte d'un relevé, le membre de l'emploi d'une fiche de paie (R-MBR-14).
 
 ### AssetShare (quote-part d'un bien)
 

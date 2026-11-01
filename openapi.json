@@ -13447,16 +13447,12 @@
               }
             ]
           },
-          "member_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MemberId",
-                "description": "Membre que le document concerne ; absent : personne (R-MBR-13)."
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberId"
+            },
+            "description": "Membres que le document concerne ; aucun : personne (R-MBR-13)."
           },
           "month": {
             "type": [
@@ -13529,7 +13525,8 @@
           "content_indexed",
           "sent_on",
           "reference_date",
-          "links"
+          "links",
+          "member_ids"
         ],
         "properties": {
           "content_indexed": {
@@ -13569,16 +13566,12 @@
           "media_type": {
             "$ref": "#/components/schemas/MediaType"
           },
-          "member_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MemberId",
-                "description": "Membre que le document concerne ; absent : personne (R-MBR-13)."
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberId"
+            },
+            "description": "Membres que le document concerne, dans leur ordre ; aucun : personne (R-MBR-13)."
           },
           "month": {
             "type": [
