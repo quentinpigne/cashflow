@@ -19,13 +19,14 @@ rien : il télécharge l'image.
 ## Premier démarrage
 
 Les données vivent dans un dossier de l'hôte, désigné par `CASHFLOW_DATA_PATH` dans `deploy/.env` (non
-versionné). Le conteneur tourne avec l'uid **10001** (utilisateur `cashflow` de l'image) : le dossier doit lui
-appartenir, sinon l'application ne peut pas y écrire.
+versionné). Le conteneur tourne avec l'uid et le gid **1000** (le premier utilisateur d'Ubuntu) : le dossier
+doit lui appartenir, sinon l'application ne peut pas y écrire. Pour un autre utilisateur, ajouter
+`CASHFLOW_UID` et `CASHFLOW_GID` (donnés par `id -u` et `id -g`) dans `deploy/.env`.
 
 ```sh
 git clone <dépôt> cashflow && cd cashflow
-sudo mkdir -p /srv/cashflow && sudo chown 10001:10001 /srv/cashflow   # sur le disque chiffré
-echo 'CASHFLOW_DATA_PATH=/srv/cashflow' > deploy/.env
+mkdir -p ~/cashflow-data                                     # sur le disque chiffré
+echo "CASHFLOW_DATA_PATH=$HOME/cashflow-data" > deploy/.env
 deploy/deploy.sh                                             # télécharge l'image et lance l'application
 docker compose -f deploy/compose.yaml exec cashflow cashflow set-password
 ```
@@ -77,8 +78,8 @@ s'appliquent au démarrage, après une sauvegarde automatique supplémentaire. L
 
   ```sh
   . deploy/.env
-  sudo cp -n "$CASHFLOW_DATA_PATH"/backups/*.db /mnt/sauvegardes/
-  sudo mkdir -p /mnt/sauvegardes/documents && sudo cp -Rn "$CASHFLOW_DATA_PATH"/documents/. /mnt/sauvegardes/documents/
+  cp -n "$CASHFLOW_DATA_PATH"/backups/*.db /mnt/sauvegardes/
+  mkdir -p /mnt/sauvegardes/documents && cp -Rn "$CASHFLOW_DATA_PATH"/documents/. /mnt/sauvegardes/documents/
   ```
 
 - **Documents** : un document supprimé reste 400 jours dans `/data/documents/trash/`, préfixé de sa date de
