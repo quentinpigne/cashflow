@@ -248,6 +248,7 @@
               @if (item.has_documents) {
                 <mat-icon class="attached" aria-label="Avec justificatif">attach_file</mat-icon>
               }
+              <app-refund-mark [item]="item" />
             </span>
             <span class="muted small"
               >{{ item.date | frDate: 'short' }} · {{ item.account_name }} ·

@@ -210,6 +210,7 @@
                         <app-member-tag [tag]="tag" />
                       }
                     }
+                    <app-refund-mark [item]="item" />
                   </span>
                   <span class="muted small">
                     {{ categoryText(item) }}
@@ -271,6 +272,7 @@
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Libellé</th>
               <td mat-cell *matCellDef="let t" [class.pending]="t.clearing_status === 'PENDING'">
                 {{ t.label }}
+                <app-refund-mark [item]="t" />
               </td>
             </ng-container>
             <ng-container matColumnDef="category">

@@ -4,6 +4,7 @@
 import { AccountId } from '../models/account-id';
 import { ClearingStatus } from '../models/clearing-status';
 import { PayeeId } from '../models/payee-id';
+import { RefundBadge } from '../models/refund-badge';
 import { Split } from '../models/split';
 import { TransactionId } from '../models/transaction-id';
 import { TransactionOrigin } from '../models/transaction-origin';
@@ -36,6 +37,7 @@ export interface TransactionListItem {
   note?: (string | null);
   origin: TransactionOrigin;
   payee_id?: (PayeeId | null);
+  refund?: (RefundBadge | null);
   splits: Array<Split>;
   transfer?: (TransferSummary | null);
 }

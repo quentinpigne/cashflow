@@ -118,3 +118,36 @@ async fn trx_12_one_income_refunds_several_expenses() {
     };
     assert_eq!(domain_error(transactions::create(&db, &on_income).await), DomainError::InvalidRefund);
 }
+
+#[tokio::test]
+async fn trx_12_r_trx_52_r_trx_53_lists_show_refund_links() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let card = account(&db, "Carte", AccountKind::Checking, 0).await;
+    let meal = category(&db, "Restaurant R", CategoryKind::Expense, None).await;
+    let lunch = transactions::create(&db, &tx(card, "2026-03-02", -5_200, Some(meal))).await.unwrap();
+    let dinner = transactions::create(&db, &tx(card, "2026-03-09", -3_000, Some(meal))).await.unwrap();
+    let plain = transactions::create(&db, &tx(card, "2026-03-10", -1_000, Some(meal))).await.unwrap();
+    refunds::set_expected(&db, lunch, &ExpectedRefundInput { expected_minor: Some(5_200) }).await.unwrap();
+    let note =
+        income(&db, checking, "2026-03-28", vec![refund_split(4_000, meal, lunch), refund_split(3_000, meal, dinner)])
+            .await;
+
+    // Vue transverse : l'entrée cite les dépenses qu'elle rembourse ; chaque dépense, son remboursé et son reste.
+    let all = transactions::list_all(&db, &Default::default()).await.unwrap().items;
+    let badge = |id: TransactionId| all.iter().find(|i| i.id == id).unwrap().refund.clone();
+    let refunds: Vec<_> = badge(note).unwrap().refunds.iter().map(|r| (r.transaction_id, r.label.clone())).collect();
+    assert_eq!(refunds, [(lunch, "Test".to_owned()), (dinner, "Test".to_owned())]);
+    let lunch_badge = badge(lunch).unwrap();
+    assert_eq!(
+        (lunch_badge.refunded_minor, lunch_badge.expected_minor, lunch_badge.pending_minor),
+        (4_000, Some(5_200), 1_200)
+    );
+    assert!(badge(dinner).unwrap().fully_refunded && !lunch_badge.fully_refunded);
+    assert!(badge(plain).is_none());
+
+    // Vue d'un compte : la dépense est remboursée depuis un autre compte.
+    let page = transactions::list(&db, card, &Default::default()).await.unwrap();
+    let lunch_row = page.items.iter().find(|i| i.id == lunch).unwrap();
+    assert_eq!(lunch_row.refund.as_ref().map(|r| r.pending_minor), Some(1_200));
+}

@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT s.transaction_id AS \"transaction_id!\", e.id AS \"expense_id!\", e.date AS \"expense_date!: Date\",\n                  e.label AS \"expense_label!\", s.amount AS \"amount!\"\n           FROM split s JOIN ledger_transaction e ON e.id = s.refunds_transaction_id\n           ORDER BY e.date, e.id, s.transaction_id, s.position",
+  "describe": {
+    "columns": [
+      {
+        "name": "transaction_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "expense_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "expense_date!: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "expense_label!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "name": "amount!",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "d5451c374863d79a8cca00ee14af2850a649ff8729ce60b36d8f90e78f1090ba"
+}

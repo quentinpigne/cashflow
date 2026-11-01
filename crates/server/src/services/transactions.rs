@@ -7,6 +7,7 @@ use cashflow_domain::budgeting::Month;
 use cashflow_domain::household;
 use cashflow_domain::ledger::balance::{self, DatedAmount};
 use cashflow_domain::ledger::category::CategoryKind;
+use cashflow_domain::ledger::refund;
 use cashflow_domain::ledger::split;
 use cashflow_domain::ledger::{self, BalanceAffectingChange, ClearingStatus, TransactionOrigin};
 use cashflow_domain::payees;
@@ -96,6 +97,67 @@ pub struct TransactionListItem {
     pub analysis_month: Option<String>,
     /// Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
     pub balance_after_minor: Option<i64>,
+    /// Remboursements de frais (TRX-12) ; absent si la transaction n'en rembourse aucune, n'est remboursée par
+    /// aucune et n'attend aucun remboursement.
+    pub refund: Option<RefundBadge>,
+}
+
+/// Dépense remboursée par une entrée d'argent, vue depuis la liste.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct RefundedExpense {
+    pub transaction_id: TransactionId,
+    pub date: Date,
+    pub label: String,
+}
+
+/// Remboursements de frais d'une ligne de liste (TRX-12).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct RefundBadge {
+    /// Dépenses que cette entrée rembourse (R-TRX-50), dans l'ordre de leurs dates.
+    pub refunds: Vec<RefundedExpense>,
+    /// Remboursé de cette dépense (R-TRX-52).
+    pub refunded_minor: i64,
+    /// Remboursement attendu de cette dépense (R-TRX-53).
+    pub expected_minor: Option<i64>,
+    /// Reste à recevoir (R-TRX-53).
+    pub pending_minor: i64,
+    /// La dépense est remboursée en totalité (R-TRX-52).
+    pub fully_refunded: bool,
+}
+
+/// Les liens de remboursement, rangés pour les listes : par entrée, et remboursé par dépense.
+#[derive(Default)]
+struct RefundLinks {
+    by_income: HashMap<TransactionId, Vec<RefundedExpense>>,
+    refunded: HashMap<TransactionId, Money>,
+}
+
+async fn refund_links(db: &Db) -> AppResult<RefundLinks> {
+    let mut links = RefundLinks::default();
+    for l in db::transactions::refund_links(&db.read).await? {
+        *links.refunded.entry(l.expense_id).or_insert(Money::ZERO) += l.amount;
+        let refunds = links.by_income.entry(l.transaction_id).or_default();
+        if !refunds.iter().any(|r| r.transaction_id == l.expense_id) {
+            refunds.push(RefundedExpense {
+                transaction_id: l.expense_id,
+                date: l.expense_date,
+                label: l.expense_label,
+            });
+        }
+    }
+    Ok(links)
+}
+
+fn refund_badge(t: &db::transactions::TransactionRow, links: &mut RefundLinks) -> Option<RefundBadge> {
+    let refunds = links.by_income.remove(&t.id).unwrap_or_default();
+    let refunded = links.refunded.get(&t.id).copied().unwrap_or(Money::ZERO);
+    (!refunds.is_empty() || refunded.is_positive() || t.expected_refund.is_some()).then(|| RefundBadge {
+        refunds,
+        refunded_minor: refunded.minor(),
+        expected_minor: t.expected_refund.map(Money::minor),
+        pending_minor: refund::pending(t.expected_refund, refunded).minor(),
+        fully_refunded: t.amount.is_negative() && refunded >= -t.amount,
+    })
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -321,6 +383,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
         .map(|t| (t.transaction_id, t))
         .collect();
     let names = account_names(db).await?;
+    let mut links = refund_links(db).await?;
 
     // Le solde après opération se calcule sur toutes les transactions, avant filtrage.
     let movements: Vec<DatedAmount> =
@@ -336,6 +399,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
             let tx_splits = splits.remove(&t.id).unwrap_or_default();
             let keep = matches_filter(&t, &tx_splits, transfers.contains_key(&t.id), filter, &selection);
             keep.then(|| TransactionListItem {
+                refund: refund_badge(&t, &mut links),
                 id: t.id,
                 account_name: row.name.clone(),
                 account_id: t.account_id,
@@ -897,6 +961,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
         }
     }
     let selection = selection(db, filter).await?;
+    let mut links = refund_links(db).await?;
     let mut items: Vec<TransactionListItem> = transactions
         .into_iter()
         .filter(|t| wanted.as_ref().is_none_or(|w| w.contains(&t.account_id)))
@@ -905,6 +970,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
             let side = sides.get(&t.id);
             let keep = matches_filter(&t, &tx_splits, side.is_some(), filter, &selection);
             keep.then(|| TransactionListItem {
+                refund: refund_badge(&t, &mut links),
                 id: t.id,
                 account_name: accounts.get(&t.account_id).cloned().unwrap_or_default(),
                 account_id: t.account_id,

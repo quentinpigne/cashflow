@@ -473,6 +473,12 @@ d'analyse » (TRX-13). Une transaction dont le mois d'analyse diffère de sa dat
 novembre 2026 » (aussi en E3). Ouverte depuis le budget ou les analyses, la liste filtre sur le mois
 d'analyse (R-TRX-58). Pas de solde après opération : il n'a de sens que par compte.
 
+Remboursements de frais (TRX-12), en E14 comme en E3 : une icône à côté du libellé, détaillée dans son
+info-bulle. Sur une entrée d'argent qui rembourse : « Rembourse : Restaurant du 2 mars ». Sur une dépense :
+« Remboursée en totalité », « Remboursée : 10,00 € sur 52,00 € », ou, tant qu'un remboursement attendu
+n'est pas soldé, « Remboursement attendu : reste 12,00 € à recevoir » (icône en couleur). Les liens vers
+les transactions concernées sont sur leur fiche (E7).
+
 ## E15 — Analyses (TDB-02, TDB-03)
 
 Deux onglets :

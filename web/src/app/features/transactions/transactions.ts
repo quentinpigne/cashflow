@@ -51,6 +51,7 @@ import {
   ProjectsStore,
 } from '../../shared/stores';
 import { MemberTag } from '../../shared/member-tag';
+import { RefundMark } from '../../shared/refund-mark';
 
 const PAGE = 200;
 
@@ -58,6 +59,7 @@ const PAGE = 200;
 @Component({
   selector: 'app-transactions',
   imports: [
+    RefundMark,
     MemberTag,
     FormsModule,
     MatButtonModule,

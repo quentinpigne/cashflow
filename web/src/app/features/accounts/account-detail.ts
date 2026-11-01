@@ -46,6 +46,7 @@ import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
 import { MemberTag } from '../../shared/member-tag';
+import { RefundMark } from '../../shared/refund-mark';
 
 interface Filters {
   from: Date | null;
@@ -72,6 +73,7 @@ const PAGE = 200;
 @Component({
   selector: 'app-account-detail',
   imports: [
+    RefundMark,
     MemberTag,
     FormsModule,
     RouterLink,

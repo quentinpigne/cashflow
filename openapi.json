@@ -19311,6 +19311,47 @@
           }
         }
       },
+      "RefundBadge": {
+        "type": "object",
+        "description": "Remboursements de frais d'une ligne de liste (TRX-12).",
+        "required": [
+          "refunds",
+          "refunded_minor",
+          "pending_minor",
+          "fully_refunded"
+        ],
+        "properties": {
+          "expected_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Remboursement attendu de cette dépense (R-TRX-53)."
+          },
+          "fully_refunded": {
+            "type": "boolean",
+            "description": "La dépense est remboursée en totalité (R-TRX-52)."
+          },
+          "pending_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reste à recevoir (R-TRX-53)."
+          },
+          "refunded_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Remboursé de cette dépense (R-TRX-52)."
+          },
+          "refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundedExpense"
+            },
+            "description": "Dépenses que cette entrée rembourse (R-TRX-50), dans l'ordre de leurs dates."
+          }
+        }
+      },
       "RefundCandidate": {
         "type": "object",
         "description": "Une dépense proposée pour une entrée d'argent (R-TRX-54).",
@@ -19466,6 +19507,27 @@
           "split_id": {
             "$ref": "#/components/schemas/SplitId",
             "description": "Ventilation qui rembourse (côté entrée d'argent)."
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "RefundedExpense": {
+        "type": "object",
+        "description": "Dépense remboursée par une entrée d'argent, vue depuis la liste.",
+        "required": [
+          "transaction_id",
+          "date",
+          "label"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
           },
           "transaction_id": {
             "$ref": "#/components/schemas/TransactionId"
@@ -21484,6 +21546,17 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/PayeeId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "refund": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RefundBadge",
+                "description": "Remboursements de frais (TRX-12) ; absent si la transaction n'en rembourse aucune, n'est remboursée par\naucune et n'attend aucun remboursement."
               },
               {
                 "type": "null"

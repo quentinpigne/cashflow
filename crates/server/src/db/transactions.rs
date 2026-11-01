@@ -1000,6 +1000,39 @@ pub async fn refunded_except(
     Ok(Money::from_minor(total))
 }
 
+/// Un lien de remboursement, vu par les listes : l'entrée, la dépense visée et le montant (R-TRX-50).
+#[derive(Debug, Clone)]
+pub struct RefundLinkRow {
+    pub transaction_id: TransactionId,
+    pub expense_id: TransactionId,
+    pub expense_date: Date,
+    pub expense_label: String,
+    pub amount: Money,
+}
+
+/// Tous les liens de remboursement, dans l'ordre des dates des dépenses.
+pub async fn refund_links(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<RefundLinkRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT s.transaction_id AS "transaction_id!", e.id AS "expense_id!", e.date AS "expense_date!: Date",
+                  e.label AS "expense_label!", s.amount AS "amount!"
+           FROM split s JOIN ledger_transaction e ON e.id = s.refunds_transaction_id
+           ORDER BY e.date, e.id, s.transaction_id, s.position"#
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(RefundLinkRow {
+                transaction_id: id_from_db(&r.transaction_id)?,
+                expense_id: id_from_db(&r.expense_id)?,
+                expense_date: r.expense_date,
+                expense_label: r.expense_label,
+                amount: Money::from_minor(r.amount),
+            })
+        })
+        .collect()
+}
+
 /// Une dépense, vue par les remboursements : propositions (R-TRX-54) et remboursements attendus (R-TRX-53).
 #[derive(Debug, Clone)]
 pub struct RefundableRow {
