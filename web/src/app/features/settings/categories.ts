@@ -8,7 +8,6 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { Category } from '../../api/models/category';
@@ -19,12 +18,13 @@ import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
 import { CategoriesStore } from '../../shared/stores';
 import { CategoryMergeDialog, CategoryNameDialog, NameData } from './category-dialogs';
+import { BackLink } from '../../shared/back-link';
 
 /** E8 — Catégories (TRX-04). */
 @Component({
   selector: 'app-categories',
   imports: [
-    RouterLink,
+    BackLink,
     DragDropModule,
     MatButtonModule,
     MatExpansionModule,

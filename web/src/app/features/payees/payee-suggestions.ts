@@ -11,7 +11,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AcceptSuggestionInput } from '../../api/models/accept-suggestion-input';
@@ -21,6 +20,7 @@ import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { PayeePicker } from '../../shared/payee-picker';
+import { BackLink } from '../../shared/back-link';
 
 /** Validation d'une proposition (R-TIE-33, R-TIE-34) : un tiers à créer ou un tiers existant, et la règle. */
 @Component({
@@ -118,7 +118,7 @@ export class AcceptSuggestionDialog {
 @Component({
   selector: 'app-payee-suggestions',
   imports: [
-    RouterLink,
+    BackLink,
     MatButtonModule,
     MatExpansionModule,
     MatIconModule,
@@ -129,7 +129,7 @@ export class AcceptSuggestionDialog {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages/tiers" aria-label="Retour aux tiers"
+        <a mat-icon-button appBack="/reglages/tiers" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>Propositions de tiers</h1>

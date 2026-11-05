@@ -10,7 +10,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { ScheduleView } from '../../api/models/schedule-view';
@@ -22,6 +21,7 @@ import { formatRate, parseRatePpm } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { CategoryNameDialog, NameData } from '../settings/category-dialogs';
+import { BackLink } from '../../shared/back-link';
 
 interface Draft {
   date: Date | null;
@@ -35,8 +35,8 @@ interface Draft {
 @Component({
   selector: 'app-schedules',
   imports: [
+    BackLink,
     FormsModule,
-    RouterLink,
     MatButtonModule,
     MatDatepickerModule,
     MatFormFieldModule,
@@ -50,7 +50,7 @@ interface Draft {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages">
+        <a mat-icon-button appBack="/reglages" aria-label="Retour">
           <mat-icon>arrow_back</mat-icon>
         </a>
         <h1>Barèmes de taux</h1>

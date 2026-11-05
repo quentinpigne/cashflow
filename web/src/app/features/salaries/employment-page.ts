@@ -42,6 +42,7 @@ import {
 } from './salary-dialogs';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
+import { BackLink } from '../../shared/back-link';
 
 /** Une ligne de la liste des fiches : une fiche, ou un mois sans fiche (R-SAL-18). */
 interface PayslipEntry {
@@ -59,6 +60,7 @@ interface PayslipYear {
 @Component({
   selector: 'app-employment-page',
   imports: [
+    BackLink,
     DocumentSection,
     RouterLink,
     MatButtonModule,
@@ -74,7 +76,7 @@ interface PayslipYear {
       @if (job.value(); as j) {
         <header class="head">
           <div class="page-header">
-            <a mat-icon-button routerLink="/salaires" aria-label="Retour aux salaires"
+            <a mat-icon-button appBack="/salaires" aria-label="Retour"
               ><mat-icon>arrow_back</mat-icon></a
             >
             <h1>{{ j.summary.employer }}</h1>

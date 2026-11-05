@@ -15,16 +15,17 @@ import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
 import { AccountsStore } from '../../shared/stores';
 import { CategoryNameDialog, NameData } from './category-dialogs';
+import { BackLink } from '../../shared/back-link';
 
 /** E17 — Profils d'import (IMP-02). */
 @Component({
   selector: 'app-profiles',
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [BackLink, RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages"
+        <a mat-icon-button appBack="/reglages" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>Profils d'import</h1>

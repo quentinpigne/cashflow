@@ -44,6 +44,7 @@ import { LineCategories } from './line-categories';
 import { PROJECT_STATUS_LABELS } from './project-lines';
 import { ProjectStatus } from '../../api/models/project-status';
 import { CategoriesStore } from '../../shared/stores';
+import { BackLink } from '../../shared/back-link';
 
 /** Poste en cours de saisie (R-BUD-26) ; `key` identifie la ligne du formulaire. */
 interface LineDraft {
@@ -493,6 +494,7 @@ export class ProjectDialog {
 @Component({
   selector: 'app-projects',
   imports: [
+    BackLink,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -505,7 +507,7 @@ export class ProjectDialog {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/budget" aria-label="Retour au budget">
+        <a mat-icon-button appBack="/budget" aria-label="Retour">
           <mat-icon>arrow_back</mat-icon>
         </a>
         <h1>Projets</h1>
@@ -607,6 +609,7 @@ export class ProjectsPage {
 @Component({
   selector: 'app-project',
   imports: [
+    BackLink,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -620,7 +623,7 @@ export class ProjectsPage {
     <div class="page">
       @if (project.value(); as p) {
         <div class="page-header">
-          <a mat-icon-button routerLink="/budget/projets" aria-label="Retour aux projets">
+          <a mat-icon-button appBack="/budget/projets" aria-label="Retour">
             <mat-icon>arrow_back</mat-icon>
           </a>
           <h1>{{ p.name }}</h1>

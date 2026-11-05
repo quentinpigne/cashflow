@@ -63,6 +63,7 @@ import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentsService } from '../../api/services/documents.service';
 import { LinkTarget } from '../../api/models/link-target';
 import { projectSuffix, proposedLine } from '../budget/project-lines';
+import { BackLink, BackNavigation } from '../../shared/back-link';
 
 type Direction = 'out' | 'in';
 
@@ -70,6 +71,7 @@ type Direction = 'out' | 'in';
 @Component({
   selector: 'app-transaction-detail',
   imports: [
+    BackLink,
     MatSelectModule,
     ReactiveFormsModule,
     RouterLink,
@@ -100,6 +102,7 @@ export class TransactionDetailView {
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
+  private readonly backNavigation = inject(BackNavigation);
   protected readonly categories = inject(CategoriesStore);
 
   readonly transactionId = input.required<string>();
@@ -550,7 +553,8 @@ export class TransactionDetailView {
       }),
     );
     this.version.bump();
-    await this.router.navigate(['/transactions', created.id]);
+    // La copie remplace l'original dans l'historique : le retour mène à la liste.
+    await this.router.navigate(['/transactions', created.id], { replaceUrl: true });
   }
 
   /** Changer de projet présélectionne le poste proposé par les catégories (R-BUD-27). */
@@ -598,7 +602,8 @@ export class TransactionDetailView {
     if (this.embedded()) {
       this.closed.emit();
     } else {
-      void this.router.navigate(['/comptes', t.account_id]);
+      // Après une suppression, revient à la liste d'où l'on vient (E3 ou E14).
+      this.backNavigation.back(['/comptes', t.account_id]);
     }
   }
 }

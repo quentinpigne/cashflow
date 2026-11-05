@@ -6,7 +6,7 @@
           <mat-icon>close</mat-icon>
         </button>
       } @else {
-        <a mat-icon-button aria-label="Retour au compte" [routerLink]="['/comptes', t.account_id]"
+        <a mat-icon-button aria-label="Retour" [appBack]="['/comptes', t.account_id]"
           ><mat-icon>arrow_back</mat-icon></a
         >
       }

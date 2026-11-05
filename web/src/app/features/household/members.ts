@@ -7,7 +7,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { MemberView } from '../../api/models/member-view';
@@ -17,6 +16,7 @@ import { errorMessage } from '../../core/http-errors';
 import { confirm } from '../../shared/confirm-dialog';
 import { MemberChip } from '../../shared/member-chip';
 import { MembersStore } from '../../shared/stores';
+import { BackLink } from '../../shared/back-link';
 
 interface Draft {
   id: string | null;
@@ -46,8 +46,8 @@ export function assignments(m: MemberView): string {
 @Component({
   selector: 'app-members',
   imports: [
+    BackLink,
     FormsModule,
-    RouterLink,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -59,7 +59,7 @@ export function assignments(m: MemberView): string {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages"
+        <a mat-icon-button appBack="/reglages" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>Membres du foyer</h1>

@@ -9,6 +9,7 @@ import {
   provideRouter,
   withComponentInputBinding,
   withNavigationErrorHandler,
+  withRouterConfig,
 } from '@angular/router';
 import { provideEchartsCore } from 'ngx-echarts';
 
@@ -27,6 +28,8 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withNavigationErrorHandler(reloadOnStaleBuild),
+      // Numérote les pages de l'historique : la flèche de retour s'en sert (shared/back-link.ts).
+      withRouterConfig({ canceledNavigationResolution: 'computed' }),
     ),
     provideHttpClient(withInterceptors([sessionInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },

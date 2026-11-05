@@ -18,6 +18,7 @@ import { DataVersion } from '../../core/data-version';
 import { PayeesStore } from '../../shared/stores';
 import { formatCity } from './address';
 import { PayeeActions } from './payee-actions';
+import { BackLink } from '../../shared/back-link';
 
 interface Section {
   group: PayeeGroupView | null;
@@ -28,6 +29,7 @@ interface Section {
 @Component({
   selector: 'app-payees',
   imports: [
+    BackLink,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -43,7 +45,7 @@ interface Section {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages"
+        <a mat-icon-button appBack="/reglages" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>Tiers</h1>

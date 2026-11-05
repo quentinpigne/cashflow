@@ -33,6 +33,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { PayeePicker } from '../../shared/payee-picker';
 import { AccountsStore, CategoriesStore, PayeesStore } from '../../shared/stores';
 import { SplitDraft, SplitEditor, SplitEditorData } from '../transactions/split-editor';
+import { BackLink } from '../../shared/back-link';
 
 type View = 'all' | 'create' | 'match' | 'duplicate' | 'error' | 'uncategorized' | 'without-payee';
 
@@ -45,6 +46,7 @@ function withoutPayee(l: ImportLineView): boolean {
 @Component({
   selector: 'app-import-review',
   imports: [
+    BackLink,
     FormsModule,
     RouterLink,
     MatButtonModule,

@@ -61,6 +61,7 @@ import { RefundMark } from '../../shared/refund-mark';
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../../core/page-size';
 import { SortDirection } from '../../api/models/sort-direction';
 import { TransactionSort } from '../../api/models/transaction-sort';
+import { BackLink } from '../../shared/back-link';
 
 interface Filters {
   from: Date | null;
@@ -90,6 +91,7 @@ const SORTS: Record<string, TransactionSort> = { date: 'DATE', label: 'LABEL', a
 @Component({
   selector: 'app-account-detail',
   imports: [
+    BackLink,
     RefundMark,
     MatPaginatorModule,
     MemberTag,

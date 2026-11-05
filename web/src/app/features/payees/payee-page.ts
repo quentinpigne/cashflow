@@ -19,11 +19,13 @@ import { CategoriesStore, PayeesStore } from '../../shared/stores';
 import { formatAddress, mapLink } from './address';
 import { PayeeActions } from './payee-actions';
 import { DocumentSection } from '../documents/document-section';
+import { BackLink } from '../../shared/back-link';
 
 /** E32 — Fiche d'un tiers ou d'un groupe de tiers (TIE-04). */
 @Component({
   selector: 'app-payee-page',
   imports: [
+    BackLink,
     DocumentSection,
     RouterLink,
     MatButtonModule,
@@ -40,7 +42,7 @@ import { DocumentSection } from '../documents/document-section';
     <div class="page">
       @if (summary.value(); as s) {
         <div class="page-header">
-          <a mat-icon-button routerLink="/reglages/tiers" aria-label="Retour aux tiers"
+          <a mat-icon-button appBack="/reglages/tiers" aria-label="Retour"
             ><mat-icon>arrow_back</mat-icon></a
           >
           <h1>{{ s.name }}</h1>

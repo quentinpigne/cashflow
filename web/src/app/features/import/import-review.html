@@ -1,9 +1,7 @@
 <div class="page">
   @if (current(); as b) {
     <div class="page-header">
-      <a mat-icon-button routerLink="/import" aria-label="Retour aux imports"
-        ><mat-icon>arrow_back</mat-icon></a
-      >
+      <a mat-icon-button appBack="/import" aria-label="Retour"><mat-icon>arrow_back</mat-icon></a>
       <h1>{{ b.summary.account_name }}</h1>
       <span class="muted">{{ statusLabels[b.summary.status] }}</span>
     </div>

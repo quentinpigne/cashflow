@@ -6,7 +6,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { RuleInput } from '../../api/models/rule-input';
@@ -20,6 +19,7 @@ import { abs } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
 import { CategoriesStore, PayeesStore } from '../../shared/stores';
 import { RuleFormData, RuleFormDialog } from './rule-form';
+import { BackLink } from '../../shared/back-link';
 
 /** E16 — Règles de catégorisation (IMP-08). */
 /** Décalage du mois d'analyse d'une transaction, pour une règle (R-IMP-20, R-IMP-29) : de −12 à 12, non nul. */
@@ -31,12 +31,12 @@ function monthShift(own: string, analysis: string | null | undefined): number | 
 
 @Component({
   selector: 'app-rules',
-  imports: [RouterLink, DragDropModule, MatButtonModule, MatIconModule, MatSlideToggleModule],
+  imports: [BackLink, DragDropModule, MatButtonModule, MatIconModule, MatSlideToggleModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages"
+        <a mat-icon-button appBack="/reglages" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>Règles</h1>

@@ -58,6 +58,7 @@ import { DocumentSection } from '../documents/document-section';
 import { SimulationView } from '../../api/models/simulation-view';
 import { CreditService } from '../../api/services/credit.service';
 import { LoansTabs } from '../credit/credit-shared';
+import { BackLink } from '../../shared/back-link';
 
 type InsuranceMode = Insurance['mode'];
 
@@ -799,6 +800,7 @@ export class LoansPage {
 @Component({
   selector: 'app-loan-page',
   imports: [
+    BackLink,
     DocumentSection,
     RouterLink,
     MatButtonModule,

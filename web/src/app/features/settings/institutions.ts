@@ -5,7 +5,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { Institution } from '../../api/models/institution';
@@ -13,6 +12,7 @@ import { InstitutionsService } from '../../api/services/institutions.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
 import { InstitutionsStore } from '../../shared/stores';
+import { BackLink } from '../../shared/back-link';
 
 interface Draft {
   id: string | null;
@@ -25,8 +25,8 @@ interface Draft {
 @Component({
   selector: 'app-institutions',
   imports: [
+    BackLink,
     FormsModule,
-    RouterLink,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -37,7 +37,7 @@ interface Draft {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages"
+        <a mat-icon-button appBack="/reglages" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>Établissements</h1>

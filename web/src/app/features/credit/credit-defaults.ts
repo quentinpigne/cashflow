@@ -4,7 +4,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
 import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
 
 import { CreditConditions } from '../../api/models/credit-conditions';
@@ -14,16 +13,17 @@ import { CreditService } from '../../api/services/credit.service';
 import { errorMessage } from '../../core/http-errors';
 import { ConditionsFields } from './conditions';
 import { PROJECT_KIND_LABELS } from './credit-shared';
+import { BackLink } from '../../shared/back-link';
 
 /** E42 — Conditions de crédit par défaut de chaque type de projet (CRE-12, R-CRE-38). */
 @Component({
   selector: 'app-credit-defaults',
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule, ConditionsFields],
+  imports: [BackLink, MatButtonModule, MatIconModule, MatProgressBarModule, ConditionsFields],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages">
+        <a mat-icon-button appBack="/reglages" aria-label="Retour">
           <mat-icon>arrow_back</mat-icon>
         </a>
         <h1>Conditions de crédit</h1>

@@ -37,6 +37,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { DocumentsService } from '../../api/services/documents.service';
 import { confirmDeletion } from '../documents/delete-confirmation';
 import { DocumentSection } from '../documents/document-section';
+import { BackLink } from '../../shared/back-link';
 
 const FORM_STYLES = `
   .form {
@@ -412,6 +413,7 @@ export class AssetsPage {
 @Component({
   selector: 'app-asset-page',
   imports: [
+    BackLink,
     DocumentSection,
     RouterLink,
     MatButtonModule,
@@ -427,7 +429,7 @@ export class AssetsPage {
       @if (asset.value(); as a) {
         <header class="head">
           <div class="page-header">
-            <a mat-icon-button routerLink="/biens" aria-label="Retour aux biens"
+            <a mat-icon-button appBack="/biens" aria-label="Retour"
               ><mat-icon>arrow_back</mat-icon></a
             >
             <h1>{{ a.summary.name }}</h1>

@@ -45,11 +45,13 @@ import {
 } from './document-labels';
 import { pickLinkTarget } from './link-dialogs';
 import { MembersStore } from '../../shared/stores';
+import { BackLink } from '../../shared/back-link';
 
 /** E35 — Fiche d'un document (DOC-01, DOC-02). */
 @Component({
   selector: 'app-document-page',
   imports: [
+    BackLink,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -65,7 +67,7 @@ import { MembersStore } from '../../shared/stores';
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/documents" aria-label="Retour aux documents"
+        <a mat-icon-button appBack="/documents" aria-label="Retour"
           ><mat-icon>arrow_back</mat-icon></a
         >
         <h1>{{ doc()?.title ?? 'Document' }}</h1>

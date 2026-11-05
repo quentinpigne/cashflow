@@ -66,6 +66,7 @@ import {
   formatDuration,
   showSchedule,
 } from './credit-shared';
+import { BackLink } from '../../shared/back-link';
 
 /** Type proposé à l'envoi d'un document pour une pièce (R-CRE-17). */
 const PIECE_KINDS: Partial<Record<Piece, DocumentKind>> = {
@@ -95,6 +96,7 @@ const PIECE_ICONS: Record<PieceView['status'], string> = {
 @Component({
   selector: 'app-application-page',
   imports: [
+    BackLink,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -113,7 +115,7 @@ const PIECE_ICONS: Record<PieceView['status'], string> = {
     <div class="page">
       @if (view(); as a) {
         <div class="page-header">
-          <a mat-icon-button routerLink="/prets/demandes" aria-label="Retour aux demandes"
+          <a mat-icon-button appBack="/prets/demandes" aria-label="Retour"
             ><mat-icon>arrow_back</mat-icon></a
           >
           <h1>{{ a.name }}</h1>

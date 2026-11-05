@@ -14,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { BudgetSuggestion } from '../../api/models/budget-suggestion';
@@ -24,6 +24,7 @@ import { currentMonth, formatMonthKey } from '../../core/dates';
 import { errorMessage } from '../../core/http-errors';
 import { parseMoney, toEditable } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { BackLink } from '../../shared/back-link';
 
 interface Row {
   suggestion: BudgetSuggestion;
@@ -38,8 +39,8 @@ interface Row {
 @Component({
   selector: 'app-budget-assistant',
   imports: [
+    BackLink,
     FormsModule,
-    RouterLink,
     MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
@@ -51,7 +52,7 @@ interface Row {
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/budget" aria-label="Retour au budget">
+        <a mat-icon-button appBack="/budget" aria-label="Retour">
           <mat-icon>arrow_back</mat-icon>
         </a>
         <h1>Assistant de création</h1>

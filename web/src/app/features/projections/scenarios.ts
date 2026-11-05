@@ -4,7 +4,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { ScenarioView } from '../../api/models/scenario-view';
@@ -16,16 +15,17 @@ import { formatRate } from '../../core/money';
 import { confirm } from '../../shared/confirm-dialog';
 import { AccountsStore } from '../../shared/stores';
 import { ScenarioDialog } from './scenario-dialog';
+import { BackLink } from '../../shared/back-link';
 
 /** E33 — Scénarios de projection (PRJ-03), dans les réglages. */
 @Component({
   selector: 'app-scenarios',
-  imports: [RouterLink, MatButtonModule, MatIconModule],
+  imports: [BackLink, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
       <div class="page-header">
-        <a mat-icon-button routerLink="/reglages" aria-label="Retour aux réglages">
+        <a mat-icon-button appBack="/reglages" aria-label="Retour">
           <mat-icon>arrow_back</mat-icon>
         </a>
         <h1>Scénarios de projection</h1>
