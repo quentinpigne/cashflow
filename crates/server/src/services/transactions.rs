@@ -627,7 +627,7 @@ pub(crate) async fn check_payee(conn: &mut SqliteConnection, payee: Option<Payee
     Ok(())
 }
 
-fn new_splits(splits: &[SplitInput]) -> Vec<NewSplit<'_>> {
+pub(crate) fn new_splits(splits: &[SplitInput]) -> Vec<NewSplit<'_>> {
     splits
         .iter()
         .map(|s| NewSplit {

@@ -127,6 +127,10 @@ export type { SetExpectedRefund$Params as SetExpectedRefund$Params } from './fn/
 export { setExpectedRefund as setExpectedRefund } from './fn/transactions/set-expected-refund';
 export type { RefundCandidates$Params as RefundCandidates$Params } from './fn/transactions/refund-candidates';
 export { refundCandidates as refundCandidates } from './fn/transactions/refund-candidates';
+export type { RefunderCandidates$Params as RefunderCandidates$Params } from './fn/transactions/refunder-candidates';
+export { refunderCandidates as refunderCandidates } from './fn/transactions/refunder-candidates';
+export type { LinkRefunders$Params as LinkRefunders$Params } from './fn/transactions/link-refunders';
+export { linkRefunders as linkRefunders } from './fn/transactions/link-refunders';
 export type { MarkAsTransfer$Params as MarkAsTransfer$Params } from './fn/transactions/mark-as-transfer';
 export { markAsTransfer as markAsTransfer } from './fn/transactions/mark-as-transfer';
 export type { TransferCandidates$Params as TransferCandidates$Params } from './fn/transactions/transfer-candidates';

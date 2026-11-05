@@ -1152,6 +1152,51 @@ pub async fn refundable(db: impl SqliteExecutor<'_>, except: TransactionId) -> a
     rows.into_iter().map(|r| refundable_row!(r)).collect()
 }
 
+/// Entrée d'argent qui pourrait rembourser une dépense (R-TRX-62).
+pub struct RefunderRow {
+    pub id: TransactionId,
+    pub account_id: AccountId,
+    pub date: Date,
+    pub label: String,
+    pub amount: Money,
+    pub payee_id: Option<PayeeId>,
+    /// Ventilations positives qui ne remboursent aucune dépense, ni prêt ni bien.
+    pub available: Money,
+}
+
+/// Entrées d'argent, hors jambes de virement, qui ont encore un montant à affecter, quelle que soit leur date.
+pub async fn refunders(db: impl SqliteExecutor<'_>, except: TransactionId) -> anyhow::Result<Vec<RefunderRow>> {
+    let except = except.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT t.id AS "id!", t.account_id AS "account_id!", t.date AS "date!: Date", t.label AS "label!",
+                  t.amount AS "amount!", t.payee_id,
+                  coalesce((SELECT sum(s.amount) FROM split s
+                            WHERE s.transaction_id = t.id AND s.amount > 0 AND s.refunds_transaction_id IS NULL
+                              AND s.loan_id IS NULL AND s.asset_id IS NULL), 0) AS "available!: i64"
+           FROM ledger_transaction t
+           WHERE t.amount > 0 AND t.id <> ?1
+             AND NOT EXISTS (SELECT 1 FROM transfer_leg tl WHERE t.id IN (tl.outflow_transaction_id, tl.inflow_transaction_id))
+           ORDER BY t.date DESC, t.id"#,
+        except
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .filter(|r| r.available > 0)
+        .map(|r| {
+            Ok(RefunderRow {
+                id: id_from_db(&r.id)?,
+                account_id: id_from_db(&r.account_id)?,
+                date: r.date,
+                label: r.label,
+                amount: Money::from_minor(r.amount),
+                payee_id: opt_id_from_db(r.payee_id.as_deref())?,
+                available: Money::from_minor(r.available),
+            })
+        })
+        .collect()
+}
+
 /// Dépenses dont le remboursement attendu n'est pas entièrement reçu, les plus anciennes d'abord (R-TRX-53).
 pub async fn pending_refunds(db: impl SqliteExecutor<'_>) -> anyhow::Result<Vec<RefundableRow>> {
     let rows = sqlx::query!(

@@ -97,6 +97,61 @@ pub fn proposals<T, P: PartialEq>(
         .collect()
 }
 
+/// Une entrée d'argent qui pourrait rembourser une dépense, vue depuis la dépense (R-TRX-62).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Refunder<T, P> {
+    pub id: T,
+    pub date: Date,
+    pub payee: Option<P>,
+    /// Ce que l'entrée n'affecte encore à aucune dépense.
+    pub available: Money,
+}
+
+/// Une entrée proposée et le montant proposé.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RefunderProposal<T, P> {
+    pub refunder: Refunder<T, P>,
+    pub proposed: Money,
+}
+
+/// Entrées proposées pour rembourser une dépense de `date`, de `payee` (R-TRX-62) : toutes celles qui ont encore
+/// un montant à affecter, quelle que soit leur date ; même tiers d'abord, puis date la plus proche, avant ou après.
+/// Le montant proposé est `wanted` (le reste à recevoir, sinon ce qui reste à rembourser de la dépense), dans la
+/// limite de ce que l'entrée n'affecte encore à aucune dépense.
+pub fn refunder_proposals<T, P: PartialEq>(
+    refunders: Vec<Refunder<T, P>>,
+    date: Date,
+    payee: Option<&P>,
+    wanted: Money,
+) -> Vec<RefunderProposal<T, P>> {
+    let mut kept: Vec<Refunder<T, P>> = refunders.into_iter().filter(|r| r.available.is_positive()).collect();
+    kept.sort_by_key(|r| (!(payee.is_some() && r.payee.as_ref() == payee), (date - r.date).num_days().abs()));
+    kept.into_iter()
+        .map(|r| {
+            let proposed = wanted.max(Money::ZERO).min(r.available);
+            RefunderProposal { refunder: r, proposed }
+        })
+        .collect()
+}
+
+/// Prend `taken` (positif) sur des parts positives, en commençant par les dernières : les parts restantes, à zéro
+/// pour une part prise en entier (TRX-12, R-TRX-62). Ce qu'une entrée affecte à une dépense est pris sur ce
+/// qu'elle n'affectait à aucune ; refusé si ces parts ne suffisent pas.
+pub fn take_from(amounts: &[Money], taken: Money) -> Result<Vec<Money>, DomainError> {
+    let total: Money = amounts.iter().copied().sum();
+    if !taken.is_positive() || taken > total || amounts.iter().any(|a| a.is_negative()) {
+        return Err(DomainError::RefundExceedsAvailable);
+    }
+    let mut left = taken;
+    let mut result = amounts.to_vec();
+    for part in result.iter_mut().rev() {
+        let take = left.min(*part);
+        *part -= take;
+        left -= take;
+    }
+    Ok(result)
+}
+
 /// Recherche dans les dépenses proposées (R-TRX-54) : le texte, sans distinction de casse, dans le libellé ou le
 /// nom du tiers ; un montant (« 68,40 », « 68.4 », « 68 ») dans le montant de la dépense écrit en euros, sans
 /// séparateur de milliers (« 1268,00 »). Une recherche vide garde tout.
@@ -169,6 +224,36 @@ mod tests {
         assert_eq!(pending(Some(m(1_750)), m(1_000)), m(750));
         assert_eq!(pending(Some(m(1_750)), m(2_000)), Money::ZERO);
         assert_eq!(pending(None, m(0)), Money::ZERO);
+    }
+
+    #[test]
+    fn r_trx_62_refunders_order_and_amounts() {
+        let r = |id: u32, date: &str, payee: Option<u32>, available: i64| Refunder {
+            id,
+            date: d(date),
+            payee,
+            available: m(available),
+        };
+        let refunders = vec![
+            r(1, "2026-03-10", None, 5_000),
+            r(2, "2026-03-25", Some(7), 1_000),
+            r(3, "2026-03-04", None, 0),
+            r(4, "2026-02-01", None, 9_000),
+        ];
+        let result = refunder_proposals(refunders, d("2026-03-05"), Some(&7), m(1_750));
+        let ids: Vec<u32> = result.iter().map(|p| p.refunder.id).collect();
+        // Même tiers d'abord, puis date la plus proche ; rien à affecter : écartée.
+        assert_eq!(ids, [2, 1, 4]);
+        // Limité à ce que l'entrée n'affecte encore à aucune dépense.
+        assert_eq!(result.iter().map(|p| p.proposed).collect::<Vec<_>>(), [m(1_000), m(1_750), m(1_750)]);
+    }
+
+    #[test]
+    fn r_trx_62_take_from_the_last_unassigned_parts() {
+        assert_eq!(take_from(&[m(3_000), m(2_000)], m(2_500)), Ok(vec![m(2_500), m(0)]));
+        assert_eq!(take_from(&[m(5_000)], m(5_000)), Ok(vec![m(0)]));
+        assert_eq!(take_from(&[m(3_000)], m(3_001)), Err(DomainError::RefundExceedsAvailable));
+        assert_eq!(take_from(&[m(3_000)], m(0)), Err(DomainError::RefundExceedsAvailable));
     }
 
     #[test]

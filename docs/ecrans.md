@@ -379,7 +379,10 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
     visée, avec un lien, et « Retirer le lien » ;
   - une **dépense** affiche le champ « Remboursement attendu » parmi les autres champs (bouton « Ne viendra
     pas » pour le retirer), « X remboursés sur Y » sous le champ et l'encadré **Remboursée par** : les
-    entrées qui la remboursent, avec un lien vers chacune.
+    entrées qui la remboursent, avec un lien vers chacune (« N'est remboursée par aucune entrée » sinon), et
+    « Lier un remboursement » (R-TRX-62) : le même dialogue, dans l'autre sens, listant les entrées qui ont
+    encore un montant à affecter (« 30,00 € à affecter » quand une partie l'est déjà) ; valider ventile chaque
+    entrée choisie. Désactivé quand la dépense est entièrement remboursée.
 - **Lieu** (TRX-15, sauf sur un virement) : l'adresse de la transaction (avec « Voir sur une carte » si elle
   est localisée), sinon celle du tiers, en gris, « Adresse du tiers », sinon « Aucune adresse ». Boutons
   « Définir l'adresse » ou « Modifier l'adresse », et « Retirer l'adresse » : le dialogue d'adresse reprend la

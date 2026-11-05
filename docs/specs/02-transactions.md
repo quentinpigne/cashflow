@@ -194,6 +194,16 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   Supprimer l'entrée réduit d'autant le remboursé de la dépense.
 - **R-TRX-56** — Un lien de remboursement et un remboursement attendu ne changent aucun solde : ils restent
   modifiables sur une transaction rapprochée (R-RAP-7).
+- **R-TRX-62** — **Lier depuis la dépense** : une dépense peut aussi choisir les entrées d'argent qui la
+  remboursent. Sont proposées toutes les entrées, hors jambes de virement, qui ont encore un montant à affecter
+  (leurs ventilations positives qui ne remboursent aucune dépense, ni prêt ni bien), quelle que soit leur date :
+  même tiers d'abord, puis date la plus proche, avant ou après ; par pages de dix, avec la recherche de R-TRX-54.
+  Le montant proposé est le reste à recevoir de la dépense, sinon ce qui en reste à rembourser, dans la limite de
+  ce que l'entrée n'affecte encore à aucune dépense. Lier une entrée la ventile comme le ferait « Lier une
+  dépense » depuis elle : une ventilation sur la catégorie de la dépense (la catégorie de dépense de sa plus
+  grosse ventilation ; une dépense sans catégorie de dépense se catégorise d'abord), prise sur ses ventilations
+  non affectées, les dernières d'abord. Plus que ce montant non affecté est refusé, comme plus que la dépense
+  (R-TRX-52).
 
 ### Récurrences
 
@@ -294,7 +304,8 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   recherches au besoin et on ajuste le montant de chacune ; l'entrée est
   ventilée en conséquence, ce qui n'est affecté à aucune dépense garde sa ventilation d'avant.
 - Sur la fiche d'une dépense : le champ « Remboursement attendu », le remboursé (« 17,50 € remboursés sur
-  25,00 € ») et les entrées qui la remboursent, avec un lien vers chacune.
+  25,00 € ») et les entrées qui la remboursent, avec un lien vers chacune ; « Lier un remboursement » choisit
+  une ou plusieurs entrées qui la remboursent, avec le montant de chacune (R-TRX-62).
 - Sur l'accueil (E1) : l'encadré **Remboursements attendus**, les dépenses dont le reste à recevoir n'est pas
   nul, les plus anciennes d'abord.
 

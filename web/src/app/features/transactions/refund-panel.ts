@@ -25,17 +25,25 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, switchMap, timer } from 'rxjs';
+import { firstValueFrom, map, switchMap, timer } from 'rxjs';
 
-import { RefundCandidate } from '../../api/models/refund-candidate';
 import { RefundCandidatePage } from '../../api/models/refund-candidate-page';
+import { RefunderCandidatePage } from '../../api/models/refunder-candidate-page';
 import { Split } from '../../api/models/split';
 import { SplitInput } from '../../api/models/split-input';
 import { TransactionDetail } from '../../api/models/transaction-detail';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { errorMessage } from '../../core/http-errors';
-import { abs, parseMoney, subtract, sum, takeFrom, toEditable } from '../../core/money';
+import {
+  abs,
+  formatMoney,
+  parseMoney,
+  subtract,
+  sum,
+  takeFrom,
+  toEditable,
+} from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 
@@ -47,15 +55,41 @@ export interface RefundChoice {
 }
 
 interface RefundDialogData {
+  /** Depuis une entrée (on choisit des dépenses) ou depuis une dépense (on choisit des entrées, R-TRX-62). */
+  from: 'income' | 'expense';
   transactionId: string;
   currency: string;
-  /** Ce que l'entrée n'affecte encore à aucune dépense. */
+  /** Entrée : ce qu'elle n'affecte encore à aucune dépense ; dépense : ce qui en reste à rembourser. */
   available: number;
 }
 
-/** Une dépense cochée, et le montant saisi : gardée d'une page ou d'une recherche à l'autre. */
+/** Une transaction proposée, dépense ou entrée, présentée de la même façon dans les deux sens. */
+interface Candidate {
+  transaction_id: string;
+  label: string;
+  date: string;
+  account_name: string;
+  amount_minor: number;
+  /** Précision affichée après le montant (attendu, déjà remboursé, à affecter). */
+  note: string | null;
+  emphasis: boolean;
+  /** Au plus ce montant pour cette transaction. */
+  max_minor: number;
+  proposed_minor: number;
+  /** Catégorie de la ventilation qui rembourse ; absente : à catégoriser d'abord. */
+  category_id: string | null;
+}
+
+interface CandidatePage {
+  items: Candidate[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/** Une transaction cochée, et le montant saisi : gardée d'une page ou d'une recherche à l'autre. */
 interface Chosen {
-  candidate: RefundCandidate;
+  candidate: Candidate;
   amount: string;
 }
 
@@ -77,8 +111,10 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
 }
 
 /**
- * « Lier une dépense » : toutes les dépenses qui peuvent être remboursées, dans l'ordre de R-TRX-54, par pages de
- * dix, et une recherche par libellé, tiers ou montant. Les dépenses cochées le restent d'une page à l'autre.
+ * « Lier une dépense » depuis une entrée : toutes les dépenses qui peuvent être remboursées, dans l'ordre de
+ * R-TRX-54 ; « Lier un remboursement » depuis une dépense : toutes les entrées qui ont encore un montant à
+ * affecter (R-TRX-62). Par pages de dix, avec une recherche par libellé, tiers ou montant ; les transactions
+ * cochées le restent d'une page à l'autre.
  */
 @Component({
   selector: 'app-refund-dialog',
@@ -98,15 +134,22 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>Rembourse une dépense</h2>
+    <h2 mat-dialog-title>{{ expenseSide ? 'Remboursée par' : 'Rembourse une dépense' }}</h2>
     <mat-dialog-content>
       <p class="muted">
-        Cocher les dépenses remboursées et le montant de chacune : l'entrée est ventilée en
-        conséquence. Reste à affecter :
+        @if (expenseSide) {
+          Cocher les entrées d'argent qui remboursent cette dépense et le montant de chacune :
+          chaque entrée est ventilée en conséquence. Reste à rembourser :
+        } @else {
+          Cocher les dépenses remboursées et le montant de chacune : l'entrée est ventilée en
+          conséquence. Reste à affecter :
+        }
         <strong [class.error]="left() < 0">{{ left() | money: data.currency }}</strong>
       </p>
       <mat-form-field class="search" subscriptSizing="dynamic">
-        <mat-label>Rechercher une dépense</mat-label>
+        <mat-label>{{
+          expenseSide ? 'Rechercher une entrée' : 'Rechercher une dépense'
+        }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
         <input
           matInput
@@ -117,7 +160,7 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
         />
       </mat-form-field>
       @if (chosenList().length > 0) {
-        <mat-chip-set class="chosen" aria-label="Dépenses cochées">
+        <mat-chip-set class="chosen" aria-label="Transactions cochées">
           @for (c of chosenList(); track c.candidate.transaction_id) {
             <mat-chip (removed)="toggle(c.candidate, false)">
               {{ c.candidate.label }} · {{ c.amount }} €
@@ -145,10 +188,13 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
             <span class="muted small">
               {{ candidate.date | frDate: 'short' }} · {{ candidate.account_name }} ·
               {{ candidate.amount_minor | money: data.currency }}
-              @if (candidate.pending_minor > 0) {
-                · <strong>{{ candidate.pending_minor | money: data.currency }} attendus</strong>
-              } @else if (candidate.refunded_minor > 0) {
-                · {{ candidate.refunded_minor | money: data.currency }} déjà remboursés
+              @if (candidate.note) {
+                ·
+                @if (candidate.emphasis) {
+                  <strong>{{ candidate.note }}</strong>
+                } @else {
+                  {{ candidate.note }}
+                }
               }
               @if (!candidate.category_id) {
                 · à catégoriser d'abord
@@ -170,7 +216,15 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
       } @empty {
         @if (!candidates.isLoading()) {
           <p class="muted">
-            {{ query().trim() ? 'Aucune dépense ne correspond.' : 'Aucune dépense à rembourser.' }}
+            @if (query().trim()) {
+              {{ expenseSide ? 'Aucune entrée ne correspond.' : 'Aucune dépense ne correspond.' }}
+            } @else {
+              {{
+                expenseSide
+                  ? 'Aucune entrée d’argent avec un montant à affecter.'
+                  : 'Aucune dépense à rembourser.'
+              }}
+            }
           </p>
         }
       }
@@ -229,6 +283,8 @@ export class RefundDialog {
   protected readonly data = inject<RefundDialogData>(MAT_DIALOG_DATA);
   private readonly api = inject(TransactionsService);
   private readonly ref = inject(MatDialogRef<RefundDialog, RefundChoice[]>);
+  protected readonly expenseSide = this.data.from === 'expense';
+  private readonly money = (minor: number) => formatMoney(minor, { currency: this.data.currency });
 
   protected readonly query = signal('');
   /** Page affichée, à partir de 0 ; revient à la première à chaque recherche. */
@@ -239,21 +295,21 @@ export class RefundDialog {
     params: () => ({ q: this.query().trim(), page: this.pageIndex() + 1 }),
     stream: ({ params }) =>
       timer(params.q ? 300 : 0).pipe(
-        switchMap(() =>
-          this.api.refundCandidates({
+        switchMap(() => {
+          const query = {
             id: this.data.transactionId,
             q: params.q || undefined,
             page: params.page,
             limit: PAGE_SIZE,
-          }),
-        ),
+          };
+          return this.expenseSide
+            ? this.api.refunderCandidates(query).pipe(map((p) => this.fromRefunders(p)))
+            : this.api.refundCandidates(query).pipe(map((p) => this.fromExpenses(p)));
+        }),
       ),
   });
   /** La page affichée reste visible pendant le chargement de la suivante. */
-  protected readonly page = linkedSignal<
-    RefundCandidatePage | undefined,
-    RefundCandidatePage | undefined
-  >({
+  protected readonly page = linkedSignal<CandidatePage | undefined, CandidatePage | undefined>({
     source: () => (this.candidates.hasValue() ? this.candidates.value() : undefined),
     computation: (next, previous) => next ?? previous?.value,
   });
@@ -273,15 +329,58 @@ export class RefundDialog {
       this.amounts().length > 0 &&
       this.left() >= 0 &&
       this.amounts().every(
-        (a) => a.amount !== null && a.amount > 0 && a.amount <= a.c.candidate.refundable_minor,
+        (a) => a.amount !== null && a.amount > 0 && a.amount <= a.c.candidate.max_minor,
       ),
   );
 
-  protected proposed(candidate: RefundCandidate): string {
+  private fromExpenses(p: RefundCandidatePage): CandidatePage {
+    return {
+      ...p,
+      items: p.items.map((c) => ({
+        transaction_id: c.transaction_id,
+        label: c.label,
+        date: c.date,
+        account_name: c.account_name,
+        amount_minor: c.amount_minor,
+        note:
+          c.pending_minor > 0
+            ? `${this.money(c.pending_minor)} attendus`
+            : c.refunded_minor > 0
+              ? `${this.money(c.refunded_minor)} déjà remboursés`
+              : null,
+        emphasis: c.pending_minor > 0,
+        max_minor: c.refundable_minor,
+        proposed_minor: c.proposed_minor,
+        category_id: c.category_id ?? null,
+      })),
+    };
+  }
+
+  /** Depuis une dépense, la catégorie est celle de la dépense, la même pour toutes les entrées. */
+  private fromRefunders(p: RefunderCandidatePage): CandidatePage {
+    return {
+      ...p,
+      items: p.items.map((c) => ({
+        transaction_id: c.transaction_id,
+        label: c.label,
+        date: c.date,
+        account_name: c.account_name,
+        amount_minor: c.amount_minor,
+        note:
+          c.available_minor < c.amount_minor ? `${this.money(c.available_minor)} à affecter` : null,
+        emphasis: false,
+        max_minor: Math.min(c.available_minor, p.refundable_minor),
+        proposed_minor: c.proposed_minor,
+        category_id: p.category_id ?? null,
+      })),
+    };
+  }
+
+  protected proposed(candidate: Candidate): string {
     return toEditable(candidate.proposed_minor, this.data.currency);
   }
 
-  protected toggle(candidate: RefundCandidate, checked: boolean): void {
+  protected toggle(candidate: Candidate, checked: boolean): void {
     this.chosen.update((map) => {
       const next = new Map(map);
       if (checked) {
@@ -293,7 +392,7 @@ export class RefundDialog {
     });
   }
 
-  protected setAmount(candidate: RefundCandidate, amount: string): void {
+  protected setAmount(candidate: Candidate, amount: string): void {
     this.chosen.update((map) => {
       const current = map.get(candidate.transaction_id);
       if (!current) return map;
@@ -366,20 +465,30 @@ export class RefundDialog {
           </mat-hint>
         }
       </mat-form-field>
-      @if (t.refund.received.length > 0) {
-        <div class="card">
-          <div class="head"><strong>Remboursée par</strong></div>
-          @for (r of t.refund.received; track r.split_id) {
-            <div class="row">
-              <span
-                ><a [routerLink]="['/transactions', r.transaction_id]">{{ r.label }}</a>
-                <span class="muted"> · {{ r.date | frDate: 'short' }}</span></span
-              >
-              <span class="amount">{{ r.amount_minor | money: t.currency }}</span>
-            </div>
-          }
+      <div class="card">
+        <div class="head">
+          <strong>Remboursée par</strong>
+          <button
+            mat-button
+            type="button"
+            [disabled]="refundable() <= 0 || !!t.transfer"
+            (click)="linkRefunders(t)"
+          >
+            Lier un remboursement
+          </button>
         </div>
-      }
+        @for (r of t.refund.received; track r.split_id) {
+          <div class="row">
+            <span
+              ><a [routerLink]="['/transactions', r.transaction_id]">{{ r.label }}</a>
+              <span class="muted"> · {{ r.date | frDate: 'short' }}</span></span
+            >
+            <span class="amount">{{ r.amount_minor | money: t.currency }}</span>
+          </div>
+        } @empty {
+          <p class="muted">N'est remboursée par aucune entrée.</p>
+        }
+      </div>
     } @else {
       <div class="card">
         <div class="head">
@@ -489,6 +598,12 @@ export class RefundPanel {
     ),
   );
 
+  /** Ce qui reste à rembourser d'une dépense. */
+  protected readonly refundable = computed(() => {
+    const t = this.transaction();
+    return subtract(abs(t.amount_minor), t.refund.refunded_minor);
+  });
+
   protected refundedAmount(splitId: string): number {
     return this.transaction().splits.find((s) => s.id === splitId)?.amount_minor ?? 0;
   }
@@ -542,7 +657,12 @@ export class RefundPanel {
   /** Ventile l'entrée : une ventilation par dépense choisie, prise sur ce qui n'était affecté à aucune. */
   protected async link(t: TransactionDetail): Promise<void> {
     const ref = this.dialog.open<RefundDialog, RefundDialogData, RefundChoice[]>(RefundDialog, {
-      data: { transactionId: t.id, currency: t.currency, available: this.available() },
+      data: {
+        from: 'income',
+        transactionId: t.id,
+        currency: t.currency,
+        available: this.available(),
+      },
       width: '40rem',
       maxWidth: '100vw',
     });
@@ -570,6 +690,35 @@ export class RefundPanel {
         refunds_transaction_id: c.transaction_id,
       })),
     ]);
+  }
+
+  /** Depuis une dépense : les entrées choisies sont ventilées par le serveur (R-TRX-62). */
+  protected async linkRefunders(t: TransactionDetail): Promise<void> {
+    const ref = this.dialog.open<RefundDialog, RefundDialogData, RefundChoice[]>(RefundDialog, {
+      data: {
+        from: 'expense',
+        transactionId: t.id,
+        currency: t.currency,
+        available: this.refundable(),
+      },
+      width: '40rem',
+      maxWidth: '100vw',
+    });
+    const chosen = await firstValueFrom(ref.afterClosed());
+    if (!chosen?.length) return;
+    await this.run(() =>
+      firstValueFrom(
+        this.api.linkRefunders({
+          id: t.id,
+          body: {
+            links: chosen.map((c) => ({
+              transaction_id: c.transaction_id,
+              amount_minor: c.amount_minor,
+            })),
+          },
+        }),
+      ),
+    );
   }
 
   /** Retire le lien : la ventilation reste, avec sa catégorie (R-TRX-55). */

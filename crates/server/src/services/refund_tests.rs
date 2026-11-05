@@ -5,7 +5,7 @@ use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{AccountId, CategoryId, TransactionId};
 
-use super::refunds::{self, ExpectedRefundInput, RefundCandidatesQuery};
+use super::refunds::{self, ExpectedRefundInput, LinkRefundersInput, RefundCandidatesQuery, RefunderLinkInput};
 use super::tests::{account, category, d, domain_error, setup, split, tx};
 use super::transactions::{self, SplitInput, TransactionInput, TransactionUpdateInput};
 use crate::db::Db;
@@ -187,4 +187,57 @@ async fn r_trx_54_candidates_are_complete_paginated_and_searchable() {
     assert_eq!(by_label.items.iter().map(|c| c.transaction_id).collect::<Vec<_>>(), [old]);
     let by_amount = refunds::candidates(&db, entry, &query(Some("22,22"), None)).await.unwrap();
     assert_eq!(by_amount.items.iter().map(|c| c.transaction_id).collect::<Vec<_>>(), [later]);
+}
+
+/// Depuis une dépense : les entrées qui ont encore un montant à affecter sont proposées, et en lier une la
+/// ventile, sur ce qu'elle n'affectait à aucune dépense (R-TRX-62).
+#[tokio::test]
+async fn r_trx_62_link_refunders_from_the_expense() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let doctor = category(&db, "Médecin L", CategoryKind::Expense, None).await;
+    let salary = category(&db, "Salaire L", CategoryKind::Income, None).await;
+    let visit = transactions::create(&db, &tx(checking, "2026-03-02", -2_500, Some(doctor))).await.unwrap();
+    refunds::set_expected(&db, visit, &ExpectedRefundInput { expected_minor: Some(1_750) }).await.unwrap();
+    let cpam = income(&db, checking, "2026-03-20", vec![split(6_200, Some(salary))]).await;
+    let other = TransactionInput { label: "MUTUELLE".into(), ..tx(checking, "2026-02-25", 900, Some(salary)) };
+    let mutuelle = transactions::create(&db, &other).await.unwrap();
+
+    let all = refunds::refunders(&db, visit, &RefundCandidatesQuery::default()).await.unwrap();
+    assert_eq!(all.category_id, Some(doctor));
+    let summary: Vec<_> = all.items.iter().map(|c| (c.transaction_id, c.available_minor, c.proposed_minor)).collect();
+    // Date la plus proche d'abord ; le montant proposé est le reste à recevoir, dans la limite de l'entrée.
+    assert_eq!(summary, [(mutuelle, 900, 900), (cpam, 6_200, 1_750)]);
+    let search = RefundCandidatesQuery { q: Some("mutuelle".into()), ..Default::default() };
+    let searched = refunds::refunders(&db, visit, &search).await.unwrap();
+    assert_eq!(searched.items.iter().map(|c| c.transaction_id).collect::<Vec<_>>(), [mutuelle]);
+
+    let link = |transaction_id, amount_minor| LinkRefundersInput {
+        links: vec![RefunderLinkInput { transaction_id, amount_minor }],
+    };
+    refunds::link_refunders(&db, visit, &link(cpam, 1_750)).await.unwrap();
+    let splits: Vec<_> = transactions::get(&db, cpam)
+        .await
+        .unwrap()
+        .splits
+        .into_iter()
+        .map(|s| (s.amount_minor, s.category_id, s.refunds_transaction_id))
+        .collect();
+    assert_eq!(splits, [(4_450, Some(salary), None), (1_750, Some(doctor), Some(visit))]);
+    assert_eq!(refunded(&db, visit).await, 1_750);
+
+    // Pas plus que ce que l'entrée n'affecte à aucune dépense, ni que la dépense.
+    assert_eq!(
+        domain_error(refunds::link_refunders(&db, visit, &link(mutuelle, 1_000)).await),
+        DomainError::RefundExceedsAvailable
+    );
+    assert_eq!(
+        domain_error(refunds::link_refunders(&db, visit, &link(cpam, 1_000)).await),
+        DomainError::RefundExceedsExpense
+    );
+    // Une entrée ne se lie pas comme dépense.
+    assert_eq!(
+        domain_error(refunds::refunders(&db, cpam, &RefundCandidatesQuery::default()).await),
+        DomainError::InvalidRefund
+    );
 }

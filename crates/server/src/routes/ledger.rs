@@ -21,6 +21,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(transactions::unlink_transfer))
         .routes(routes!(transactions::set_expected_refund))
         .routes(routes!(transactions::refund_candidates))
+        .routes(routes!(transactions::refunder_candidates))
+        .routes(routes!(transactions::link_refunders))
         .routes(routes!(transactions::pending_refunds))
         .routes(routes!(transactions::list_all))
         .routes(routes!(transactions::categorize_many))

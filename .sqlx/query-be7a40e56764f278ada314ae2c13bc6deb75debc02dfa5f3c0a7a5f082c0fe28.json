@@ -1,0 +1,93 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id AS \"id!\", t.account_id AS \"account_id!\", t.date AS \"date!: Date\", t.label AS \"label!\",\n                  t.amount AS \"amount!\", t.payee_id,\n                  coalesce((SELECT sum(s.amount) FROM split s\n                            WHERE s.transaction_id = t.id AND s.amount > 0 AND s.refunds_transaction_id IS NULL\n                              AND s.loan_id IS NULL AND s.asset_id IS NULL), 0) AS \"available!: i64\"\n           FROM ledger_transaction t\n           WHERE t.amount > 0 AND t.id <> ?1\n             AND NOT EXISTS (SELECT 1 FROM transfer_leg tl WHERE t.id IN (tl.outflow_transaction_id, tl.inflow_transaction_id))\n           ORDER BY t.date DESC, t.id",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "account_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "name": "date!: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "name": "label!",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "name": "amount!",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "payee_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "payee_id"
+          }
+        }
+      },
+      {
+        "name": "available!: i64",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "be7a40e56764f278ada314ae2c13bc6deb75debc02dfa5f3c0a7a5f082c0fe28"
+}

@@ -7,7 +7,10 @@ use utoipa::ToSchema;
 
 use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
-use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidatePage, RefundCandidatesQuery};
+use crate::services::refunds::{
+    self, ExpectedRefundInput, LinkRefundersInput, PendingRefund, RefundCandidatePage, RefundCandidatesQuery,
+    RefunderCandidatePage,
+};
 use crate::services::transactions::{
     self, BulkAddressInput, BulkAddressResult, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput,
     BulkCategorizeResult, BulkMemberInput, BulkMemberResult, BulkPayeeInput, BulkPayeeResult, BulkSplitInput,
@@ -266,6 +269,35 @@ pub async fn refund_candidates(
     Query(query): Query<RefundCandidatesQuery>,
 ) -> AppResult<Json<RefundCandidatePage>> {
     Ok(Json(refunds::candidates(&state.db, id, &query).await?))
+}
+
+/// Entrées d'argent proposées pour rembourser une dépense, vue depuis la dépense (R-TRX-62).
+#[utoipa::path(
+    get, operation_id = "refunderCandidates", path = "/transactions/{id}/refunder-candidates", tag = "transactions",
+    params(("id" = TransactionId, Path), RefundCandidatesQuery),
+    responses((status = 200, body = RefunderCandidatePage), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn refunder_candidates(
+    State(state): State<AppState>,
+    Path(id): Path<TransactionId>,
+    Query(query): Query<RefundCandidatesQuery>,
+) -> AppResult<Json<RefunderCandidatePage>> {
+    Ok(Json(refunds::refunders(&state.db, id, &query).await?))
+}
+
+/// Lie à une dépense des entrées d'argent qui la remboursent, depuis la dépense (R-TRX-62).
+#[utoipa::path(
+    post, operation_id = "linkRefunders", path = "/transactions/{id}/refunders", tag = "transactions",
+    params(("id" = TransactionId, Path)), request_body = LinkRefundersInput,
+    responses((status = 204), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn link_refunders(
+    State(state): State<AppState>,
+    Path(id): Path<TransactionId>,
+    Json(input): Json<LinkRefundersInput>,
+) -> AppResult<StatusCode> {
+    refunds::link_refunders(&state.db, id, &input).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Dépenses dont le remboursement attendu n'est pas entièrement reçu (R-TRX-53, E1).

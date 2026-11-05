@@ -93,3 +93,45 @@ test('E7 : « Lier une dépense » liste toutes les dépenses, par pages, et les
   await dialog.getByRole('button', { name: 'Annuler' }).click();
   await page.request.delete(`/api/v1/transactions/${id}`);
 });
+
+test('E7 : depuis une dépense, « Lier un remboursement » choisit l’entrée qui la rembourse (R-TRX-62)', async ({
+  page,
+}) => {
+  test.skip(isMobile(page), 'données partagées : modifiées une seule fois, sur ordinateur');
+  await login(page);
+  const accounts = await (await page.request.get('/api/v1/accounts')).json();
+  const checking = accounts.find((a: { name: string }) => a.name === 'Compte courant');
+  const created = await page.request.post('/api/v1/transactions', {
+    data: {
+      account_id: checking.id,
+      date: '2026-10-18',
+      amount_minor: 4_000,
+      label: 'AVOIR RESTAURANT',
+    },
+  });
+  const { id } = await created.json();
+
+  await page.goto('/transactions?texte=CARTE%20RESTAURANT');
+  await page
+    .locator('.row', { hasText: 'CARTE RESTAURANT' })
+    .first()
+    .getByRole('button')
+    .first()
+    .click();
+  const panel = page.locator('app-refund-panel');
+  await expect(panel).toContainText("N'est remboursée par aucune entrée.");
+  await panel.getByRole('button', { name: 'Lier un remboursement' }).click();
+  const dialog = await openedDialog(page, 'Remboursée par');
+  await dialog.getByLabel('Rechercher une entrée').fill('avoir');
+  await expect(dialog.locator('.row')).toHaveCount(1);
+  await dialog.getByRole('checkbox', { name: 'Rembourse AVOIR RESTAURANT' }).check();
+  await dialog.getByLabel('Montant remboursé de AVOIR RESTAURANT').fill('10');
+  await dialog.getByRole('button', { name: 'Ventiler' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(panel).toContainText(/AVOIR RESTAURANT · 18 oct\.\s*10,00\s€/);
+
+  // L'entrée est ventilée : 10 € remboursent la dépense, 30 € restent à affecter.
+  await page.goto(`/transactions/${id}`);
+  await expect(page.locator('app-refund-panel')).toContainText('CARTE RESTAURANT');
+  await page.request.delete(`/api/v1/transactions/${id}`);
+});

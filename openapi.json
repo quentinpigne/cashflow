@@ -9458,6 +9458,133 @@
         }
       }
     },
+    "/api/v1/transactions/{id}/refunder-candidates": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Entrées d'argent proposées pour rembourser une dépense, vue depuis la dépense (R-TRX-62).",
+        "operationId": "refunderCandidates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Texte du libellé ou du nom du tiers, ou montant de la dépense.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page demandée, à partir de 1.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Taille de la page : 10 par défaut, 100 au plus.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefunderCandidatePage"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{id}/refunders": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Lie à une dépense des entrées d'argent qui la remboursent, depuis la dépense (R-TRX-62).",
+        "operationId": "linkRefunders",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRefundersInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/{id}/transfer": {
       "post": {
         "tags": [
@@ -16004,6 +16131,21 @@
           "PROJECT"
         ]
       },
+      "LinkRefundersInput": {
+        "type": "object",
+        "description": "Entrées liées depuis la dépense, chacune avec le montant qu'elle rembourse (R-TRX-62).",
+        "required": [
+          "links"
+        ],
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefunderLinkInput"
+            }
+          }
+        }
+      },
       "LinkTarget": {
         "type": "object",
         "description": "Objet auquel un document est rattaché : sa nature et son identifiant (R-DOC-9).",
@@ -20019,6 +20161,122 @@
           },
           "transaction_id": {
             "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "RefunderCandidate": {
+        "type": "object",
+        "description": "Une entrée d'argent proposée pour rembourser une dépense (R-TRX-62).",
+        "required": [
+          "transaction_id",
+          "account_name",
+          "date",
+          "label",
+          "amount_minor",
+          "available_minor",
+          "proposed_minor"
+        ],
+        "properties": {
+          "account_name": {
+            "type": "string"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "available_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Ce que l'entrée n'affecte encore à aucune dépense."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "label": {
+            "type": "string"
+          },
+          "payee_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PayeeId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposed_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Montant proposé."
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "RefunderCandidatePage": {
+        "type": "object",
+        "description": "Une page des entrées proposées, dans l'ordre de R-TRX-62.",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "refundable_minor"
+        ],
+        "properties": {
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId",
+                "description": "Catégorie de dépense que recevra la ventilation qui rembourse ; absente, la dépense est à catégoriser\nd'abord (R-TRX-50)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefunderCandidate"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "refundable_minor": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Ce qui reste à rembourser de la dépense."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "RefunderLinkInput": {
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "amount_minor"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transaction_id": {
+            "$ref": "#/components/schemas/TransactionId",
+            "description": "Entrée d'argent qui rembourse."
           }
         }
       },

@@ -29,6 +29,8 @@ import { deleteTransaction } from '../fn/transactions/delete-transaction';
 import { DeleteTransaction$Params } from '../fn/transactions/delete-transaction';
 import { getTransaction } from '../fn/transactions/get-transaction';
 import { GetTransaction$Params } from '../fn/transactions/get-transaction';
+import { linkRefunders } from '../fn/transactions/link-refunders';
+import { LinkRefunders$Params } from '../fn/transactions/link-refunders';
 import { listAllTransactions } from '../fn/transactions/list-all-transactions';
 import { ListAllTransactions$Params } from '../fn/transactions/list-all-transactions';
 import { listTransactions } from '../fn/transactions/list-transactions';
@@ -41,6 +43,9 @@ import { PendingRefunds$Params } from '../fn/transactions/pending-refunds';
 import { RefundCandidatePage } from '../models/refund-candidate-page';
 import { refundCandidates } from '../fn/transactions/refund-candidates';
 import { RefundCandidates$Params } from '../fn/transactions/refund-candidates';
+import { RefunderCandidatePage } from '../models/refunder-candidate-page';
+import { refunderCandidates } from '../fn/transactions/refunder-candidates';
+import { RefunderCandidates$Params } from '../fn/transactions/refunder-candidates';
 import { setExpectedRefund } from '../fn/transactions/set-expected-refund';
 import { SetExpectedRefund$Params } from '../fn/transactions/set-expected-refund';
 import { setTransactionsAddress } from '../fn/transactions/set-transactions-address';
@@ -616,6 +621,76 @@ export class TransactionsService extends BaseService {
     const resp = this.refundCandidates$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<RefundCandidatePage>): RefundCandidatePage => r.body)
+    );
+  }
+
+  /** Path part for operation `refunderCandidates()` */
+  static readonly RefunderCandidatesPath = '/api/v1/transactions/{id}/refunder-candidates';
+
+  /**
+   * Entrées d'argent proposées pour rembourser une dépense, vue depuis la dépense (R-TRX-62).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `refunderCandidates()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  refunderCandidates$Response(params: RefunderCandidates$Params, context?: HttpContext): Observable<StrictHttpResponse<RefunderCandidatePage>> {
+    const obs = refunderCandidates(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Entrées d'argent proposées pour rembourser une dépense, vue depuis la dépense (R-TRX-62).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `refunderCandidates$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  refunderCandidates(params: RefunderCandidates$Params, context?: HttpContext): Observable<RefunderCandidatePage> {
+    const resp = this.refunderCandidates$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<RefunderCandidatePage>): RefunderCandidatePage => r.body)
+    );
+  }
+
+  /** Path part for operation `linkRefunders()` */
+  static readonly LinkRefundersPath = '/api/v1/transactions/{id}/refunders';
+
+  /**
+   * Lie à une dépense des entrées d'argent qui la remboursent, depuis la dépense (R-TRX-62).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `linkRefunders()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  linkRefunders$Response(params: LinkRefunders$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = linkRefunders(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Lie à une dépense des entrées d'argent qui la remboursent, depuis la dépense (R-TRX-62).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `linkRefunders$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  linkRefunders(params: LinkRefunders$Params, context?: HttpContext): Observable<void> {
+    const resp = this.linkRefunders$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
     );
   }
 

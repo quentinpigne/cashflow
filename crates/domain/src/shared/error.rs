@@ -179,6 +179,8 @@ pub enum DomainError {
     InvalidRefund,
     #[error("le remboursé d'une dépense ne dépasse pas son montant")]
     RefundExceedsExpense,
+    #[error("le montant dépasse ce que l'entrée n'affecte encore à aucune dépense")]
+    RefundExceedsAvailable,
     #[error("le remboursement attendu d'une dépense est positif et ne dépasse pas son montant")]
     InvalidExpectedRefund,
 
@@ -306,6 +308,7 @@ impl DomainError {
             AlreadyTransferLeg => "ALREADY_TRANSFER_LEG",
             InvalidRefund => "INVALID_REFUND",
             RefundExceedsExpense => "REFUND_EXCEEDS_EXPENSE",
+            RefundExceedsAvailable => "REFUND_EXCEEDS_AVAILABLE",
             InvalidExpectedRefund => "INVALID_EXPECTED_REFUND",
             CheckpointNotFound => "CHECKPOINT_NOT_FOUND",
             CheckpointAlreadyReconciled => "CHECKPOINT_ALREADY_RECONCILED",
@@ -388,6 +391,7 @@ impl DomainError {
             TransferLegCategorized => "R-TRX-32",
             InvalidRefund => "R-TRX-50",
             RefundExceedsExpense => "R-TRX-52",
+            RefundExceedsAvailable => "R-TRX-62",
             InvalidExpectedRefund => "R-TRX-53",
             CheckpointNotFound => return None,
             CheckpointAlreadyReconciled | CheckpointGapNotZero { .. } => "R-RAP-4",
