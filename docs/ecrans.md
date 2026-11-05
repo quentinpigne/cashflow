@@ -229,7 +229,9 @@ avec le total de chaque groupe. Les biens et les prêts ont leurs propres rubriq
   pointé, ces marques n'apparaissent qu'en phase 2 ;
 - **filtres** : période, catégorie, statut, montant (min, max), texte (libellé et note). Sur mobile, ils
   sont dans un panneau qui s'ouvre depuis une icône ; les filtres actifs apparaissent en puces
-  `[mat-chip]` sous l'en-tête ;
+  `[mat-chip]` sous l'en-tête. Les filtres, le tri et la page sont recopiés dans l'adresse (mêmes noms qu'en
+  E14, plus `tri` et `sens`) : revenir d'une transaction ou d'un autre écran retrouve la liste telle qu'on
+  l'a laissée ;
 - sur ordinateur : `[mat-table]` triable avec défilement virtuel `[cdk-virtual-scroll]` ; sur mobile :
   une liste groupée par jour, montant à droite, solde après opération en petit dessous ;
 - un toucher ouvre la transaction ([E7](#e7--détail-dune-transaction-trx-01-trx-03-trx-05)) ;

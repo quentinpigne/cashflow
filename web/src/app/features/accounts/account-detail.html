@@ -335,7 +335,7 @@
             (page)="changePage($event)"
           />
         }
-      } @else if (page.isLoading()) {
+      } @else if (result.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       }
       <app-account-statements [accountId]="a.id" />

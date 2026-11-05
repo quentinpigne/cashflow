@@ -3,7 +3,6 @@ import {
   Component,
   OnInit,
   computed,
-  effect,
   ElementRef,
   inject,
   input,
@@ -25,7 +24,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { ClearingStatus } from '../../api/models/clearing-status';
@@ -59,6 +58,7 @@ import {
 import { MemberTag } from '../../shared/member-tag';
 import { RefundMark } from '../../shared/refund-mark';
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../../core/page-size';
+import { syncQueryParams } from '../../core/query-params';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 import { AddressDialogData, AddressDialogResult, TransactionAddressDialog } from './address-dialog';
 
@@ -123,8 +123,6 @@ export class TransactionsPage implements OnInit {
   readonly justificatif = input<string>();
   /** Page affichée, à partir de 1. */
   readonly page = input<string>();
-  private readonly route = inject(ActivatedRoute);
-  private urlTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly statuses: ClearingStatus[] = ['PENDING', 'CLEARED', 'RECONCILED'];
@@ -214,23 +212,7 @@ export class TransactionsPage implements OnInit {
   );
 
   constructor() {
-    // Les filtres et la page sont recopiés dans l'URL, sans créer d'entrée d'historique ; l'écriture est
-    // différée pour ne pas réécrire l'URL à chaque frappe dans le champ texte.
-    effect((onCleanup) => {
-      const params = this.queryParams();
-      clearTimeout(this.urlTimer);
-      this.urlTimer = setTimeout(() => {
-        // Une navigation en cours (ouverture d'une transaction) ne doit pas être remplacée.
-        if (this.router.currentNavigation()) return;
-        const target = this.router.createUrlTree([], {
-          relativeTo: this.route,
-          queryParams: params,
-        });
-        if (this.router.serializeUrl(target) === this.router.url) return;
-        void this.router.navigateByUrl(target, { replaceUrl: true });
-      }, 300);
-      onCleanup(() => clearTimeout(this.urlTimer));
-    });
+    syncQueryParams(() => this.queryParams());
   }
 
   private readonly queryParams = computed(() => {

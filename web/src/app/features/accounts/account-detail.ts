@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   ElementRef,
+  OnInit,
   inject,
   input,
   linkedSignal,
@@ -35,7 +36,8 @@ import { AccountsService } from '../../api/services/accounts.service';
 import { TransactionsService } from '../../api/services/transactions.service';
 import { DataVersion } from '../../core/data-version';
 import { keptValue } from '../../core/resources';
-import { formatDate, formatMonthKey, toIsoDate } from '../../core/dates';
+import { formatDate, formatMonthKey, fromIsoDate, toIsoDate } from '../../core/dates';
+import { syncQueryParams } from '../../core/query-params';
 import { errorMessage } from '../../core/http-errors';
 import { ClearingStatus } from '../../api/models/clearing-status';
 import { ReconciliationService } from '../../api/services/reconciliation.service';
@@ -125,7 +127,7 @@ const SORTS: Record<string, TransactionSort> = { date: 'DATE', label: 'LABEL', a
   templateUrl: './account-detail.html',
   styleUrl: './account-detail.scss',
 })
-export class AccountDetailPage {
+export class AccountDetailPage implements OnInit {
   protected readonly members = inject(MembersStore);
   private readonly accountsApi = inject(AccountsService);
   private readonly transactionsApi = inject(TransactionsService);
@@ -139,6 +141,20 @@ export class AccountDetailPage {
   protected readonly categories = inject(CategoriesStore);
 
   readonly id = input.required<string>();
+  // Filtres, tri et page, recopiés dans l'adresse : le retour depuis une transaction retrouve la liste telle
+  // qu'on l'a laissée (mêmes noms qu'en E14).
+  readonly du = input<string>();
+  readonly au = input<string>();
+  readonly categorie = input<string>();
+  readonly statut = input<string>();
+  readonly min_montant = input<string>();
+  readonly max_montant = input<string>();
+  readonly texte = input<string>();
+  /** `date`, `label` ou `amount`, et `asc`, `desc` ou `aucun`. */
+  readonly tri = input<string>();
+  readonly sens = input<string>();
+  /** Page affichée, à partir de 1. */
+  readonly page = input<string>();
 
   protected readonly kindLabels = KIND_LABELS;
   protected readonly columns = ['status', 'date', 'label', 'category', 'amount', 'balance'];
@@ -156,6 +172,47 @@ export class AccountDetailPage {
   private readonly listTop = viewChild<ElementRef<HTMLElement>>('listTop');
   protected readonly selected = signal<string | null>(null);
   protected readonly sort = signal<Sort>({ active: 'date', direction: 'desc' });
+
+  constructor() {
+    syncQueryParams(() => {
+      const f = this.filters();
+      const sort = this.sort();
+      const defaultSort = sort.active === 'date' && sort.direction === 'desc';
+      return {
+        du: f.from ? toIsoDate(f.from) : null,
+        au: f.to ? toIsoDate(f.to) : null,
+        categorie: f.category,
+        statut: f.status,
+        min_montant: f.min.trim() || null,
+        max_montant: f.max.trim() || null,
+        texte: f.text || null,
+        tri: defaultSort ? null : sort.active,
+        sens: defaultSort ? null : sort.direction || 'aucun',
+        page: this.pageIndex() > 0 ? String(this.pageIndex() + 1) : null,
+      };
+    });
+  }
+
+  /** Les filtres, le tri et la page de l'adresse s'appliquent au chargement. */
+  ngOnInit(): void {
+    const status = this.statuses.find((s) => s === this.statut()) ?? null;
+    this.filters.set({
+      from: this.du() ? fromIsoDate(this.du() as string) : null,
+      to: this.au() ? fromIsoDate(this.au() as string) : null,
+      category: this.categorie() ?? null,
+      status,
+      min: this.min_montant() ?? '',
+      max: this.max_montant() ?? '',
+      text: this.texte() ?? '',
+    });
+    const active = this.tri();
+    if (active && active in SORTS) {
+      const sens = this.sens();
+      this.sort.set({ active, direction: sens === 'asc' ? 'asc' : sens === 'aucun' ? '' : 'desc' });
+    }
+    const page = Number(this.page());
+    if (Number.isInteger(page) && page > 1) this.pageIndex.set(page - 1);
+  }
   protected readonly iban = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
 
@@ -168,7 +225,7 @@ export class AccountDetailPage {
       }),
   });
 
-  protected readonly page = rxResource({
+  protected readonly result = rxResource({
     params: () => ({
       id: this.id(),
       filters: this.filters(),
@@ -201,7 +258,7 @@ export class AccountDetailPage {
 
   /** Compte et transactions affichés, gardés pendant un rechargement : la page ne revient pas en haut. */
   protected readonly current = keptValue(this.account, this.id);
-  protected readonly currentPage = keptValue(this.page, this.id);
+  protected readonly currentPage = keptValue(this.result, this.id);
 
   /** Transactions de la page, dans l'ordre choisi (trié par le serveur). */
   protected readonly items = computed<TransactionListItem[]>(() => this.currentPage()?.items ?? []);
