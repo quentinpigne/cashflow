@@ -135,6 +135,8 @@ pub enum DomainError {
     InvalidPayeeMerge,
     #[error("une jambe de virement interne n'a pas de tiers")]
     PayeeOnTransferLeg,
+    #[error("un virement n'a pas d'adresse")]
+    AddressOnTransferLeg,
     #[error("un tiers archivé ne reçoit plus de transactions : le désarchiver d'abord")]
     PayeeArchived,
     #[error("une adresse a au moins une ville et un pays")]
@@ -287,6 +289,7 @@ impl DomainError {
             PayeeInUse => "PAYEE_IN_USE",
             InvalidPayeeMerge => "INVALID_PAYEE_MERGE",
             PayeeOnTransferLeg => "PAYEE_ON_TRANSFER_LEG",
+            AddressOnTransferLeg => "ADDRESS_ON_TRANSFER_LEG",
             PayeeArchived => "PAYEE_ARCHIVED",
             MemberNameTaken => "MEMBER_NAME_TAKEN",
             InvalidMemberColor => "INVALID_MEMBER_COLOR",
@@ -372,6 +375,7 @@ impl DomainError {
             PayeeInUse => "R-TIE-5",
             InvalidPayeeMerge => "R-TIE-7",
             PayeeOnTransferLeg => "R-TIE-11",
+            AddressOnTransferLeg => "R-TRX-59",
             PayeeArchived => "R-TIE-33",
             MemberNameTaken | InvalidMemberColor => "R-MBR-1",
             MemberOnTransfer => "R-MBR-5",

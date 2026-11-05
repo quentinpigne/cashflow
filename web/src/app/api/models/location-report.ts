@@ -28,8 +28,8 @@ export interface LocationReport {
   lines: Array<LocationLine>;
 
   /**
-   * Tiers qui ont un montant sur la période mais ne figurent pas sur la carte : sans coordonnées, outre-mer,
-   * étranger.
+   * Lieux (tiers ou adresses de transaction) qui ont un montant sur la période mais ne figurent pas sur la
+   * carte : sans coordonnées, outre-mer, étranger.
    */
   off_map: number;
   period: ReportPeriod;

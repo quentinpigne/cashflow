@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT address_line, postal_code, city, country_code, latitude_e6, longitude_e6\n           FROM transaction_address WHERE transaction_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "address_line",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "address_line"
+          }
+        }
+      },
+      {
+        "name": "postal_code",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "postal_code"
+          }
+        }
+      },
+      {
+        "name": "city",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "city"
+          }
+        }
+      },
+      {
+        "name": "country_code",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "country_code"
+          }
+        }
+      },
+      {
+        "name": "latitude_e6",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "latitude_e6"
+          }
+        }
+      },
+      {
+        "name": "longitude_e6",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "longitude_e6"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "b8eb142283f6f5fc5e75b173faf893f63983bafed54ff8e5cd51a2579fd564b4"
+}

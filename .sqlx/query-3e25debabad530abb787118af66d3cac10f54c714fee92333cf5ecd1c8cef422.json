@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO transaction_address\n                   (transaction_id, address_line, postal_code, city, country_code, latitude_e6, longitude_e6)\n               VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "3e25debabad530abb787118af66d3cac10f54c714fee92333cf5ecd1c8cef422"
+}

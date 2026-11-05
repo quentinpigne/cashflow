@@ -162,7 +162,7 @@ import { confirm } from '../../shared/confirm-dialog';
             >Recherche d'adresse (Base Adresse Nationale)</mat-slide-toggle
           >
           <p class="muted small">
-            Le texte saisi dans la recherche d'adresse d'un tiers est envoyé à
+            Le texte saisi dans la recherche d'adresse d'un tiers ou d'une transaction est envoyé à
             api-adresse.data.gouv.fr, pour proposer l'adresse et la placer sur la carte des
             analyses.
           </p>

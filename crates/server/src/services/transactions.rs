@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqliteConnection;
 use utoipa::{IntoParams, ToSchema};
 
+use super::payees::{AddressInput, AddressView};
 use super::{check_split_sums, clean, reconciliation, required};
 use crate::db::accounts::AccountRow;
 use crate::db::transactions::{NewSplit, NewTransaction, SplitRow, TransactionUpdate, TransferSide};
@@ -97,6 +98,8 @@ pub struct TransactionListItem {
     pub has_documents: bool,
     /// Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date (R-TRX-57).
     pub analysis_month: Option<String>,
+    /// Ville de l'adresse propre de la transaction, si elle en a une (R-TRX-59).
+    pub address_city: Option<String>,
     /// Solde du compte après cette opération (TRX-02) ; absent dans la vue transverse (TRX-08).
     pub balance_after_minor: Option<i64>,
     /// Remboursements de frais (TRX-12) ; absent si la transaction n'en rembourse aucune, n'est remboursée par
@@ -237,6 +240,8 @@ pub struct TransactionDetail {
     pub payee_id: Option<PayeeId>,
     /// Mois d'analyse `AAAA-MM`, s'il diffère du mois de la date ; modifiable même rapprochée (R-TRX-57, R-TRX-3).
     pub analysis_month: Option<String>,
+    /// Adresse propre, prioritaire sur celle du tiers ; modifiable même rapprochée (R-TRX-59 à R-TRX-61).
+    pub address: Option<AddressView>,
     pub splits: Vec<Split>,
     pub transfer: Option<TransferSummary>,
     /// Échéance de prêt payée par cette transaction (R-PRE-6).
@@ -359,6 +364,20 @@ pub struct BulkCategorizeInput {
 pub struct BulkCategorizeResult {
     pub categorized: usize,
     /// Virements et transactions ventilées, laissés tels quels.
+    pub skipped: usize,
+}
+
+/// Adresse affectée en masse (TRX-15, R-TRX-61) ; absente, l'adresse propre est retirée.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BulkAddressInput {
+    pub transaction_ids: Vec<TransactionId>,
+    pub address: Option<AddressInput>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BulkAddressResult {
+    pub updated: usize,
+    /// Jambes de virement, laissées sans adresse (R-TRX-59).
     pub skipped: usize,
 }
 
@@ -502,6 +521,7 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
                 payee_id: t.payee_id,
                 splits: tx_splits,
                 has_documents: selection.documented.contains(&t.id),
+                address_city: selection.cities.get(&t.id).cloned(),
                 analysis_month: t.analysis_month.map(|m| m.to_string()),
                 transfer: transfers.get(&t.id).map(|side| transfer_summary(side, &names)),
                 balance_after_minor: Some(balance_after.minor()),
@@ -527,7 +547,9 @@ pub async fn get(db: &Db, id: TransactionId) -> AppResult<TransactionDetail> {
         None => None,
     };
     let refund = super::refunds::info(&mut *db.write.acquire().await?, &t).await?;
+    let address = db::transactions::address(&db.write, id).await?;
     Ok(TransactionDetail {
+        address: address.as_ref().map(AddressView::from),
         id: t.id,
         account_id: t.account_id,
         account_name: account.name,
@@ -937,6 +959,8 @@ struct Selection {
     text: Option<String>,
     documented: HashSet<TransactionId>,
     analysis_month: Option<Month>,
+    /// Ville des transactions qui ont leur propre adresse (R-TRX-59).
+    cities: HashMap<TransactionId, String>,
 }
 
 async fn selection(db: &Db, filter: &TransactionFilter) -> AppResult<Selection> {
@@ -947,6 +971,7 @@ async fn selection(db: &Db, filter: &TransactionFilter) -> AppResult<Selection> 
         text: clean(filter.text.as_deref()).map(|t| t.to_lowercase()),
         documented: documented.iter().filter_map(|id| id.parse().ok()).collect(),
         analysis_month: filter.analysis_month.as_deref().map(parse_month).transpose()?,
+        cities: db::transactions::address_cities(&db.read).await?,
     })
 }
 
@@ -1064,6 +1089,7 @@ pub async fn list_all(db: &Db, filter: &TransactionFilter) -> AppResult<Transact
                 payee_id: t.payee_id,
                 splits: tx_splits,
                 has_documents: selection.documented.contains(&t.id),
+                address_city: selection.cities.get(&t.id).cloned(),
                 analysis_month: t.analysis_month.map(|m| m.to_string()),
                 transfer: side.map(|s| transfer_summary(s, &accounts)),
                 balance_after_minor: None,
@@ -1092,6 +1118,30 @@ pub async fn categorize_many(db: &Db, input: &BulkCategorizeInput) -> AppResult<
             }
             _ => result.skipped += 1,
         }
+    }
+    tx.commit().await?;
+    Ok(result)
+}
+
+/// Donne une adresse propre à plusieurs transactions, ou la leur retire (TRX-15, R-TRX-59, R-TRX-61). Les jambes
+/// de virement sont laissées sans adresse ; une transaction rapprochée change d'adresse sans déverrouillage.
+pub async fn set_address_many(db: &Db, input: &BulkAddressInput) -> AppResult<BulkAddressResult> {
+    let mut result = BulkAddressResult { updated: 0, skipped: 0 };
+    let mut tx = db.write.begin().await?;
+    for id in &input.transaction_ids {
+        if db::transactions::find(&mut *tx, *id).await?.is_none() {
+            return Err(AppError::NotFound("transaction"));
+        }
+        let is_transfer = db::transactions::transfer_of(&mut *tx, *id).await?.is_some();
+        if cashflow_domain::payees::location::check_transfer_address(input.address.is_some(), is_transfer).is_err() {
+            result.skipped += 1;
+            continue;
+        }
+        // Des coordonnées reprises d'une autre adresse ne valent pas pour celle-ci (R-TIE-25).
+        let previous = db::transactions::address(&mut *tx, *id).await?;
+        let address = super::payees::address(input.address.as_ref(), previous.as_ref())?;
+        db::transactions::set_address(&mut tx, *id, address.as_ref()).await?;
+        result.updated += 1;
     }
     tx.commit().await?;
     Ok(result)

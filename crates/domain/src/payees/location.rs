@@ -104,6 +104,16 @@ impl PayeeAddress {
     }
 }
 
+/// Une jambe de virement n'a pas d'adresse, comme elle n'a pas de tiers (R-TRX-59, R-TIE-11).
+pub fn check_transfer_address(has_address: bool, is_transfer_leg: bool) -> Result<(), DomainError> {
+    if has_address && is_transfer_leg { Err(DomainError::AddressOnTransferLeg) } else { Ok(()) }
+}
+
+/// Lieu d'une transaction : son adresse propre, sinon celle de son tiers (R-TRX-60).
+pub fn place<'a>(own: Option<&'a PayeeAddress>, payee: Option<&'a PayeeAddress>) -> Option<&'a PayeeAddress> {
+    own.or(payee)
+}
+
 /// Département français.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Department {
@@ -285,6 +295,23 @@ mod tests {
 
     fn address(postal_code: &str, city: &str, country: &str) -> PayeeAddress {
         PayeeAddress::new(None, s(postal_code), s(city), s(country), None).unwrap().unwrap()
+    }
+
+    #[test]
+    fn r_trx_60_own_address_comes_before_the_payee_one() {
+        let annecy = address("74000", "Annecy", "FR");
+        let meylan = address("38240", "Meylan", "FR");
+        assert_eq!(place(Some(&annecy), Some(&meylan)), Some(&annecy));
+        assert_eq!(place(None, Some(&meylan)), Some(&meylan));
+        assert_eq!(place(Some(&annecy), None), Some(&annecy));
+        assert_eq!(place(None, None), None);
+    }
+
+    #[test]
+    fn r_trx_59_a_transfer_leg_has_no_address() {
+        assert_eq!(check_transfer_address(true, true), Err(DomainError::AddressOnTransferLeg));
+        assert!(check_transfer_address(false, true).is_ok());
+        assert!(check_transfer_address(true, false).is_ok());
     }
 
     #[test]

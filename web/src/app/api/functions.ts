@@ -105,6 +105,8 @@ export type { ListAllTransactions$Params as ListAllTransactions$Params } from '.
 export { listAllTransactions as listAllTransactions } from './fn/transactions/list-all-transactions';
 export type { CreateTransaction$Params as CreateTransaction$Params } from './fn/transactions/create-transaction';
 export { createTransaction as createTransaction } from './fn/transactions/create-transaction';
+export type { SetTransactionsAddress$Params as SetTransactionsAddress$Params } from './fn/transactions/set-transactions-address';
+export { setTransactionsAddress as setTransactionsAddress } from './fn/transactions/set-transactions-address';
 export type { SetTransactionsAnalysisMonth$Params as SetTransactionsAnalysisMonth$Params } from './fn/transactions/set-transactions-analysis-month';
 export { setTransactionsAnalysisMonth as setTransactionsAnalysisMonth } from './fn/transactions/set-transactions-analysis-month';
 export type { CategorizeTransactions$Params as CategorizeTransactions$Params } from './fn/transactions/categorize-transactions';

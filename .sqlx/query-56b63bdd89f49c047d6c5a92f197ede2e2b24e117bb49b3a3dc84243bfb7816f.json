@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT transaction_id AS \"transaction_id!\", city FROM transaction_address",
+  "describe": {
+    "columns": [
+      {
+        "name": "transaction_id!",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "transaction_id"
+          }
+        }
+      },
+      {
+        "name": "city",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "city"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "56b63bdd89f49c047d6c5a92f197ede2e2b24e117bb49b3a3dc84243bfb7816f"
+}

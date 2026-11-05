@@ -1,8 +1,11 @@
 //! Transactions, ventilations et virements (spec 02).
 
+use std::collections::HashMap;
+
 use cashflow_domain::budgeting::Month;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::ledger::{ClearingStatus, TransactionOrigin};
+use cashflow_domain::payees::location::PayeeAddress;
 use cashflow_domain::shared::ids::{
     AccountId, AssetId, CategoryId, LoanId, MemberId, PayeeId, ProjectId, ProjectLineId, RecurringRuleId, SplitId,
     TransactionId, TransferId,
@@ -448,6 +451,67 @@ pub async fn set_payee(db: impl SqliteExecutor<'_>, id: TransactionId, payee: Op
     sqlx::query!("UPDATE ledger_transaction SET payee_id = ?, updated_at = ? WHERE id = ?", payee, now, id)
         .execute(db)
         .await?;
+    Ok(())
+}
+
+/// Adresse propre d'une transaction (R-TRX-59).
+pub async fn address(db: impl SqliteExecutor<'_>, id: TransactionId) -> anyhow::Result<Option<PayeeAddress>> {
+    let id = id.to_string();
+    let row = sqlx::query!(
+        r#"SELECT address_line, postal_code, city, country_code, latitude_e6, longitude_e6
+           FROM transaction_address WHERE transaction_id = ?"#,
+        id
+    )
+    .fetch_optional(db)
+    .await?;
+    match row {
+        Some(r) => super::payees::address_from_db(
+            r.address_line,
+            r.postal_code,
+            Some(r.city),
+            Some(r.country_code),
+            r.latitude_e6,
+            r.longitude_e6,
+        ),
+        None => Ok(None),
+    }
+}
+
+/// Ville des transactions qui ont leur propre adresse, pour les listes.
+pub async fn address_cities(db: impl SqliteExecutor<'_>) -> anyhow::Result<HashMap<TransactionId, String>> {
+    let rows = sqlx::query!(r#"SELECT transaction_id AS "transaction_id!", city FROM transaction_address"#)
+        .fetch_all(db)
+        .await?;
+    rows.into_iter().map(|r| Ok((id_from_db(&r.transaction_id)?, r.city))).collect()
+}
+
+/// Remplace l'adresse propre d'une transaction, ou la retire (R-TRX-61).
+pub async fn set_address(
+    conn: &mut SqliteConnection,
+    id: TransactionId,
+    address: Option<&PayeeAddress>,
+) -> anyhow::Result<()> {
+    let id = id.to_string();
+    sqlx::query!("DELETE FROM transaction_address WHERE transaction_id = ?", id).execute(&mut *conn).await?;
+    if address.is_some() {
+        let c = super::payees::address_columns(address);
+        sqlx::query!(
+            r#"INSERT INTO transaction_address
+                   (transaction_id, address_line, postal_code, city, country_code, latitude_e6, longitude_e6)
+               VALUES (?, ?, ?, ?, ?, ?, ?)"#,
+            id,
+            c.line,
+            c.postal_code,
+            c.city,
+            c.country_code,
+            c.latitude_e6,
+            c.longitude_e6
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
+    let now = timestamp();
+    sqlx::query!("UPDATE ledger_transaction SET updated_at = ? WHERE id = ?", now, id).execute(&mut *conn).await?;
     Ok(())
 }
 

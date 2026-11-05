@@ -111,7 +111,8 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Adresse (d'un tiers) | `PayeeAddress` | Ligne d'adresse, code postal, ville et pays d'un tiers (R-TIE-23). Facultative. |
 | Coordonnées | `GeoPoint` | Latitude et longitude d'une adresse, en millionièmes de degré (`latitude_e6`, `longitude_e6`), entiers. |
 | Département | `Department` | Département français, déduit du code postal (R-TIE-24) ; code `38`, `2A`, `974`. |
-| Lieu | `Location` | Pays, département ou ville selon lequel l'analyse par lieu regroupe les tiers (R-TIE-28). |
+| Adresse (d'une transaction) | `TransactionAddress` | Adresse propre à une transaction, de même forme que celle d'un tiers ; elle l'emporte sur celle du tiers (R-TRX-59, ADR-0029). |
+| Lieu | `Location` | Pays, département ou ville selon lequel l'analyse par lieu regroupe les transactions : celui de leur adresse, à défaut de leur tiers (R-TIE-28, R-TRX-60). |
 | Recherche d'adresse, géocodage | `Geocoding` | Proposition d'adresses et de coordonnées par la Base Adresse Nationale (BAN), à partir d'un texte saisi (R-TIE-26, ADR-0025). |
 | Clé de tiers | `payee_key` | Clé d'apprentissage d'un libellé bancaire sans les mots d'opération (`CB`, `PRLV`…) : « CARREFOUR MEYLAN ». Deux libellés de même clé sont « proches » (R-TIE-30). |
 | Proposition de tiers | `PayeeSuggestion` | Transactions sans tiers de même clé de tiers, au moins deux, avec un nom ou un tiers existant suggéré ; rien n'est stocké (R-TIE-31, R-TIE-32). |

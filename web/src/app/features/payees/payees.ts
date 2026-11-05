@@ -16,7 +16,7 @@ import { PayeeView } from '../../api/models/payee-view';
 import { PayeesService } from '../../api/services/payees.service';
 import { DataVersion } from '../../core/data-version';
 import { PayeesStore } from '../../shared/stores';
-import { formatCity } from './address';
+import { formatCity } from '../../shared/address';
 import { PayeeActions } from './payee-actions';
 import { BackLink } from '../../shared/back-link';
 

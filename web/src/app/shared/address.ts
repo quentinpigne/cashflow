@@ -1,4 +1,5 @@
-import { AddressView } from '../../api/models/address-view';
+import { AddressInput } from '../api/models/address-input';
+import { AddressView } from '../api/models/address-view';
 
 const regionNames = new Intl.DisplayNames(['fr'], { type: 'region', fallback: 'none' });
 
@@ -67,4 +68,17 @@ export function mapLink(address: AddressView): string | null {
   const lat = (address.latitude_e6 / 1_000_000).toFixed(6);
   const lon = (address.longitude_e6 / 1_000_000).toFixed(6);
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=18/${lat}/${lon}`;
+}
+
+/** Une adresse enregistrée, renvoyée à l'API telle qu'elle (R-TIE-23). */
+export function addressInput(address: AddressView | null | undefined): AddressInput | null {
+  if (!address) return null;
+  return {
+    line: address.line ?? null,
+    postal_code: address.postal_code ?? null,
+    city: address.city,
+    country_code: address.country_code,
+    latitude_e6: address.latitude_e6 ?? null,
+    longitude_e6: address.longitude_e6 ?? null,
+  };
 }

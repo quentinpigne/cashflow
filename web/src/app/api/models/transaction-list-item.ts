@@ -12,6 +12,11 @@ import { TransferSummary } from '../models/transfer-summary';
 export interface TransactionListItem {
   account_id: AccountId;
   account_name: string;
+
+  /**
+   * Ville de l'adresse propre de la transaction, si elle en a une (R-TRX-59).
+   */
+  address_city?: (string | null);
   amount_minor: number;
 
   /**

@@ -82,6 +82,7 @@ erDiagram
     Account ||--o{ Valuation : "valorisé (si épargne variable)"
     Account ||--o{ Transaction : "porte"
     Transaction ||--|{ Split : "ventilée en"
+    Transaction ||--o| TransactionAddress : "localisée à"
     Category ||--o{ Split : "classe"
     Category ||--o{ Category : "parent de"
     PayeeGroup ||--o{ Payee : "regroupe"
@@ -226,6 +227,21 @@ Un taux s'applique de `effective_from` jusqu'au `effective_from` suivant (exclu)
 
 Index : (`account_id`, `balance_date`), (`account_id`, `date`), (`account_id`, `clearing_status`), `fingerprint`,
 (`payee_id`, `date`).
+
+### TransactionAddress (adresse d'une transaction, 0..1 par transaction)
+
+| Champ | Type | Contraintes |
+|---|---|---|
+| `transaction_id` | `Id` → Transaction | clé primaire, suppression en cascade ; jamais une jambe de virement (R-TRX-59) |
+| `address_line` | texte ≤ 200 | optionnel |
+| `postal_code` | texte ≤ 10 | optionnel ; 5 chiffres si `country_code` = `FR` |
+| `city` | texte ≤ 80 | requis |
+| `country_code` | texte 2 | requis, ISO 3166-1 alpha-2 en majuscules |
+| `latitude_e6` | entier | optionnel, comme pour un tiers (R-TIE-25) |
+| `longitude_e6` | entier | optionnel ; présent si et seulement si `latitude_e6` l'est |
+
+Mêmes règles que l'adresse d'un tiers (R-TIE-23 à R-TIE-26). Le lieu d'une transaction est cette adresse, à
+défaut celle de son tiers (R-TRX-60). Décision : ADR-0029.
 
 ### Split
 

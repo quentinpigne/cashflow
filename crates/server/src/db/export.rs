@@ -39,6 +39,7 @@ pub const TABLES: &[&str] = &[
     "project",
     "ledger_transaction",
     "split",
+    "transaction_address",
     "transfer",
     "loan_payment",
     "import_profile",

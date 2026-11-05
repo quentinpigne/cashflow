@@ -5,7 +5,7 @@ use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::import::rules::{Actions, Conditions, LabelCondition, LabelField, LabelOp, SplitShare};
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::recurrence::Frequency;
-use cashflow_domain::shared::ids::{AccountId, CategoryId, PayeeGroupId, PayeeId};
+use cashflow_domain::shared::ids::{AccountId, CategoryId, PayeeGroupId, PayeeId, TransactionId};
 
 use super::imports::{self, CommitInput, Upload};
 use super::payees::{
@@ -16,7 +16,10 @@ use super::reconciliation::{self, CheckpointInput};
 use super::recurring::{self, MaterializeInput, RecurringRuleInput};
 use super::rules::{self, ApplyInput, PreviewQuery, RuleInput};
 use super::tests::{TODAY, account, category, d, domain_error, setup, tx};
-use super::transactions::{self, BulkPayeeInput, TransactionFilter, TransactionInput, TransactionUpdateInput};
+use super::transactions::{
+    self, BulkAddressInput, BulkAddressResult, BulkPayeeInput, TransactionFilter, TransactionInput,
+    TransactionUpdateInput,
+};
 use super::transfers::{self, MarkAsTransferInput};
 use crate::config::DataDir;
 use crate::db::Db;
@@ -593,4 +596,83 @@ async fn r_tie_24_r_tie_28_r_tie_29_report_by_city_department_and_map() {
     let by_country = payees::location_report(&db, &query(LocationGrouping::Country), d(TODAY)).await.unwrap();
     let countries: Vec<_> = by_country.lines.iter().map(|l| (l.name.as_str(), l.amount_minor)).collect();
     assert_eq!(countries, [("FR", 13_000), ("GB", 500), ("Sans adresse", 1_000)]);
+}
+
+async fn set_address(db: &Db, ids: Vec<TransactionId>, address: Option<AddressInput>) -> BulkAddressResult {
+    transactions::set_address_many(db, &BulkAddressInput { transaction_ids: ids, address }).await.unwrap()
+}
+
+/// Critères d'acceptation de TRX-15 : l'adresse d'une transaction l'emporte sur celle de son tiers, et localise une
+/// transaction sans tiers (R-TRX-59 à R-TRX-61).
+#[tokio::test]
+async fn trx_15_r_trx_60_own_address_comes_before_the_payee_one() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let savings = account(&db, "Livret", AccountKind::LivretA, 0).await;
+    let food = category(&db, "Alimentation", CategoryKind::Expense, None).await;
+    let carrefour = located(&db, "Carrefour", address("38240", "Meylan", "FR", Some((45_231_000, 5_781_000)))).await;
+    let at_home =
+        transactions::create(&db, &paid(checking, "2026-03-10", -10_000, Some(food), carrefour)).await.unwrap();
+    let away = transactions::create(&db, &paid(checking, "2026-03-11", -6_000, Some(food), carrefour)).await.unwrap();
+    let market = transactions::create(&db, &tx(checking, "2026-03-12", -4_500, Some(food))).await.unwrap();
+    let lunch = transactions::create(&db, &tx(checking, "2026-03-13", -1_500, Some(food))).await.unwrap();
+    let transfer = transfers::create(
+        &db,
+        &super::transfers::TransferInput {
+            from_account_id: checking,
+            to_account_id: savings,
+            amount_minor: 5_000,
+            date: d("2026-03-14"),
+            label: "Épargne".into(),
+            note: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let annecy = address("74000", "Annecy", "FR", Some((45_899_000, 6_129_000)));
+    let result = set_address(&db, vec![away, market, lunch, transfer.outflow_transaction_id], annecy).await;
+    assert_eq!((result.updated, result.skipped), (3, 1));
+    let detail = transactions::get(&db, market).await.unwrap();
+    assert_eq!(detail.address.map(|a| a.city), Some("Annecy".into()));
+    assert!(transactions::get(&db, transfer.outflow_transaction_id).await.unwrap().address.is_none());
+    let page = transactions::list_all(&db, &TransactionFilter::default()).await.unwrap();
+    let city = |id| page.items.iter().find(|i| i.id == id).unwrap().address_city.clone();
+    assert_eq!((city(market), city(at_home)), (Some("Annecy".into()), None));
+
+    let query = |group_by| LocationReportQuery {
+        period: Some(ReportPeriod::Month),
+        month: Some("2026-03".into()),
+        group_by: Some(group_by),
+        ..Default::default()
+    };
+    let by_city = payees::location_report(&db, &query(LocationGrouping::City), d(TODAY)).await.unwrap();
+    let summary: Vec<_> = by_city.lines.iter().map(|l| (l.name.as_str(), l.amount_minor, l.transactions)).collect();
+    assert_eq!(summary, [("Annecy", 12_000, 3), ("Meylan", 10_000, 1)]);
+    // Annecy se déplie en Carrefour (l'achat fait là-bas), puis « Sans tiers ».
+    let annecy_payees: Vec<_> =
+        by_city.lines[0].payees.iter().map(|p| (p.payee_id, p.name.as_str(), p.amount_minor)).collect();
+    assert_eq!(annecy_payees, [(Some(carrefour), "Carrefour", 6_000), (None, "Sans tiers", 6_000)]);
+    // Carte : Carrefour à Meylan, et l'adresse d'Annecy, un seul point pour trois transactions.
+    let points: Vec<_> = by_city.points.iter().map(|p| (p.payee_id, p.amount_minor)).collect();
+    assert_eq!(points, [(None, 12_000), (Some(carrefour), 10_000)]);
+    assert_eq!(by_city.off_map, 0);
+
+    // Retirer l'adresse rend la transaction à son tiers, et sort de l'analyse celle qui n'en a pas.
+    set_address(&db, vec![away, market], None).await;
+    let by_city = payees::location_report(&db, &query(LocationGrouping::City), d(TODAY)).await.unwrap();
+    let summary: Vec<_> = by_city.lines.iter().map(|l| (l.name.as_str(), l.amount_minor)).collect();
+    assert_eq!(summary, [("Meylan", 16_000), ("Annecy", 1_500)]);
+
+    // Rapprochée, une transaction change d'adresse (R-TRX-61).
+    sqlx::query("UPDATE ledger_transaction SET clearing_status = 'RECONCILED' WHERE id = ?")
+        .bind(at_home.to_string())
+        .execute(&db.write)
+        .await
+        .unwrap();
+    assert_eq!(set_address(&db, vec![at_home], address("74000", "Annecy", "FR", None)).await.updated, 1);
+    // Une adresse incomplète est refusée (R-TIE-23).
+    let incomplete = Some(AddressInput { postal_code: Some("74000".into()), ..Default::default() });
+    let input = BulkAddressInput { transaction_ids: vec![lunch], address: incomplete };
+    assert_eq!(domain_error(transactions::set_address_many(&db, &input).await), DomainError::AddressIncomplete);
 }

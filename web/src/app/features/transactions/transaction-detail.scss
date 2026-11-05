@@ -99,3 +99,28 @@ header {
     flex: 1;
   }
 }
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  > mat-icon {
+    color: var(--mat-sys-primary);
+
+    &.off {
+      color: var(--mat-sys-outline);
+    }
+  }
+
+  .place-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .small {
+    font-size: 0.85em;
+  }
+}

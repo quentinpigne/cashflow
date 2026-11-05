@@ -9,9 +9,10 @@ use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
 use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
 use crate::services::transactions::{
-    self, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput, BulkCategorizeResult, BulkMemberInput,
-    BulkMemberResult, BulkPayeeInput, BulkPayeeResult, BulkSplitInput, BulkSplitResult, CategorizeInput,
-    TransactionDetail, TransactionFilter, TransactionInput, TransactionPage, TransactionUpdateInput,
+    self, BulkAddressInput, BulkAddressResult, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput,
+    BulkCategorizeResult, BulkMemberInput, BulkMemberResult, BulkPayeeInput, BulkPayeeResult, BulkSplitInput,
+    BulkSplitResult, CategorizeInput, TransactionDetail, TransactionFilter, TransactionInput, TransactionPage,
+    TransactionUpdateInput,
 };
 use crate::services::transfers::{
     self, Candidate, CandidatesQuery, MarkAsTransferInput, TransferCreated, TransferInput,
@@ -173,6 +174,19 @@ pub async fn categorize_many(
     Json(input): Json<BulkCategorizeInput>,
 ) -> AppResult<Json<BulkCategorizeResult>> {
     Ok(Json(transactions::categorize_many(&state.db, &input).await?))
+}
+
+/// Donne une adresse à plusieurs transactions, ou la leur retire (TRX-15) ; les virements sont ignorés.
+#[utoipa::path(
+    post, operation_id = "setTransactionsAddress", path = "/transactions/address", tag = "transactions",
+    request_body = BulkAddressInput,
+    responses((status = 200, body = BulkAddressResult), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn set_address_many(
+    State(state): State<AppState>,
+    Json(input): Json<BulkAddressInput>,
+) -> AppResult<Json<BulkAddressResult>> {
+    Ok(Json(transactions::set_address_many(&state.db, &input).await?))
 }
 
 /// Ventile plusieurs transactions selon un même modèle, en pourcentages ou en montants (TRX-14).

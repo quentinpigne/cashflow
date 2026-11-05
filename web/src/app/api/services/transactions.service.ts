@@ -10,6 +10,7 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { BulkAddressResult } from '../models/bulk-address-result';
 import { BulkAnalysisMonthResult } from '../models/bulk-analysis-month-result';
 import { BulkCategorizeResult } from '../models/bulk-categorize-result';
 import { BulkMemberResult } from '../models/bulk-member-result';
@@ -42,6 +43,8 @@ import { refundCandidates } from '../fn/transactions/refund-candidates';
 import { RefundCandidates$Params } from '../fn/transactions/refund-candidates';
 import { setExpectedRefund } from '../fn/transactions/set-expected-refund';
 import { SetExpectedRefund$Params } from '../fn/transactions/set-expected-refund';
+import { setTransactionsAddress } from '../fn/transactions/set-transactions-address';
+import { SetTransactionsAddress$Params } from '../fn/transactions/set-transactions-address';
 import { setTransactionsAnalysisMonth } from '../fn/transactions/set-transactions-analysis-month';
 import { SetTransactionsAnalysisMonth$Params } from '../fn/transactions/set-transactions-analysis-month';
 import { setTransactionsMember } from '../fn/transactions/set-transactions-member';
@@ -244,6 +247,41 @@ export class TransactionsService extends BaseService {
     const resp = this.createTransaction$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<TransactionCreated>): TransactionCreated => r.body)
+    );
+  }
+
+  /** Path part for operation `setTransactionsAddress()` */
+  static readonly SetTransactionsAddressPath = '/api/v1/transactions/address';
+
+  /**
+   * Donne une adresse à plusieurs transactions, ou la leur retire (TRX-15) ; les virements sont ignorés.
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `setTransactionsAddress()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsAddress$Response(params: SetTransactionsAddress$Params, context?: HttpContext): Observable<StrictHttpResponse<BulkAddressResult>> {
+    const obs = setTransactionsAddress(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Donne une adresse à plusieurs transactions, ou la leur retire (TRX-15) ; les virements sont ignorés.
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `setTransactionsAddress$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  setTransactionsAddress(params: SetTransactionsAddress$Params, context?: HttpContext): Observable<BulkAddressResult> {
+    const resp = this.setTransactionsAddress$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BulkAddressResult>): BulkAddressResult => r.body)
     );
   }
 

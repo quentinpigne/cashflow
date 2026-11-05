@@ -164,6 +164,13 @@
       <button mat-button (click)="setPayeeOfSelection(true)" [disabled]="busy()">
         Retirer le tiers
       </button>
+      <button mat-stroked-button (click)="setAddressOfSelection()" [disabled]="busy()">
+        <mat-icon>place</mat-icon>
+        Adresse
+      </button>
+      <button mat-button (click)="setAddressOfSelection(true)" [disabled]="busy()">
+        Retirer l'adresse
+      </button>
       @if (members.active()) {
         <mat-form-field class="bulk-project" subscriptSizing="dynamic">
           <mat-label>Membre</mat-label>
@@ -251,6 +258,14 @@
                 @if (tag) {
                   <app-member-tag [tag]="tag" />
                 }
+              }
+              @if (item.address_city; as city) {
+                <mat-icon
+                  class="attached"
+                  [matTooltip]="city"
+                  [attr.aria-label]="'Adresse : ' + city"
+                  >place</mat-icon
+                >
               }
               @if (item.has_documents) {
                 <mat-icon class="attached" aria-label="Avec justificatif">attach_file</mat-icon>

@@ -104,6 +104,38 @@
           }
         </div>
       }
+      @if (!t.transfer) {
+        @let payeeAddress = payeeAddressOf(t);
+        <div class="place">
+          <mat-icon [class.off]="!t.address">place</mat-icon>
+          <div class="place-text">
+            @if (t.address; as address) {
+              <span>{{ formatAddress(address) }}</span>
+              @if (mapLink(address); as link) {
+                <a class="small" [href]="link" target="_blank" rel="noopener">Voir sur une carte</a>
+              }
+            } @else if (payeeAddress) {
+              <span class="muted">{{ formatAddress(payeeAddress) }}</span>
+              <span class="muted small">Adresse du tiers</span>
+            } @else {
+              <span class="muted">Aucune adresse</span>
+            }
+          </div>
+          <button mat-button type="button" (click)="editAddress(t)">
+            {{ t.address ? "Modifier l'adresse" : "Définir l'adresse" }}
+          </button>
+          @if (t.address) {
+            <button
+              mat-icon-button
+              type="button"
+              aria-label="Retirer l'adresse"
+              (click)="saveAddress(t, null)"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+      }
 
       @if (t.loan_payment; as lp) {
         <div class="loan card">

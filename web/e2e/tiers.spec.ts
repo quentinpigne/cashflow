@@ -111,7 +111,7 @@ test('E15 : dépenses par lieu et carte (TIE-07)', async ({ page }) => {
   await meylan.getByRole('button', { name: 'Déplier Meylan' }).click();
   await expect(page.getByRole('button', { name: 'Carrefour Meylan' })).toBeVisible();
   await expect(page.locator('app-location-analysis [echarts] canvas').first()).toBeVisible();
-  await expect(page.getByText(/tiers hors de la carte/)).toBeVisible();
+  await expect(page.getByText(/lieu\(x\) hors de la carte/)).toBeVisible();
   await page.getByRole('radio', { name: 'Départements' }).click();
   await expect(page.getByRole('row', { name: /Isère \(38\)/ })).toBeVisible();
 });

@@ -1,0 +1,177 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.payee_id, t.id AS \"transaction_id!\", t.analysis_date AS \"date!: Date\", s.amount,\n                  c.kind AS \"category_kind?\", a.currency, s.member_id,\n                  ta.address_line AS \"address_line?\", ta.postal_code AS \"postal_code?\", ta.city AS \"city?\",\n                  ta.country_code AS \"country_code?\", ta.latitude_e6 AS \"latitude_e6?\",\n                  ta.longitude_e6 AS \"longitude_e6?\",\n                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL\n                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))\n                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))\n                      AS \"is_movement!: bool\"\n           FROM split s\n           JOIN ledger_transaction t ON t.id = s.transaction_id\n           JOIN account a ON a.id = t.account_id\n           LEFT JOIN category c ON c.id = s.category_id\n           LEFT JOIN transaction_address ta ON ta.transaction_id = t.id\n           WHERE (t.payee_id IS NOT NULL OR ta.transaction_id IS NOT NULL) AND t.analysis_date BETWEEN ? AND ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "payee_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "payee_id"
+          }
+        }
+      },
+      {
+        "name": "transaction_id!",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "date!: Date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ledger_transaction",
+            "name": "analysis_date"
+          }
+        }
+      },
+      {
+        "name": "amount",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "amount"
+          }
+        }
+      },
+      {
+        "name": "category_kind?",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "currency",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "account",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "name": "member_id",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "split",
+            "name": "member_id"
+          }
+        }
+      },
+      {
+        "name": "address_line?",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "address_line"
+          }
+        }
+      },
+      {
+        "name": "postal_code?",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "postal_code"
+          }
+        }
+      },
+      {
+        "name": "city?",
+        "ordinal": 9,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "city"
+          }
+        }
+      },
+      {
+        "name": "country_code?",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "country_code"
+          }
+        }
+      },
+      {
+        "name": "latitude_e6?",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "latitude_e6"
+          }
+        }
+      },
+      {
+        "name": "longitude_e6?",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "transaction_address",
+            "name": "longitude_e6"
+          }
+        }
+      },
+      {
+        "name": "is_movement!: bool",
+        "ordinal": 13,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "d90409f7474fb08772ffb00c5d85bbc9f6e57a2fee88f7d7d58667f91b91de75"
+}

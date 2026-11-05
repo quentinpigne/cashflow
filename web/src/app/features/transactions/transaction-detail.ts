@@ -64,6 +64,10 @@ import { DocumentsService } from '../../api/services/documents.service';
 import { LinkTarget } from '../../api/models/link-target';
 import { projectSuffix, proposedLine } from '../budget/project-lines';
 import { BackLink, BackNavigation } from '../../shared/back-link';
+import { AddressInput } from '../../api/models/address-input';
+import { AddressView } from '../../api/models/address-view';
+import { formatAddress, mapLink } from '../../shared/address';
+import { AddressDialogData, AddressDialogResult, TransactionAddressDialog } from './address-dialog';
 
 type Direction = 'out' | 'in';
 
@@ -380,6 +384,44 @@ export class TransactionDetailView {
       this.error.set(errorMessage(error));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  protected readonly formatAddress = formatAddress;
+  protected readonly mapLink = mapLink;
+
+  /** Adresse du tiers enregistré, qui situe la transaction faute d'adresse propre (R-TRX-60). */
+  protected payeeAddressOf(t: TransactionDetail): AddressView | null {
+    return t.payee_id ? (this.payeesStore.byId().get(t.payee_id)?.address ?? null) : null;
+  }
+
+  /** Adresse propre de la transaction (TRX-15), enregistrée dès la validation du dialogue. */
+  protected async editAddress(t: TransactionDetail): Promise<void> {
+    const ref = this.dialog.open<TransactionAddressDialog, AddressDialogData, AddressDialogResult>(
+      TransactionAddressDialog,
+      {
+        data: { title: 'Adresse de la transaction', address: t.address ?? null },
+        maxWidth: '100vw',
+      },
+    );
+    const result = await firstValueFrom(ref.afterClosed());
+    if (result) {
+      await this.saveAddress(t, result.address);
+    }
+  }
+
+  /** Enregistre (ou retire, `null`) l'adresse propre ; modifiable même rapprochée (R-TRX-61). */
+  protected async saveAddress(t: TransactionDetail, address: AddressInput | null): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.api.setTransactionsAddress({ body: { transaction_ids: [t.id], address } }),
+      );
+      this.version.bump();
+      this.snack.open(address ? 'Adresse enregistrée' : 'Adresse retirée', undefined, {
+        duration: 3000,
+      });
+    } catch (error) {
+      this.error.set(errorMessage(error));
     }
   }
 

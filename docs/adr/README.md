@@ -47,3 +47,4 @@ retenu et ses conséquences. Il sert à comprendre plus tard *pourquoi* le proje
 | [0026](0026-remboursement-de-frais.md) | Remboursement de frais porté par la ventilation de l'entrée d'argent | Accepté |
 | [0027](0027-simulations-et-demandes-de-credit.md) | Simulations et demandes de crédit | Accepté |
 | [0028](0028-mois-d-analyse.md) | Mois d'analyse d'une transaction | Accepté |
+| [0029](0029-adresse-d-une-transaction.md) | Adresse portée par une transaction | Accepté |

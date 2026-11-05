@@ -47,7 +47,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   et vaut `bank_label` par défaut.
 - **R-TRX-3** — Une transaction `RECONCILED` ne peut être ni modifiée (montant, compte, date de solde),
   ni supprimée, sans déverrouillage explicite du point de contrôle qui la couvre (spec 04, R-RAP-6).
-  Le libellé, la note, la ventilation, le tiers (spec 11), le mois d'analyse (R-TRX-57), et la `date` quand
+  Le libellé, la note, la ventilation, le tiers (spec 11), l'adresse (R-TRX-59), le mois d'analyse (R-TRX-57), et la `date` quand
   une `bank_date` existe, restent modifiables : ils n'affectent pas le solde.
 - **R-TRX-4** — Modifier le montant d'une transaction à une seule ventilation met à jour cette
   ventilation. Avec plusieurs ventilations, la modification est refusée tant que la ventilation
@@ -75,6 +75,18 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 - **R-TRX-58** — Le mois d'analyse se modifie sur une transaction (E7) ou sur une sélection (E14, TRX-13),
   ou par une règle de catégorisation (R-IMP-29). Une liste ouverte depuis le budget ou les analyses filtre
   sur le mois d'analyse : elle montre les transactions qui comptent dans le mois, quelle que soit leur date.
+
+### Adresse d'une transaction
+
+- **R-TRX-59** — Une transaction a optionnellement sa propre **adresse**, de même forme et mêmes règles que
+  celle d'un tiers (R-TIE-23 à R-TIE-26) : ligne, code postal, ville, pays, coordonnées issues de la recherche
+  d'adresse. Une jambe de virement n'en a pas (comme R-TIE-11). Décision : ADR-0029.
+- **R-TRX-60** — Le **lieu** d'une transaction est son adresse si elle en a une, sinon celle de son tiers. Les
+  analyses par lieu et la carte suivent le lieu (R-TIE-28, R-TIE-29). Changer l'adresse d'un tiers ne déplace
+  pas les transactions qui ont la leur.
+- **R-TRX-61** — L'adresse se modifie ou se retire sur une transaction (E7) ou sur une sélection (E14, TRX-15),
+  les virements étant laissés tels quels. Elle ne change aucun solde : elle reste modifiable sur une
+  transaction rapprochée (R-TRX-3).
 
 ### Ventilation
 
@@ -215,6 +227,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 | TRX-12 | V1 | Remboursements de frais : lier une entrée à une ou plusieurs dépenses, en tout ou partie ; remboursement attendu et reste à recevoir |
 | TRX-13 | V1 | Mois d'analyse d'une transaction : choisir le mois sur lequel elle compte (une transaction, une sélection, une règle) |
 | TRX-14 | V1 | Ventilation en lot : un modèle en pourcentages (ou en montants si les montants sont égaux) appliqué à une sélection |
+| TRX-15 | V1 | Adresse d'une transaction : saisie (avec la recherche d'adresse), sur une transaction ou une sélection ; lieu prioritaire sur celui du tiers |
 
 ### TRX-01 — Saisir une transaction
 
@@ -257,6 +270,21 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 - Étant donné deux forfaits de −39,99 €, quand je les ventile en 19,99 € Téléphone et 20,00 € Internet, alors
   les deux ont ces deux ventilations.
 - Étant donné une sélection qui contient un virement, alors le virement est laissé tel quel et compté à part.
+
+### TRX-15 — Adresse d'une transaction
+
+- Sur la fiche (E7) : la section **Lieu** montre l'adresse de la transaction, sinon celle de son tiers
+  (« Adresse du tiers »), et « Définir l'adresse » / « Modifier l'adresse » / « Retirer l'adresse ».
+- Dans la liste (E14) : action « Adresse » sur une sélection (même dialogue), et « Retirer l'adresse ».
+
+**Critères d'acceptation**
+- Étant donné une dépense de −45 € sans tiers, quand je lui donne l'adresse « Annecy, 74000 », alors l'analyse
+  par ville de la période compte 45 € à Annecy, sous « Sans tiers » (R-TRX-60).
+- Étant donné un tiers « Carrefour » à Meylan et un de ses achats de −60 € adressé à Annecy, alors cet achat
+  compte à Annecy et les autres achats du tiers à Meylan (R-TRX-60).
+- Étant donné une sélection qui contient un virement, quand je lui affecte une adresse, alors le virement est
+  laissé sans adresse et compté à part (R-TRX-59).
+- Étant donné une transaction rapprochée, alors son adresse reste modifiable (R-TRX-61).
 
 ### TRX-12 — Remboursements de frais
 

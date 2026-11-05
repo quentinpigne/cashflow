@@ -16,8 +16,8 @@ import {
   PayeeFormValue,
   PayeeMergeDialog,
   PayeeRegroupDialog,
-  addressInput,
 } from './payee-dialogs';
+import { addressInput } from '../../shared/address';
 import { confirmDeletion } from '../documents/delete-confirmation';
 
 /**

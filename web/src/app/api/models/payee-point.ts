@@ -4,12 +4,12 @@
 import { PayeeId } from '../models/payee-id';
 
 /**
- * Tiers placé sur la carte par ses coordonnées (R-TIE-29).
+ * Tiers, ou adresse de transaction, placé sur la carte par ses coordonnées (R-TIE-29, R-TRX-60).
  */
 export interface PayeePoint {
   amount_minor: number;
   latitude_e6: number;
   longitude_e6: number;
   name: string;
-  payee_id: PayeeId;
+  payee_id?: (PayeeId | null);
 }

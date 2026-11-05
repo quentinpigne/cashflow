@@ -8823,6 +8823,54 @@
         }
       }
     },
+    "/api/v1/transactions/address": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Donne une adresse à plusieurs transactions, ou la leur retire (TRX-15) ; les virements sont ignorés.",
+        "operationId": "setTransactionsAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAddressInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkAddressResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/analysis-month": {
       "post": {
         "tags": [
@@ -12077,6 +12125,49 @@
           "suggested_minor": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "BulkAddressInput": {
+        "type": "object",
+        "description": "Adresse affectée en masse (TRX-15, R-TRX-61) ; absente, l'adresse propre est retirée.",
+        "required": [
+          "transaction_ids"
+        ],
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        }
+      },
+      "BulkAddressResult": {
+        "type": "object",
+        "required": [
+          "updated",
+          "skipped"
+        ],
+        "properties": {
+          "skipped": {
+            "type": "integer",
+            "description": "Jambes de virement, laissées sans adresse (R-TRX-59).",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       },
@@ -16577,7 +16668,7 @@
           "off_map": {
             "type": "integer",
             "format": "int32",
-            "description": "Tiers qui ont un montant sur la période mais ne figurent pas sur la carte : sans coordonnées, outre-mer,\nétranger.",
+            "description": "Lieux (tiers ou adresses de transaction) qui ont un montant sur la période mais ne figurent pas sur la\ncarte : sans coordonnées, outre-mer, étranger.",
             "minimum": 0
           },
           "period": {
@@ -17688,9 +17779,8 @@
       },
       "PayeePoint": {
         "type": "object",
-        "description": "Tiers placé sur la carte par ses coordonnées (R-TIE-29).",
+        "description": "Tiers, ou adresse de transaction, placé sur la carte par ses coordonnées (R-TIE-29, R-TRX-60).",
         "required": [
-          "payee_id",
           "name",
           "amount_minor",
           "latitude_e6",
@@ -17713,7 +17803,15 @@
             "type": "string"
           },
           "payee_id": {
-            "$ref": "#/components/schemas/PayeeId"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PayeeId",
+                "description": "Absent : une adresse de transaction ; `name` est alors l'adresse."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -21630,6 +21728,17 @@
           "account_name": {
             "type": "string"
           },
+          "address": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddressView",
+                "description": "Adresse propre, prioritaire sur celle du tiers ; modifiable même rapprochée (R-TRX-59 à R-TRX-61)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "amount_minor": {
             "type": "integer",
             "format": "int64"
@@ -21825,6 +21934,13 @@
           },
           "account_name": {
             "type": "string"
+          },
+          "address_city": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ville de l'adresse propre de la transaction, si elle en a une (R-TRX-59)."
           },
           "amount_minor": {
             "type": "integer",

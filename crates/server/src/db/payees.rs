@@ -39,7 +39,7 @@ pub struct PayeeFields<'a> {
 }
 
 /// Adresse lue en base, déjà contrôlée à l'écriture (R-TIE-23, R-TIE-25 ; `CHECK` de la table).
-fn address_from_db(
+pub(super) fn address_from_db(
     line: Option<String>,
     postal_code: Option<String>,
     city: Option<String>,
@@ -56,16 +56,16 @@ fn address_from_db(
 }
 
 /// Colonnes d'une adresse, à écrire.
-struct AddressColumns<'a> {
-    line: Option<&'a str>,
-    postal_code: Option<&'a str>,
-    city: Option<&'a str>,
-    country_code: Option<&'a str>,
-    latitude_e6: Option<i32>,
-    longitude_e6: Option<i32>,
+pub(super) struct AddressColumns<'a> {
+    pub line: Option<&'a str>,
+    pub postal_code: Option<&'a str>,
+    pub city: Option<&'a str>,
+    pub country_code: Option<&'a str>,
+    pub latitude_e6: Option<i32>,
+    pub longitude_e6: Option<i32>,
 }
 
-fn address_columns(address: Option<&PayeeAddress>) -> AddressColumns<'_> {
+pub(super) fn address_columns(address: Option<&PayeeAddress>) -> AddressColumns<'_> {
     let point = address.and_then(|a| a.point);
     AddressColumns {
         line: address.and_then(|a| a.line.as_deref()),
@@ -399,6 +399,67 @@ pub async fn facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow:
                 date: r.date,
                 amount: Money::from_minor(r.amount),
                 category_id: opt_id_from_db(r.category_id.as_deref())?,
+                category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
+                is_movement: r.is_movement,
+                currency: r.currency,
+                member_id: opt_id_from_db(r.member_id.as_deref())?,
+            })
+        })
+        .collect()
+}
+
+/// Ventilation d'une transaction qui a un lieu, vue par l'analyse par lieu (R-TIE-28, R-TRX-60) : un tiers, une
+/// adresse propre, ou les deux.
+pub struct PlaceFactRow {
+    pub payee_id: Option<PayeeId>,
+    /// Adresse propre de la transaction (R-TRX-59), prioritaire sur celle du tiers.
+    pub address: Option<PayeeAddress>,
+    pub transaction_id: TransactionId,
+    pub date: Date,
+    pub amount: Money,
+    pub category_kind: Option<CategoryKind>,
+    pub is_movement: bool,
+    pub currency: String,
+    pub member_id: Option<MemberId>,
+}
+
+pub async fn place_facts(db: impl SqliteExecutor<'_>, from: Date, to: Date) -> anyhow::Result<Vec<PlaceFactRow>> {
+    let rows = sqlx::query!(
+        r#"SELECT t.payee_id, t.id AS "transaction_id!", t.analysis_date AS "date!: Date", s.amount,
+                  c.kind AS "category_kind?", a.currency, s.member_id,
+                  ta.address_line AS "address_line?", ta.postal_code AS "postal_code?", ta.city AS "city?",
+                  ta.country_code AS "country_code?", ta.latitude_e6 AS "latitude_e6?",
+                  ta.longitude_e6 AS "longitude_e6?",
+                  (s.loan_id IS NOT NULL OR s.asset_id IS NOT NULL
+                   OR EXISTS (SELECT 1 FROM transfer tr WHERE s.id IN (tr.outflow_split_id, tr.inflow_split_id))
+                   OR EXISTS (SELECT 1 FROM excluded_category x WHERE x.id = s.category_id))
+                      AS "is_movement!: bool"
+           FROM split s
+           JOIN ledger_transaction t ON t.id = s.transaction_id
+           JOIN account a ON a.id = t.account_id
+           LEFT JOIN category c ON c.id = s.category_id
+           LEFT JOIN transaction_address ta ON ta.transaction_id = t.id
+           WHERE (t.payee_id IS NOT NULL OR ta.transaction_id IS NOT NULL) AND t.analysis_date BETWEEN ? AND ?"#,
+        from,
+        to
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter()
+        .map(|r| {
+            Ok(PlaceFactRow {
+                payee_id: opt_id_from_db(r.payee_id.as_deref())?,
+                address: address_from_db(
+                    r.address_line,
+                    r.postal_code,
+                    r.city,
+                    r.country_code,
+                    r.latitude_e6,
+                    r.longitude_e6,
+                )?,
+                transaction_id: id_from_db(&r.transaction_id)?,
+                date: r.date,
+                amount: Money::from_minor(r.amount),
                 category_kind: r.category_kind.as_deref().map(enum_from_db).transpose()?,
                 is_movement: r.is_movement,
                 currency: r.currency,

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM transaction_address WHERE transaction_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "8be3b8f023d8088c3b733a31b81c4cdcecd9acf50378cb2553430d5429fba524"
+}

@@ -60,6 +60,7 @@ import { MemberTag } from '../../shared/member-tag';
 import { RefundMark } from '../../shared/refund-mark';
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../../core/page-size';
 import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
+import { AddressDialogData, AddressDialogResult, TransactionAddressDialog } from './address-dialog';
 
 /** Taille de page par défaut de la liste transverse. */
 const PAGE = 100;
@@ -375,6 +376,47 @@ export class TransactionsPage implements OnInit {
       this.version.bump();
       const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
       const verb = remove ? 'sans tiers' : `affectée(s) à ${this.payees.name(payee)}`;
+      this.snack.open(`${result.updated} transaction(s) ${verb}${skipped}`, undefined, {
+        duration: 4000,
+      });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Adresse affectée (ou retirée) en masse ; les virements sont ignorés (TRX-15, R-TRX-59). */
+  protected async setAddressOfSelection(remove = false): Promise<void> {
+    const ids = [...this.selection()];
+    if (ids.length === 0) {
+      return;
+    }
+    let address = null;
+    if (!remove) {
+      const ref = this.dialog.open<
+        TransactionAddressDialog,
+        AddressDialogData,
+        AddressDialogResult
+      >(TransactionAddressDialog, {
+        data: { title: `Adresse de ${ids.length} transaction(s)`, address: null },
+        maxWidth: '100vw',
+      });
+      const result = await firstValueFrom(ref.afterClosed());
+      if (!result) {
+        return;
+      }
+      address = result.address;
+    }
+    this.busy.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.api.setTransactionsAddress({ body: { transaction_ids: ids, address } }),
+      );
+      this.selection.set(new Set());
+      this.version.bump();
+      const skipped = result.skipped ? ` (${result.skipped} virement(s) ignoré(s))` : '';
+      const verb = address ? `localisée(s) à ${address.city}` : 'sans adresse propre';
       this.snack.open(`${result.updated} transaction(s) ${verb}${skipped}`, undefined, {
         duration: 4000,
       });

@@ -20,7 +20,7 @@ import { currentMonth, formatMonthKey, shiftMonth } from '../../core/dates';
 import { formatChartValue, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
-import { countryName } from './address';
+import { countryName } from '../../shared/address';
 import { MemberSelections } from '../../shared/member-filter';
 
 /** Nom du fond de carte enregistré auprès d'ECharts. */
@@ -112,7 +112,8 @@ function loadMap(http: HttpClient): Promise<{ code: string; name: string }[]> {
         <p class="muted">
           Du {{ r.from | frDate }} au {{ r.to | frDate }}, comparé au
           {{ r.previous_from | frDate }} – {{ r.previous_to | frDate }}. Le lieu d'une transaction
-          est l'adresse de son tiers ; seules les transactions rattachées à un tiers comptent.
+          est son adresse, sinon celle de son tiers ; seules les transactions qui ont l'une ou
+          l'autre comptent.
         </p>
         <div class="layout">
           <table class="table">
@@ -143,16 +144,20 @@ function loadMap(http: HttpClient): Promise<{ code: string; name: string }[]> {
                   <td class="amount muted secondary">
                     {{ line.uncategorized_minor ? (line.uncategorized_minor | money) : '' }}
                   </td>
-                  <td class="amount muted secondary">{{ line.payees.length }}</td>
+                  <td class="amount muted secondary">{{ payeeCount(line) }}</td>
                   <td class="amount muted">{{ line.previous_minor | money }}</td>
                 </tr>
                 @if (isExpanded(line)) {
                   @for (child of line.payees; track child.payee_id) {
                     <tr class="child">
                       <td>
-                        <button class="link" (click)="open(child.payee_id)">
-                          {{ child.name }}
-                        </button>
+                        @if (child.payee_id) {
+                          <button class="link" (click)="open(child.payee_id)">
+                            {{ child.name }}
+                          </button>
+                        } @else {
+                          <span class="muted">{{ child.name }}</span>
+                        }
                       </td>
                       <td class="amount">{{ child.amount_minor | money }}</td>
                       <td class="amount muted secondary">
@@ -165,9 +170,7 @@ function loadMap(http: HttpClient): Promise<{ code: string; name: string }[]> {
                 }
               } @empty {
                 <tr>
-                  <td colspan="5" class="empty">
-                    Aucune transaction rattachée à un tiers sur cette période.
-                  </td>
+                  <td colspan="5" class="empty">Aucune transaction localisée sur cette période.</td>
                 </tr>
               }
             </tbody>
@@ -194,7 +197,7 @@ function loadMap(http: HttpClient): Promise<{ code: string; name: string }[]> {
             }
             @if (r.off_map) {
               <p class="muted">
-                {{ r.off_map }} tiers hors de la carte (sans localisation, outre-mer ou étranger).
+                {{ r.off_map }} lieu(x) hors de la carte (sans localisation, outre-mer ou étranger).
               </p>
             }
           </section>
@@ -284,7 +287,10 @@ export class LocationAnalysis {
     this.period() === 'YEAR' ? String(this.year()) : formatMonthKey(this.month()),
   );
 
-  /** Départements en dégradé selon le montant, tiers localisés en cercles proportionnels (R-TIE-29). */
+  /**
+   * Départements en dégradé selon le montant, tiers et adresses de transaction localisés en cercles
+   * proportionnels (R-TIE-29, R-TRX-60).
+   */
   protected readonly mapChart = computed<EChartsCoreOption | null>(() => {
     const r = this.report.value();
     const all = this.map.value();
@@ -388,6 +394,11 @@ export class LocationAnalysis {
     });
   }
 
+  /** Tiers d'un lieu, sans compter « Sans tiers » (transactions localisées par leur adresse). */
+  protected payeeCount(line: LocationLine): number {
+    return line.payees.filter((p) => p.payee_id).length;
+  }
+
   protected isExpanded(line: LocationLine): boolean {
     return this.expanded().has(line.key);
   }
@@ -396,7 +407,7 @@ export class LocationAnalysis {
     if (payeeId) void this.router.navigate(['/tiers', payeeId]);
   }
 
-  /** Un clic sur un tiers de la carte ouvre sa fiche (E32). */
+  /** Un clic sur un tiers de la carte ouvre sa fiche (E32) ; une adresse de transaction n'en a pas. */
   protected onMapClick(event: { seriesType?: string; data?: unknown }): void {
     if (event.seriesType !== 'scatter') return;
     this.open((event.data as { id?: string } | undefined)?.id);

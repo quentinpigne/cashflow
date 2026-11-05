@@ -16,7 +16,7 @@ import { formatChartValue, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CategoriesStore, PayeesStore } from '../../shared/stores';
-import { formatAddress, mapLink } from './address';
+import { formatAddress, mapLink } from '../../shared/address';
 import { PayeeActions } from './payee-actions';
 import { DocumentSection } from '../documents/document-section';
 import { BackLink } from '../../shared/back-link';

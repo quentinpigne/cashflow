@@ -101,7 +101,8 @@ attendent une validation explicite.
 ## Adresse et lieu
 
 Le **lieu** d'une transaction est l'adresse de son tiers : c'est le magasin qui est à Meylan, pas le
-paiement. Décision : ADR-0025.
+paiement. Une transaction peut aussi porter sa propre adresse, qui l'emporte sur celle du tiers (spec 02,
+R-TRX-59, R-TRX-60). Décisions : ADR-0025, ADR-0029.
 
 - **R-TIE-23** — Un tiers a optionnellement une **adresse** : ligne d'adresse (≤ 200 caractères), code postal
   (≤ 10), ville (≤ 80) et pays (code ISO 3166-1 alpha-2, « FR » proposé à la saisie). Dès qu'un champ de
@@ -120,16 +121,18 @@ paiement. Décision : ADR-0025.
 - **R-TIE-27** — Fusionner un tiers dans un autre (R-TIE-7) garde l'adresse du tiers cible ; s'il n'en a pas,
   il reprend celle du tiers fusionné.
 - **R-TIE-28** — **Analyse par lieu** : sur une période, les dépenses (ou les revenus) et le non catégorisé
-  des tiers (R-TIE-20, R-TIE-21) sont regroupés par **pays**, par **département** ou par **ville** de leur
-  adresse. Une ville est identifiée par son pays, son département et son nom sans distinction de casse. Les
+  (R-TIE-20, R-TIE-21) sont regroupés par **pays**, par **département** ou par **ville** du lieu de chaque
+  transaction : son adresse, sinon celle de son tiers (R-TRX-60). Une ville est identifiée par son pays, son département et son nom sans distinction de casse. Les
   tiers sans adresse forment la ligne « Sans adresse » ; par département, les adresses à l'étranger forment
   la ligne « Étranger » et celles dont le département ne se déduit pas, « Département inconnu ». Chaque lieu
-  se déplie en ses tiers. Comme l'analyse par tiers, elle ne porte que sur les transactions qui ont un tiers.
+  se déplie en ses tiers, et en « Sans tiers » pour les transactions qui n'ont que leur adresse. Elle porte sur
+  les transactions qui ont un tiers ou une adresse.
 - **R-TIE-29** — **Carte** : les départements de France métropolitaine sont coloriés selon le montant de la
   période (R-TIE-28, par département), et les tiers qui ont des coordonnées y sont placés, d'une taille
-  proportionnelle à leur montant. Le fond de carte est embarqué dans l'application : aucun service de
-  cartographie n'est appelé. Le nombre de tiers de la période absents de la carte (sans coordonnées, outre-mer,
-  étranger) est indiqué.
+  proportionnelle à leur montant, ainsi que les adresses de transaction qui en ont (R-TRX-60 ; une adresse
+  partagée par plusieurs transactions est un seul point). Le fond de carte est embarqué dans l'application :
+  aucun service de cartographie n'est appelé. Le nombre de lieux de la période (tiers ou adresses de
+  transaction) absents de la carte (sans coordonnées, outre-mer, étranger) est indiqué.
 
 ## Propositions de tiers
 

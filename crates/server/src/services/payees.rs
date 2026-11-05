@@ -277,10 +277,11 @@ pub struct DepartmentAmount {
     pub amount_minor: i64,
 }
 
-/// Tiers placé sur la carte par ses coordonnées (R-TIE-29).
+/// Tiers, ou adresse de transaction, placé sur la carte par ses coordonnées (R-TIE-29, R-TRX-60).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PayeePoint {
-    pub payee_id: PayeeId,
+    /// Absent : une adresse de transaction ; `name` est alors l'adresse.
+    pub payee_id: Option<PayeeId>,
     pub name: String,
     pub amount_minor: i64,
     pub latitude_e6: i32,
@@ -306,8 +307,8 @@ pub struct LocationReport {
     /// Départements de métropole qui ont un montant sur la période.
     pub departments: Vec<DepartmentAmount>,
     pub points: Vec<PayeePoint>,
-    /// Tiers qui ont un montant sur la période mais ne figurent pas sur la carte : sans coordonnées, outre-mer,
-    /// étranger.
+    /// Lieux (tiers ou adresses de transaction) qui ont un montant sur la période mais ne figurent pas sur la
+    /// carte : sans coordonnées, outre-mer, étranger.
     pub off_map: u32,
 }
 
@@ -470,7 +471,10 @@ fn optional(value: Option<&str>, field: &'static str, max: usize) -> AppResult<O
 
 /// Adresse saisie, contrôlée (R-TIE-23, R-TIE-25). Des coordonnées reprises telles quelles alors que l'adresse a
 /// changé sont retirées : elles décrivaient l'ancienne adresse.
-fn address(input: Option<&AddressInput>, previous: Option<&PayeeAddress>) -> AppResult<Option<PayeeAddress>> {
+pub(crate) fn address(
+    input: Option<&AddressInput>,
+    previous: Option<&PayeeAddress>,
+) -> AppResult<Option<PayeeAddress>> {
     let Some(input) = input else { return Ok(None) };
     let point = match (input.latitude_e6, input.longitude_e6) {
         (None, None) => None,
@@ -804,7 +808,42 @@ fn location_line(place: &Location, address: Option<&PayeeAddress>) -> LocationLi
     line
 }
 
-/// Dépenses ou revenus par pays, département ou ville de l'adresse des tiers, et carte (R-TIE-28, R-TIE-29).
+/// Ce qui situe les transactions d'une analyse par lieu (R-TRX-60) : le tiers, et pour une transaction qui a sa
+/// propre adresse, la transaction elle-même.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct PlaceKey {
+    own: Option<TransactionId>,
+    payee: Option<PayeeId>,
+}
+
+/// Ce qu'un point de la carte représente : un tiers localisé, ou une adresse de transaction localisée.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum MapSource {
+    Payee(PayeeId),
+    Address(String),
+}
+
+/// Identité d'une adresse de transaction, pour regrouper les transactions faites au même endroit.
+fn address_key(address: &PayeeAddress) -> String {
+    format!(
+        "{}|{}|{}|{}",
+        address.country_code,
+        address.postal_code.as_deref().unwrap_or_default(),
+        address.city.to_lowercase(),
+        address.line.as_deref().unwrap_or_default().to_lowercase()
+    )
+}
+
+/// Nom d'une adresse de transaction sur la carte : la ligne d'adresse et la ville.
+fn address_label(address: &PayeeAddress) -> String {
+    match &address.line {
+        Some(line) => format!("{line}, {}", address.city),
+        None => address.city.clone(),
+    }
+}
+
+/// Dépenses ou revenus par pays, département ou ville du lieu des transactions, et carte (R-TIE-28, R-TIE-29) :
+/// le lieu d'une transaction est son adresse, sinon celle de son tiers (R-TRX-60).
 pub async fn location_report(db: &Db, query: &LocationReportQuery, today: Date) -> AppResult<LocationReport> {
     let kind = query.kind.unwrap_or(CategoryKind::Expense);
     let group_by = query.group_by.unwrap_or_default();
@@ -817,56 +856,138 @@ pub async fn location_report(db: &Db, query: &LocationReportQuery, today: Date) 
         members: query.members.clone(),
     };
     let (period, previous, current) = periods(&period_query, today)?;
-    let rows =
-        member_facts(db, previous.from.min(period.from), period.to.max(previous.to), query.members.as_deref()).await?;
-    let facts = payee_facts(&rows);
+    let selection = super::members::selection(db, query.members.as_deref()).await?;
+    let rows: Vec<db::payees::PlaceFactRow> =
+        db::payees::place_facts(&db.read, previous.from.min(period.from), period.to.max(previous.to))
+            .await?
+            .into_iter()
+            .filter(|f| super::members::includes(selection.as_ref(), f.member_id))
+            .collect();
+    let mut own: HashMap<TransactionId, PayeeAddress> = HashMap::new();
+    let facts: Vec<PayeeFact<PlaceKey, TransactionId>> = rows
+        .into_iter()
+        .map(|r| {
+            let key = PlaceKey { own: r.address.is_some().then_some(r.transaction_id), payee: r.payee_id };
+            if let Some(address) = r.address {
+                own.insert(r.transaction_id, address);
+            }
+            PayeeFact {
+                payee: key,
+                transaction: r.transaction_id,
+                split: SplitFact {
+                    date: r.date,
+                    amount: r.amount,
+                    category_kind: r.category_kind,
+                    is_movement: r.is_movement,
+                    is_eur: r.currency == Currency::EUR.code(),
+                },
+            }
+        })
+        .collect();
     let now = payees::totals(&facts, period);
     let before = payees::totals(&facts, previous);
     let all = db::payees::list(&db.read).await?;
-    let addresses: HashMap<PayeeId, Option<&PayeeAddress>> = all.iter().map(|p| (p.id, p.address.as_ref())).collect();
-    let address_of = |id: Option<PayeeId>| id.and_then(|id| addresses.get(&id).copied().flatten());
+    let payee_rows: HashMap<PayeeId, &PayeeRow> = all.iter().map(|p| (p.id, p)).collect();
+
+    let mut keys: Vec<PlaceKey> =
+        now.keys().chain(before.keys()).copied().collect::<HashSet<_>>().into_iter().collect();
+    // Ordre stable : le cumul ne dépend pas de l'ordre de parcours d'une table de hachage.
+    keys.sort_by_key(|k| (k.own.map(|t| t.to_string()), k.payee.map(|p| p.to_string())));
 
     let mut places: HashMap<Location, LocationLine> = HashMap::new();
+    // Nom d'une ville : celui écrit à l'adresse qui y pèse le plus.
+    let mut city_names: HashMap<Location, (i64, String)> = HashMap::new();
     let mut departments: HashMap<&'static str, i64> = HashMap::new();
-    let mut points = Vec::new();
-    let mut off_map = 0;
-    for line in payee_lines(&all, &now, &before, kind) {
-        let address = address_of(line.payee_id);
-        if line.amount_minor != 0 {
+    let mut points: HashMap<MapSource, PayeePoint> = HashMap::new();
+    let mut off_map: HashSet<MapSource> = HashSet::new();
+    for key in keys {
+        let (amount, uncategorized) = amounts(&now.get(&key).copied().unwrap_or_default(), kind);
+        let (previous_amount, _) = amounts(&before.get(&key).copied().unwrap_or_default(), kind);
+        let transactions = now.get(&key).map_or(0, |t| t.transactions);
+        if amount.is_zero() && previous_amount.is_zero() && uncategorized.is_zero() {
+            continue;
+        }
+        let payee = key.payee.and_then(|id| payee_rows.get(&id).copied());
+        let own_address = key.own.and_then(|t| own.get(&t));
+        let address = location::place(own_address, payee.and_then(|p| p.address.as_ref()));
+        if !amount.is_zero() {
             let department = address.and_then(PayeeAddress::department).filter(|d| metropolitan(d.code));
             if let Some(department) = department {
-                *departments.entry(department.code).or_default() += line.amount_minor;
+                *departments.entry(department.code).or_default() += amount.minor();
             }
-            match (address.and_then(|a| a.point), department, line.payee_id) {
-                (Some(point), Some(_), Some(payee_id)) => points.push(PayeePoint {
-                    payee_id,
-                    name: line.name.clone(),
-                    amount_minor: line.amount_minor,
-                    latitude_e6: point.latitude_e6,
-                    longitude_e6: point.longitude_e6,
-                }),
-                _ => off_map += 1,
+            let source = match (own_address, key.payee) {
+                (Some(a), _) => Some(MapSource::Address(address_key(a))),
+                (None, Some(payee_id)) => Some(MapSource::Payee(payee_id)),
+                (None, None) => None,
+            };
+            match (address.and_then(|a| a.point), department, source) {
+                (Some(point), Some(_), Some(source)) => {
+                    let (payee_id, name) = match (&source, payee) {
+                        (MapSource::Payee(id), Some(p)) => (Some(*id), p.name.clone()),
+                        _ => (None, address.map(address_label).unwrap_or_default()),
+                    };
+                    points
+                        .entry(source)
+                        .or_insert(PayeePoint {
+                            payee_id,
+                            name,
+                            amount_minor: 0,
+                            latitude_e6: point.latitude_e6,
+                            longitude_e6: point.longitude_e6,
+                        })
+                        .amount_minor += amount.minor();
+                }
+                (_, _, Some(source)) => {
+                    off_map.insert(source);
+                }
+                _ => {}
             }
         }
         let place = location::location(group_by.into(), address);
         let entry = places.entry(place.clone()).or_insert_with(|| location_line(&place, address));
-        // Un lieu somme ses tiers (R-TIE-28, comme un groupe : R-TIE-20).
-        entry.amount_minor += line.amount_minor;
-        entry.previous_minor += line.previous_minor;
-        entry.uncategorized_minor += line.uncategorized_minor;
-        entry.transactions += line.transactions;
-        entry.payees.push(line);
+        // Un lieu somme ses transactions, par tiers (R-TIE-28, comme un groupe : R-TIE-20).
+        entry.amount_minor += amount.minor();
+        entry.previous_minor += previous_amount.minor();
+        entry.uncategorized_minor += uncategorized.minor();
+        entry.transactions += transactions;
+        let line = match entry.payees.iter().position(|l| l.payee_id == key.payee) {
+            Some(index) => &mut entry.payees[index],
+            None => {
+                entry.payees.push(PayeeLine {
+                    payee_id: key.payee,
+                    group_id: payee.and_then(|p| p.group_id),
+                    name: payee.map_or_else(|| "Sans tiers".to_owned(), |p| p.name.clone()),
+                    amount_minor: 0,
+                    previous_minor: 0,
+                    uncategorized_minor: 0,
+                    transactions: 0,
+                    children: Vec::new(),
+                });
+                let last = entry.payees.len() - 1;
+                &mut entry.payees[last]
+            }
+        };
+        line.amount_minor += amount.minor();
+        line.previous_minor += previous_amount.minor();
+        line.uncategorized_minor += uncategorized.minor();
+        line.transactions += transactions;
+        if let (Location::City { .. }, Some(address)) = (&place, address) {
+            let weight = amount.minor().abs();
+            let best = city_names.entry(place.clone()).or_insert((-1, String::new()));
+            if weight > best.0 {
+                *best = (weight, address.city.clone());
+            }
+        }
     }
 
-    let mut lines: Vec<LocationLine> = places.into_values().collect();
-    for line in &mut lines {
-        line.payees.sort_by(by_amount);
-        // Une ville porte le nom écrit chez son tiers principal.
-        if line.kind == LocationKind::City
-            && let Some(name) = line.payees.first().and_then(|p| address_of(p.payee_id)).map(|a| a.city.clone())
-        {
+    let mut lines: Vec<LocationLine> = Vec::with_capacity(places.len());
+    for (place, mut line) in places {
+        // « Sans tiers » en dernier, comme « Sans adresse » parmi les lieux.
+        line.payees.sort_by(|a, b| a.payee_id.is_none().cmp(&b.payee_id.is_none()).then(by_amount(a, b)));
+        if let Some((_, name)) = city_names.remove(&place) {
             line.name = name;
         }
+        lines.push(line);
     }
     // Les lieux d'abord, du plus fort montant au plus faible ; puis « Étranger », « Département inconnu » et « Sans
     // adresse », dans cet ordre.
@@ -892,6 +1013,7 @@ pub async fn location_report(db: &Db, query: &LocationReportQuery, today: Date) 
         })
         .collect();
     departments.sort_by(|a, b| b.amount_minor.cmp(&a.amount_minor).then(a.code.cmp(&b.code)));
+    let mut points: Vec<PayeePoint> = points.into_values().collect();
     points.sort_by(|a, b| b.amount_minor.cmp(&a.amount_minor).then(a.name.cmp(&b.name)));
     let sum = |f: fn(&LocationLine) -> i64| lines.iter().map(f).sum::<i64>();
     Ok(LocationReport {
@@ -909,7 +1031,7 @@ pub async fn location_report(db: &Db, query: &LocationReportQuery, today: Date) 
         lines,
         departments,
         points,
-        off_map,
+        off_map: u32::try_from(off_map.len()).unwrap_or(u32::MAX),
     })
 }
 
