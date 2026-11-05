@@ -33,6 +33,10 @@ composant visé, pour guider l'implémentation.
 - **Flèche de retour** (en tête d'une fiche ou d'un sous-écran) : un vrai retour arrière, vers l'écran d'où
   l'on vient, dans l'état où on l'a laissé (filtres, page). Si l'écran a été ouvert directement (lien collé,
   nouvel onglet), elle mène à l'écran parent (E7 → E3 du compte, E32 → E31…).
+- **Choix d'un mois ou d'une année** (budget E18, analyses E15) : flèches précédent / suivant, et un clic
+  sur la période affichée ouvre le calendrier `[mat-datepicker]` sur les années, puis les mois (ou s'arrête à
+  l'année quand on analyse une année), pour aller loin d'un coup. Les analyses ne proposent pas de période
+  future ; le budget, si.
 - **Confirmation** avant toute action destructrice ou irréversible (`[mat-dialog]`), avec le verbe de
   l'action sur le bouton (« Supprimer », jamais « OK »).
 - **Annuler plutôt que confirmer** quand c'est possible : après une suppression simple, une snack-bar

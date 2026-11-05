@@ -11,18 +11,11 @@
     <mat-tab label="Par catégorie">
       <div class="tab">
         <div class="toolbar">
-          <button mat-icon-button aria-label="Mois précédent" (click)="previousMonth()">
-            <mat-icon>chevron_left</mat-icon>
-          </button>
-          <strong class="month">{{ monthLabel() }}</strong>
-          <button
-            mat-icon-button
-            aria-label="Mois suivant"
-            (click)="nextMonth()"
-            [disabled]="isCurrent()"
-          >
-            <mat-icon>chevron_right</mat-icon>
-          </button>
+          <app-period-picker
+            [value]="month()"
+            [max]="currentMonth"
+            (valueChange)="chooseMonth($event)"
+          />
           @if (isCurrent()) {
             <span class="tag">mois en cours</span>
           }

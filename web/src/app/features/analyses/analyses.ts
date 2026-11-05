@@ -17,17 +17,19 @@ import { CategoryLine } from '../../api/models/category-line';
 import { DashboardService } from '../../api/services/dashboard.service';
 import { DataVersion } from '../../core/data-version';
 import { PlannedProjects } from '../../core/planned-projects';
-import { formatMonth, shiftMonth, toIsoDate } from '../../core/dates';
+import { currentMonth, formatMonth, toIsoDate } from '../../core/dates';
 import { formatChartValue, formatRatePpm, toChartValue } from '../../core/money';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { LocationAnalysis } from '../payees/location-analysis';
 import { PayeeAnalysis } from '../payees/payee-analysis';
 import { MemberFilter, MemberSelections } from '../../shared/member-filter';
+import { PeriodPicker } from '../../shared/period-picker';
 
 /** E15 — Analyses (TDB-02, TDB-03, TIE-04, TIE-07). */
 @Component({
   selector: 'app-analyses',
   imports: [
+    PeriodPicker,
     MemberFilter,
     FormsModule,
     MatButtonModule,
@@ -208,12 +210,10 @@ export class AnalysesPage {
     return ppm === null || ppm === undefined ? '—' : formatRatePpm(ppm);
   }
 
-  protected previousMonth(): void {
-    this.month.set(shiftMonth(this.month(), -1));
-  }
+  protected readonly currentMonth = currentMonth();
 
-  protected nextMonth(): void {
-    this.month.set(shiftMonth(this.month(), 1));
+  protected chooseMonth(value: string | number): void {
+    this.month.set(String(value));
   }
 
   protected toggle(line: CategoryLine): void {

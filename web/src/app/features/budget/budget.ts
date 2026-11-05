@@ -13,7 +13,7 @@ import { BudgetLineMonth } from '../../api/models/budget-line-month';
 import { BudgetsService } from '../../api/services/budgets.service';
 import { DataVersion } from '../../core/data-version';
 import { PlannedProjects } from '../../core/planned-projects';
-import { currentMonth, formatMonthKey, shiftMonth } from '../../core/dates';
+import { currentMonth } from '../../core/dates';
 import { MoneyPipe } from '../../shared/money.pipe';
 import {
   LineCreateDialog,
@@ -22,6 +22,7 @@ import {
   openAndRefresh,
 } from './budget-dialogs';
 import { BudgetGauge } from './gauge';
+import { PeriodPicker } from '../../shared/period-picker';
 
 interface Section {
   title: string;
@@ -33,6 +34,7 @@ interface Section {
 @Component({
   selector: 'app-budget',
   imports: [
+    PeriodPicker,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -59,7 +61,6 @@ export class BudgetPage {
 
   private readonly chosen = signal<string | null>(null);
   protected readonly month = computed(() => this.chosen() ?? this.mois() ?? currentMonth());
-  protected readonly monthLabel = computed(() => formatMonthKey(this.month()));
 
   protected readonly budget = rxResource({
     params: () => ({
@@ -98,15 +99,9 @@ export class BudgetPage {
       'Revenus réels − dépenses réelles (lignes, hors budget, non catégorisées, projets) − épargne versée.',
   };
 
-  protected previousMonth(): void {
-    this.go(shiftMonth(this.month(), -1));
-  }
-
-  protected nextMonth(): void {
-    this.go(shiftMonth(this.month(), 1));
-  }
-
-  private go(month: string): void {
+  /** Mois choisi (flèches ou calendrier), gardé dans l'adresse. */
+  protected go(value: string | number): void {
+    const month = String(value);
     this.chosen.set(month);
     void this.router.navigate([], { queryParams: { mois: month }, replaceUrl: true });
   }

@@ -16,13 +16,7 @@
   </div>
 
   <div class="toolbar">
-    <button mat-icon-button aria-label="Mois précédent" (click)="previousMonth()">
-      <mat-icon>chevron_left</mat-icon>
-    </button>
-    <strong class="month">{{ monthLabel() }}</strong>
-    <button mat-icon-button aria-label="Mois suivant" (click)="nextMonth()">
-      <mat-icon>chevron_right</mat-icon>
-    </button>
+    <app-period-picker [value]="month()" (valueChange)="go($event)" />
     @if (budget.value()?.current_month) {
       <span class="tag">mois en cours</span>
     }

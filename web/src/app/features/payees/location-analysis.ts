@@ -16,12 +16,13 @@ import { LocationLine } from '../../api/models/location-line';
 import { ReportPeriod } from '../../api/models/report-period';
 import { PayeesService } from '../../api/services/payees.service';
 import { DataVersion } from '../../core/data-version';
-import { currentMonth, formatMonthKey, shiftMonth } from '../../core/dates';
+import { currentMonth } from '../../core/dates';
 import { formatChartValue, toChartValue } from '../../core/money';
 import { FrDatePipe } from '../../shared/date.pipe';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { countryName } from '../../shared/address';
 import { MemberSelections } from '../../shared/member-filter';
+import { PeriodPicker } from '../../shared/period-picker';
 
 /** Nom du fond de carte enregistré auprès d'ECharts. */
 const MAP = 'departements';
@@ -53,6 +54,7 @@ function loadMap(http: HttpClient): Promise<{ code: string; name: string }[]> {
 @Component({
   selector: 'app-location-analysis',
   imports: [
+    PeriodPicker,
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
@@ -75,18 +77,12 @@ function loadMap(http: HttpClient): Promise<{ code: string; name: string }[]> {
           <mat-button-toggle value="YEAR">Année</mat-button-toggle>
         </mat-button-toggle-group>
         @if (period() !== 'LAST12_MONTHS') {
-          <button mat-icon-button aria-label="Période précédente" (click)="shift(-1)">
-            <mat-icon>chevron_left</mat-icon>
-          </button>
-          <strong class="month">{{ periodLabel() }}</strong>
-          <button
-            mat-icon-button
-            aria-label="Période suivante"
-            (click)="shift(1)"
-            [disabled]="isCurrent()"
-          >
-            <mat-icon>chevron_right</mat-icon>
-          </button>
+          <app-period-picker
+            [mode]="period() === 'YEAR' ? 'year' : 'month'"
+            [value]="period() === 'YEAR' ? year() : month()"
+            [max]="period() === 'YEAR' ? currentYear : currentMonth"
+            (valueChange)="choose($event)"
+          />
         }
         <span class="spacer"></span>
         <mat-button-toggle-group
@@ -277,16 +273,6 @@ export class LocationAnalysis {
     stream: () => from(loadMap(this.http)),
   });
 
-  protected readonly isCurrent = computed(() =>
-    this.period() === 'YEAR'
-      ? this.year() === new Date().getFullYear()
-      : this.month() === currentMonth(),
-  );
-
-  protected readonly periodLabel = computed(() =>
-    this.period() === 'YEAR' ? String(this.year()) : formatMonthKey(this.month()),
-  );
-
   /**
    * Départements en dégradé selon le montant, tiers et adresses de transaction localisés en cercles
    * proportionnels (R-TIE-29, R-TRX-60).
@@ -380,9 +366,12 @@ export class LocationAnalysis {
     );
   }
 
-  protected shift(delta: number): void {
-    if (this.period() === 'YEAR') this.year.update((y) => y + delta);
-    else this.month.set(shiftMonth(this.month(), delta));
+  protected readonly currentMonth = currentMonth();
+  protected readonly currentYear = new Date().getFullYear();
+
+  protected choose(value: string | number): void {
+    if (this.period() === 'YEAR') this.year.set(Number(value));
+    else this.month.set(String(value));
   }
 
   protected toggle(line: LocationLine): void {
