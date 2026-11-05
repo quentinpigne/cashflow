@@ -306,6 +306,7 @@ export type { RecurringRuleInput } from './models/recurring-rule-input';
 export type { RecurringRuleView } from './models/recurring-rule-view';
 export type { RefundBadge } from './models/refund-badge';
 export type { RefundCandidate } from './models/refund-candidate';
+export type { RefundCandidatePage } from './models/refund-candidate-page';
 export type { RefundedExpense } from './models/refunded-expense';
 export type { RefundInfo } from './models/refund-info';
 export type { RefundLink } from './models/refund-link';

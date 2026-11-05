@@ -11,6 +11,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatChipsModule } from '@angular/material/chips';
 import {
   MAT_DIALOG_DATA,
   MatDialog,
@@ -20,12 +21,14 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, switchMap, timer } from 'rxjs';
 
 import { RefundCandidate } from '../../api/models/refund-candidate';
+import { RefundCandidatePage } from '../../api/models/refund-candidate-page';
 import { Split } from '../../api/models/split';
 import { SplitInput } from '../../api/models/split-input';
 import { TransactionDetail } from '../../api/models/transaction-detail';
@@ -50,11 +53,14 @@ interface RefundDialogData {
   available: number;
 }
 
-interface Row {
+/** Une dépense cochée, et le montant saisi : gardée d'une page ou d'une recherche à l'autre. */
+interface Chosen {
   candidate: RefundCandidate;
-  selected: boolean;
   amount: string;
 }
+
+/** Dépenses par page dans le dialogue. */
+const PAGE_SIZE = 10;
 
 /** Ventilation renvoyée telle quelle à l'API, avec son lien de remboursement. */
 function kept(s: Split, amount = s.amount_minor): SplitInput {
@@ -70,7 +76,10 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
   };
 }
 
-/** « Lier une dépense » : les dépenses proposées pour une entrée d'argent (R-TRX-54). */
+/**
+ * « Lier une dépense » : toutes les dépenses qui peuvent être remboursées, dans l'ordre de R-TRX-54, par pages de
+ * dix, et une recherche par libellé, tiers ou montant. Les dépenses cochées le restent d'une page à l'autre.
+ */
 @Component({
   selector: 'app-refund-dialog',
   imports: [
@@ -78,8 +87,11 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
     MatDialogModule,
     MatButtonModule,
     MatCheckboxModule,
+    MatChipsModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatProgressBarModule,
     MoneyPipe,
     FrDatePipe,
@@ -93,28 +105,52 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
         conséquence. Reste à affecter :
         <strong [class.error]="left() < 0">{{ left() | money: data.currency }}</strong>
       </p>
+      <mat-form-field class="search" subscriptSizing="dynamic">
+        <mat-label>Rechercher une dépense</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          placeholder="Libellé, tiers ou montant"
+          cdkFocusInitial
+        />
+      </mat-form-field>
+      @if (chosenList().length > 0) {
+        <mat-chip-set class="chosen" aria-label="Dépenses cochées">
+          @for (c of chosenList(); track c.candidate.transaction_id) {
+            <mat-chip (removed)="toggle(c.candidate, false)">
+              {{ c.candidate.label }} · {{ c.amount }} €
+              <button matChipRemove [attr.aria-label]="'Décocher ' + c.candidate.label">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip>
+          }
+        </mat-chip-set>
+      }
       @if (candidates.isLoading()) {
         <mat-progress-bar mode="indeterminate" />
       }
-      @for (row of rows(); track row.candidate.transaction_id; let i = $index) {
-        <div class="row" [class.disabled]="!row.candidate.category_id">
+      @for (candidate of items(); track candidate.transaction_id) {
+        @let choice = chosen().get(candidate.transaction_id);
+        <div class="row" [class.disabled]="!candidate.category_id">
           <mat-checkbox
-            [checked]="row.selected"
-            [disabled]="!row.candidate.category_id"
-            (change)="update(i, { selected: $event.checked })"
-            [aria-label]="'Rembourse ' + row.candidate.label"
+            [checked]="!!choice"
+            [disabled]="!candidate.category_id"
+            (change)="toggle(candidate, $event.checked)"
+            [aria-label]="'Rembourse ' + candidate.label"
           />
           <div class="what">
-            <span>{{ row.candidate.label }}</span>
+            <span>{{ candidate.label }}</span>
             <span class="muted small">
-              {{ row.candidate.date | frDate: 'short' }} · {{ row.candidate.account_name }} ·
-              {{ row.candidate.amount_minor | money: data.currency }}
-              @if (row.candidate.pending_minor > 0) {
-                · <strong>{{ row.candidate.pending_minor | money: data.currency }} attendus</strong>
-              } @else if (row.candidate.refunded_minor > 0) {
-                · {{ row.candidate.refunded_minor | money: data.currency }} déjà remboursés
+              {{ candidate.date | frDate: 'short' }} · {{ candidate.account_name }} ·
+              {{ candidate.amount_minor | money: data.currency }}
+              @if (candidate.pending_minor > 0) {
+                · <strong>{{ candidate.pending_minor | money: data.currency }} attendus</strong>
+              } @else if (candidate.refunded_minor > 0) {
+                · {{ candidate.refunded_minor | money: data.currency }} déjà remboursés
               }
-              @if (!row.candidate.category_id) {
+              @if (!candidate.category_id) {
                 · à catégoriser d'abord
               }
             </span>
@@ -123,17 +159,30 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
             <input
               matInput
               inputmode="decimal"
-              [attr.aria-label]="'Montant remboursé de ' + row.candidate.label"
-              [disabled]="!row.selected"
-              [ngModel]="row.amount"
-              (ngModelChange)="update(i, { amount: $event })"
+              [attr.aria-label]="'Montant remboursé de ' + candidate.label"
+              [disabled]="!choice"
+              [ngModel]="choice?.amount ?? proposed(candidate)"
+              (ngModelChange)="setAmount(candidate, $event)"
             />
             <span matTextSuffix>€</span>
           </mat-form-field>
         </div>
       } @empty {
         @if (!candidates.isLoading()) {
-          <p class="muted">Aucune dépense à rembourser dans les douze derniers mois.</p>
+          <p class="muted">
+            {{ query().trim() ? 'Aucune dépense ne correspond.' : 'Aucune dépense à rembourser.' }}
+          </p>
+        }
+      }
+      @if (page(); as p) {
+        @if (p.total > p.page_size) {
+          <mat-paginator
+            [length]="p.total"
+            [pageIndex]="p.page - 1"
+            [pageSize]="p.page_size"
+            [hidePageSize]="true"
+            (page)="pageIndex.set($event.pageIndex)"
+          />
         }
       }
     </mat-dialog-content>
@@ -143,6 +192,14 @@ function kept(s: Split, amount = s.amount_minor): SplitInput {
     </mat-dialog-actions>
   `,
   styles: `
+    .search {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    .chosen {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
     .row {
       display: grid;
       grid-template-columns: auto 1fr 8rem;
@@ -173,44 +230,83 @@ export class RefundDialog {
   private readonly api = inject(TransactionsService);
   private readonly ref = inject(MatDialogRef<RefundDialog, RefundChoice[]>);
 
-  protected readonly candidates = rxResource({
-    stream: () => this.api.refundCandidates({ id: this.data.transactionId }),
-  });
-  protected readonly rows = linkedSignal<Row[]>(() =>
-    (this.candidates.hasValue() ? this.candidates.value() : []).map((candidate) => ({
-      candidate,
-      selected: false,
-      amount: toEditable(candidate.proposed_minor, this.data.currency),
-    })),
-  );
+  protected readonly query = signal('');
+  /** Page affichée, à partir de 0 ; revient à la première à chaque recherche. */
+  protected readonly pageIndex = linkedSignal({ source: this.query, computation: () => 0 });
 
-  private readonly chosen = computed(() =>
-    this.rows()
-      .filter((r) => r.selected)
-      .map((r) => ({ row: r, amount: parseMoney(r.amount, this.data.currency) })),
+  /** Page de dépenses, demandée au serveur après une courte pause de saisie. */
+  protected readonly candidates = rxResource({
+    params: () => ({ q: this.query().trim(), page: this.pageIndex() + 1 }),
+    stream: ({ params }) =>
+      timer(params.q ? 300 : 0).pipe(
+        switchMap(() =>
+          this.api.refundCandidates({
+            id: this.data.transactionId,
+            q: params.q || undefined,
+            page: params.page,
+            limit: PAGE_SIZE,
+          }),
+        ),
+      ),
+  });
+  /** La page affichée reste visible pendant le chargement de la suivante. */
+  protected readonly page = linkedSignal<
+    RefundCandidatePage | undefined,
+    RefundCandidatePage | undefined
+  >({
+    source: () => (this.candidates.hasValue() ? this.candidates.value() : undefined),
+    computation: (next, previous) => next ?? previous?.value,
+  });
+  protected readonly items = computed(() => this.page()?.items ?? []);
+
+  protected readonly chosen = signal<Map<string, Chosen>>(new Map());
+  protected readonly chosenList = computed(() => [...this.chosen().values()]);
+
+  private readonly amounts = computed(() =>
+    this.chosenList().map((c) => ({ c, amount: parseMoney(c.amount, this.data.currency) })),
   );
   protected readonly left = computed(() =>
-    subtract(this.data.available, sum(this.chosen().map((c) => c.amount ?? 0))),
+    subtract(this.data.available, sum(this.amounts().map((a) => a.amount ?? 0))),
   );
   protected readonly valid = computed(
     () =>
-      this.chosen().length > 0 &&
+      this.amounts().length > 0 &&
       this.left() >= 0 &&
-      this.chosen().every(
-        (c) => c.amount !== null && c.amount > 0 && c.amount <= c.row.candidate.refundable_minor,
+      this.amounts().every(
+        (a) => a.amount !== null && a.amount > 0 && a.amount <= a.c.candidate.refundable_minor,
       ),
   );
 
-  protected update(index: number, patch: Partial<Row>): void {
-    this.rows.update((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  protected proposed(candidate: RefundCandidate): string {
+    return toEditable(candidate.proposed_minor, this.data.currency);
+  }
+
+  protected toggle(candidate: RefundCandidate, checked: boolean): void {
+    this.chosen.update((map) => {
+      const next = new Map(map);
+      if (checked) {
+        next.set(candidate.transaction_id, { candidate, amount: this.proposed(candidate) });
+      } else {
+        next.delete(candidate.transaction_id);
+      }
+      return next;
+    });
+  }
+
+  protected setAmount(candidate: RefundCandidate, amount: string): void {
+    this.chosen.update((map) => {
+      const current = map.get(candidate.transaction_id);
+      if (!current) return map;
+      return new Map(map).set(candidate.transaction_id, { ...current, amount });
+    });
   }
 
   protected save(): void {
     this.ref.close(
-      this.chosen().map((c) => ({
-        transaction_id: c.row.candidate.transaction_id,
-        amount_minor: c.amount ?? 0,
-        category_id: c.row.candidate.category_id ?? '',
+      this.amounts().map((a) => ({
+        transaction_id: a.c.candidate.transaction_id,
+        amount_minor: a.amount ?? 0,
+        category_id: a.c.candidate.category_id ?? '',
       })),
     );
   }

@@ -7,17 +7,35 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { RefundCandidate } from '../../models/refund-candidate';
+import { RefundCandidatePage } from '../../models/refund-candidate-page';
 import { TransactionId } from '../../models/transaction-id';
 
 export interface RefundCandidates$Params {
   id: TransactionId;
+
+/**
+ * Texte du libellé ou du nom du tiers, ou montant de la dépense.
+ */
+  q?: string;
+
+/**
+ * Page demandée, à partir de 1.
+ */
+  page?: number;
+
+/**
+ * Taille de la page : 10 par défaut, 100 au plus.
+ */
+  limit?: number;
 }
 
-export function refundCandidates(http: HttpClient, rootUrl: string, params: RefundCandidates$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<RefundCandidate>>> {
+export function refundCandidates(http: HttpClient, rootUrl: string, params: RefundCandidates$Params, context?: HttpContext): Observable<StrictHttpResponse<RefundCandidatePage>> {
   const rb = new RequestBuilder(rootUrl, refundCandidates.PATH, 'get');
   if (params) {
     rb.path('id', params.id, {});
+    rb.query('q', params.q, {});
+    rb.query('page', params.page, {});
+    rb.query('limit', params.limit, {});
   }
 
   return http.request(
@@ -25,7 +43,7 @@ export function refundCandidates(http: HttpClient, rootUrl: string, params: Refu
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<Array<RefundCandidate>>;
+      return r as StrictHttpResponse<RefundCandidatePage>;
     })
   );
 }

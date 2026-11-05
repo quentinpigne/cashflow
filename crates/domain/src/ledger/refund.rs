@@ -43,9 +43,6 @@ pub fn pending(expected: Option<Money>, refunded: Money) -> Money {
     expected.map_or(Money::ZERO, |e| (e - refunded).max(Money::ZERO))
 }
 
-/// Fenêtre des dépenses proposées : celles des 365 jours qui précèdent l'entrée (R-TRX-54).
-pub const CANDIDATE_DAYS: u64 = 365;
-
 /// Une dépense qui pourrait être remboursée.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Candidate<T, P> {
@@ -78,22 +75,18 @@ pub struct Proposal<T, P> {
 }
 
 /// Dépenses proposées pour une entrée de `date`, de `payee`, dont `available` n'est encore affecté à aucune
-/// dépense (R-TRX-54) : non entièrement remboursées, datées des 365 jours précédents ; reste à recevoir non nul
-/// d'abord, puis même tiers, puis date la plus proche. Le montant proposé est le reste à recevoir, sinon ce qui
-/// reste à rembourser, dans la limite de `available`.
+/// dépense (R-TRX-54) : toutes celles qui ne sont pas entièrement remboursées, quelle que soit leur date ; reste à
+/// recevoir non nul d'abord, puis même tiers, puis date la plus proche, avant ou après. Le montant proposé est le
+/// reste à recevoir, sinon ce qui reste à rembourser, dans la limite de `available`.
 pub fn proposals<T, P: PartialEq>(
     candidates: Vec<Candidate<T, P>>,
     date: Date,
     payee: Option<&P>,
     available: Money,
 ) -> Vec<Proposal<T, P>> {
-    let earliest = date.checked_sub_days(chrono::Days::new(CANDIDATE_DAYS)).unwrap_or(date);
-    let mut kept: Vec<Candidate<T, P>> = candidates
-        .into_iter()
-        .filter(|c| c.date >= earliest && c.date <= date && c.refundable().is_positive())
-        .collect();
+    let mut kept: Vec<Candidate<T, P>> = candidates.into_iter().filter(|c| c.refundable().is_positive()).collect();
     kept.sort_by_key(|c| {
-        (!c.pending().is_positive(), !(payee.is_some() && c.payee.as_ref() == payee), (date - c.date).num_days())
+        (!c.pending().is_positive(), !(payee.is_some() && c.payee.as_ref() == payee), (date - c.date).num_days().abs())
     });
     kept.into_iter()
         .map(|c| {
@@ -102,6 +95,32 @@ pub fn proposals<T, P: PartialEq>(
             Proposal { candidate: c, proposed }
         })
         .collect()
+}
+
+/// Recherche dans les dépenses proposées (R-TRX-54) : le texte, sans distinction de casse, dans le libellé ou le
+/// nom du tiers ; un montant (« 68,40 », « 68.4 », « 68 ») dans le montant de la dépense écrit en euros, sans
+/// séparateur de milliers (« 1268,00 »). Une recherche vide garde tout.
+pub fn matches_search(query: &str, label: &str, payee: Option<&str>, amount: Money) -> bool {
+    let query = query.trim().to_lowercase();
+    if query.is_empty() {
+        return true;
+    }
+    if label.to_lowercase().contains(&query) || payee.is_some_and(|p| p.to_lowercase().contains(&query)) {
+        return true;
+    }
+    let number: String =
+        query.chars().filter(|c| !c.is_whitespace() && *c != '€').map(|c| if c == '.' { ',' } else { c }).collect();
+    if number.is_empty() || !number.chars().all(|c| c.is_ascii_digit() || c == ',') {
+        return false;
+    }
+    let minor = amount.minor().unsigned_abs();
+    let written = format!("{},{:02}", minor / 100, minor % 100);
+    // « 68,4 » cherche « 68,40 » : une décimale tapée est complétée.
+    let prefix = match number.split_once(',') {
+        Some((_, decimals)) if decimals.len() == 1 => format!("{number}0"),
+        _ => number,
+    };
+    written.contains(&prefix)
 }
 
 #[cfg(test)]
@@ -153,6 +172,20 @@ mod tests {
     }
 
     #[test]
+    fn r_trx_54_search_by_label_payee_or_amount() {
+        let search = |q: &str| matches_search(q, "CABINET DENTAIRE", Some("Dr Martin"), m(-126_840));
+        assert!(search(""));
+        assert!(search("dentaire"));
+        assert!(search("martin"));
+        assert!(search("1268,40"));
+        assert!(search("1268.4"));
+        assert!(search("1 268"));
+        assert!(search("68,4 €"));
+        assert!(!search("68,5"));
+        assert!(!search("pharmacie"));
+    }
+
+    #[test]
     fn r_trx_54_proposals_order_and_amounts() {
         let candidate = |id: u32, date: &str, amount: i64, payee: Option<u32>, expected: Option<i64>, refunded: i64| {
             Candidate { id, date: d(date), amount: m(amount), payee, expected: expected.map(m), refunded: m(refunded) }
@@ -167,8 +200,9 @@ mod tests {
         ];
         let result = proposals(candidates, d("2026-09-30"), Some(&7), m(6_200));
         let ids: Vec<u32> = result.iter().map(|p| p.candidate.id).collect();
-        // Attendu d'abord, puis même tiers, puis date ; ni remboursé en entier, ni trop ancien, ni postérieur.
-        assert_eq!(ids, [2, 3, 1]);
+        // Attendu d'abord, puis même tiers, puis date la plus proche, avant ou après ; ni remboursé en entier, ni
+        // limité dans le temps : toute la liste.
+        assert_eq!(ids, [2, 3, 1, 6, 5]);
         assert_eq!(result[0].proposed, m(1_750));
         assert_eq!(result[1].proposed, m(3_999));
         // Limité à ce que l'entrée n'a pas encore affecté.

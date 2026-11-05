@@ -54,3 +54,42 @@ test('E1, E7 : remboursement attendu, puis lié depuis l’entrée (TRX-12, R-TR
   await expect(page.locator('section.net-worth')).toBeVisible();
   await expect(page.locator('section.refunds')).toHaveCount(0);
 });
+
+test('E7 : « Lier une dépense » liste toutes les dépenses, par pages, et les cherche (R-TRX-54)', async ({
+  page,
+}) => {
+  await login(page);
+  // Une entrée d'argent à affecter, supprimée à la fin.
+  const accounts = await (await page.request.get('/api/v1/accounts')).json();
+  const checking = accounts.find((a: { name: string }) => a.name === 'Compte courant');
+  const created = await page.request.post('/api/v1/transactions', {
+    data: { account_id: checking.id, date: '2026-10-18', amount_minor: 5_000, label: 'AVOIR' },
+  });
+  const { id } = await created.json();
+  await page.goto(`/transactions/${id}`);
+  await page.getByRole('button', { name: 'Lier une dépense' }).click();
+  const dialog = await openedDialog(page, 'Rembourse une dépense');
+
+  // Dix dépenses par page, et toutes les pages : plus de cinquante dépenses dans la démonstration.
+  await expect(dialog.locator('.row')).toHaveCount(10);
+  const paginator = dialog.locator('mat-paginator');
+  await expect(paginator).toContainText(/1 – 10 sur \d{2,}/);
+
+  // Une dépense cochée en page 2 le reste en revenant en page 1.
+  await paginator.getByRole('button', { name: 'Page suivante' }).click();
+  await expect(paginator).toContainText(/11 – 20 sur/);
+  const second = dialog.locator('.row').first();
+  await second.getByRole('checkbox').check();
+  await paginator.getByRole('button', { name: 'Page précédente' }).click();
+  await expect(paginator).toContainText(/1 – 10 sur/);
+  await expect(dialog.locator('mat-chip')).toHaveCount(1);
+
+  // Recherche par libellé, puis par montant.
+  await dialog.getByLabel('Rechercher une dépense').fill('dentaire');
+  await expect(dialog.locator('.row').first()).toContainText('CABINET DENTAIRE');
+  await expect(dialog.locator('.row', { hasNotText: 'CABINET DENTAIRE' })).toHaveCount(0);
+  await dialog.getByLabel('Rechercher une dépense').fill('890');
+  await expect(dialog.locator('.row').first()).toContainText('LOYER APPARTEMENT');
+  await dialog.getByRole('button', { name: 'Annuler' }).click();
+  await page.request.delete(`/api/v1/transactions/${id}`);
+});

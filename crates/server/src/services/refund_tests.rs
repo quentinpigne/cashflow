@@ -5,7 +5,7 @@ use cashflow_domain::accounts::AccountKind;
 use cashflow_domain::ledger::category::CategoryKind;
 use cashflow_domain::shared::ids::{AccountId, CategoryId, TransactionId};
 
-use super::refunds::{self, ExpectedRefundInput};
+use super::refunds::{self, ExpectedRefundInput, RefundCandidatesQuery};
 use super::tests::{account, category, d, domain_error, setup, split, tx};
 use super::transactions::{self, SplitInput, TransactionInput, TransactionUpdateInput};
 use crate::db::Db;
@@ -93,7 +93,7 @@ async fn trx_12_one_income_refunds_several_expenses() {
 
     // Propositions : déjà remboursées en partie, elles restent proposées pour le reste (R-TRX-54).
     let other = income(&db, checking, "2026-03-30", vec![split(5_000, Some(salary))]).await;
-    let candidates = refunds::candidates(&db, other).await.unwrap();
+    let candidates = refunds::candidates(&db, other, &RefundCandidatesQuery::default()).await.unwrap().items;
     let full_candidate = candidates.iter().find(|c| c.transaction_id == full).unwrap();
     assert_eq!((full_candidate.refundable_minor, full_candidate.proposed_minor), (2_640, 2_640));
     assert_eq!(full_candidate.category_id, Some(fuel));
@@ -150,4 +150,41 @@ async fn trx_12_r_trx_52_r_trx_53_lists_show_refund_links() {
     let page = transactions::list(&db, card, &Default::default()).await.unwrap();
     let lunch_row = page.items.iter().find(|i| i.id == lunch).unwrap();
     assert_eq!(lunch_row.refund.as_ref().map(|r| r.pending_minor), Some(1_200));
+}
+
+/// Toutes les dépenses sont proposées, sans limite de nombre ni de date, par pages, et se cherchent par libellé ou
+/// par montant (R-TRX-54).
+#[tokio::test]
+async fn r_trx_54_candidates_are_complete_paginated_and_searchable() {
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 0).await;
+    let food = category(&db, "Courses P", CategoryKind::Expense, None).await;
+    let salary = category(&db, "Salaire P", CategoryKind::Income, None).await;
+    // 60 dépenses, plus que l'ancien plafond de 50, dont une de plus d'un an et une postérieure à l'entrée.
+    for day in 0..58 {
+        let date = d("2027-01-01") + chrono::Days::new(day);
+        transactions::create(&db, &tx(checking, &date.to_string(), -1_000 - i64::try_from(day).unwrap(), Some(food)))
+            .await
+            .unwrap();
+    }
+    let old = TransactionInput { label: "PHARMACIE ANCIENNE".into(), ..tx(checking, "2026-02-01", -6_840, Some(food)) };
+    let old = transactions::create(&db, &old).await.unwrap();
+    let later = transactions::create(&db, &tx(checking, "2027-04-15", -2_222, Some(food))).await.unwrap();
+    let entry = income(&db, checking, "2027-03-31", vec![split(10_000, Some(salary))]).await;
+
+    let query =
+        |q: Option<&str>, page: Option<usize>| RefundCandidatesQuery { q: q.map(Into::into), page, limit: None };
+    let first = refunds::candidates(&db, entry, &query(None, None)).await.unwrap();
+    assert_eq!((first.total, first.page, first.page_size, first.items.len()), (60, 1, 10, 10));
+    let last = refunds::candidates(&db, entry, &query(None, Some(6))).await.unwrap();
+    assert_eq!((last.page, last.items.len()), (6, 10));
+    // La dépense de 2026 est la plus éloignée : en dernier.
+    assert_eq!(last.items.last().map(|c| c.transaction_id), Some(old));
+    // Une page au-delà de la dernière renvoie la dernière.
+    assert_eq!(refunds::candidates(&db, entry, &query(None, Some(99))).await.unwrap().page, 6);
+
+    let by_label = refunds::candidates(&db, entry, &query(Some("pharmacie"), None)).await.unwrap();
+    assert_eq!(by_label.items.iter().map(|c| c.transaction_id).collect::<Vec<_>>(), [old]);
+    let by_amount = refunds::candidates(&db, entry, &query(Some("22,22"), None)).await.unwrap();
+    assert_eq!(by_amount.items.iter().map(|c| c.transaction_id).collect::<Vec<_>>(), [later]);
 }

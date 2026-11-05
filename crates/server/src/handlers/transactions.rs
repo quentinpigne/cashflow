@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use super::DeleteQuery;
 use crate::error::{AppResult, Problem};
-use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
+use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidatePage, RefundCandidatesQuery};
 use crate::services::transactions::{
     self, BulkAddressInput, BulkAddressResult, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput,
     BulkCategorizeResult, BulkMemberInput, BulkMemberResult, BulkPayeeInput, BulkPayeeResult, BulkSplitInput,
@@ -257,14 +257,15 @@ pub async fn set_expected_refund(
 /// Dépenses proposées pour une entrée d'argent qui les rembourse (R-TRX-54).
 #[utoipa::path(
     get, operation_id = "refundCandidates", path = "/transactions/{id}/refund-candidates", tag = "transactions",
-    params(("id" = TransactionId, Path)),
-    responses((status = 200, body = Vec<RefundCandidate>), (status = 404, body = Problem), (status = 422, body = Problem))
+    params(("id" = TransactionId, Path), RefundCandidatesQuery),
+    responses((status = 200, body = RefundCandidatePage), (status = 404, body = Problem), (status = 422, body = Problem))
 )]
 pub async fn refund_candidates(
     State(state): State<AppState>,
     Path(id): Path<TransactionId>,
-) -> AppResult<Json<Vec<RefundCandidate>>> {
-    Ok(Json(refunds::candidates(&state.db, id).await?))
+    Query(query): Query<RefundCandidatesQuery>,
+) -> AppResult<Json<RefundCandidatePage>> {
+    Ok(Json(refunds::candidates(&state.db, id, &query).await?))
 }
 
 /// Dépenses dont le remboursement attendu n'est pas entièrement reçu (R-TRX-53, E1).

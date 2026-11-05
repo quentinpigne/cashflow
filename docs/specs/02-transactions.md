@@ -185,9 +185,10 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   (`expected_refund`), positif et au plus égal à son montant. **Reste à recevoir** = attendu − remboursé
   (zéro au minimum), calculé. L'attente est soldée quand le reste vaut zéro ; on peut aussi retirer l'attendu
   (« ne viendra pas »).
-- **R-TRX-54** — **Propositions** : pour une entrée d'argent, les dépenses datées des 365 jours qui précèdent
-  l'entrée (jusqu'à sa date) et qui ne sont pas entièrement remboursées, dans l'ordre : reste à recevoir non
-  nul, puis même tiers, puis date la plus proche, 50 au plus. Le montant proposé est le reste à recevoir (sinon ce qui reste
+- **R-TRX-54** — **Propositions** : pour une entrée d'argent, toutes les dépenses qui ne sont pas entièrement
+  remboursées, quelle que soit leur date, dans l'ordre : reste à recevoir non nul, puis même tiers, puis date la
+  plus proche de l'entrée, avant ou après. La liste se parcourt par pages de dix et se cherche par libellé, nom
+  du tiers ou montant (« 68,40 », « 68 »). Le montant proposé est le reste à recevoir (sinon ce qui reste
   à rembourser de la dépense), dans la limite de ce que l'entrée n'a pas encore affecté.
 - **R-TRX-55** — Supprimer la dépense retire le lien : la ventilation de l'entrée reste, avec sa catégorie.
   Supprimer l'entrée réduit d'autant le remboursé de la dépense.
@@ -289,7 +290,8 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 ### TRX-12 — Remboursements de frais
 
 - Sur la fiche d'une entrée d'argent (E7) : « Lier une dépense » liste les dépenses proposées (R-TRX-54),
-  avec leur reste à recevoir. On en coche une ou plusieurs et on ajuste le montant de chacune ; l'entrée est
+  avec leur reste à recevoir, par pages, avec une recherche. On en coche une ou plusieurs, sur plusieurs pages ou
+  recherches au besoin et on ajuste le montant de chacune ; l'entrée est
   ventilée en conséquence, ce qui n'est affecté à aucune dépense garde sa ventilation d'avant.
 - Sur la fiche d'une dépense : le champ « Remboursement attendu », le remboursé (« 17,50 € remboursés sur
   25,00 € ») et les entrées qui la remboursent, avec un lien vers chacune.

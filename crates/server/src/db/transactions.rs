@@ -1131,12 +1131,8 @@ macro_rules! refundable_row {
 }
 
 /// Dépenses datées de `from` à `to`, hors jambes de virement, avec leur remboursé hors entrée `except`.
-pub async fn refundable(
-    db: impl SqliteExecutor<'_>,
-    from: Date,
-    to: Date,
-    except: TransactionId,
-) -> anyhow::Result<Vec<RefundableRow>> {
+/// Dépenses qui pourraient être remboursées par l'entrée `except`, quelle que soit leur date (R-TRX-54).
+pub async fn refundable(db: impl SqliteExecutor<'_>, except: TransactionId) -> anyhow::Result<Vec<RefundableRow>> {
     let except = except.to_string();
     let rows = sqlx::query!(
         r#"SELECT t.id AS "id!", t.account_id AS "account_id!", t.date AS "date!: Date", t.label AS "label!",
@@ -1146,12 +1142,10 @@ pub async fn refundable(
                   (SELECT s.category_id FROM split s JOIN category c ON c.id = s.category_id
                    WHERE s.transaction_id = t.id AND c.kind = 'EXPENSE' ORDER BY s.amount LIMIT 1) AS category_id
            FROM ledger_transaction t
-           WHERE t.amount < 0 AND t.date BETWEEN ?2 AND ?3 AND t.id <> ?1
+           WHERE t.amount < 0 AND t.id <> ?1
              AND NOT EXISTS (SELECT 1 FROM transfer_leg tl WHERE t.id IN (tl.outflow_transaction_id, tl.inflow_transaction_id))
            ORDER BY t.date DESC, t.id"#,
-        except,
-        from,
-        to
+        except
     )
     .fetch_all(db)
     .await?;

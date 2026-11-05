@@ -38,7 +38,7 @@ import { MarkAsTransfer$Params } from '../fn/transactions/mark-as-transfer';
 import { PendingRefund } from '../models/pending-refund';
 import { pendingRefunds } from '../fn/transactions/pending-refunds';
 import { PendingRefunds$Params } from '../fn/transactions/pending-refunds';
-import { RefundCandidate } from '../models/refund-candidate';
+import { RefundCandidatePage } from '../models/refund-candidate-page';
 import { refundCandidates } from '../fn/transactions/refund-candidates';
 import { RefundCandidates$Params } from '../fn/transactions/refund-candidates';
 import { setExpectedRefund } from '../fn/transactions/set-expected-refund';
@@ -597,7 +597,7 @@ export class TransactionsService extends BaseService {
    *
    * This method doesn't expect any request body.
    */
-  refundCandidates$Response(params: RefundCandidates$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<RefundCandidate>>> {
+  refundCandidates$Response(params: RefundCandidates$Params, context?: HttpContext): Observable<StrictHttpResponse<RefundCandidatePage>> {
     const obs = refundCandidates(this.http, this.rootUrl, params, context);
     return obs;
   }
@@ -612,10 +612,10 @@ export class TransactionsService extends BaseService {
    *
    * This method doesn't expect any request body.
    */
-  refundCandidates(params: RefundCandidates$Params, context?: HttpContext): Observable<Array<RefundCandidate>> {
+  refundCandidates(params: RefundCandidates$Params, context?: HttpContext): Observable<RefundCandidatePage> {
     const resp = this.refundCandidates$Response(params, context);
     return resp.pipe(
-      map((r: StrictHttpResponse<Array<RefundCandidate>>): Array<RefundCandidate> => r.body)
+      map((r: StrictHttpResponse<RefundCandidatePage>): RefundCandidatePage => r.body)
     );
   }
 

@@ -9396,6 +9396,35 @@
             "schema": {
               "$ref": "#/components/schemas/TransactionId"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Texte du libellé ou du nom du tiers, ou montant de la dépense.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page demandée, à partir de 1.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Taille de la page : 10 par défaut, 100 au plus.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         ],
         "responses": {
@@ -9403,10 +9432,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RefundCandidate"
-                  }
+                  "$ref": "#/components/schemas/RefundCandidatePage"
                 }
               }
             }
@@ -19860,6 +19886,38 @@
           },
           "transaction_id": {
             "$ref": "#/components/schemas/TransactionId"
+          }
+        }
+      },
+      "RefundCandidatePage": {
+        "type": "object",
+        "description": "Une page des dépenses proposées, dans l'ordre de R-TRX-54.",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundCandidate"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page renvoyée, à partir de 1 : la dernière si la page demandée n'existe plus.",
+            "minimum": 0
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "description": "Nombre de dépenses qui correspondent à la recherche.",
+            "minimum": 0
           }
         }
       },

@@ -8,7 +8,7 @@ use cashflow_domain::shared::ids::{AccountId, CategoryId, PayeeId, SplitId, Tran
 use cashflow_domain::{Date, DomainError, Money};
 use serde::{Deserialize, Serialize};
 use sqlx::SqliteConnection;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use super::transactions::SplitInput;
 use crate::db::transactions::{RefundableRow, TransactionRow};
@@ -207,18 +207,51 @@ fn candidate(row: &RefundableRow) -> Candidate<TransactionId, PayeeId> {
     }
 }
 
-/// Nombre maximal de dépenses proposées : les premières dans l'ordre de R-TRX-54.
-const MAX_CANDIDATES: usize = 50;
+/// Recherche et page des dépenses proposées (R-TRX-54).
+#[derive(Debug, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct RefundCandidatesQuery {
+    /// Texte du libellé ou du nom du tiers, ou montant de la dépense.
+    pub q: Option<String>,
+    /// Page demandée, à partir de 1.
+    pub page: Option<usize>,
+    /// Taille de la page : 10 par défaut, 100 au plus.
+    pub limit: Option<usize>,
+}
 
-/// Dépenses proposées pour l'entrée d'argent `id` (R-TRX-54).
-pub async fn candidates(db: &Db, id: TransactionId) -> AppResult<Vec<RefundCandidate>> {
+/// Une page des dépenses proposées, dans l'ordre de R-TRX-54.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RefundCandidatePage {
+    pub items: Vec<RefundCandidate>,
+    /// Nombre de dépenses qui correspondent à la recherche.
+    pub total: usize,
+    /// Page renvoyée, à partir de 1 : la dernière si la page demandée n'existe plus.
+    pub page: usize,
+    pub page_size: usize,
+}
+
+const DEFAULT_CANDIDATE_PAGE: usize = 10;
+const MAX_CANDIDATE_PAGE: usize = 100;
+
+/// Dépenses proposées pour l'entrée d'argent `id` : toutes, dans l'ordre de R-TRX-54, filtrées par la recherche
+/// et découpées en pages.
+pub async fn candidates(db: &Db, id: TransactionId, query: &RefundCandidatesQuery) -> AppResult<RefundCandidatePage> {
     let mut conn = db.read.acquire().await?;
     let t = db::transactions::find(&mut *conn, id).await?.ok_or(AppError::NotFound("transaction"))?;
     if !t.amount.is_positive() {
         return Err(DomainError::InvalidRefund.into());
     }
-    let from = t.date.checked_sub_days(chrono::Days::new(refund::CANDIDATE_DAYS)).unwrap_or(t.date);
-    let rows = db::transactions::refundable(&mut *conn, from, t.date, id).await?;
+    let rows = db::transactions::refundable(&mut *conn, id).await?;
+    let payees: HashMap<PayeeId, String> =
+        db::payees::list(&mut *conn).await?.into_iter().map(|p| (p.id, p.name)).collect();
+    let search = query.q.as_deref().unwrap_or_default();
+    let rows: Vec<RefundableRow> = rows
+        .into_iter()
+        .filter(|r| {
+            let payee = r.payee_id.and_then(|p| payees.get(&p)).map(String::as_str);
+            refund::matches_search(search, &r.label, payee, r.amount)
+        })
+        .collect();
     let by_id: HashMap<TransactionId, &RefundableRow> = rows.iter().map(|r| (r.id, r)).collect();
     // Ce que l'entrée n'affecte encore à aucune dépense.
     let linked: Money = db::transactions::splits_of(&mut *conn, id)
@@ -230,9 +263,14 @@ pub async fn candidates(db: &Db, id: TransactionId) -> AppResult<Vec<RefundCandi
     let names = account_names(&mut conn).await?;
     let proposals =
         refund::proposals(rows.iter().map(candidate).collect(), t.date, t.payee_id.as_ref(), t.amount - linked);
-    Ok(proposals
+    let total = proposals.len();
+    let page_size = query.limit.unwrap_or(DEFAULT_CANDIDATE_PAGE).clamp(1, MAX_CANDIDATE_PAGE);
+    let last = total.div_ceil(page_size).max(1);
+    let page = query.page.unwrap_or(1).clamp(1, last);
+    let items = proposals
         .into_iter()
-        .take(MAX_CANDIDATES)
+        .skip((page - 1) * page_size)
+        .take(page_size)
         .filter_map(|p| {
             let row = by_id.get(&p.candidate.id)?;
             Some(RefundCandidate {
@@ -250,7 +288,8 @@ pub async fn candidates(db: &Db, id: TransactionId) -> AppResult<Vec<RefundCandi
                 category_id: row.category_id,
             })
         })
-        .collect())
+        .collect();
+    Ok(RefundCandidatePage { items, total, page, page_size })
 }
 
 /// Dépenses dont le remboursement attendu n'est pas entièrement reçu, les plus anciennes d'abord (R-TRX-53).

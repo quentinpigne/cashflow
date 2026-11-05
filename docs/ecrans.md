@@ -372,7 +372,9 @@ Plein écran sur mobile, panneau latéral sur ordinateur (la liste reste visible
 - **Remboursement de frais** (TRX-12) :
   - une **entrée d'argent** affiche l'encadré **Remboursements** et « Lier une dépense » : dialogue des
     dépenses proposées (R-TRX-54), chacune avec son montant, son reste à recevoir et un montant à
-    rembourser modifiable ; valider ventile
+    rembourser modifiable. Champ « Rechercher une dépense » (libellé, tiers ou montant) en tête, pages de dix
+    `[mat-paginator]` en bas ; les dépenses cochées restent cochées d'une page ou d'une recherche à l'autre et
+    s'affichent en puces sous la recherche, avec leur montant ; valider ventile
     l'entrée, une ventilation par dépense cochée. Les ventilations qui remboursent affichent la dépense
     visée, avec un lien, et « Retirer le lien » ;
   - une **dépense** affiche le champ « Remboursement attendu » parmi les autres champs (bouton « Ne viendra
