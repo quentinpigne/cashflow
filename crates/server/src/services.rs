@@ -70,6 +70,8 @@ pub fn required(value: &str, field: &'static str, max: usize) -> AppResult<Strin
 #[cfg(test)]
 mod analysis_month_tests;
 #[cfg(test)]
+mod batch_split_tests;
+#[cfg(test)]
 mod budget_tests;
 #[cfg(test)]
 mod credit_tests;

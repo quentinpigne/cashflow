@@ -95,6 +95,17 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 - **R-TRX-15** — Une ventilation peut être rattachée à **un** projet (spec 05, R-BUD-20 à R-BUD-25),
   indépendamment de sa catégorie. Dans une transaction ventilée, chaque ventilation a son propre projet :
   un ticket de supermarché peut avoir une partie « vacances » et une partie « quotidien ».
+- **R-TRX-16** — **Ventilation en lot** (TRX-14) : un même **modèle** de ventilation s'applique à une sélection
+  de transactions et remplace leurs ventilations. Le modèle est soit tout en **pourcentages**, positifs et de
+  total 100 % (chaque transaction est ventilée à son prorata, l'arrondi sur la dernière ligne, R-TRX-14), soit
+  tout en **montants**, ce qui n'est proposé que si toutes les transactions ont le même montant : le modèle doit
+  le faire au centime près, sinon rien n'est modifié (R-TRX-10). Chaque ligne porte une catégorie (ou aucune),
+  une note et un membre, ou « inchangé » : le membre commun aux ventilations remplacées, à défaut le titulaire
+  du compte (R-MBR-6). Le projet commun aux ventilations remplacées est gardé sur chaque ligne. Sont laissées
+  telles quelles, et comptées : les jambes de virement, les mensualités de prêt (R-PRE-8), les transactions
+  dont une ventilation est rattachée à un prêt, à un bien ou rembourse une dépense (R-TRX-37, R-TRX-50), et
+  celles qu'un pourcentage réduirait à une part nulle (R-TRX-11). Une transaction rapprochée se ventile sans
+  déverrouillage (R-TRX-3).
 
 ### Catégories
 
@@ -203,6 +214,7 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 | TRX-11 | — | *(supprimée : devenue DOC-04, spec 12)* |
 | TRX-12 | V1 | Remboursements de frais : lier une entrée à une ou plusieurs dépenses, en tout ou partie ; remboursement attendu et reste à recevoir |
 | TRX-13 | V1 | Mois d'analyse d'une transaction : choisir le mois sur lequel elle compte (une transaction, une sélection, une règle) |
+| TRX-14 | V1 | Ventilation en lot : un modèle en pourcentages (ou en montants si les montants sont égaux) appliqué à une sélection |
 
 ### TRX-01 — Saisir une transaction
 
@@ -232,6 +244,19 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 - Étant donné une transaction importée de −300 € sur le compte courant, quand je la marque comme
   virement vers l'assurance vie et qu'aucune transaction candidate n'existe, alors une transaction de
   +300 €, `CLEARED`, est créée sur l'assurance vie, et les deux sont liées (R-TRX-36).
+
+### TRX-14 — Ventilation en lot
+
+- Dans la liste (E14) : action « Ventiler » sur une sélection, qui ouvre E6 en mode lot.
+- Montants différents : saisie en pourcentages seulement, total 100 % ; montants égaux : bascule « € / % » comme
+  pour une transaction.
+
+**Critères d'acceptation**
+- Étant donné deux dépenses de −120,00 € et −10,01 €, quand je les ventile à 60 % Alimentation et 40 % Maison,
+  alors elles valent −72,00 / −48,00 € et −6,01 / −4,00 € (R-TRX-16, R-TRX-14).
+- Étant donné deux forfaits de −39,99 €, quand je les ventile en 19,99 € Téléphone et 20,00 € Internet, alors
+  les deux ont ces deux ventilations.
+- Étant donné une sélection qui contient un virement, alors le virement est laissé tel quel et compté à part.
 
 ### TRX-12 — Remboursements de frais
 

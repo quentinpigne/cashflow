@@ -148,6 +148,10 @@
       >
         Catégoriser
       </button>
+      <button mat-stroked-button (click)="splitSelection()" [disabled]="busy()">
+        <mat-icon>call_split</mat-icon>
+        Ventiler
+      </button>
       <app-payee-picker
         class="bulk-picker"
         label="Affecter un tiers"

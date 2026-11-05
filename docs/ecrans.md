@@ -327,9 +327,9 @@ Virement (TRX-05, R-TRX-33) :
 └──────────────────────────┘
 ```
 
-## E6 — Ventilation (TRX-03)
+## E6 — Ventilation (TRX-03, TRX-14)
 
-Ouvert depuis la saisie rapide ou depuis le détail d'une transaction.
+Ouvert depuis la saisie rapide ou depuis le détail d'une transaction, ou en **lot** depuis E14 (TRX-14).
 
 - En haut : le montant de la transaction et le **reste à ventiler**, en rouge tant qu'il n'est pas nul.
 - Une ligne par ventilation : catégorie, montant **ou** pourcentage (bascule globale « € / % »), note,
@@ -339,6 +339,10 @@ Ouvert depuis la saisie rapide ou depuis le détail d'une transaction.
   dernière ligne (R-TRX-14).
 - Bouton « Répartir le reste » sur une ligne : lui attribue le reste à ventiler.
 - Une ligne de signe opposé à la transaction est signalée (remboursement, R-TRX-11).
+- **En lot** (R-TRX-16) : titre « Ventiler N transaction(s) », mention de ce qui est laissé tel quel (virements,
+  mensualités, ventilations liées à un prêt, un bien ou un remboursement). Si les montants diffèrent, pas de
+  bascule : pourcentages seulement, sans montant calculé, « Total » en rouge tant qu'il ne fait pas 100 %.
+  Le membre d'une ligne propose « Inchangé » (par défaut). Pas de remboursement de prêt ni d'acquisition.
 - « Valider » n'est actif que si le reste vaut 0,00 € (R-TRX-10).
 - Le rattachement à un projet (R-TRX-15) arrive avec les budgets (phase 4).
 
@@ -477,8 +481,8 @@ Panneau de la fiche compte (E3), pour les comptes de liquidités et d'épargne �
 ## E14 — Transactions (TRX-08, TRX-06)
 
 Toutes les transactions, tous comptes confondus, avec les filtres d'E3 plus le compte et « à
-catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Catégoriser » (TRX-06) et « Mois
-d'analyse » (TRX-13). Une transaction dont le mois d'analyse diffère de sa date affiche « compte en
+catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Catégoriser » (TRX-06), « Ventiler »
+(TRX-14, E6 en lot) et « Mois d'analyse » (TRX-13). Une transaction dont le mois d'analyse diffère de sa date affiche « compte en
 novembre 2026 » (aussi en E3). Ouverte depuis le budget ou les analyses, la liste filtre sur le mois
 d'analyse (R-TRX-58). Pas de solde après opération : il n'a de sens que par compte. Même pagination qu'en
 E3, 100 transactions par page par défaut ; changer de page vide la sélection. Les filtres et la page sont

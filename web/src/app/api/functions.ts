@@ -113,6 +113,8 @@ export type { SetTransactionsMember$Params as SetTransactionsMember$Params } fro
 export { setTransactionsMember as setTransactionsMember } from './fn/transactions/set-transactions-member';
 export type { SetTransactionsPayee$Params as SetTransactionsPayee$Params } from './fn/transactions/set-transactions-payee';
 export { setTransactionsPayee as setTransactionsPayee } from './fn/transactions/set-transactions-payee';
+export type { SplitTransactions$Params as SplitTransactions$Params } from './fn/transactions/split-transactions';
+export { splitTransactions as splitTransactions } from './fn/transactions/split-transactions';
 export type { GetTransaction$Params as GetTransaction$Params } from './fn/transactions/get-transaction';
 export { getTransaction as getTransaction } from './fn/transactions/get-transaction';
 export type { UpdateTransaction$Params as UpdateTransaction$Params } from './fn/transactions/update-transaction';

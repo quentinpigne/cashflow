@@ -1,6 +1,20 @@
-<h2 mat-dialog-title>Ventilation</h2>
+<h2 mat-dialog-title>
+  {{ batch ? 'Ventiler ' + batch.count + ' transaction(s)' : 'Ventilation' }}
+</h2>
 <mat-dialog-content>
-  <div class="summary">
+  @if (batch?.percentOnly) {
+    <p class="muted">
+      Les montants diffèrent : chaque transaction est ventilée selon ces pourcentages, l'arrondi sur
+      la dernière ligne.
+    </p>
+  }
+  @if (batch) {
+    <p class="muted">
+      Les virements, les mensualités de prêt et les transactions liées à un prêt, un bien ou un
+      remboursement sont laissés tels quels.
+    </p>
+  }
+  <div class="summary" [hidden]="batch?.percentOnly">
     <span
       >Montant
       <strong class="amount" [class.negative]="data.totalMinor < 0">{{ total }}</strong></span
@@ -10,16 +24,20 @@
     </span>
   </div>
 
-  <mat-button-toggle-group
-    [value]="mode()"
-    (change)="switchMode($event.value)"
-    aria-label="Mode de saisie"
-  >
-    <mat-button-toggle value="amount">€</mat-button-toggle>
-    <mat-button-toggle value="percent">%</mat-button-toggle>
-  </mat-button-toggle-group>
+  @if (!batch?.percentOnly) {
+    <mat-button-toggle-group
+      [value]="mode()"
+      (change)="switchMode($event.value)"
+      aria-label="Mode de saisie"
+    >
+      <mat-button-toggle value="amount">€</mat-button-toggle>
+      <mat-button-toggle value="percent">%</mat-button-toggle>
+    </mat-button-toggle-group>
+  }
   @if (mode() === 'percent') {
-    <span class="muted percent-total">Total {{ percentTotal() / 100 }} %</span>
+    <span class="muted percent-total" [class.remaining-error]="batch && percentTotal() !== 10000"
+      >Total {{ percentTotal() / 100 }} %</span
+    >
   }
 
   @for (line of lines(); track $index; let i = $index) {
@@ -27,7 +45,7 @@
       <app-category-picker
         class="category"
         [value]="line.category"
-        [attachments]="true"
+        [attachments]="!batch"
         (valueChange)="update(i, { category: $event })"
         [kind]="data.kind"
       />
@@ -40,7 +58,7 @@
           (ngModelChange)="update(i, { input: $event })"
           [name]="'value' + i"
         />
-        @if (mode() === 'percent') {
+        @if (mode() === 'percent' && !batch?.percentOnly) {
           <mat-hint align="end">{{ format(amounts()[i]) }}</mat-hint>
         }
         @if (isOpposite(amounts()[i])) {
@@ -63,6 +81,9 @@
             [value]="line.member ?? ''"
             (selectionChange)="update(i, { member: $event.value || null })"
           >
+            @if (batch) {
+              <mat-option [value]="KEEP_MEMBER">Inchangé</mat-option>
+            }
             <mat-option value="">Foyer</mat-option>
             @for (member of members.list(); track member.id) {
               <mat-option [value]="member.id">{{ member.name }}</mat-option>

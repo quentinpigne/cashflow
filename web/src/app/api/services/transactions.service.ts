@@ -14,6 +14,7 @@ import { BulkAnalysisMonthResult } from '../models/bulk-analysis-month-result';
 import { BulkCategorizeResult } from '../models/bulk-categorize-result';
 import { BulkMemberResult } from '../models/bulk-member-result';
 import { BulkPayeeResult } from '../models/bulk-payee-result';
+import { BulkSplitResult } from '../models/bulk-split-result';
 import { Candidate } from '../models/candidate';
 import { categorizeSplit } from '../fn/transactions/categorize-split';
 import { CategorizeSplit$Params } from '../fn/transactions/categorize-split';
@@ -47,6 +48,8 @@ import { setTransactionsMember } from '../fn/transactions/set-transactions-membe
 import { SetTransactionsMember$Params } from '../fn/transactions/set-transactions-member';
 import { setTransactionsPayee } from '../fn/transactions/set-transactions-payee';
 import { SetTransactionsPayee$Params } from '../fn/transactions/set-transactions-payee';
+import { splitTransactions } from '../fn/transactions/split-transactions';
+import { SplitTransactions$Params } from '../fn/transactions/split-transactions';
 import { TransactionCreated } from '../models/transaction-created';
 import { TransactionDetail } from '../models/transaction-detail';
 import { TransactionPage } from '../models/transaction-page';
@@ -381,6 +384,41 @@ export class TransactionsService extends BaseService {
     const resp = this.setTransactionsPayee$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<BulkPayeeResult>): BulkPayeeResult => r.body)
+    );
+  }
+
+  /** Path part for operation `splitTransactions()` */
+  static readonly SplitTransactionsPath = '/api/v1/transactions/split';
+
+  /**
+   * Ventile plusieurs transactions selon un même modèle, en pourcentages ou en montants (TRX-14).
+   *
+   *
+   *
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `splitTransactions()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  splitTransactions$Response(params: SplitTransactions$Params, context?: HttpContext): Observable<StrictHttpResponse<BulkSplitResult>> {
+    const obs = splitTransactions(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * Ventile plusieurs transactions selon un même modèle, en pourcentages ou en montants (TRX-14).
+   *
+   *
+   *
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `splitTransactions$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  splitTransactions(params: SplitTransactions$Params, context?: HttpContext): Observable<BulkSplitResult> {
+    const resp = this.splitTransactions$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<BulkSplitResult>): BulkSplitResult => r.body)
     );
   }
 

@@ -105,6 +105,8 @@ pub enum DomainError {
     SplitSumMismatch { expected: Money, actual: Money },
     #[error("les pourcentages de ventilation sont invalides")]
     InvalidAllocation,
+    #[error("un modèle de ventilation est tout en pourcentages, d'un total de 100 %, ou tout en montants")]
+    InvalidSplitTemplate,
     #[error("la transaction est rapprochée : déverrouiller le point de contrôle pour la modifier")]
     TransactionLocked,
     #[error("le libellé bancaire ne peut pas être modifié")]
@@ -272,6 +274,7 @@ impl DomainError {
             SplitAmountZero => "SPLIT_AMOUNT_ZERO",
             SplitSumMismatch { .. } => "SPLIT_SUM_MISMATCH",
             InvalidAllocation => "INVALID_ALLOCATION",
+            InvalidSplitTemplate => "INVALID_SPLIT_TEMPLATE",
             TransactionLocked => "TRANSACTION_LOCKED",
             BankLabelImmutable => "BANK_LABEL_IMMUTABLE",
             CategoryDepthExceeded => "CATEGORY_DEPTH_EXCEEDED",
@@ -361,6 +364,7 @@ impl DomainError {
             NoSplit | SplitSumMismatch { .. } => "R-TRX-10",
             SplitAmountZero => "R-TRX-11",
             InvalidAllocation => "R-TRX-14",
+            InvalidSplitTemplate => "R-TRX-16",
             CategoryDepthExceeded | CategoryKindMismatch | CategoryNameTaken => "R-TRX-20",
             CategoryInUse | InvalidCategoryMerge => "R-TRX-22",
             PayeeNameTaken => "R-TIE-1",

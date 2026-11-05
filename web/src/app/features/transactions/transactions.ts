@@ -23,6 +23,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -58,6 +59,7 @@ import {
 import { MemberTag } from '../../shared/member-tag';
 import { RefundMark } from '../../shared/refund-mark';
 import { loadPageSize, PAGE_SIZES, savePageSize } from '../../core/page-size';
+import { SplitDraft, SplitEditor, SplitEditorData } from './split-editor';
 
 /** Taille de page par défaut de la liste transverse. */
 const PAGE = 100;
@@ -95,6 +97,7 @@ export class TransactionsPage implements OnInit {
   private readonly version = inject(DataVersion);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   protected readonly layout = inject(Layout);
   protected readonly accounts = inject(AccountsStore);
   protected readonly categories = inject(CategoriesStore);
@@ -431,6 +434,69 @@ export class TransactionsPage implements OnInit {
         ? `en ${formatMonthKey(month).toLowerCase()}`
         : 'sur le mois de leur date';
       this.snack.open(`${result.updated} transaction(s) comptent ${where}`, undefined, {
+        duration: 4000,
+      });
+    } catch (error) {
+      this.snack.open(errorMessage(error), undefined, { duration: 5000 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /**
+   * Ventilation en lot (TRX-14, R-TRX-16) : en pourcentages, ou aussi en montants si les transactions
+   * sélectionnées ont toutes le même montant.
+   */
+  protected async splitSelection(): Promise<void> {
+    const selected = this.items().filter((i) => this.selection().has(i.id) && !i.transfer);
+    if (selected.length === 0) {
+      return;
+    }
+    const first = selected[0];
+    const sameAmount = selected.every((i) => i.amount_minor === first.amount_minor);
+    const kind = selected.every((i) => i.amount_minor < 0)
+      ? 'EXPENSE'
+      : selected.every((i) => i.amount_minor > 0)
+        ? 'INCOME'
+        : null;
+    const data: SplitEditorData = {
+      totalMinor: first.amount_minor,
+      currency: this.accounts.byId().get(first.account_id)?.currency ?? 'EUR',
+      kind,
+      splits: [],
+      members: true,
+      batch: { count: selected.length, percentOnly: !sameAmount },
+    };
+    const ref = this.dialog.open<SplitEditor, SplitEditorData, SplitDraft[]>(SplitEditor, {
+      data,
+      width: '36rem',
+      maxWidth: '100vw',
+    });
+    const lines = await firstValueFrom(ref.afterClosed());
+    if (!lines) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.api.splitTransactions({
+          body: {
+            transaction_ids: selected.map((i) => i.id),
+            lines: lines.map((l) => ({
+              basis_points: l.basis_points ?? null,
+              amount_minor: l.basis_points === undefined ? l.amount_minor : null,
+              category_id: l.category_id,
+              note: l.note,
+              member_id: l.member_id ?? null,
+              keep_member: l.keep_member ?? false,
+            })),
+          },
+        }),
+      );
+      this.selection.set(new Set());
+      this.version.bump();
+      const skipped = result.skipped ? ` (${result.skipped} laissée(s) telle(s) quelle(s))` : '';
+      this.snack.open(`${result.updated} transaction(s) ventilée(s)${skipped}`, undefined, {
         duration: 4000,
       });
     } catch (error) {

@@ -9027,6 +9027,54 @@
         }
       }
     },
+    "/api/v1/transactions/split": {
+      "post": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Ventile plusieurs transactions selon un même modèle, en pourcentages ou en montants (TRX-14).",
+        "operationId": "splitTransactions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSplitInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSplitResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/{id}": {
       "get": {
         "tags": [
@@ -12227,6 +12275,100 @@
           "skipped": {
             "type": "integer",
             "description": "Jambes de virement, laissées sans tiers (R-TIE-11).",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "BulkSplitInput": {
+        "type": "object",
+        "description": "Ventilation en lot (TRX-14, R-TRX-16) : un même modèle appliqué à plusieurs transactions.",
+        "required": [
+          "transaction_ids",
+          "lines"
+        ],
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkSplitLine"
+            }
+          },
+          "transaction_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionId"
+            }
+          }
+        }
+      },
+      "BulkSplitLine": {
+        "type": "object",
+        "description": "Une ligne du modèle : une part en pourcentage, ou un montant si toutes les transactions ont le même.",
+        "properties": {
+          "amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Montant signé, comme les transactions ; le modèle totalise leur montant."
+          },
+          "basis_points": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Centièmes de pourcent (3 333 = 33,33 %) ; le modèle totalise 10 000. Exclusif de `amount_minor`.",
+            "minimum": 0
+          },
+          "category_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CategoryId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keep_member": {
+            "type": "boolean",
+            "description": "Garde le membre commun aux ventilations remplacées, à défaut le titulaire du compte (R-MBR-6)."
+          },
+          "member_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberId",
+                "description": "Membre de la ventilation (R-MBR-5), sauf si `keep_member`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "BulkSplitResult": {
+        "type": "object",
+        "required": [
+          "updated",
+          "skipped"
+        ],
+        "properties": {
+          "skipped": {
+            "type": "integer",
+            "description": "Laissées telles quelles : virements, mensualités, ventilations rattachées à un prêt, un bien ou un\nremboursement, et transactions trop petites pour que chaque part vaille au moins un centime.",
             "minimum": 0
           },
           "updated": {

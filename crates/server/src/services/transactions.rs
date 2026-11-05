@@ -362,6 +362,41 @@ pub struct BulkCategorizeResult {
     pub skipped: usize,
 }
 
+/// Ventilation en lot (TRX-14, R-TRX-16) : un même modèle appliqué à plusieurs transactions.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BulkSplitInput {
+    pub transaction_ids: Vec<TransactionId>,
+    pub lines: Vec<BulkSplitLine>,
+}
+
+/// Une ligne du modèle : une part en pourcentage, ou un montant si toutes les transactions ont le même.
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+pub struct BulkSplitLine {
+    /// Centièmes de pourcent (3 333 = 33,33 %) ; le modèle totalise 10 000. Exclusif de `amount_minor`.
+    #[serde(default)]
+    pub basis_points: Option<u32>,
+    /// Montant signé, comme les transactions ; le modèle totalise leur montant.
+    #[serde(default)]
+    pub amount_minor: Option<i64>,
+    pub category_id: Option<CategoryId>,
+    #[serde(default)]
+    pub note: Option<String>,
+    /// Membre de la ventilation (R-MBR-5), sauf si `keep_member`.
+    #[serde(default)]
+    pub member_id: Option<MemberId>,
+    /// Garde le membre commun aux ventilations remplacées, à défaut le titulaire du compte (R-MBR-6).
+    #[serde(default)]
+    pub keep_member: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct BulkSplitResult {
+    pub updated: usize,
+    /// Laissées telles quelles : virements, mensualités, ventilations rattachées à un prêt, un bien ou un
+    /// remboursement, et transactions trop petites pour que chaque part vaille au moins un centime.
+    pub skipped: usize,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CategorizeInput {
     pub category_id: Option<CategoryId>,
@@ -1060,6 +1095,78 @@ pub async fn categorize_many(db: &Db, input: &BulkCategorizeInput) -> AppResult<
     }
     tx.commit().await?;
     Ok(result)
+}
+
+/// Ventile plusieurs transactions selon un même modèle (TRX-14, R-TRX-16). Les virements, les mensualités et
+/// les transactions dont une ventilation est rattachée à un prêt, un bien ou un remboursement sont laissés tels
+/// quels, comme celles qu'un pourcentage réduirait à une part nulle. Un modèle en montants qui ne fait pas le
+/// montant d'une transaction est refusé en bloc (R-TRX-10). Le projet commun aux ventilations remplacées est
+/// gardé. Une transaction rapprochée se ventile sans déverrouillage (R-TRX-3).
+pub async fn split_many(db: &Db, input: &BulkSplitInput) -> AppResult<BulkSplitResult> {
+    let shares = input
+        .lines
+        .iter()
+        .map(|line| match (line.basis_points, line.amount_minor) {
+            (Some(bp), None) => Ok(split::SplitShare::BasisPoints(bp)),
+            (None, Some(amount)) => Ok(split::SplitShare::Amount(Money::from_minor(amount))),
+            _ => Err(DomainError::InvalidSplitTemplate),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    split::check_split_template(&shares)?;
+    let mut result = BulkSplitResult { updated: 0, skipped: 0 };
+    let mut tx = db.write.begin().await?;
+    for id in &input.transaction_ids {
+        let current = db::transactions::find(&mut *tx, *id).await?.ok_or(AppError::NotFound("transaction"))?;
+        let existing = db::transactions::splits_of(&mut *tx, *id).await?;
+        let attached =
+            existing.iter().any(|s| s.loan_id.is_some() || s.asset_id.is_some() || s.refunds_transaction_id.is_some());
+        if attached
+            || db::transactions::transfer_of(&mut *tx, *id).await?.is_some()
+            || db::loans::payment_of(&mut *tx, *id).await?.is_some()
+        {
+            result.skipped += 1;
+            continue;
+        }
+        let amounts = match split::apply_split_template(current.amount, &shares) {
+            Ok(amounts) => amounts,
+            Err(DomainError::SplitAmountZero) => {
+                result.skipped += 1;
+                continue;
+            }
+            Err(error) => return Err(error.into()),
+        };
+        let project = common(existing.iter().map(|s| s.project_id));
+        let project_line = project.and(common(existing.iter().map(|s| s.project_line_id)));
+        let kept_member = kept_member(&mut tx, *id, current.account_id).await?;
+        let splits: Vec<SplitInput> = input
+            .lines
+            .iter()
+            .zip(amounts)
+            .map(|(line, amount)| SplitInput {
+                amount_minor: amount.minor(),
+                category_id: line.category_id,
+                note: line.note.clone(),
+                project_id: project,
+                project_line_id: project_line,
+                member_id: if line.keep_member { kept_member } else { line.member_id },
+                ..Default::default()
+            })
+            .collect();
+        let kept: Vec<ProjectId> = project.into_iter().collect();
+        check_references(&mut tx, &splits, &kept).await?;
+        db::transactions::replace_splits(&mut tx, *id, &new_splits(&splits)).await?;
+        result.updated += 1;
+    }
+    let touched: Vec<TransactionId> = input.transaction_ids.clone();
+    check_split_sums(&mut tx, &touched).await?;
+    tx.commit().await?;
+    Ok(result)
+}
+
+/// La valeur commune à toutes, si elles en ont une et la même.
+fn common<T: PartialEq + Copy>(mut values: impl Iterator<Item = Option<T>>) -> Option<T> {
+    let first = values.next()??;
+    values.all(|v| v == Some(first)).then_some(first)
 }
 
 /// Affecte (ou retire) un tiers à plusieurs transactions (TIE-02). Les jambes de virement sont laissées sans tiers

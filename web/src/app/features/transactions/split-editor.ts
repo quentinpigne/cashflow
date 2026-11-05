@@ -22,13 +22,26 @@ export interface SplitDraft {
   refunds_transaction_id?: string | null;
   /** Membre que la ventilation concerne (R-MBR-5). */
   member_id?: string | null;
+  /** Ventilation en lot : garde le membre des ventilations remplacées. */
+  keep_member?: boolean;
+  /** Ventilation en lot en pourcentages : la part, en centièmes de pourcent. */
+  basis_points?: number;
+}
+
+/** Ventilation en lot (TRX-14, R-TRX-16) : un modèle appliqué à plusieurs transactions. */
+export interface SplitBatch {
+  count: number;
+  /** Les montants diffèrent : le modèle se saisit en pourcentages, totalisant 100 %. */
+  percentOnly: boolean;
 }
 
 export interface SplitEditorData {
   totalMinor: number;
   currency: string;
-  kind: CategoryKind;
+  /** Absent : sélection mêlant dépenses et revenus. */
+  kind: CategoryKind | null;
   splits: SplitDraft[];
+  batch?: SplitBatch;
   /** Propose un membre par ventilation (R-MBR-5), si le foyer a des membres. */
   members?: boolean;
   /** Membre d'une ligne ajoutée : le titulaire du compte (R-MBR-6). */
@@ -70,10 +83,16 @@ export class SplitEditor {
   protected readonly members = inject(MembersStore);
   protected readonly withMembers = computed(() => !!this.data.members && this.members.active());
   private readonly ref = inject(MatDialogRef<SplitEditor, SplitDraft[]>);
+  protected readonly batch = this.data.batch ?? null;
+  /** Membre « inchangé » d'une ligne en lot : celui des ventilations remplacées. */
+  protected readonly KEEP_MEMBER = 'keep';
+  private readonly newMember = this.batch ? this.KEEP_MEMBER : (this.data.defaultMember ?? null);
 
   /** Signe de la transaction : les lignes sont saisies en valeur absolue. */
   private readonly sign = this.data.totalMinor < 0 ? -1 : 1;
-  protected readonly mode = signal<'amount' | 'percent'>('amount');
+  protected readonly mode = signal<'amount' | 'percent'>(
+    this.batch?.percentOnly ? 'percent' : 'amount',
+  );
   protected readonly lines = signal<Line[]>(
     this.data.splits.length > 0
       ? this.data.splits.map((s) => ({
@@ -88,8 +107,10 @@ export class SplitEditor {
             category: null,
             note: '',
             refunds: null,
-            member: this.data.defaultMember ?? null,
-            input: toEditable(Math.abs(this.data.totalMinor), this.data.currency),
+            member: this.newMember,
+            input: this.batch?.percentOnly
+              ? '100'
+              : toEditable(Math.abs(this.data.totalMinor), this.data.currency),
           },
         ],
   );
@@ -122,6 +143,11 @@ export class SplitEditor {
   );
 
   protected readonly valid = computed(() => {
+    if (this.batch && this.mode() === 'percent') {
+      // En lot, les pourcentages totalisent 100 % : chaque transaction est ventilée à son prorata.
+      const weights = this.lines().map((l) => parsePercent(l.input));
+      return this.percentTotal() === 10_000 && weights.every((w) => w !== null && w > 0);
+    }
     const amounts = this.amounts();
     return this.remaining() === 0 && amounts.every((a) => a !== null && a !== 0);
   });
@@ -149,7 +175,7 @@ export class SplitEditor {
         : '';
     this.lines.update((lines) => [
       ...lines,
-      { category: null, note: '', refunds: null, member: this.data.defaultMember ?? null, input },
+      { category: null, note: '', refunds: null, member: this.newMember, input },
     ]);
   }
 
@@ -195,11 +221,16 @@ export class SplitEditor {
     const amounts = this.amounts() as number[];
     this.ref.close(
       this.lines().map((line, i) => ({
-        amount_minor: amounts[i],
+        amount_minor: amounts[i] ?? 0,
         category_id: line.category,
         note: line.note.trim() || null,
         refunds_transaction_id: line.refunds,
-        member_id: line.member,
+        member_id: line.member === this.KEEP_MEMBER ? null : line.member,
+        keep_member: line.member === this.KEEP_MEMBER,
+        basis_points:
+          this.batch && this.mode() === 'percent'
+            ? (parsePercent(line.input) ?? undefined)
+            : undefined,
       })),
     );
   }

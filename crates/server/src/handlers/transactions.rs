@@ -10,8 +10,8 @@ use crate::error::{AppResult, Problem};
 use crate::services::refunds::{self, ExpectedRefundInput, PendingRefund, RefundCandidate};
 use crate::services::transactions::{
     self, BulkAnalysisMonthInput, BulkAnalysisMonthResult, BulkCategorizeInput, BulkCategorizeResult, BulkMemberInput,
-    BulkMemberResult, BulkPayeeInput, BulkPayeeResult, CategorizeInput, TransactionDetail, TransactionFilter,
-    TransactionInput, TransactionPage, TransactionUpdateInput,
+    BulkMemberResult, BulkPayeeInput, BulkPayeeResult, BulkSplitInput, BulkSplitResult, CategorizeInput,
+    TransactionDetail, TransactionFilter, TransactionInput, TransactionPage, TransactionUpdateInput,
 };
 use crate::services::transfers::{
     self, Candidate, CandidatesQuery, MarkAsTransferInput, TransferCreated, TransferInput,
@@ -173,6 +173,19 @@ pub async fn categorize_many(
     Json(input): Json<BulkCategorizeInput>,
 ) -> AppResult<Json<BulkCategorizeResult>> {
     Ok(Json(transactions::categorize_many(&state.db, &input).await?))
+}
+
+/// Ventile plusieurs transactions selon un même modèle, en pourcentages ou en montants (TRX-14).
+#[utoipa::path(
+    post, operation_id = "splitTransactions", path = "/transactions/split", tag = "transactions",
+    request_body = BulkSplitInput,
+    responses((status = 200, body = BulkSplitResult), (status = 404, body = Problem), (status = 422, body = Problem))
+)]
+pub async fn split_many(
+    State(state): State<AppState>,
+    Json(input): Json<BulkSplitInput>,
+) -> AppResult<Json<BulkSplitResult>> {
+    Ok(Json(transactions::split_many(&state.db, &input).await?))
 }
 
 /// Affecte ou retire un tiers sur plusieurs transactions (TIE-02) ; les jambes de virement sont ignorées (R-TIE-11).

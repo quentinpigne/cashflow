@@ -49,6 +49,67 @@ pub fn allocate(total: Money, weights: &[u64]) -> Result<Vec<Money>, DomainError
     Ok(parts)
 }
 
+/// Part d'une ligne d'un modèle de ventilation appliqué à plusieurs transactions (R-TRX-16).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SplitShare {
+    /// Centièmes de pourcent : 3 333 = 33,33 %.
+    BasisPoints(u32),
+    /// Montant signé, comme la transaction.
+    Amount(Money),
+}
+
+/// Total des pourcentages d'un modèle, en centièmes de pourcent (100 %).
+pub const FULL_BASIS_POINTS: u32 = 10_000;
+
+/// Vérifie qu'un modèle est tout en pourcentages, positifs et de total 100 %, ou tout en montants (R-TRX-16).
+pub fn check_split_template(shares: &[SplitShare]) -> Result<(), DomainError> {
+    if shares.is_empty() {
+        return Err(DomainError::NoSplit);
+    }
+    if shares.iter().all(|s| matches!(s, SplitShare::Amount(_))) {
+        return Ok(());
+    }
+    let mut total: u32 = 0;
+    for share in shares {
+        match share {
+            SplitShare::BasisPoints(bp) if *bp > 0 => total = total.saturating_add(*bp),
+            _ => return Err(DomainError::InvalidSplitTemplate),
+        }
+    }
+    if total != FULL_BASIS_POINTS {
+        return Err(DomainError::InvalidSplitTemplate);
+    }
+    Ok(())
+}
+
+/// Montants des ventilations d'une transaction de montant `total` selon un modèle (R-TRX-16) : au prorata des
+/// pourcentages, l'arrondi sur la dernière ligne (R-TRX-14), ou les montants tels quels, qui doivent alors faire
+/// le montant de la transaction (R-TRX-10). Aucune ventilation ne peut être nulle (R-TRX-11).
+pub fn apply_split_template(total: Money, shares: &[SplitShare]) -> Result<Vec<Money>, DomainError> {
+    check_split_template(shares)?;
+    let amounts = match shares.first() {
+        Some(SplitShare::BasisPoints(_)) => {
+            let weights: Vec<u64> = shares
+                .iter()
+                .map(|s| match s {
+                    SplitShare::BasisPoints(bp) => u64::from(*bp),
+                    SplitShare::Amount(_) => 0,
+                })
+                .collect();
+            allocate(total, &weights)?
+        }
+        _ => shares
+            .iter()
+            .map(|s| match s {
+                SplitShare::Amount(amount) => *amount,
+                SplitShare::BasisPoints(_) => Money::ZERO,
+            })
+            .collect(),
+    };
+    check_splits(total, &amounts)?;
+    Ok(amounts)
+}
+
 /// Une ventilation a au plus un rattachement : une catégorie, un prêt (remboursement) ou un bien
 /// (acquisition) (R-TRX-37).
 pub fn check_attachment(category: bool, loan: bool, asset: bool) -> Result<(), DomainError> {
@@ -83,6 +144,48 @@ mod tests {
         assert_eq!(check_splits(m(-100), &[m(-100), m(0)]), Err(DomainError::SplitAmountZero));
         assert!(check_splits(m(-8_000), &[m(-10_000), m(2_000)]).is_ok());
         assert!(is_opposite_sign(m(-8_000), m(2_000)));
+    }
+
+    #[test]
+    fn r_trx_16_template_in_percentages_follows_each_amount() {
+        let template = [SplitShare::BasisPoints(6_000), SplitShare::BasisPoints(4_000)];
+        assert_eq!(apply_split_template(m(-12_000), &template).unwrap(), vec![m(-7_200), m(-4_800)]);
+        assert_eq!(apply_split_template(m(-1_001), &template).unwrap(), vec![m(-601), m(-400)]);
+        let thirds = [SplitShare::BasisPoints(3_333), SplitShare::BasisPoints(3_333), SplitShare::BasisPoints(3_334)];
+        assert_eq!(apply_split_template(m(10_000), &thirds).unwrap(), vec![m(3_333), m(3_333), m(3_334)]);
+    }
+
+    #[test]
+    fn r_trx_16_template_in_amounts_must_match_the_amount() {
+        let template = [SplitShare::Amount(m(-3_000)), SplitShare::Amount(m(-1_000))];
+        assert_eq!(apply_split_template(m(-4_000), &template).unwrap(), vec![m(-3_000), m(-1_000)]);
+        assert_eq!(
+            apply_split_template(m(-5_000), &template),
+            Err(DomainError::SplitSumMismatch { expected: m(-5_000), actual: m(-4_000) })
+        );
+    }
+
+    #[test]
+    fn r_trx_16_template_is_all_percentages_totalling_100_or_all_amounts() {
+        assert_eq!(
+            check_split_template(&[SplitShare::BasisPoints(5_000), SplitShare::BasisPoints(4_000)]),
+            Err(DomainError::InvalidSplitTemplate)
+        );
+        assert_eq!(
+            check_split_template(&[SplitShare::BasisPoints(10_000), SplitShare::Amount(m(-100))]),
+            Err(DomainError::InvalidSplitTemplate)
+        );
+        assert_eq!(
+            check_split_template(&[SplitShare::BasisPoints(0), SplitShare::BasisPoints(10_000)]),
+            Err(DomainError::InvalidSplitTemplate)
+        );
+        assert_eq!(check_split_template(&[]), Err(DomainError::NoSplit));
+    }
+
+    #[test]
+    fn r_trx_16_a_share_rounded_to_zero_is_refused() {
+        let template = [SplitShare::BasisPoints(5_000), SplitShare::BasisPoints(5_000)];
+        assert_eq!(apply_split_template(m(-1), &template), Err(DomainError::SplitAmountZero));
     }
 
     #[test]
