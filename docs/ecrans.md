@@ -30,6 +30,9 @@ composant visé, pour guider l'implémentation.
   `[mat-snack-bar]` s'il ne concerne aucun champ. Le code de règle (`R-TRX-10`…) n'est pas montré.
   Plus généralement, aucun texte de l'interface (libellé, aide, info-bulle, message d'erreur) ne cite une
   règle, une feature ou un ADR : ce sont des repères de conception, pas des informations pour l'utilisateur.
+- **Flèche de retour** (en tête d'une fiche ou d'un sous-écran) : un vrai retour arrière, vers l'écran d'où
+  l'on vient, dans l'état où on l'a laissé (filtres, page). Si l'écran a été ouvert directement (lien collé,
+  nouvel onglet), elle mène à l'écran parent (E7 → E3 du compte, E32 → E31…).
 - **Confirmation** avant toute action destructrice ou irréversible (`[mat-dialog]`), avec le verbe de
   l'action sur le bouton (« Supprimer », jamais « OK »).
 - **Annuler plutôt que confirmer** quand c'est possible : après une suppression simple, une snack-bar
@@ -478,7 +481,9 @@ catégoriser ». Sélection multiple (cases à cocher) et barre d'action « Cat�
 d'analyse » (TRX-13). Une transaction dont le mois d'analyse diffère de sa date affiche « compte en
 novembre 2026 » (aussi en E3). Ouverte depuis le budget ou les analyses, la liste filtre sur le mois
 d'analyse (R-TRX-58). Pas de solde après opération : il n'a de sens que par compte. Même pagination qu'en
-E3, 100 transactions par page par défaut ; changer de page vide la sélection.
+E3, 100 transactions par page par défaut ; changer de page vide la sélection. Les filtres et la page sont
+recopiés dans l'adresse (`?texte=…&tiers=…&page=2`) : revenir d'une transaction retrouve la liste telle
+qu'on l'a laissée, et la liste filtrée peut être mise en favori.
 
 Remboursements de frais (TRX-12), en E14 comme en E3 : une icône à côté du libellé, détaillée dans son
 info-bulle. Sur une entrée d'argent qui rembourse : « Rembourse : Restaurant du 2 mars ». Sur une dépense :

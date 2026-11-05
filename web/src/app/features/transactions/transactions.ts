@@ -3,6 +3,7 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   ElementRef,
   inject,
   input,
@@ -23,7 +24,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { ClearingStatus } from '../../api/models/clearing-status';
@@ -99,7 +100,9 @@ export class TransactionsPage implements OnInit {
   protected readonly categories = inject(CategoriesStore);
   protected readonly payees = inject(PayeesStore);
 
-  // Filtres reçus dans l'URL (lien depuis les analyses, E15, et la fiche d'un tiers, E32).
+  // Filtres reçus dans l'URL (lien depuis les analyses, E15, et la fiche d'un tiers, E32). Les filtres
+  // saisis y sont recopiés : le retour depuis une transaction retrouve la liste telle qu'on l'a laissée.
+  readonly comptes = input<string>();
   readonly categorie = input<string>();
   readonly du = input<string>();
   readonly au = input<string>();
@@ -108,6 +111,16 @@ export class TransactionsPage implements OnInit {
   readonly groupe = input<string>();
   /** Mois d'analyse `AAAA-MM` : lien depuis le budget ou les analyses (R-TRX-58). */
   readonly mois = input<string>();
+  readonly statut = input<string>();
+  readonly min_montant = input<string>();
+  readonly max_montant = input<string>();
+  readonly texte = input<string>();
+  readonly sans_tiers = input<string>();
+  readonly justificatif = input<string>();
+  /** Page affichée, à partir de 1. */
+  readonly page = input<string>();
+  private readonly route = inject(ActivatedRoute);
+  private urlTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly statuses: ClearingStatus[] = ['PENDING', 'CLEARED', 'RECONCILED'];
@@ -155,7 +168,7 @@ export class TransactionsPage implements OnInit {
   /** Sur mobile, les filtres sont repliés derrière un bouton (comme sur E3). */
   protected readonly showFilters = signal(false);
 
-  protected readonly page = rxResource({
+  protected readonly result = rxResource({
     params: () => {
       return {
         accounts: this.accountIds().join(',') || undefined,
@@ -182,7 +195,7 @@ export class TransactionsPage implements OnInit {
   });
 
   protected readonly items = computed<TransactionListItem[]>(() =>
-    this.page.hasValue() ? this.page.value().items : [],
+    this.result.hasValue() ? this.result.value().items : [],
   );
   /** Les virements ne prennent ni catégorie ni tiers (R-TRX-32, R-TIE-11). */
   protected readonly selectableIds = computed(() =>
@@ -196,8 +209,62 @@ export class TransactionsPage implements OnInit {
       this.selectableIds().every((id) => this.selection().has(id)),
   );
 
+  constructor() {
+    // Les filtres et la page sont recopiés dans l'URL, sans créer d'entrée d'historique ; l'écriture est
+    // différée pour ne pas réécrire l'URL à chaque frappe dans le champ texte.
+    effect((onCleanup) => {
+      const params = this.queryParams();
+      clearTimeout(this.urlTimer);
+      this.urlTimer = setTimeout(() => {
+        // Une navigation en cours (ouverture d'une transaction) ne doit pas être remplacée.
+        if (this.router.currentNavigation()) return;
+        const target = this.router.createUrlTree([], {
+          relativeTo: this.route,
+          queryParams: params,
+        });
+        if (this.router.serializeUrl(target) === this.router.url) return;
+        void this.router.navigateByUrl(target, { replaceUrl: true });
+      }, 300);
+      onCleanup(() => clearTimeout(this.urlTimer));
+    });
+  }
+
+  private readonly queryParams = computed(() => {
+    const from = this.from();
+    const to = this.to();
+    const withDocuments = this.withDocuments();
+    return {
+      comptes: this.accountIds().join(',') || null,
+      du: from ? toIsoDate(from) : null,
+      au: to ? toIsoDate(to) : null,
+      categorie: this.category(),
+      statut: this.status(),
+      min_montant: this.min().trim() || null,
+      max_montant: this.max().trim() || null,
+      texte: this.text() || null,
+      a_categoriser: this.uncategorized() ? '1' : null,
+      tiers: this.payee(),
+      groupe: this.payeeGroup(),
+      sans_tiers: this.withoutPayee() ? '1' : null,
+      justificatif: withDocuments === null ? null : withDocuments ? 'avec' : 'sans',
+      mois: this.analysisMonth(),
+      page: this.pageIndex() > 0 ? String(this.pageIndex() + 1) : null,
+    };
+  });
+
   /** Les filtres de l'URL s'appliquent au chargement. */
   ngOnInit(): void {
+    if (this.comptes()) this.accountIds.set((this.comptes() as string).split(','));
+    if (this.statut() && this.statuses.includes(this.statut() as ClearingStatus)) {
+      this.status.set(this.statut() as ClearingStatus);
+    }
+    if (this.min_montant()) this.min.set(this.min_montant() as string);
+    if (this.max_montant()) this.max.set(this.max_montant() as string);
+    if (this.texte()) this.text.set(this.texte() as string);
+    if (this.sans_tiers()) this.withoutPayee.set(true);
+    if (this.justificatif()) this.withDocuments.set(this.justificatif() === 'avec');
+    const page = Number(this.page());
+    if (Number.isInteger(page) && page > 1) this.pageIndex.set(page - 1);
     if (this.categorie()) this.category.set(this.categorie() ?? null);
     if (this.du()) this.from.set(fromIsoDate(this.du() as string));
     if (this.au()) this.to.set(fromIsoDate(this.au() as string));

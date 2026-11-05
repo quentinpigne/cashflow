@@ -216,7 +216,7 @@
     </div>
   }
 
-  @if (page.value(); as p) {
+  @if (result.value(); as p) {
     <div class="list-head" #listTop>
       <mat-checkbox
         [checked]="allSelected()"
@@ -281,7 +281,7 @@
         (page)="changePage($event)"
       />
     }
-  } @else if (page.isLoading()) {
+  } @else if (result.isLoading()) {
     <mat-progress-bar mode="indeterminate" />
   }
 </div>
