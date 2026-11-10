@@ -55,6 +55,7 @@ export function refundMark(item: TransactionListItem): RefundMarkView | null {
   `,
   styles: `
     .refund-mark {
+      margin-left: 0.25rem;
       font-size: 1rem;
       width: 1rem;
       height: 1rem;
