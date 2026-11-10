@@ -113,7 +113,7 @@ Langage commun du projet. Chaque terme métier a **un seul** nom français (docu
 | Département | `Department` | Département français, déduit du code postal (R-TIE-24) ; code `38`, `2A`, `974`. |
 | Adresse (d'une transaction) | `TransactionAddress` | Adresse propre à une transaction, de même forme que celle d'un tiers ; elle l'emporte sur celle du tiers (R-TRX-59, ADR-0029). |
 | Lieu | `Location` | Pays, département ou ville selon lequel l'analyse par lieu regroupe les transactions : celui de leur adresse, à défaut de leur tiers (R-TIE-28, R-TRX-60). |
-| Recherche d'adresse, géocodage | `Geocoding` | Proposition d'adresses et de coordonnées par la Base Adresse Nationale (BAN), à partir d'un texte saisi (R-TIE-26, ADR-0025). |
+| Recherche d'adresse, géocodage | `Geocoding` | Proposition d'adresses et de coordonnées à partir d'un texte saisi, dans le pays choisi : par la Base Adresse Nationale (BAN) en France, par Photon (données OpenStreetMap) ailleurs (R-TIE-26, ADR-0025, ADR-0030). |
 | Clé de tiers | `payee_key` | Clé d'apprentissage d'un libellé bancaire sans les mots d'opération (`CB`, `PRLV`…) : « CARREFOUR MEYLAN ». Deux libellés de même clé sont « proches » (R-TIE-30). |
 | Proposition de tiers | `PayeeSuggestion` | Transactions sans tiers de même clé de tiers, au moins deux, avec un nom ou un tiers existant suggéré ; rien n'est stocké (R-TIE-31, R-TIE-32). |
 | Clé ignorée | `IgnoredPayeeKey` | Clé de tiers qu'on ne veut plus voir proposée (R-TIE-35). |

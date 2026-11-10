@@ -868,21 +868,23 @@ Dans les réglages, comme les catégories (E8).
 
 ## Adresse et lieu (TIE-06, TIE-07)
 
-Statut : **Validée** (2026-10-28). Décision : ADR-0025.
+Statut : **Validée** (2026-10-28 ; recherche à l'étranger 2026-11-10). Décisions : ADR-0025, ADR-0030.
 
-- **Dialogue d'un tiers** (E31, E32) : section **Adresse** repliable sous le groupe. Si la recherche d'adresse
-  est activée, un champ **Rechercher une adresse** `[mat-autocomplete]` en tête, avec la mention « Envoyé à
-  la Base Adresse Nationale (api-adresse.data.gouv.fr) » ; choisir une proposition remplit les champs et les
-  coordonnées (R-TIE-26). Puis ligne d'adresse, code postal et ville côte à côte, pays (liste, France par
-  défaut). Une icône indique si l'adresse est localisée ; corriger un champ à la main retire la localisation
+- **Dialogue d'un tiers** (E31, E32) : section **Adresse** repliable sous le groupe. En tête, le **pays**
+  (liste, France par défaut). Si la recherche d'adresse est activée, un champ **Rechercher une adresse**
+  `[mat-autocomplete]` cherche dans ce pays, avec la mention « Envoyé à la Base Adresse Nationale
+  (api-adresse.data.gouv.fr) » pour la France, « Envoyé à Photon (photon.komoot.io), données
+  OpenStreetMap » pour un autre pays ; choisir une proposition remplit les champs et les coordonnées
+  (R-TIE-26). Puis ligne d'adresse, code postal et ville côte à côte. Une icône indique si l'adresse est localisée ; corriger un champ à la main retire la localisation
   (R-TIE-25). « Effacer l'adresse » vide tout.
 - **E31 Tiers** : la ville (et le pays s'il n'est pas la France) s'affiche à côté du nom.
 - **E32 Fiche** : l'adresse sous le nom (avec « Voir sur une carte » si elle est localisée : lien vers
   OpenStreetMap, ouvert dans un nouvel onglet, sur action explicite). Le menu ⋮ libelle l'action
   « Modifier (nom, groupe, adresse) ».
-- **E9 Réglages** : interrupteur **« Recherche d'adresse (Base Adresse Nationale) »**, désactivé par défaut,
-  avec l'explication : « Le texte saisi dans la recherche d'adresse d'un tiers ou d'une transaction est
-  envoyé à api-adresse.data.gouv.fr. »
+- **E9 Réglages** : interrupteur **« Recherche d'adresse »**, désactivé par défaut, avec l'explication :
+  « Le texte saisi dans la recherche d'adresse d'un tiers ou d'une transaction est envoyé à
+  api-adresse.data.gouv.fr pour une adresse en France, à photon.komoot.io (données OpenStreetMap) pour une
+  adresse à l'étranger. »
 - **E15 Analyses** : onglet **Par lieu** (TIE-07), après Par tiers : période, dépenses ou revenus (comme Par
   tiers) et niveau **pays / département / ville**. Tableau : lieu, montant, non catégorisé, nombre de tiers,
   période précédente ; un lieu se déplie en ses tiers, et en « Sans tiers » pour les transactions localisées

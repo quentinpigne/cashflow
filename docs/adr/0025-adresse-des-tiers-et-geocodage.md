@@ -3,7 +3,7 @@
 - **Statut** : Accepté
 - **Date** : 2026-10-28
 - **Concerne** : spec 11, modèle de données, écrans (E15, E31, E32, E9), architecture ; complété par l'ADR-0029
-  (adresse portée par une transaction)
+  (adresse portée par une transaction) et l'ADR-0030 (recherche d'adresse à l'étranger)
 
 ## Contexte
 

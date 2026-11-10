@@ -102,7 +102,7 @@ attendent une validation explicite.
 
 Le **lieu** d'une transaction est l'adresse de son tiers : c'est le magasin qui est à Meylan, pas le
 paiement. Une transaction peut aussi porter sa propre adresse, qui l'emporte sur celle du tiers (spec 02,
-R-TRX-59, R-TRX-60). Décisions : ADR-0025, ADR-0029.
+R-TRX-59, R-TRX-60). Décisions : ADR-0025, ADR-0029, ADR-0030.
 
 - **R-TIE-23** — Un tiers a optionnellement une **adresse** : ligne d'adresse (≤ 200 caractères), code postal
   (≤ 10), ville (≤ 80) et pays (code ISO 3166-1 alpha-2, « FR » proposé à la saisie). Dès qu'un champ de
@@ -115,9 +115,11 @@ R-TRX-59, R-TRX-60). Décisions : ADR-0025, ADR-0029.
   (R-TIE-26) : modifier ensuite un champ de l'adresse à la main les efface, elles ne lui correspondraient
   plus.
 - **R-TIE-26** — **Recherche d'adresse** (géocodage) : désactivée par défaut, elle s'active dans les réglages.
-  Le texte saisi est envoyé par le serveur à la Base Adresse Nationale, ce que le champ indique (ADR-0007).
-  Choisir une proposition remplit la ligne d'adresse, le code postal, la ville, le pays (FR) et les
-  coordonnées. Elle ne couvre que la France ; désactivée ou injoignable, l'adresse se saisit à la main.
+  Elle cherche dans le **pays choisi** : le texte saisi est envoyé par le serveur à la Base Adresse Nationale
+  pour la France, à Photon (données OpenStreetMap) pour un autre pays, ce que le champ indique (ADR-0007,
+  ADR-0030). Choisir une proposition remplit la ligne d'adresse, le code postal, la ville, le pays et les
+  coordonnées ; une proposition sans ville n'est pas proposée. Désactivée ou injoignable, l'adresse se saisit
+  à la main.
 - **R-TIE-27** — Fusionner un tiers dans un autre (R-TIE-7) garde l'adresse du tiers cible ; s'il n'en a pas,
   il reprend celle du tiers fusionné.
 - **R-TIE-28** — **Analyse par lieu** : sur une période, les dépenses (ou les revenus) et le non catégorisé
@@ -180,7 +182,7 @@ Rien ne change avant validation.
 | TIE-03 | V1 | Tiers à l'import : action de règle `set_payee`, suggestion apprise, revue d'import |
 | TIE-04 | V1 | Dépenses et revenus par tiers et par groupe : analyse, fiche d'un tiers ou d'un groupe, filtre des transactions |
 | TIE-05 | V2 | Proposer des tiers à partir des libellés bancaires (libellés proches regroupés), avec règle optionnelle |
-| TIE-06 | V1 | Adresse d'un tiers : saisie, recherche d'adresse par la BAN (activable), affichage sur la fiche |
+| TIE-06 | V1 | Adresse d'un tiers : saisie, recherche d'adresse (activable ; BAN en France, Photon à l'étranger), affichage sur la fiche |
 | TIE-07 | V1 | Dépenses et revenus par lieu : par pays, département ou ville, et carte |
 
 ### TIE-01 — Critères d'acceptation
@@ -249,7 +251,11 @@ Rien ne change avant validation.
 - Étant donné un tiers géocodé, quand je corrige son code postal à la main, alors ses coordonnées sont
   effacées (R-TIE-25).
 - Étant donné la recherche d'adresse désactivée, quand j'appelle la recherche, alors elle est refusée et
-  aucune requête ne part vers la BAN (R-TIE-26).
+  aucune requête ne part vers la BAN ni vers Photon (R-TIE-26).
+- Étant donné la recherche d'adresse activée et le pays Allemagne, quand je choisis la proposition
+  « Unter den Linden 77, 10117 Berlin », alors le tiers a pour ligne « Unter den Linden 77 », pour ville
+  « Berlin », pour pays DE et des coordonnées ; la recherche est partie vers Photon, restreinte à DE
+  (R-TIE-26).
 
 ### TIE-07 — Critères d'acceptation
 
