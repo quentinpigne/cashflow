@@ -34,6 +34,14 @@ export interface Country {
 
 let countries: Country[] | null = null;
 
+/**
+ * Ancien code d'un pays (« DD », « SU », « YU »…) : `Intl` lui donne le nom du pays actuel, qui figurerait deux
+ * fois, et la recherche d'adresse dans ce pays ne trouverait rien.
+ */
+function isFormerCode(code: string): boolean {
+  return Intl.getCanonicalLocales(`und-${code}`)[0] !== `und-${code}`;
+}
+
 /** Pays proposés à la saisie d'une adresse, la France d'abord puis par ordre alphabétique (R-TIE-23). */
 export function countryList(): Country[] {
   if (!countries) {
@@ -42,7 +50,7 @@ export function countryList(): Country[] {
       for (let b = 65; b <= 90; b++) {
         const code = String.fromCharCode(a, b);
         const name = regionNames.of(code);
-        if (name && !NOT_COUNTRIES.has(code)) all.push({ code, name });
+        if (name && !NOT_COUNTRIES.has(code) && !isFormerCode(code)) all.push({ code, name });
       }
     }
     all.sort((x, y) => x.name.localeCompare(y.name, 'fr'));
