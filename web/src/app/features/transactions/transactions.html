@@ -273,8 +273,7 @@
               <app-refund-mark [item]="item" />
             </span>
             <span class="muted small"
-              >{{ item.date | frDate: 'short' }} · {{ item.account_name }} ·
-              {{ categoryText(item) }}</span
+              >{{ item.date | frDate }} · {{ item.account_name }} · {{ categoryText(item) }}</span
             >
             @if (item.analysis_month) {
               <span class="muted small analysis"
