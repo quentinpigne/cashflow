@@ -62,7 +62,8 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
   `bank_date` est la date selon la banque, renseignée à l'import (création ou pointage, R-IMP-11).
   `balance_date` = `bank_date` si elle existe, sinon `date` : c'est la seule date utilisée pour les
   soldes et le rapprochement, afin qu'une saisie datée différemment de la banque ne crée pas d'écart
-  fictif. `value_date` (date de valeur) ne sert qu'aux intérêts (spec 06).
+  fictif. `value_date` (date de valeur) ne sert qu'aux intérêts (spec 06). La liste d'un compte, elle, est
+  chronologique selon la `date`, solde après opération compris (TRX-02).
 
 - **R-TRX-57** — **Mois d'analyse** (`analysis_month`, `AAAA-MM`, facultatif, n'importe quel mois) : le
   mois sur lequel la transaction compte, entière. La **date d'analyse** (`analysis_date`, générée) vaut la
@@ -249,7 +250,11 @@ Transaction +62,00 €  « NOTE DE FRAIS SEPT »
 
 ### TRX-02 — Liste des transactions
 
-- Colonne « solde après opération » calculée dans l'ordre (date, puis ordre de création).
+- Colonne « solde après opération » calculée dans l'ordre chronologique (`date`, puis ordre de création),
+  quel que soit le tri affiché : chaque solde est celui de la transaction précédente plus son montant.
+- Le tri par date suit la `date` affichée, pas la date de solde : un paiement par carte du 2 mars débité le
+  5 (R-IMP-11) figure au 2 mars, avant une transaction du 3. Le solde du compte au 4 mars, lui, ne le compte
+  pas encore (R-TRX-7).
 - Les transactions `PENDING` sont visuellement distinctes ; les `RECONCILED` portent un cadenas.
 - Les jambes de virement affichent le compte de contrepartie.
 

@@ -242,6 +242,44 @@ async fn trx_02_running_balance_and_filters() {
 }
 
 #[tokio::test]
+async fn trx_02_r_trx_7_list_and_running_balance_follow_the_date_not_the_bank_date() {
+    use super::transactions::{SortDirection, TransactionSort};
+    let (db, _dir) = setup().await;
+    let checking = account(&db, "Courant", AccountKind::Checking, 10_000).await;
+    let mut ids = Vec::new();
+    for (label, date, amount) in
+        [("Carte", "2026-03-02", -1_000), ("Salaire", "2026-03-03", 500), ("Boulangerie", "2026-03-04", -200)]
+    {
+        let input = TransactionInput { label: label.into(), ..tx(checking, date, amount, None) };
+        ids.push(transactions::create(&db, &input).await.unwrap());
+    }
+    // Paiement par carte du 2 mars débité le 5 (R-IMP-11) : sa date de solde suit les deux autres.
+    sqlx::query("UPDATE ledger_transaction SET bank_date = '2026-03-05' WHERE id = ?")
+        .bind(ids[0].to_string())
+        .execute(&db.write)
+        .await
+        .unwrap();
+    let rows = |page: transactions::TransactionPage| {
+        page.items.into_iter().map(|i| (i.label, i.balance_after_minor.unwrap())).collect::<Vec<_>>()
+    };
+
+    // Les plus récentes d'abord, par date ; le solde après se cumule dans cet ordre, d'une ligne à l'autre.
+    let page = transactions::list(&db, checking, &TransactionFilter::default()).await.unwrap();
+    assert_eq!(rows(page), [("Boulangerie".into(), 9_300), ("Salaire".into(), 9_500), ("Carte".into(), 9_000)]);
+    let ascending = TransactionFilter {
+        sort: Some(TransactionSort::Date),
+        direction: Some(SortDirection::Asc),
+        ..Default::default()
+    };
+    let page = transactions::list(&db, checking, &ascending).await.unwrap();
+    assert_eq!(rows(page), [("Carte".into(), 9_000), ("Salaire".into(), 9_500), ("Boulangerie".into(), 9_300)]);
+
+    // Le solde du compte à une date suit, lui, la date de solde.
+    assert_eq!(balance(&db, checking, "2026-03-04").await, 10_300);
+    assert_eq!(balance(&db, checking, "2026-03-05").await, 9_300);
+}
+
+#[tokio::test]
 async fn trx_02_trx_08_pages_are_cut_after_sorting_the_whole_selection() {
     use super::transactions::{SortDirection, TransactionSort};
     let (db, _dir) = setup().await;

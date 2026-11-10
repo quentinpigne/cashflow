@@ -478,7 +478,8 @@ fn transfer_summary(side: &TransferSide, names: &HashMap<AccountId, String>) -> 
 /// Transactions d'un compte, filtrées, avec le solde après chaque opération (TRX-02).
 pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> AppResult<TransactionPage> {
     let row = db::accounts::find(&db.read, account).await?.ok_or(AppError::NotFound("compte"))?;
-    let transactions = db::transactions::list_for_account(&db.read, account).await?;
+    // Dans l'ordre chronologique : la liste se lit par date, et le solde après opération se cumule dans cet ordre.
+    let transactions = db::transactions::list_for_account_by_date(&db.read, account).await?;
     let mut splits: HashMap<TransactionId, Vec<Split>> = HashMap::new();
     for s in db::transactions::splits_for_account(&db.read, account).await? {
         splits.entry(s.transaction_id).or_default().push(s.into());
@@ -491,7 +492,8 @@ pub async fn list(db: &Db, account: AccountId, filter: &TransactionFilter) -> Ap
     let names = account_names(db).await?;
     let mut links = refund_links(db).await?;
 
-    // Le solde après opération se calcule sur toutes les transactions, avant filtrage.
+    // Le solde après opération se calcule sur toutes les transactions, avant filtrage. Seule la somme compte pour
+    // le solde du compte : il ne dépend pas de cet ordre (R-TRX-7).
     let movements: Vec<DatedAmount> =
         transactions.iter().map(|t| DatedAmount { balance_date: t.balance_date, amount: t.amount }).collect();
     let running = balance::running_balances(row.opening_balance, &movements);

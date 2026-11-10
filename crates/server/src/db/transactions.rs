@@ -143,7 +143,7 @@ macro_rules! split_row {
     }};
 }
 
-/// Toutes les transactions d'un compte, par date de solde puis ordre de création (TRX-02).
+/// Toutes les transactions d'un compte, par date de solde puis ordre de création (R-TRX-7).
 pub async fn list_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -> anyhow::Result<Vec<TransactionRow>> {
     let account = account.to_string();
     let rows = sqlx::query!(
@@ -153,6 +153,27 @@ pub async fn list_for_account(db: impl SqliteExecutor<'_>, account: AccountId) -
                   origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?",
                   analysis_month AS "analysis_month?"
            FROM ledger_transaction WHERE account_id = ? ORDER BY balance_date, id"#,
+        account
+    )
+    .fetch_all(db)
+    .await?;
+    rows.into_iter().map(|r| transaction_row!(r)).collect()
+}
+
+/// Toutes les transactions d'un compte dans l'ordre chronologique de sa liste : date, puis ordre de création
+/// (TRX-02). Diffère de l'ordre des dates de solde quand la banque débite après l'achat (R-IMP-11).
+pub async fn list_for_account_by_date(
+    db: impl SqliteExecutor<'_>,
+    account: AccountId,
+) -> anyhow::Result<Vec<TransactionRow>> {
+    let account = account.to_string();
+    let rows = sqlx::query!(
+        r#"SELECT id AS "id!", account_id AS "account_id!", date AS "date!: Date", bank_date AS "bank_date?: Date",
+                  balance_date AS "balance_date!: Date", value_date AS "value_date?: Date", amount AS "amount!",
+                  bank_label AS "bank_label?", label AS "label!", note AS "note?", clearing_status AS "clearing_status!",
+                  origin AS "origin!", payee_id AS "payee_id?", expected_refund AS "expected_refund?",
+                  analysis_month AS "analysis_month?"
+           FROM ledger_transaction WHERE account_id = ? ORDER BY date, id"#,
         account
     )
     .fetch_all(db)

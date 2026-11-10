@@ -47,7 +47,8 @@ pub fn value_at(
 
 /// Solde après chaque opération, dans l'ordre fourni (TRX-02).
 ///
-/// L'appelant trie les mouvements par date de solde, puis par ordre de création.
+/// L'appelant trie les mouvements dans l'ordre chronologique de la liste : date de l'opération (pas la date de
+/// solde), puis ordre de création. Le dernier solde, lui, ne dépend pas de l'ordre.
 pub fn running_balances(opening_balance: Money, movements: &[DatedAmount]) -> Vec<Money> {
     movements
         .iter()
