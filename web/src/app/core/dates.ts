@@ -19,6 +19,11 @@ export function todayIso(): string {
 }
 
 const long = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+const medium = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
 const short = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
 const weekday = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long',
@@ -30,6 +35,11 @@ const month = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' 
 /** « 12 mars 2026 » (ecrans.md, principes). */
 export function formatDate(iso: string): string {
   return long.format(fromIsoDate(iso));
+}
+
+/** « 1 oct. 2026 » : mois abrégé, pour les listes de transactions. */
+export function formatMediumDate(iso: string): string {
+  return medium.format(fromIsoDate(iso));
 }
 
 /** « 12 mars ». */

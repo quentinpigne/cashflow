@@ -11,11 +11,7 @@ test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois 
   await page.goto('/transactions');
   await page.getByLabel('Texte').fill('SALAIRE');
   // Le salaire d'octobre, versé le 1er : il comptera sur septembre.
-  // Le plus récent d'abord : 1er octobre 2026 (un an plus tôt, le 1er octobre 2025 suit).
-  await page
-    .getByRole('button', { name: /^VIREMENT SALAIRE 1 oct\./ })
-    .first()
-    .click();
+  await page.getByRole('button', { name: /^VIREMENT SALAIRE 1 oct\. 2026/ }).click();
   await page.getByRole('combobox', { name: "Mois d'analyse" }).click();
   await page.getByRole('option', { name: 'Septembre 2026', exact: true }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -35,7 +31,7 @@ test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois 
   await expect(
     page.getByText('Comptent en septembre 2026, quelle que soit leur date'),
   ).toBeVisible();
-  const salary = page.getByRole('button', { name: /^VIREMENT SALAIRE 1 oct\./ });
+  const salary = page.getByRole('button', { name: /^VIREMENT SALAIRE 1 oct\. 2026/ });
   await expect(salary).toContainText('compte en septembre 2026');
 
   // Retour au mois de la date.
@@ -46,7 +42,7 @@ test('E7, E14 : mois d’analyse d’une transaction et liste filtrée par mois 
   await expect(page.getByText('Transaction enregistrée')).toBeVisible();
   await page.goto('/transactions?mois=2026-09');
   await expect(
-    page.locator('.row', { hasText: '1 oct.' }).filter({ hasText: /SALAIRE/i }),
+    page.locator('.row', { hasText: '1 oct. 2026' }).filter({ hasText: /SALAIRE/i }),
   ).toHaveCount(0);
 });
 
