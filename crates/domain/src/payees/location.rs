@@ -37,6 +37,16 @@ impl GeoPoint {
     }
 }
 
+/// Code pays ISO 3166-1 alpha-2, remis en majuscules (R-TIE-23).
+pub fn country_code(raw: &str) -> Result<String, DomainError> {
+    let code = raw.trim().to_ascii_uppercase();
+    if code.len() == 2 && code.bytes().all(|b| b.is_ascii_uppercase()) {
+        Ok(code)
+    } else {
+        Err(DomainError::InvalidCountryCode)
+    }
+}
+
 /// Adresse d'un tiers, contrôlée (R-TIE-23).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PayeeAddress {
@@ -66,10 +76,7 @@ impl PayeeAddress {
         let (Some(city), Some(country)) = (city, country_code) else {
             return Err(DomainError::AddressIncomplete);
         };
-        let country_code = country.to_ascii_uppercase();
-        if country_code.len() != 2 || !country_code.bytes().all(|b| b.is_ascii_uppercase()) {
-            return Err(DomainError::InvalidCountryCode);
-        }
+        let country_code = self::country_code(&country)?;
         if country_code == FRANCE
             && postal_code.as_deref().is_some_and(|p| p.len() != 5 || !p.bytes().all(|b| b.is_ascii_digit()))
         {
@@ -330,6 +337,8 @@ mod tests {
         assert_eq!(PayeeAddress::new(None, s("3824"), s("Meylan"), s("FR"), None), Err(DomainError::InvalidPostalCode));
         // Hors de France, un code postal n'a pas de format imposé.
         assert!(PayeeAddress::new(None, s("SW1A 1AA"), s("London"), s("GB"), None).is_ok());
+        assert_eq!(country_code("de"), Ok("DE".to_owned()));
+        assert_eq!(country_code("France"), Err(DomainError::InvalidCountryCode));
     }
 
     #[test]

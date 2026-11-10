@@ -17,7 +17,7 @@ use crate::config::DataDir;
 use crate::db::payees::{PayeeFields, PayeeRow};
 use crate::db::{self, Db};
 use crate::error::{AppError, AppResult};
-use crate::geocoding::{AddressSuggestion, Geocoder};
+use crate::geocoding::{AddressSuggestion, Geocoder, Provider};
 
 // ---------------------------------------------------------------- Types exposés
 
@@ -491,22 +491,29 @@ pub(crate) fn address(
     Ok(address.map(|a| a.without_stale_point(previous)))
 }
 
-/// Recherche d'adresse par la Base Adresse Nationale, si elle est activée (R-TIE-26, ADR-0007).
-pub async fn search_address(db: &Db, geocoder: &Geocoder, query: &str) -> AppResult<Vec<AddressSuggestion>> {
+/// Recherche d'adresse dans un pays, si elle est activée (R-TIE-26, ADR-0007) : par la Base Adresse Nationale
+/// en France, par Photon ailleurs (ADR-0030).
+pub async fn search_address(
+    db: &Db,
+    geocoder: &Geocoder,
+    query: &str,
+    country: &str,
+) -> AppResult<Vec<AddressSuggestion>> {
     if !super::features::geocoding_enabled(db).await? {
         return Err(AppError::invalid(
             "GEOCODING_DISABLED",
             "la recherche d'adresse est désactivée : l'activer dans les réglages",
         ));
     }
+    let country = location::country_code(country)?;
     let query = query.trim();
     // La BAN demande au moins trois caractères.
     if query.chars().count() < 3 {
         return Ok(Vec::new());
     }
-    geocoder.search(query).await.map_err(|error| {
+    geocoder.search(query, &country).await.map_err(|error| {
         tracing::warn!(error = format!("{error:#}"), "recherche d'adresse impossible");
-        AppError::Upstream("la Base Adresse Nationale")
+        AppError::Upstream(Provider::for_country(&country).name())
     })
 }
 

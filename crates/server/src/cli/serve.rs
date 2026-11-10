@@ -26,9 +26,12 @@ pub struct Serve {
     /// Cookie de session `Secure` : à activer quand l'application est servie en HTTPS (ADR-0015).
     #[arg(long, env = "CASHFLOW_SECURE_COOKIES", default_value_t = false)]
     secure_cookies: bool,
-    /// Adresse de la Base Adresse Nationale, pour la recherche d'adresse des tiers (ADR-0025).
+    /// Adresse de la Base Adresse Nationale, pour la recherche d'adresse en France (ADR-0025).
     #[arg(long, env = "CASHFLOW_GEOCODING_URL", default_value = geocoding::DEFAULT_URL)]
     geocoding_url: String,
+    /// Adresse de Photon, pour la recherche d'adresse dans les autres pays (ADR-0030).
+    #[arg(long, env = "CASHFLOW_GEOCODING_WORLD_URL", default_value = geocoding::DEFAULT_WORLD_URL)]
+    geocoding_world_url: String,
     /// Date du jour figée (AAAA-MM-JJ), pour les tests de bout en bout.
     #[arg(long, env = "CASHFLOW_TODAY", hide = true)]
     today: Option<chrono::NaiveDate>,
@@ -48,7 +51,7 @@ impl Serve {
         if let Err(error) = services::credit::notify_follow_ups(&db, clock.today()).await {
             tracing::error!(%error, "annonce des relances de crédit impossible");
         }
-        let geocoder = Geocoder::new(self.geocoding_url)?;
+        let geocoder = Geocoder::new(self.geocoding_url, self.geocoding_world_url)?;
         let state =
             AppState { db, clock, data, limiter: Arc::default(), secure_cookies: self.secure_cookies, geocoder };
 

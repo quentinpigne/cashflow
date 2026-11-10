@@ -71,7 +71,7 @@ export class PayeesService extends BaseService {
   static readonly SearchAddressPath = '/api/v1/geocoding/search';
 
   /**
-   * Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).
+   * Recherche d'adresse dans un pays, si elle est activée dans les réglages (R-TIE-26, ADR-0030).
    *
    *
    *
@@ -86,7 +86,7 @@ export class PayeesService extends BaseService {
   }
 
   /**
-   * Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).
+   * Recherche d'adresse dans un pays, si elle est activée dans les réglages (R-TIE-26, ADR-0030).
    *
    *
    *

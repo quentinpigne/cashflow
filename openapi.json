@@ -3751,16 +3751,26 @@
         "tags": [
           "payees"
         ],
-        "summary": "Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).",
+        "summary": "Recherche d'adresse dans un pays, si elle est activée dans les réglages (R-TIE-26, ADR-0030).",
         "operationId": "searchAddress",
         "parameters": [
           {
             "name": "q",
             "in": "query",
-            "description": "Texte saisi, envoyé à la Base Adresse Nationale ; moins de 3 caractères : aucune proposition.",
+            "description": "Texte saisi ; moins de 3 caractères : aucune proposition.",
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "Pays où chercher (ISO 3166-1 alpha-2) : la Base Adresse Nationale pour « FR », Photon pour un autre pays.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "FR"
             }
           }
         ],

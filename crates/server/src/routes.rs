@@ -121,7 +121,7 @@ mod tests {
 
     /// Géocodeur qui ne joint rien : aucun test n'appelle la BAN.
     fn test_geocoder() -> Geocoder {
-        Geocoder::new("http://127.0.0.1:9").unwrap()
+        Geocoder::new("http://127.0.0.1:9", "http://127.0.0.1:9").unwrap()
     }
 
     async fn call(app: &Router, method: Method, uri: &str, token: Option<&str>) -> StatusCode {

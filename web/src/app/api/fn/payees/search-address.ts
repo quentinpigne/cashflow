@@ -12,15 +12,21 @@ import { AddressSuggestion } from '../../models/address-suggestion';
 export interface SearchAddress$Params {
 
 /**
- * Texte saisi, envoyé à la Base Adresse Nationale ; moins de 3 caractères : aucune proposition.
+ * Texte saisi ; moins de 3 caractères : aucune proposition.
  */
   q: string;
+
+/**
+ * Pays où chercher (ISO 3166-1 alpha-2) : la Base Adresse Nationale pour « FR », Photon pour un autre pays.
+ */
+  country?: string;
 }
 
 export function searchAddress(http: HttpClient, rootUrl: string, params: SearchAddress$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<AddressSuggestion>>> {
   const rb = new RequestBuilder(rootUrl, searchAddress.PATH, 'get');
   if (params) {
     rb.query('q', params.q, {});
+    rb.query('country', params.country, {});
   }
 
   return http.request(

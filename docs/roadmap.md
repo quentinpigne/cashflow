@@ -103,6 +103,7 @@ mois, réimport sans doublon (à vérifier à la mise en service).
 
 - [x] TIE-06 — adresse d'un tiers, recherche d'adresse par la BAN (ADR-0025, spec 11)
 - [x] TIE-07 — dépenses et revenus par lieu (pays, département, ville) et carte (spec 11)
+- [x] TIE-06 — recherche d'adresse à l'étranger par Photon (ADR-0030, 2026-11-10)
 
 ## Compléments V1 — relevés de compte (2026-10-28, livrés)
 

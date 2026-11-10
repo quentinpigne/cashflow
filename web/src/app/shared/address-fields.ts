@@ -30,8 +30,9 @@ import { countryList } from './address';
 import { FeaturesStore } from './stores';
 
 /**
- * Section « Adresse » d'un tiers (E31, E32) ou d'une transaction (E7, E14) : recherche par la Base Adresse
- * Nationale si elle est activée, puis saisie champ par champ (R-TIE-23 à R-TIE-26, R-TRX-59).
+ * Section « Adresse » d'un tiers (E31, E32) ou d'une transaction (E7, E14) : le pays, puis la recherche dans ce
+ * pays si elle est activée (Base Adresse Nationale en France, Photon ailleurs), puis la saisie champ par champ
+ * (R-TIE-23 à R-TIE-26, R-TRX-59, ADR-0030).
  */
 @Component({
   selector: 'app-address-fields',
@@ -64,6 +65,14 @@ import { FeaturesStore } from './stores';
         <button mat-button type="button" (click)="clear()">Effacer l'adresse</button>
       }
     </div>
+    <mat-form-field>
+      <mat-label>Pays</mat-label>
+      <mat-select [ngModel]="country()" (ngModelChange)="edit(country, $event)">
+        @for (c of countries; track c.code) {
+          <mat-option [value]="c.code">{{ c.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
     @if (features.geocoding()) {
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>Rechercher une adresse</mat-label>
@@ -79,7 +88,7 @@ import { FeaturesStore } from './stores';
             <mat-option [value]="s">{{ s.label }}</mat-option>
           }
         </mat-autocomplete>
-        <mat-hint>Envoyé à la Base Adresse Nationale (api-adresse.data.gouv.fr)</mat-hint>
+        <mat-hint>{{ searchHint() }}</mat-hint>
       </mat-form-field>
       @if (suggestions.error(); as error) {
         <p class="warn">{{ message(error) }} Saisir l'adresse à la main.</p>
@@ -116,14 +125,6 @@ import { FeaturesStore } from './stores';
         />
       </mat-form-field>
     </div>
-    <mat-form-field>
-      <mat-label>Pays</mat-label>
-      <mat-select [ngModel]="country()" (ngModelChange)="edit(country, $event)">
-        @for (c of countries; track c.code) {
-          <mat-option [value]="c.code">{{ c.name }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
     @if (problem(); as problem) {
       <p class="warn">{{ problem }}</p>
     }
@@ -190,15 +191,24 @@ export class AddressFields implements OnInit {
   protected readonly point = signal<{ latitude_e6: number; longitude_e6: number } | null>(null);
   protected readonly query = signal<string | AddressSuggestion>('');
 
-  /** Propositions de la BAN, demandées par le serveur après une courte pause de saisie. */
+  /** Propositions dans le pays choisi, demandées par le serveur après une courte pause de saisie. */
   protected readonly suggestions = rxResource({
     params: () => {
       const query = this.query();
-      return typeof query === 'string' && query.trim().length >= 3 ? query.trim() : undefined;
+      return typeof query === 'string' && query.trim().length >= 3
+        ? { q: query.trim(), country: this.country() }
+        : undefined;
     },
     stream: ({ params }) =>
-      timer(300).pipe(switchMap(() => (params ? this.api.searchAddress({ q: params }) : of([])))),
+      timer(300).pipe(switchMap(() => (params ? this.api.searchAddress(params) : of([])))),
   });
+
+  /** Le service qui reçoit le texte saisi, selon le pays (ADR-0007, ADR-0030). */
+  protected readonly searchHint = computed(() =>
+    this.country() === 'FR'
+      ? 'Envoyé à la Base Adresse Nationale (api-adresse.data.gouv.fr)'
+      : 'Envoyé à Photon (photon.komoot.io), données OpenStreetMap',
+  );
 
   protected readonly hasAddress = computed(
     () => !!(this.line().trim() || this.postalCode().trim() || this.city().trim()),

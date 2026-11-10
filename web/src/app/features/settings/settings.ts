@@ -159,12 +159,12 @@ import { confirm } from '../../shared/confirm-dialog';
         <p class="muted">Désactivés par défaut : rien ne quitte le serveur sans votre accord.</p>
         @if (features.value(); as f) {
           <mat-slide-toggle [checked]="f.geocoding" (change)="toggle({ geocoding: $event.checked })"
-            >Recherche d'adresse (Base Adresse Nationale)</mat-slide-toggle
+            >Recherche d'adresse</mat-slide-toggle
           >
           <p class="muted small">
             Le texte saisi dans la recherche d'adresse d'un tiers ou d'une transaction est envoyé à
-            api-adresse.data.gouv.fr, pour proposer l'adresse et la placer sur la carte des
-            analyses.
+            api-adresse.data.gouv.fr pour une adresse en France, à photon.komoot.io (données
+            OpenStreetMap) pour une adresse à l'étranger, pour proposer l'adresse et la localiser.
           </p>
         }
       </section>

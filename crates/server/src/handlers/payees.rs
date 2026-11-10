@@ -1,6 +1,7 @@
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use cashflow_domain::payees::location::FRANCE;
 use cashflow_domain::shared::ids::{PayeeGroupId, PayeeId};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -179,11 +180,14 @@ pub async fn location_report(
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct AddressSearchQuery {
-    /// Texte saisi, envoyé à la Base Adresse Nationale ; moins de 3 caractères : aucune proposition.
+    /// Texte saisi ; moins de 3 caractères : aucune proposition.
     pub q: String,
+    /// Pays où chercher (ISO 3166-1 alpha-2) : la Base Adresse Nationale pour « FR », Photon pour un autre pays.
+    #[param(default = "FR")]
+    pub country: Option<String>,
 }
 
-/// Recherche d'adresse par la Base Adresse Nationale, si elle est activée dans les réglages (R-TIE-26).
+/// Recherche d'adresse dans un pays, si elle est activée dans les réglages (R-TIE-26, ADR-0030).
 #[utoipa::path(
     get, operation_id = "searchAddress", path = "/geocoding/search", tag = "payees", params(AddressSearchQuery),
     responses(
@@ -194,7 +198,8 @@ pub async fn search_address(
     State(state): State<AppState>,
     Query(query): Query<AddressSearchQuery>,
 ) -> AppResult<Json<Vec<AddressSuggestion>>> {
-    Ok(Json(payees::search_address(&state.db, &state.geocoder, &query.q).await?))
+    let country = query.country.as_deref().unwrap_or(FRANCE);
+    Ok(Json(payees::search_address(&state.db, &state.geocoder, &query.q, country).await?))
 }
 
 /// Propositions de tiers à partir des libellés bancaires, et clés ignorées (TIE-05, R-TIE-31, R-TIE-35).

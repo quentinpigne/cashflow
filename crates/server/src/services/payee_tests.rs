@@ -537,15 +537,23 @@ async fn r_tie_27_merge_keeps_the_target_address_or_takes_the_source_one() {
 async fn r_tie_26_address_search_is_refused_while_disabled() {
     let (db, _dir) = setup().await;
     // Ne joint rien : la recherche doit être refusée avant tout appel.
-    let geocoder = crate::geocoding::Geocoder::new("http://127.0.0.1:9").unwrap();
-    let refused = payees::search_address(&db, &geocoder, "8 bd du port").await;
-    assert!(matches!(refused, Err(AppError::Invalid { code: "GEOCODING_DISABLED", .. })));
+    let geocoder = crate::geocoding::Geocoder::new("http://127.0.0.1:9", "http://127.0.0.1:9").unwrap();
+    for country in ["FR", "DE"] {
+        let refused = payees::search_address(&db, &geocoder, "8 bd du port", country).await;
+        assert!(matches!(refused, Err(AppError::Invalid { code: "GEOCODING_DISABLED", .. })));
+    }
     let input = super::features::FeaturesInput { geocoding: Some(true), ..Default::default() };
     super::features::update(&db, &input).await.unwrap();
     // Trop court : aucune proposition, sans appel.
-    assert!(payees::search_address(&db, &geocoder, "8 ").await.unwrap().is_empty());
-    let unreachable = payees::search_address(&db, &geocoder, "8 bd du port").await;
-    assert!(matches!(unreachable, Err(AppError::Upstream(_))));
+    assert!(payees::search_address(&db, &geocoder, "8 ", "FR").await.unwrap().is_empty());
+    // Un pays qui n'est pas un code ISO est refusé.
+    let unknown = payees::search_address(&db, &geocoder, "8 bd du port", "France").await;
+    assert!(matches!(unknown, Err(AppError::Domain(DomainError::InvalidCountryCode))));
+    // Le service injoignable est celui du pays (ADR-0030).
+    let unreachable = payees::search_address(&db, &geocoder, "8 bd du port", "fr").await;
+    assert!(matches!(unreachable, Err(AppError::Upstream("la Base Adresse Nationale"))));
+    let unreachable = payees::search_address(&db, &geocoder, "Unter den Linden 77", "DE").await;
+    assert!(matches!(unreachable, Err(AppError::Upstream("Photon"))));
 }
 
 /// Critère d'acceptation de TIE-07.
